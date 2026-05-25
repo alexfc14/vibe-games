@@ -198,18 +198,52 @@
             line-height: 1.4;
         }
 
-        /* Styled Reset Button */
+        /* Odometer Action Buttons (Undo and Clear) */
+        #btn-undo {
+            background: #4b5563;
+            border: none;
+            color: white;
+            padding: 6px 18px;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            transition: background 0.2s, transform 0.1s;
+            width: 100%;
+            max-width: 90px;
+            text-align: center;
+        }
+
+        #btn-undo:hover:not(:disabled) {
+            background: #374151;
+        }
+
+        #btn-undo:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+
+        #btn-undo:disabled {
+            background: #1f2937;
+            color: #4b5563;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
         #btn-reset {
             background: #dc2626;
             border: none;
             color: white;
-            padding: 8px 24px;
-            font-size: 12px;
+            padding: 6px 18px;
+            font-size: 11px;
             font-weight: bold;
             border-radius: 4px;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
             transition: background 0.2s, transform 0.1s;
+            width: 100%;
+            max-width: 90px;
+            text-align: center;
         }
 
         #btn-reset:hover {
@@ -262,10 +296,12 @@
                 <div class="knob-value" id="val1">0°</div>
             </div>
 
-            <!-- Central Clear / Odometer Control Divider -->
+            <!-- Central Control Divider (Odometer, Undo and Clear) -->
             <div class="middle-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-width: 130px; border-left: 1px solid #333; border-right: 1px solid #333; padding: 0 15px; align-self: stretch;">
                 <div style="font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Odometer</div>
-                <div id="odom-value" style="font-size: 20px; font-weight: bold; color: #4ade80; font-family: monospace;">0.0°</div>
+                <div id="odom-value" style="font-size: 20px; font-weight: bold; color: #4ade80; font-family: monospace; margin-bottom: 2px;">0.0°</div>
+                <!-- Undo button placed above Clear -->
+                <button id="btn-undo" disabled>Undo ↩️</button>
                 <button id="btn-reset">Clear</button>
             </div>
 
@@ -475,9 +511,13 @@
 
         landmarkDefinitions.forEach(m => createShieldedLandmark(m.id, m.emoji, m.pos, m.color, m.transform));
 
-        // --- RELATIVE ORIENTATION MOTORS ---
+        // --- RELATIVE ORIENTATION MOTORS & UNDO STACK ---
         const GLOBAL_AXIS_Z = new THREE.Vector3(0, 0, 1);
         const GLOBAL_AXIS_X_CLOCKWISE = new THREE.Vector3(1, 0, 0);
+
+        // Stack to store action history states
+        const rotationHistory = [];
+        const undoButton = document.getElementById('btn-undo');
 
         // Track odometer (total absolute rotated angle)
         let totalRotated = 0.0;
@@ -488,32 +528,60 @@
             odomElement.innerText = totalRotated.toFixed(1) + '°';
         }
 
+        function updateUndoButtonState() {
+            undoButton.disabled = rotationHistory.length === 0;
+        }
+
         function applyDirectStepRotation(angleDegrees, rotationAxis) {
             const rads = THREE.MathUtils.degToRad(angleDegrees);
             const stepQ = new THREE.Quaternion().setFromAxisAngle(rotationAxis, rads);
             planetGroup.quaternion.premultiply(stepQ);
         }
 
+        // Applies standard button shifts while saving history
+        function applyStepWithHistory(angleDegrees, rotationAxis) {
+            rotationHistory.push({
+                quaternion: planetGroup.quaternion.clone(),
+                odometerAdd: Math.abs(angleDegrees)
+            });
+            updateUndoButtonState();
+
+            applyDirectStepRotation(angleDegrees, rotationAxis);
+            addToOdometer(angleDegrees);
+        }
+
         document.getElementById('btn1-left').addEventListener('click', () => {
             const val = parseFloat(document.getElementById('num1').value) || 0;
-            applyDirectStepRotation(-val, GLOBAL_AXIS_Z);
-            addToOdometer(val);
+            applyStepWithHistory(-val, GLOBAL_AXIS_Z);
         });
         document.getElementById('btn1-right').addEventListener('click', () => {
             const val = parseFloat(document.getElementById('num1').value) || 0;
-            applyDirectStepRotation(val, GLOBAL_AXIS_Z);
-            addToOdometer(val);
+            applyStepWithHistory(val, GLOBAL_AXIS_Z);
         });
 
         document.getElementById('btn2-left').addEventListener('click', () => {
             const val = parseFloat(document.getElementById('num2').value) || 0;
-            applyDirectStepRotation(-val, GLOBAL_AXIS_X_CLOCKWISE);
-            addToOdometer(val);
+            applyStepWithHistory(-val, GLOBAL_AXIS_X_CLOCKWISE);
         });
         document.getElementById('btn2-right').addEventListener('click', () => {
             const val = parseFloat(document.getElementById('num2').value) || 0;
-            applyDirectStepRotation(val, GLOBAL_AXIS_X_CLOCKWISE);
-            addToOdometer(val);
+            applyStepWithHistory(val, GLOBAL_AXIS_X_CLOCKWISE);
+        });
+
+        // --- UNDO ACTION EVENT ---
+        undoButton.addEventListener('click', () => {
+            if (rotationHistory.length === 0) return;
+
+            const previousState = rotationHistory.pop();
+            
+            // Revert rotation to exact historical state
+            planetGroup.quaternion.copy(previousState.quaternion);
+
+            // Subtract rotation angle from odometer safely
+            totalRotated = Math.max(0.0, totalRotated - previousState.odometerAdd);
+            odomElement.innerText = totalRotated.toFixed(1) + '°';
+
+            updateUndoButtonState();
         });
 
         // --- RESET / CLEAR CONTROLLER ACTION ---
@@ -535,6 +603,10 @@
             // Reset Odometer
             totalRotated = 0.0;
             odomElement.innerText = "0.0°";
+
+            // Reset Undo Stack
+            rotationHistory.length = 0;
+            updateUndoButtonState();
         });
 
         // --- RELATIVE TOUCH CONTROLLER LOGIC ---
@@ -547,6 +619,7 @@
             let centerPoint = { x: 0, y: 0 };
             let lastAngle = 0;
             let accumulatedDialRotation = 0; // Tracks rotation specifically during the current gesture
+            let startQuat = null; // Tracks starting quaternion state of current gesture
 
             // Use matching panel theme active highlight colors
             const activeColor = dialId === 'dial1' ? "#3b82f6" : "#eab308";
@@ -563,6 +636,7 @@
                 centerPoint = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
                 lastAngle = calculateInteractionAngle(clientX, clientY);
                 accumulatedDialRotation = 0;
+                startQuat = planetGroup.quaternion.clone();
                 display.style.color = activeColor;
             }
 
@@ -593,8 +667,16 @@
                 if (!active) return;
                 active = false;
 
-                // Add absolute value of the total net gesture rotation only after release
-                addToOdometer(accumulatedDialRotation);
+                const absoluteNetDelta = Math.abs(accumulatedDialRotation);
+                if (absoluteNetDelta > 0.05) {
+                    // Capture starting rotation and odometer additions as a single transaction state
+                    rotationHistory.push({
+                        quaternion: startQuat.clone(),
+                        odometerAdd: absoluteNetDelta
+                    });
+                    updateUndoButtonState();
+                    addToOdometer(accumulatedDialRotation);
+                }
 
                 indicator.style.transform = "rotate(0deg)";
                 display.innerText = "0°";
