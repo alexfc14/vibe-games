@@ -17,7 +17,7 @@
             position: relative;
         }
 
-        /* Floating Screen-Space DOM Labels - Configured with translucency to prevent occlusion of the car */
+        /* Floating Screen-Space DOM Labels */
         .dom-label {
             position: absolute;
             z-index: 5;
@@ -198,6 +198,87 @@
             line-height: 1.4;
         }
 
+        /* Instruction HUD Overlay */
+        .instructions-hud {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(15, 20, 30, 0.85);
+            border: 1px solid #3b82f6;
+            padding: 12px;
+            border-radius: 8px;
+            width: 250px;
+            font-size: 11.5px;
+            z-index: 10;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+        }
+        .hud-title {
+            color: #3b82f6;
+            font-weight: bold;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Success & Level Explanation Modal Overlay */
+        .completion-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 12, 18, 0.9);
+            z-index: 20;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            backdrop-filter: blur(8px);
+        }
+        .modal-card {
+            background: #1e1e1e;
+            border: 1px solid #4ade80;
+            max-width: 500px;
+            width: 100%;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            text-align: center;
+        }
+        .modal-title {
+            color: #4ade80;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        .modal-body {
+            font-size: 13.5px;
+            line-height: 1.5;
+            color: #ddd;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .modal-btn {
+            background: #4ade80;
+            border: none;
+            color: #111;
+            padding: 10px 24px;
+            font-weight: bold;
+            font-size: 13px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+        }
+        .modal-btn:hover {
+            background: #34d399;
+        }
+        .modal-btn:active {
+            transform: scale(0.97);
+        }
+
         /* Odometer Action Buttons (Undo and Clear) */
         #btn-undo {
             background: #4b5563;
@@ -263,12 +344,33 @@
         <div id="labels-overlay" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 4;"></div>
 
         <div class="legend">
-            <div class="legend-item"><div class="legend-color" style="background: #ef4444;"></div> <strong>🔴 Car Position</strong></div>
-            <div class="legend-item"><div class="legend-color" style="background: #f97316;"></div> <strong>🚀 Car Heading</strong></div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px;">🚀</div>
+                <strong>🔴🚀 Car</strong>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: rgba(239,68,68,0.25); border: 1px dashed rgba(255,255,255,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; opacity: 0.7;">🚀</div>
+                <strong style="opacity: 0.85;">🔴🚀 Parking Spot (Ghost)</strong>
+            </div>
             <div class="legend-item"><hr style="border:none; border-top:2px solid #eab308; width:10px; margin:0;"> <strong>Sunrise/Sunset Ring</strong></div>
             <div class="legend-item"><hr style="border:none; border-top:2px solid #4ade80; width:10px; margin:0;"> <strong>Noon/Midnight Ring</strong></div>
             <div class="legend-item"><hr style="border:none; border-top:2px solid #3b82f6; width:10px; margin:0;"> <strong>Equator Ring</strong></div>
             <div class="legend-item"><hr style="border:none; border-top:1px dashed #ffffff; width:10px; margin:0;"> <strong>45° Parallels</strong></div>
+        </div>
+
+        <!-- Instructional Game HUD Overlay -->
+        <div class="instructions-hud">
+            <div class="hud-title" id="hud-level-title">Level 1: Holonomy Intro</div>
+            <div id="hud-level-desc" style="line-height: 1.4; color: #ddd; font-size: 11px;">Loading...</div>
+        </div>
+
+        <!-- Dynamic Success & Question Prompt Modal -->
+        <div class="completion-overlay" id="completion-modal">
+            <div class="modal-card">
+                <div class="modal-title" id="modal-heading">Challenge Complete! 🎉</div>
+                <div class="modal-body" id="modal-content">Explanation text goes here.</div>
+                <button class="modal-btn" id="modal-next-btn">Next Challenge</button>
+            </div>
         </div>
 
         <div class="telemetry-panel">
@@ -300,7 +402,6 @@
             <div class="middle-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-width: 130px; border-left: 1px solid #333; border-right: 1px solid #333; padding: 0 15px; align-self: stretch;">
                 <div style="font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Odometer</div>
                 <div id="odom-value" style="font-size: 20px; font-weight: bold; color: #4ade80; font-family: monospace; margin-bottom: 2px;">0.0°</div>
-                <!-- Undo button placed above Clear -->
                 <button id="btn-undo" disabled>Undo ↩️</button>
                 <button id="btn-reset">Clear</button>
             </div>
@@ -420,7 +521,7 @@
         solarIndicatorRing.add(sCone);
         scene.add(solarIndicatorRing);
 
-        // --- The Car Rig (Starts back at Sunrise: 0, -SPHERE_RADIUS, 0) ---
+        // --- The Car Rig ---
         const carGroup = new THREE.Group();
         carGroup.position.set(0, -SPHERE_RADIUS, 0);
         planetGroup.add(carGroup);
@@ -430,8 +531,32 @@
 
         const arrowDirection = new THREE.Vector3(1, 0, 0);
         const arrowMagnitude = 0.38;
-        const headingArrow = new THREE.ArrowHelper(arrowDirection, new THREE.Vector3(0,0,0), arrowMagnitude, 0xf97316, 0.1, 0.07);
+        const headingArrow = new THREE.ArrowHelper(arrowDirection, new THREE.Vector3(0,0,0), arrowMagnitude, 0xef4444, 0.1, 0.07);
         carGroup.add(headingArrow);
+
+        // --- GHOST PARKING SPOT ASSETS (Representing Pose B) ---
+        const ghostGroup = new THREE.Group();
+        scene.add(ghostGroup);
+
+        const ghostChassis = new THREE.Mesh(
+            new THREE.SphereGeometry(0.035, 16, 16), 
+            new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.30 })
+        );
+        ghostGroup.add(ghostChassis);
+
+        const ghostArrow = new THREE.ArrowHelper(
+            new THREE.Vector3(1, 0, 0),
+            new THREE.Vector3(0, 0, 0),
+            0.38,
+            0xef4444,
+            0.1,
+            0.07
+        );
+        ghostArrow.line.material.transparent = true;
+        ghostArrow.line.material.opacity = 0.35;
+        ghostArrow.cone.material.transparent = true;
+        ghostArrow.cone.material.opacity = 0.35;
+        ghostGroup.add(ghostArrow);
 
         // --- CALIBRATED FLUSH REFERENCE LINES ---
         const LINE_RADIUS = SPHERE_RADIUS * 0.998;
@@ -511,6 +636,69 @@
 
         landmarkDefinitions.forEach(m => createShieldedLandmark(m.id, m.emoji, m.pos, m.color, m.transform));
 
+        // --- GAME LEVEL PARADIGM & SYSTEM STATE ---
+        let currentLevel = 1;
+        let isLevelCompleted = false;
+
+        const levelDefinitions = {
+            1: {
+                title: "Level 1: The Flipped Heading",
+                shortDesc: "Goal: Reach Sunrise pointing West (180°).<br><br><strong>Instructions:</strong><br>1. Rotate by +180° around the Z-axis (Polar Rotation ➡️) to reach Sunset.<br>2. Roll by +180° around the X-axis (Solar Rotation ➡️) to return to Sunrise.",
+                explanation: "As you can see, the car's orientation flipped exactly 180° without ever rotating around the local sunrise-sunset vertical axis! This fascinating topological behavior is known as <strong>holonomy</strong> or spherical parallel transport.<br><br>Going back to the same place does not guarantee looking in the same direction! Can you think of a way to control exactly how many degrees we rotate when coming back?",
+                targetPos: new THREE.Vector3(0, -SPHERE_RADIUS, 0), // Sunrise
+                targetTilt: 180 // West (flipped)
+            },
+            2: {
+                title: "Level 2: The 15° Tilt Challenge",
+                shortDesc: "Goal: Return to Sunrise but pointing 15° Northwards.<br><br><strong>Instructions:</strong><br>Navigate the car back to the Sunrise spot with a local tilt angle of exactly <strong>+15.0°</strong>. Plan your spherical paths carefully!",
+                explanation: "Brilliant navigation! By combining specific polar and solar rotation loops, you have demonstrated exact orientation control. Since the order of non-parallel rotations is non-commutative on a sphere, you can achieve any desired 3D tilt simply by varying the paths you drive. You are now a master circumnavigator!",
+                targetPos: new THREE.Vector3(0, -SPHERE_RADIUS, 0), // Sunrise
+                targetTilt: 15 // Tilted 15 degrees up
+            }
+        };
+
+        function configureLevel(lvlId) {
+            isLevelCompleted = false;
+            document.getElementById('completion-modal').style.style = "none";
+            document.getElementById('completion-modal').style.display = "none";
+
+            const lvl = levelDefinitions[lvlId];
+            document.getElementById('hud-level-title').innerText = lvl.title;
+            document.getElementById('hud-level-desc').innerHTML = lvl.shortDesc;
+
+            // Positioning Ghost Target (Pose B) on the world sphere
+            ghostGroup.position.copy(lvl.targetPos);
+
+            // Compute target local orientation vector matching requested target Tilt angle
+            const upVec = lvl.targetPos.clone().normalize();
+            let eastVec, northVec;
+            if (Math.abs(upVec.z) > 0.9999) {
+                eastVec = new THREE.Vector3(1, 0, 0);
+                northVec = new THREE.Vector3(0, upVec.z > 0 ? -1 : 1, 0);
+            } else {
+                eastVec = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 0, 1), upVec).normalize();
+                northVec = new THREE.Vector3().crossVectors(upVec, eastVec).normalize();
+            }
+
+            const rad = lvl.targetTilt * Math.PI / 180;
+            const headingDirVec = eastVec.clone().multiplyScalar(Math.cos(rad)).add(northVec.clone().multiplyScalar(Math.sin(rad))).normalize();
+            ghostArrow.setDirection(headingDirVec);
+
+            updateTelemetryData();
+        }
+
+        // Proceed to next challenge action
+        document.getElementById('modal-next-btn').addEventListener('click', () => {
+            if (currentLevel < 2) {
+                currentLevel++;
+                configureLevel(currentLevel);
+            } else {
+                // Return to level 1 as a loop
+                currentLevel = 1;
+                configureLevel(currentLevel);
+            }
+        });
+
         // --- RELATIVE ORIENTATION MOTORS & UNDO STACK ---
         const GLOBAL_AXIS_Z = new THREE.Vector3(0, 0, 1);
         const GLOBAL_AXIS_X_CLOCKWISE = new THREE.Vector3(1, 0, 0);
@@ -540,6 +728,8 @@
 
         // Applies standard button shifts while saving history
         function applyStepWithHistory(angleDegrees, rotationAxis) {
+            if (isLevelCompleted) return;
+
             rotationHistory.push({
                 quaternion: planetGroup.quaternion.clone(),
                 odometerAdd: Math.abs(angleDegrees)
@@ -570,7 +760,7 @@
 
         // --- UNDO ACTION EVENT ---
         undoButton.addEventListener('click', () => {
-            if (rotationHistory.length === 0) return;
+            if (rotationHistory.length === 0 || isLevelCompleted) return;
 
             const previousState = rotationHistory.pop();
             
@@ -607,6 +797,9 @@
             // Reset Undo Stack
             rotationHistory.length = 0;
             updateUndoButtonState();
+
+            isLevelCompleted = false;
+            document.getElementById('completion-modal').style.display = "none";
         });
 
         // --- RELATIVE TOUCH CONTROLLER LOGIC ---
@@ -621,7 +814,7 @@
             let accumulatedDialRotation = 0; // Tracks rotation specifically during the current gesture
             let startQuat = null; // Tracks starting quaternion state of current gesture
 
-            // Use matching panel theme active highlight colors
+            // Use matching panel theme active highlight colors (Polar is Blue, Solar is Yellow)
             const activeColor = dialId === 'dial1' ? "#3b82f6" : "#eab308";
 
             function calculateInteractionAngle(clientX, clientY) {
@@ -631,6 +824,7 @@
             }
 
             function interactionStart(clientX, clientY) {
+                if (isLevelCompleted) return;
                 active = true;
                 const rect = dial.getBoundingClientRect();
                 centerPoint = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
@@ -641,7 +835,7 @@
             }
 
             function interactionMove(clientX, clientY) {
-                if (!active) return;
+                if (!active || isLevelCompleted) return;
                 const currentAngle = calculateInteractionAngle(clientX, clientY);
                 
                 // Calculate small frame-to-frame delta angle
@@ -695,7 +889,7 @@
         setupRelativeRotaryDial('dial1', 'ind1', 'val1', GLOBAL_AXIS_Z);
         setupRelativeRotaryDial('dial2', 'ind2', 'val2', GLOBAL_AXIS_X_CLOCKWISE);
 
-        // --- TELEMETRY READOUT UPDATES ---
+        // --- TELEMETRY READOUT & PUZZLE COINCIDENCE CHECKS ---
         const telemetryLat = document.getElementById('telemetry-lat');
         const telemetryLon = document.getElementById('telemetry-lon');
         const telemetryHdg = document.getElementById('telemetry-hdg');
@@ -746,6 +940,36 @@
             telemetryLat.innerText = `${absLat}° ${latDirection}`;
             telemetryLon.innerText = `${absLon}° ${lonDirection}`;
             telemetryHdg.innerText = `${tiltAngle.toFixed(1)}°`;
+
+            // --- CHECK FOR PARKING SPOT COINCIDENCE (Pose matching Pose B) ---
+            if (!isLevelCompleted) {
+                const currentLvl = levelDefinitions[currentLevel];
+                const positionDistance = carWorldPos.distanceTo(currentLvl.targetPos);
+                
+                let angleDiff = Math.abs(tiltAngle - currentLvl.targetTilt);
+                if (angleDiff > 180) angleDiff = 360 - angleDiff;
+
+                // Threshold boundaries: within 0.05 length distance (~3 deg) and 3.5 degrees tilt
+                if (positionDistance < 0.05 && angleDiff < 3.5) {
+                    isLevelCompleted = true;
+                    showLevelCompletedModal(currentLvl);
+                }
+            }
+        }
+
+        // Triggers the successful modal sequence
+        function showLevelCompletedModal(lvl) {
+            document.getElementById('modal-heading').innerHTML = `🚗 PARKING SUCCESSFUL! <span style="font-size: 15px;">(${lvl.title})</span>`;
+            document.getElementById('modal-content').innerHTML = lvl.explanation;
+            
+            const nextBtn = document.getElementById('modal-next-btn');
+            if (currentLevel < 2) {
+                nextBtn.innerText = "Begin Challenge 2 🚀";
+            } else {
+                nextBtn.innerText = "Loop back to Challenge 1 🔄";
+            }
+            
+            document.getElementById('completion-modal').style.display = "flex";
         }
 
         // --- HIGH-PERFORMANCE VECTOR MATRIX PROJECTION LOOP ---
@@ -791,7 +1015,11 @@
             controls.handleResize();
         });
 
-        frameExecution();
+        // Initialize Level 1 upon window load
+        window.onload = function() {
+            configureLevel(1);
+            frameExecution();
+        }
     </script>
 </body>
 </html>
