@@ -17,12 +17,12 @@
             position: relative;
         }
 
-        /* Floating Screen-Space DOM Labels */
+        /* Floating Screen-Space DOM Labels - Configured with translucency to prevent occlusion of the car */
         .dom-label {
             position: absolute;
             z-index: 5;
             transform: translate(-50%, -100%);
-            background: rgba(15, 20, 30, 1.0);
+            background: rgba(15, 20, 30, 0.65);
             border: 1px solid rgba(255, 255, 255, 0.25);
             padding: 3px 8px;
             border-radius: 4px;
@@ -36,6 +36,8 @@
             align-items: center;
             gap: 5px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
             transition: opacity 0.1s;
             opacity: 0;
         }
@@ -87,7 +89,6 @@
             height: 85px;
             background: radial-gradient(circle, #333 0%, #222 70%);
             border-radius: 50%;
-            border: 3px solid #3b82f6;
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.5), 0 4px 10px rgba(0,0,0,0.3);
             display: flex;
             align-items: center;
@@ -113,7 +114,6 @@
             height: 20px;
             background: #1a1a1a;
             border-radius: 50%;
-            border: 2px solid #3b82f6;
             pointer-events: none;
         }
 
@@ -136,7 +136,6 @@
             width: 48px;
             background: #111;
             border: 1px solid #444;
-            color: #3b82f6;
             border-radius: 4px;
             padding: 5px;
             font-weight: bold;
@@ -145,7 +144,6 @@
         }
 
         .manual-input-box button {
-            background: #3b82f6;
             border: none;
             color: white;
             padding: 5px 10px;
@@ -158,12 +156,29 @@
             justify-content: center;
         }
 
-        .manual-input-box button:active {
-            background: #2563eb;
+        /* Color-specific overrides (Polar is Blue, Solar is Yellow) */
+        .polar-theme-btn {
+            background: #3b82f6 !important;
+        }
+        .polar-theme-btn:active {
+            background: #2563eb !important;
+        }
+        .polar-theme-input {
+            color: #3b82f6 !important;
+        }
+        
+        .solar-theme-btn {
+            background: #eab308 !important;
+        }
+        .solar-theme-btn:active {
+            background: #ca8a04 !important;
+        }
+        .solar-theme-input {
+            color: #eab308 !important;
         }
 
         .legend { position: absolute; top: 10px; left: 10px; background: rgba(15, 20, 30, 1.0); padding: 8px; border-radius: 6px; font-size: 10px; pointer-events: none; border: 1px solid #444; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10; }
-        .legend-item { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+        .legend-item { display: flex; align-items: center; gap: 6px; margin-bottom: 3.5px; }
         .legend-color { width: 10px; height: 10px; border-radius: 2px; }
 
         .telemetry-panel {
@@ -216,10 +231,10 @@
         <div class="legend">
             <div class="legend-item"><div class="legend-color" style="background: #ef4444;"></div> <strong>🔴 Car Position</strong></div>
             <div class="legend-item"><div class="legend-color" style="background: #f97316;"></div> <strong>🚀 Car Heading</strong></div>
-            <div class="legend-item"><hr style="border:none; border-top:2px solid #eab308; width:10px; margin:0;"> <strong>— Sunrise/Sunset Ring</strong></div>
-            <div class="legend-item"><hr style="border:none; border-top:2px solid #4ade80; width:10px; margin:0;"> <strong>— Noon/Midnight Ring</strong></div>
-            <div class="legend-item"><hr style="border:none; border-top:2px solid #3b82f6; width:10px; margin:0;"> <strong>— Equator Ring</strong></div>
-            <div class="legend-item"><hr style="border:none; border-top:1px dashed #ffffff; width:10px; margin:0;"> <strong>-- 45° Parallels</strong></div>
+            <div class="legend-item"><hr style="border:none; border-top:2px solid #eab308; width:10px; margin:0;"> <strong>Sunrise/Sunset Ring</strong></div>
+            <div class="legend-item"><hr style="border:none; border-top:2px solid #4ade80; width:10px; margin:0;"> <strong>Noon/Midnight Ring</strong></div>
+            <div class="legend-item"><hr style="border:none; border-top:2px solid #3b82f6; width:10px; margin:0;"> <strong>Equator Ring</strong></div>
+            <div class="legend-item"><hr style="border:none; border-top:1px dashed #ffffff; width:10px; margin:0;"> <strong>45° Parallels</strong></div>
         </div>
 
         <div class="telemetry-panel">
@@ -232,38 +247,42 @@
 
     <div class="controls">
         <div class="knobs-container">
+            <!-- Polar Rotation (Blue Theme - Cold) -->
             <div class="knob-panel">
-                <div class="knob-label">Polar Rotation</div>
+                <div class="knob-label" style="color: #3b82f6;">Polar Rotation</div>
                 <div class="manual-input-box">
-                    <button id="btn1-left">⬅️</button>
-                    <input type="number" id="num1" value="15" step="5">
-                    <button id="btn1-right">➡️</button>
+                    <button id="btn1-left" class="polar-theme-btn">⬅️</button>
+                    <input type="number" id="num1" class="polar-theme-input" value="15" step="5">
+                    <button id="btn1-right" class="polar-theme-btn">➡️</button>
                 </div>
-                <div class="knob-dial" id="dial1">
+                <div class="knob-dial" id="dial1" style="border: 3px solid #3b82f6;">
                     <div class="knob-indicator" id="ind1"></div>
-                    <div class="knob-cap"></div>
+                    <div class="knob-cap" style="border: 2px solid #3b82f6;"></div>
                 </div>
                 <div class="knob-value" id="val1">0°</div>
             </div>
 
+            <!-- Central Clear / Odometer Control Divider -->
+            <div class="middle-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-width: 130px; border-left: 1px solid #333; border-right: 1px solid #333; padding: 0 15px; align-self: stretch;">
+                <div style="font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Odometer</div>
+                <div id="odom-value" style="font-size: 20px; font-weight: bold; color: #4ade80; font-family: monospace;">0.0°</div>
+                <button id="btn-reset">Clear</button>
+            </div>
+
+            <!-- Solar Rotation (Yellow Theme - Hot) -->
             <div class="knob-panel">
-                <div class="knob-label">Solar Rotation</div>
+                <div class="knob-label" style="color: #eab308;">Solar Rotation</div>
                 <div class="manual-input-box">
-                    <button id="btn2-left">⬅️</button>
-                    <input type="number" id="num2" value="15" step="5">
-                    <button id="btn2-right">➡️</button>
+                    <button id="btn2-left" class="solar-theme-btn">⬅️</button>
+                    <input type="number" id="num2" class="solar-theme-input" value="15" step="5">
+                    <button id="btn2-right" class="solar-theme-btn">➡️</button>
                 </div>
-                <div class="knob-dial" id="dial2">
+                <div class="knob-dial" id="dial2" style="border: 3px solid #eab308;">
                     <div class="knob-indicator" id="ind2"></div>
-                    <div class="knob-cap"></div>
+                    <div class="knob-cap" style="border: 2px solid #eab308;"></div>
                 </div>
                 <div class="knob-value" id="val2">0°</div>
             </div>
-        </div>
-
-        <!-- Centered Reset UI Controller -->
-        <div style="width: 100%; display: flex; justify-content: center; border-top: 1px solid #333; padding-top: 10px;">
-            <button id="btn-reset">Reset Simulation 🔄</button>
         </div>
     </div>
 
@@ -277,7 +296,7 @@
 
         const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 50);
         
-        // Lock Z-axis vertically in the view and set camera to match reference orientation
+        // Lock Z-axis vertically in the view and set camera to match reference orientation (with adjusted zoom out)
         camera.up.set(0, 0, 1); 
         camera.position.set(1.9, -2.8, 1.0); 
 
@@ -328,7 +347,7 @@
         const backShell = new THREE.Mesh(sphereGeo, backShellMat);
         scene.add(backShell); 
 
-        // --- FIXED STATIONARY ROTATION AXES ---
+        // --- FIXED STATIONARY ROTATION AXES (Polar is Blue, Solar is Yellow) ---
         const axisMaterialPolar = new THREE.MeshBasicMaterial({ color: 0x3b82f6 });
         const axisMaterialSolar = new THREE.MeshBasicMaterial({ color: 0xeab308 });
 
@@ -446,10 +465,10 @@
         }
 
         const landmarkDefinitions = [
-            { id: "North Pole", emoji: "🐻❄️", pos: new THREE.Vector3(0, 0, LINE_RADIUS), color: 0x3b82f6, transform: "translate(-50%, -100%)" },
-            { id: "South Pole", emoji: "🐧", pos: new THREE.Vector3(0, 0, -LINE_RADIUS), color: 0x3b82f6, transform: "translate(-50%, 25%)" }, // sit below
-            { id: "Noon", emoji: "☀️", pos: new THREE.Vector3(LINE_RADIUS, 0, 0), color: 0x4ade80, transform: "translate(15px, -50%)" }, // sit right
-            { id: "Midnight", emoji: "🌙", pos: new THREE.Vector3(-LINE_RADIUS, 0, 0), color: 0x4ade80, transform: "translate(calc(-100% - 15px), -50%)" }, // sit left
+            { id: "North Pole", emoji: "🐻❄️", pos: new THREE.Vector3(0, 0, LINE_RADIUS), color: 0x3b82f6, transform: "translate(-50%, -100%)" }, // Blue Polar
+            { id: "South Pole", emoji: "🐧", pos: new THREE.Vector3(0, 0, -LINE_RADIUS), color: 0x3b82f6, transform: "translate(-50%, 25%)" }, // Blue Polar
+            { id: "Noon", emoji: "☀️", pos: new THREE.Vector3(LINE_RADIUS, 0, 0), color: 0x4ade80, transform: "translate(15px, -50%)" }, 
+            { id: "Midnight", emoji: "🌙", pos: new THREE.Vector3(-LINE_RADIUS, 0, 0), color: 0x4ade80, transform: "translate(calc(-100% - 15px), -50%)" }, 
             { id: "Sunrise", emoji: "🌅", pos: new THREE.Vector3(0, -LINE_RADIUS, 0), color: 0xeab308, transform: "translate(-105%, -100%)" },
             { id: "Sunset", emoji: "🌇", pos: new THREE.Vector3(0, LINE_RADIUS, 0), color: 0xeab308, transform: "translate(5%, -100%)" }
         ];
@@ -460,6 +479,15 @@
         const GLOBAL_AXIS_Z = new THREE.Vector3(0, 0, 1);
         const GLOBAL_AXIS_X_CLOCKWISE = new THREE.Vector3(1, 0, 0);
 
+        // Track odometer (total absolute rotated angle)
+        let totalRotated = 0.0;
+        const odomElement = document.getElementById('odom-value');
+
+        function addToOdometer(angleDegrees) {
+            totalRotated += Math.abs(angleDegrees);
+            odomElement.innerText = totalRotated.toFixed(1) + '°';
+        }
+
         function applyDirectStepRotation(angleDegrees, rotationAxis) {
             const rads = THREE.MathUtils.degToRad(angleDegrees);
             const stepQ = new THREE.Quaternion().setFromAxisAngle(rotationAxis, rads);
@@ -469,22 +497,26 @@
         document.getElementById('btn1-left').addEventListener('click', () => {
             const val = parseFloat(document.getElementById('num1').value) || 0;
             applyDirectStepRotation(-val, GLOBAL_AXIS_Z);
+            addToOdometer(val);
         });
         document.getElementById('btn1-right').addEventListener('click', () => {
             const val = parseFloat(document.getElementById('num1').value) || 0;
             applyDirectStepRotation(val, GLOBAL_AXIS_Z);
+            addToOdometer(val);
         });
 
         document.getElementById('btn2-left').addEventListener('click', () => {
             const val = parseFloat(document.getElementById('num2').value) || 0;
             applyDirectStepRotation(-val, GLOBAL_AXIS_X_CLOCKWISE);
+            addToOdometer(val);
         });
         document.getElementById('btn2-right').addEventListener('click', () => {
             const val = parseFloat(document.getElementById('num2').value) || 0;
             applyDirectStepRotation(val, GLOBAL_AXIS_X_CLOCKWISE);
+            addToOdometer(val);
         });
 
-        // --- RESET CONTROLLER ACTION ---
+        // --- RESET / CLEAR CONTROLLER ACTION ---
         document.getElementById('btn-reset').addEventListener('click', () => {
             // Restore planetGroup rotation
             planetGroup.quaternion.set(0, 0, 0, 1);
@@ -499,6 +531,10 @@
             document.getElementById('val1').innerText = "0°";
             document.getElementById('ind2').style.transform = "rotate(0deg)";
             document.getElementById('val2').innerText = "0°";
+
+            // Reset Odometer
+            totalRotated = 0.0;
+            odomElement.innerText = "0.0°";
         });
 
         // --- RELATIVE TOUCH CONTROLLER LOGIC ---
@@ -509,8 +545,11 @@
 
             let active = false;
             let centerPoint = { x: 0, y: 0 };
-            let initialGestureAngle = 0;
-            let currentAccumulatedDelta = 0;
+            let lastAngle = 0;
+            let accumulatedDialRotation = 0; // Tracks rotation specifically during the current gesture
+
+            // Use matching panel theme active highlight colors
+            const activeColor = dialId === 'dial1' ? "#3b82f6" : "#eab308";
 
             function calculateInteractionAngle(clientX, clientY) {
                 const dy = clientY - centerPoint.y;
@@ -518,37 +557,45 @@
                 return Math.atan2(dy, dx) * (180 / Math.PI);
             }
 
-            // Bind relative gestures dynamically
             function interactionStart(clientX, clientY) {
                 active = true;
                 const rect = dial.getBoundingClientRect();
                 centerPoint = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-                initialGestureAngle = calculateInteractionAngle(clientX, clientY);
-                currentAccumulatedDelta = 0;
-                display.style.color = "#3b82f6";
+                lastAngle = calculateInteractionAngle(clientX, clientY);
+                accumulatedDialRotation = 0;
+                display.style.color = activeColor;
             }
 
             function interactionMove(clientX, clientY) {
                 if (!active) return;
                 const currentAngle = calculateInteractionAngle(clientX, clientY);
-                let rawDelta = currentAngle - initialGestureAngle;
+                
+                // Calculate small frame-to-frame delta angle
+                let delta = currentAngle - lastAngle;
 
-                if (rawDelta > 180) rawDelta -= 360;
-                if (rawDelta < -180) rawDelta += 360;
+                // Safely wrap the frame delta so branch-cut crossing doesn't cause a massive jump
+                if (delta > 180) delta -= 360;
+                if (delta < -180) delta += 360;
 
-                const frameIncrementStep = rawDelta - currentAccumulatedDelta;
-                currentAccumulatedDelta = rawDelta;
+                lastAngle = currentAngle;
+                accumulatedDialRotation += delta;
 
-                const displayAngle = Math.round(rawDelta);
+                const displayAngle = Math.round(accumulatedDialRotation);
                 indicator.style.transform = `rotate(${displayAngle}deg)`;
                 display.innerText = (displayAngle > 0 ? '+' : '') + displayAngle + '°';
 
-                applyDirectStepRotation(frameIncrementStep, targetGlobalAxis);
+                // Apply rotation only for the tiny step change
+                applyDirectStepRotation(delta, targetGlobalAxis);
             }
 
+            // Dial Release resets the dial needle to zero and adds the net session change to the odometer
             function interactionEnd() {
                 if (!active) return;
                 active = false;
+
+                // Add absolute value of the total net gesture rotation only after release
+                addToOdometer(accumulatedDialRotation);
+
                 indicator.style.transform = "rotate(0deg)";
                 display.innerText = "0°";
                 display.style.color = "#666";
@@ -559,7 +606,7 @@
             window.addEventListener('mouseup', interactionEnd);
 
             dial.addEventListener('touchstart', (e) => { e.preventDefault(); interactionStart(e.touches[0].clientX, e.touches[0].clientY); });
-            window.addEventListener('touchmove', (e) => { if (active) interactionMove(e.touches[0].clientX, e.touches[0].clientY); });
+            window.addEventListener('touchmove', (e) => { if (active) { e.preventDefault(); interactionMove(e.touches[0].clientX, e.touches[0].clientY); } });
             window.addEventListener('touchend', interactionEnd);
         }
 
