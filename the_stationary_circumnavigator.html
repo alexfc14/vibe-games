@@ -17,7 +17,7 @@
             position: relative;
         }
 
-        /* Floating Screen-Space DOM Labels */
+        /* Floating Screen-Space DOM Labels - Configured with translucency to prevent occlusion of the car */
         .dom-label {
             position: absolute;
             z-index: 5;
@@ -222,7 +222,7 @@
             letter-spacing: 0.5px;
         }
 
-        /* Success & Level Explanation Modal Overlay */
+        /* Success & Level Explanation Modal Overlay - Styled with smooth CSS transitions */
         .completion-overlay {
             position: absolute;
             top: 0;
@@ -231,13 +231,22 @@
             height: 100%;
             background: rgba(10, 12, 18, 0.9);
             z-index: 20;
-            display: none;
+            display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
             box-sizing: border-box;
             backdrop-filter: blur(8px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease-in-out;
         }
+        
+        .completion-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
         .modal-card {
             background: #1e1e1e;
             border: 1px solid #4ade80;
@@ -247,7 +256,14 @@
             border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.8);
             text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+        
+        .completion-overlay.show .modal-card {
+            transform: scale(1);
+        }
+        
         .modal-title {
             color: #4ade80;
             font-size: 20px;
@@ -261,6 +277,13 @@
             margin-bottom: 20px;
             text-align: left;
         }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
         .modal-btn {
             background: #4ade80;
             border: none;
@@ -277,6 +300,14 @@
         }
         .modal-btn:active {
             transform: scale(0.97);
+        }
+        
+        .modal-btn-secondary {
+            background: #4b5563;
+            color: white;
+        }
+        .modal-btn-secondary:hover {
+            background: #374151;
         }
 
         /* Odometer Action Buttons (Undo and Clear) */
@@ -334,6 +365,33 @@
         #btn-reset:active {
             transform: scale(0.97);
         }
+
+        /* Celebratory Pulse Overlay Screen Message */
+        #celebration-banner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(74, 222, 128, 0.95);
+            border: 2px solid #ffffff;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 20px;
+            color: #111;
+            z-index: 15;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            pointer-events: none;
+            animation: pulse-zoom 0.5s infinite alternate ease-in-out;
+            backdrop-filter: blur(4px);
+        }
+
+        @keyframes pulse-zoom {
+            0% { transform: translate(-50%, -50%) scale(0.95); }
+            100% { transform: translate(-50%, -50%) scale(1.05); }
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TrackballControls.js"></script>
@@ -342,6 +400,9 @@
 
     <div id="canvas-container">
         <div id="labels-overlay" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 4;"></div>
+
+        <!-- Celebratory Screen Message banner -->
+        <div id="celebration-banner">⭐ ALIGNMENT MATCHED! ⭐</div>
 
         <div class="legend">
             <div class="legend-item">
@@ -369,7 +430,10 @@
             <div class="modal-card">
                 <div class="modal-title" id="modal-heading">Challenge Complete! 🎉</div>
                 <div class="modal-body" id="modal-content">Explanation text goes here.</div>
-                <button class="modal-btn" id="modal-next-btn">Next Challenge</button>
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-secondary" id="modal-retry-btn">Retry Challenge</button>
+                    <button class="modal-btn" id="modal-next-btn">Next Challenge</button>
+                </div>
             </div>
         </div>
 
@@ -398,10 +462,14 @@
                 <div class="knob-value" id="val1">0°</div>
             </div>
 
-            <!-- Central Control Divider (Odometer, Undo and Clear) -->
+            <!-- Central Control Divider (Odometer, Highscores, Undo and Clear) -->
             <div class="middle-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-width: 130px; border-left: 1px solid #333; border-right: 1px solid #333; padding: 0 15px; align-self: stretch;">
                 <div style="font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Odometer</div>
                 <div id="odom-value" style="font-size: 20px; font-weight: bold; color: #4ade80; font-family: monospace; margin-bottom: 2px;">0.0°</div>
+                <!-- Dynamic Highscore tracking label inside UI -->
+                <div style="font-size: 9px; font-weight: bold; color: #888; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">
+                    Best: <span id="highscore-value" style="color: #3b82f6; font-family: monospace;">-</span>
+                </div>
                 <button id="btn-undo" disabled>Undo ↩️</button>
                 <button id="btn-reset">Clear</button>
             </div>
@@ -521,7 +589,7 @@
         solarIndicatorRing.add(sCone);
         scene.add(solarIndicatorRing);
 
-        // --- The Car Rig ---
+        // --- The Car Rig (Starts back at Sunrise: 0, -SPHERE_RADIUS, 0) ---
         const carGroup = new THREE.Group();
         carGroup.position.set(0, -SPHERE_RADIUS, 0);
         planetGroup.add(carGroup);
@@ -604,7 +672,7 @@
         // --- TRACKABLE LANDMARK REGISTRY ---
         const trackedLandmarks = [];
 
-        function createShieldedLandmark(text, emoji, positionVector, dotColor, transformOverride) {
+        function createShieldedLandmark(text, emoji, positionVector, dotColor, transformOverride, targetOpacity) {
             const nodeDotGeo = new THREE.SphereGeometry(0.016, 16, 16);
             const nodeDotMat = new THREE.MeshBasicMaterial({ color: dotColor, depthTest: true });
             const nodeDot = new THREE.Mesh(nodeDotGeo, nodeDotMat);
@@ -621,24 +689,32 @@
 
             trackedLandmarks.push({
                 threeObject: nodeDot,
-                domElement: domDiv
+                domElement: domDiv,
+                targetOpacity: targetOpacity !== undefined ? targetOpacity : 0.85
             });
         }
 
+        // Sunrise label offset has been set slightly below (southwards of) Sunrise, keeping the standard distance
         const landmarkDefinitions = [
-            { id: "North Pole", emoji: "🐻❄️", pos: new THREE.Vector3(0, 0, LINE_RADIUS), color: 0x3b82f6, transform: "translate(-50%, -100%)" }, // Blue Polar
-            { id: "South Pole", emoji: "🐧", pos: new THREE.Vector3(0, 0, -LINE_RADIUS), color: 0x3b82f6, transform: "translate(-50%, 25%)" }, // Blue Polar
-            { id: "Noon", emoji: "☀️", pos: new THREE.Vector3(LINE_RADIUS, 0, 0), color: 0x4ade80, transform: "translate(15px, -50%)" }, 
-            { id: "Midnight", emoji: "🌙", pos: new THREE.Vector3(-LINE_RADIUS, 0, 0), color: 0x4ade80, transform: "translate(calc(-100% - 15px), -50%)" }, 
-            { id: "Sunrise", emoji: "🌅", pos: new THREE.Vector3(0, -LINE_RADIUS, 0), color: 0xeab308, transform: "translate(-105%, -100%)" },
-            { id: "Sunset", emoji: "🌇", pos: new THREE.Vector3(0, LINE_RADIUS, 0), color: 0xeab308, transform: "translate(5%, -100%)" }
+            { id: "North Pole", emoji: "🐻❄️", pos: new THREE.Vector3(0, 0, LINE_RADIUS), color: 0x3b82f6, transform: "translate(-50%, -100%)", opacity: 0.85 }, 
+            { id: "South Pole", emoji: "🐧", pos: new THREE.Vector3(0, 0, -LINE_RADIUS), color: 0x3b82f6, transform: "translate(-50%, 25%)", opacity: 0.85 }, 
+            { id: "Noon", emoji: "☀️", pos: new THREE.Vector3(LINE_RADIUS, 0, 0), color: 0x4ade80, transform: "translate(15px, -50%)", opacity: 0.85 }, 
+            { id: "Midnight", emoji: "🌙", pos: new THREE.Vector3(-LINE_RADIUS, 0, 0), color: 0x4ade80, transform: "translate(calc(-100% - 15px), -50%)", opacity: 0.85 }, 
+            { id: "Sunrise", emoji: "🌅", pos: new THREE.Vector3(0, -LINE_RADIUS, 0), color: 0xeab308, transform: "translate(-50%, 25%)", opacity: 0.65 }, // Shifted slightly below sunrise, standard distance
+            { id: "Sunset", emoji: "🌇", pos: new THREE.Vector3(0, LINE_RADIUS, 0), color: 0xeab308, transform: "translate(5%, -100%)", opacity: 0.85 }
         ];
 
-        landmarkDefinitions.forEach(m => createShieldedLandmark(m.id, m.emoji, m.pos, m.color, m.transform));
+        landmarkDefinitions.forEach(m => createShieldedLandmark(m.id, m.emoji, m.pos, m.color, m.transform, m.opacity));
 
-        // --- GAME LEVEL PARADIGM & SYSTEM STATE ---
+        // --- GAME LEVEL PARADIGM, HISTORY & SYSTEM STATE ---
         let currentLevel = 1;
         let isLevelCompleted = false;
+
+        // Persistent Highscore Storage
+        const highscores = {
+            1: null,
+            2: null
+        };
 
         const levelDefinitions = {
             1: {
@@ -657,14 +733,41 @@
             }
         };
 
+        // Resets the car position, orientation, and odometer completely
+        function resetCarAndOdometer() {
+            planetGroup.quaternion.set(0, 0, 0, 1);
+            
+            // Restore dials representation UI
+            document.getElementById('ind1').style.transform = "rotate(0deg)";
+            document.getElementById('val1').innerText = "0°";
+            document.getElementById('ind2').style.transform = "rotate(0deg)";
+            document.getElementById('val2').innerText = "0°";
+
+            // Reset Odometer
+            totalRotated = 0.0;
+            odomElement.innerText = "0.0°";
+
+            // Reset Undo Stack
+            rotationHistory.length = 0;
+            updateUndoButtonState();
+        }
+
         function configureLevel(lvlId) {
             isLevelCompleted = false;
-            document.getElementById('completion-modal').style.style = "none";
-            document.getElementById('completion-modal').style.display = "none";
+            
+            // Cleanly restore rotation and odometer state automatically on level loads
+            resetCarAndOdometer();
+
+            // Re-hide successful panel overlay using the CSS transition class
+            document.getElementById('completion-modal').classList.remove('show');
 
             const lvl = levelDefinitions[lvlId];
             document.getElementById('hud-level-title').innerText = lvl.title;
             document.getElementById('hud-level-desc').innerHTML = lvl.shortDesc;
+
+            // Update real-time highscore readout next to the odometer
+            const record = highscores[lvlId];
+            document.getElementById('highscore-value').innerText = record !== null ? record.toFixed(1) + '°' : '-';
 
             // Positioning Ghost Target (Pose B) on the world sphere
             ghostGroup.position.copy(lvl.targetPos);
@@ -687,16 +790,29 @@
             updateTelemetryData();
         }
 
-        // Proceed to next challenge action
+        // Proceed to next challenge action with transition handling
         document.getElementById('modal-next-btn').addEventListener('click', () => {
-            if (currentLevel < 2) {
-                currentLevel++;
+            const modal = document.getElementById('completion-modal');
+            modal.classList.remove('show');
+            
+            setTimeout(() => {
+                if (currentLevel < 2) {
+                    currentLevel++;
+                } else {
+                    currentLevel = 1;
+                }
                 configureLevel(currentLevel);
-            } else {
-                // Return to level 1 as a loop
-                currentLevel = 1;
-                configureLevel(currentLevel);
-            }
+            }, 500); // Wait for transition fade-out to complete
+        });
+
+        // Replay/Retry current challenge action
+        document.getElementById('modal-retry-btn').addEventListener('click', () => {
+            const modal = document.getElementById('completion-modal');
+            modal.classList.remove('show');
+
+            setTimeout(() => {
+                configureLevel(currentLevel); // Reloads active level, resetting pose & odometer
+            }, 500);
         });
 
         // --- RELATIVE ORIENTATION MOTORS & UNDO STACK ---
@@ -776,30 +892,9 @@
 
         // --- RESET / CLEAR CONTROLLER ACTION ---
         document.getElementById('btn-reset').addEventListener('click', () => {
-            // Restore planetGroup rotation
-            planetGroup.quaternion.set(0, 0, 0, 1);
-            
-            // Restore camera and controls view parameters
-            camera.up.set(0, 0, 1);
-            camera.position.set(1.9, -2.8, 1.0);
-            controls.target.set(0, 0, 0);
-
-            // Restore dials representation UI
-            document.getElementById('ind1').style.transform = "rotate(0deg)";
-            document.getElementById('val1').innerText = "0°";
-            document.getElementById('ind2').style.transform = "rotate(0deg)";
-            document.getElementById('val2').innerText = "0°";
-
-            // Reset Odometer
-            totalRotated = 0.0;
-            odomElement.innerText = "0.0°";
-
-            // Reset Undo Stack
-            rotationHistory.length = 0;
-            updateUndoButtonState();
-
+            resetCarAndOdometer();
             isLevelCompleted = false;
-            document.getElementById('completion-modal').style.display = "none";
+            document.getElementById('completion-modal').classList.remove('show');
         });
 
         // --- RELATIVE TOUCH CONTROLLER LOGIC ---
@@ -952,24 +1047,70 @@
                 // Threshold boundaries: within 0.05 length distance (~3 deg) and 3.5 degrees tilt
                 if (positionDistance < 0.05 && angleDiff < 3.5) {
                     isLevelCompleted = true;
-                    showLevelCompletedModal(currentLvl);
+                    triggerVictorySequence(currentLvl);
                 }
             }
         }
 
-        // Triggers the successful modal sequence
+        // Handles the intermediate celebration and 2-second timing transition
+        function triggerVictorySequence(lvl) {
+            const banner = document.getElementById('celebration-banner');
+            banner.style.display = 'block';
+
+            // Wait 2000 milliseconds for the celebratory processing window
+            setTimeout(() => {
+                banner.style.display = 'none';
+                showLevelCompletedModal(lvl);
+            }, 2000);
+        }
+
+        // Triggers the successful modal sequence with highscore tracking and slow fade transition
         function showLevelCompletedModal(lvl) {
+            const currentScore = totalRotated;
+            const previousRecord = highscores[currentLevel]; // Cache previous best before writing new highscore
+            let isNewRecord = false;
+
+            if (previousRecord === null || currentScore < previousRecord) {
+                highscores[currentLevel] = currentScore;
+                isNewRecord = true;
+            }
+
+            const bestScore = highscores[currentLevel];
+            const recordText = previousRecord !== null ? previousRecord.toFixed(1) + '°' : 'No record set yet';
+
+            // Formulate scoreboard stats panel HTML (Correcting Previous Best & Personal Best bug)
+            const scoreboardHtml = `
+                <div style="font-family: monospace; background: #252830; border: 1px solid #4ade80; padding: 12px; border-radius: 8px; margin: 16px 0; font-size: 13px; text-align: left; line-height: 1.5;">
+                    🛰️ <span style="color: #888;">ODOMETER SCORE:</span> <strong style="color: #4ade80; font-size: 14px;">${currentScore.toFixed(1)}°</strong><br>
+                    🏁 <span style="color: #888;">PREVIOUS BEST:</span> <strong style="color: #eab308; font-size: 14px;">${recordText}</strong><br>
+                    🏆 <span style="color: #888;">PERSONAL BEST:</span> <strong style="color: #3b82f6; font-size: 14px;">${bestScore.toFixed(1)}°</strong>
+                    ${(isNewRecord && previousRecord !== null) ? '<span style="color: #4ade80; font-weight: bold; margin-left: 6px; text-transform: uppercase; font-size: 10px; display: block; margin-top: 5px;">★ New Personal Best! ★</span>' : ''}
+                    ${(isNewRecord && previousRecord === null) ? '<span style="color: #4ade80; font-weight: bold; margin-left: 6px; text-transform: uppercase; font-size: 10px; display: block; margin-top: 5px;">★ First Record Set! ★</span>' : ''}
+                </div>
+            `;
+
+            // Replay optimization encourage text paragraph on completing all levels
+            let encourageHtml = "";
+            if (currentLevel === 2) {
+                encourageHtml = `
+                    <p style="margin-top: 15px; color: #eab308; font-weight: bold; font-style: italic; border-top: 1px dashed #444; padding-top: 12px; font-size: 12.5px;">
+                        💡 Optimization Challenge: You have completed all physical transport levels! Can you find a shorter route that reduces your odometer score even further? Replay Level 1 and try to minimize your path!
+                    </p>
+                `;
+            }
+
             document.getElementById('modal-heading').innerHTML = `🚗 PARKING SUCCESSFUL! <span style="font-size: 15px;">(${lvl.title})</span>`;
-            document.getElementById('modal-content').innerHTML = lvl.explanation;
+            document.getElementById('modal-content').innerHTML = lvl.explanation + scoreboardHtml + encourageHtml;
             
             const nextBtn = document.getElementById('modal-next-btn');
             if (currentLevel < 2) {
                 nextBtn.innerText = "Begin Challenge 2 🚀";
             } else {
-                nextBtn.innerText = "Loop back to Challenge 1 🔄";
+                nextBtn.innerText = "Replay Challenge 1 🔄";
             }
             
-            document.getElementById('completion-modal').style.display = "flex";
+            // Trigger overlay fade-in transition
+            document.getElementById('completion-modal').classList.add('show');
         }
 
         // --- HIGH-PERFORMANCE VECTOR MATRIX PROJECTION LOOP ---
@@ -994,7 +1135,7 @@
 
                 item.domElement.style.left = posX + 'px';
                 item.domElement.style.top = (posY - 6) + 'px';
-                item.domElement.style.opacity = 1;
+                item.domElement.style.opacity = item.targetOpacity; // Applies customized transparency seamlessly
             }
         }
 
