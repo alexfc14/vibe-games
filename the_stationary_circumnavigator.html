@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The Stationary Circumnavigator - Shielded Edition</title>
+    <style>
+        body { margin: 0; padding: 10px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #121212; color: #fff; display: flex; flex-direction: column; align-items: center; }
+
+        #canvas-container {
+            width: 100%;
+            max-width: 800px;
+            height: 440px;
+            background: linear-gradient(180deg, #050b14 0%, #0d1b2a 40%, #1b263b 85%, #415a77 100%);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        /* Floating Screen-Space DOM Labels */
+        .dom-label {
+            position: absolute;
+            z-index: 5;
+            transform: translate(-50%, -100%);
+            background: rgba(15, 20, 30, 1.0);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: bold;
+            color: #ffffff;
+            pointer-events: none;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+            transition: opacity 0.1s;
+            opacity: 0;
+        }
+
+        .controls {
+            width: 100%;
+            max-width: 800px;
+            margin-top: 15px;
+            background: #1e1e1e;
+            padding: 15px 10px;
+            border-radius: 8px;
+            box-sizing: border-box;
+            border: 1px solid #2d2d2d;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .knobs-container {
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .knob-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .knob-label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #bbb;
+            margin-bottom: 8px;
+            text-align: center;
+            height: 20px;
+            line-height: 1.3;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .knob-dial {
+            position: relative;
+            width: 85px;
+            height: 85px;
+            background: radial-gradient(circle, #333 0%, #222 70%);
+            border-radius: 50%;
+            border: 3px solid #3b82f6;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5), 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            cursor: pointer;
+        }
+
+        .knob-indicator {
+            position: absolute;
+            width: 4px;
+            height: 28px;
+            background: #ef4444;
+            top: 10px;
+            border-radius: 2px;
+            transform-origin: bottom center;
+            transform: rotate(0deg);
+            pointer-events: none;
+        }
+
+        .knob-cap {
+            width: 20px;
+            height: 20px;
+            background: #1a1a1a;
+            border-radius: 50%;
+            border: 2px solid #3b82f6;
+            pointer-events: none;
+        }
+
+        .knob-value {
+            margin-top: 6px;
+            font-size: 13px;
+            font-variant-numeric: tabular-nums;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .manual-input-box {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .manual-input-box input {
+            width: 48px;
+            background: #111;
+            border: 1px solid #444;
+            color: #3b82f6;
+            border-radius: 4px;
+            padding: 5px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .manual-input-box button {
+            background: #3b82f6;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .manual-input-box button:active {
+            background: #2563eb;
+        }
+
+        .legend { position: absolute; top: 10px; left: 10px; background: rgba(15, 20, 30, 1.0); padding: 8px; border-radius: 6px; font-size: 10px; pointer-events: none; border: 1px solid #444; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10; }
+        .legend-item { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+        .legend-color { width: 10px; height: 10px; border-radius: 2px; }
+
+        .telemetry-panel {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(15, 20, 30, 1.0);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-family: monospace;
+            pointer-events: none;
+            border: 1px solid #444;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 10;
+            color: #4ade80;
+            line-height: 1.4;
+        }
+
+        /* Styled Reset Button */
+        #btn-reset {
+            background: #dc2626;
+            border: none;
+            color: white;
+            padding: 8px 24px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        #btn-reset:hover {
+            background: #b91c1c;
+        }
+
+        #btn-reset:active {
+            transform: scale(0.97);
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TrackballControls.js"></script>
+</head>
+<body>
+
+    <div id="canvas-container">
+        <div id="labels-overlay" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 4;"></div>
+
+        <div class="legend">
+            <div class="legend-item"><div class="legend-color" style="background: #ef4444;"></div> <strong>🔴 Car Position</strong></div>
+            <div class="legend-item"><div class="legend-color" style="background: #f97316;"></div> <strong>🚀 Car Heading</strong></div>
+            <div class="legend-item"><hr style="border:none; border-top:2px solid #eab308; width:10px; margin:0;"> <strong>— Sunrise/Sunset Ring</strong></div>
+            <div class="legend-item"><hr style="border:none; border-top:2px solid #4ade80; width:10px; margin:0;"> <strong>— Noon/Midnight Ring</strong></div>
+            <div class="legend-item"><hr style="border:none; border-top:2px solid #3b82f6; width:10px; margin:0;"> <strong>— Equator Ring</strong></div>
+            <div class="legend-item"><hr style="border:none; border-top:1px dashed #ffffff; width:10px; margin:0;"> <strong>-- 45° Parallels</strong></div>
+        </div>
+
+        <div class="telemetry-panel">
+            <strong>🛰️ CAR POSE</strong><br>
+            Lat: <span id="telemetry-lat">0.0° N</span><br>
+            Lon: <span id="telemetry-lon">0.0° E</span><br>
+            Tilt: <span id="telemetry-hdg">0.0°</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="knobs-container">
+            <div class="knob-panel">
+                <div class="knob-label">Polar Rotation</div>
+                <div class="manual-input-box">
+                    <button id="btn1-left">⬅️</button>
+                    <input type="number" id="num1" value="15" step="5">
+                    <button id="btn1-right">➡️</button>
+                </div>
+                <div class="knob-dial" id="dial1">
+                    <div class="knob-indicator" id="ind1"></div>
+                    <div class="knob-cap"></div>
+                </div>
+                <div class="knob-value" id="val1">0°</div>
+            </div>
+
+            <div class="knob-panel">
+                <div class="knob-label">Solar Rotation</div>
+                <div class="manual-input-box">
+                    <button id="btn2-left">⬅️</button>
+                    <input type="number" id="num2" value="15" step="5">
+                    <button id="btn2-right">➡️</button>
+                </div>
+                <div class="knob-dial" id="dial2">
+                    <div class="knob-indicator" id="ind2"></div>
+                    <div class="knob-cap"></div>
+                </div>
+                <div class="knob-value" id="val2">0°</div>
+            </div>
+        </div>
+
+        <!-- Centered Reset UI Controller -->
+        <div style="width: 100%; display: flex; justify-content: center; border-top: 1px solid #333; padding-top: 10px;">
+            <button id="btn-reset">Reset Simulation 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('canvas-container');
+        const labelsOverlay = document.getElementById('labels-overlay');
+        const scene = new THREE.Scene();
+
+        const width = container.clientWidth || 800;
+        const height = container.clientHeight || 440;
+
+        const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 50);
+        
+        // Lock Z-axis vertically in the view and set camera to match reference orientation (with adjusted zoom out)
+        camera.up.set(0, 0, 1); 
+        camera.position.set(1.9, -2.8, 1.0); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.TrackballControls(camera, renderer.domElement);
+        controls.rotateSpeed = 1.2;
+        controls.zoomSpeed = 1.0;
+        controls.panSpeed = 0.6;
+        controls.staticMoving = false;
+        controls.dynamicDampingFactor = 0.28;
+
+        scene.add(new THREE.AmbientLight(0x777777));
+        const solarStream = new THREE.DirectionalLight(0xffffff, 1.4);
+        solarStream.position.set(8, 0, 0);
+        scene.add(solarStream);
+
+        // --- Core Rotating Group (ONLY contains physical moving items like the car) ---
+        const planetGroup = new THREE.Group();
+        scene.add(planetGroup);
+
+        const SPHERE_RADIUS = 1.0;
+        
+        // --- STATIONARY ANCHORED PLANET SPHERE MESH (Anchored permanently to the poles in the main scene) ---
+        const sphereGeo = new THREE.SphereGeometry(SPHERE_RADIUS, 40, 32);
+        const sphereMat = new THREE.MeshStandardMaterial({
+            color: 0x5dade2,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.28, 
+            depthWrite: true
+        });
+        const unitPlanet = new THREE.Mesh(sphereGeo, sphereMat);
+        unitPlanet.renderOrder = 1;
+        scene.add(unitPlanet); 
+
+        const backShellMat = new THREE.MeshBasicMaterial({
+            color: 0x0a1424,
+            transparent: true,
+            opacity: 0.4,
+            side: THREE.BackSide
+        });
+        const backShell = new THREE.Mesh(sphereGeo, backShellMat);
+        scene.add(backShell); 
+
+        // --- FIXED STATIONARY ROTATION AXES ---
+        const axisMaterialPolar = new THREE.MeshBasicMaterial({ color: 0x3b82f6 });
+        const axisMaterialSolar = new THREE.MeshBasicMaterial({ color: 0xeab308 });
+
+        // 1. Polar Axis (World Z)
+        const polarAxisPole = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 2.6, 8), axisMaterialPolar);
+        polarAxisPole.rotation.x = Math.PI / 2;
+        scene.add(polarAxisPole);
+
+        const polarIndicatorRing = new THREE.Group();
+        polarIndicatorRing.position.set(0, 0, 1.25);
+        const pRingGeo = new THREE.TorusGeometry(0.08, 0.005, 4, 32, Math.PI * 1.7);
+        const pRing = new THREE.Mesh(pRingGeo, axisMaterialPolar);
+        polarIndicatorRing.add(pRing);
+        const pCone = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.04, 8), axisMaterialPolar);
+        pCone.position.set(0.08, 0, 0);
+        pCone.rotation.z = -Math.PI / 6;
+        polarIndicatorRing.add(pCone);
+        scene.add(polarIndicatorRing);
+
+        // 2. Solar Axis (World X)
+        const solarAxisPole = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 2.6, 8), axisMaterialSolar);
+        solarAxisPole.rotation.z = Math.PI / 2;
+        scene.add(solarAxisPole);
+
+        const solarIndicatorRing = new THREE.Group();
+        solarIndicatorRing.position.set(1.25, 0, 0);
+        solarIndicatorRing.rotation.y = Math.PI / 2;
+        const sRingGeo = new THREE.TorusGeometry(0.08, 0.005, 4, 32, Math.PI * 1.7);
+        const sRing = new THREE.Mesh(sRingGeo, axisMaterialSolar);
+        solarIndicatorRing.add(sRing);
+        const sCone = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.04, 8), axisMaterialSolar);
+        sCone.position.set(0.08, 0, 0);
+        sCone.rotation.z = -Math.PI / 6;
+        solarIndicatorRing.add(sCone);
+        scene.add(solarIndicatorRing);
+
+        // --- The Car Rig ---
+        const carGroup = new THREE.Group();
+        carGroup.position.set(0, -SPHERE_RADIUS, 0);
+        planetGroup.add(carGroup);
+
+        const chassisDot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 16), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+        carGroup.add(chassisDot);
+
+        const arrowDirection = new THREE.Vector3(1, 0, 0);
+        const arrowMagnitude = 0.38;
+        const headingArrow = new THREE.ArrowHelper(arrowDirection, new THREE.Vector3(0,0,0), arrowMagnitude, 0xf97316, 0.1, 0.07);
+        carGroup.add(headingArrow);
+
+        // --- CALIBRATED FLUSH REFERENCE LINES ---
+        const LINE_RADIUS = SPHERE_RADIUS * 0.998;
+        const lineSharedMat = { transparent: true, depthTest: true, depthWrite: false };
+
+        // Equator ring (Z-normal, lies on XY flat plane) is colored Blue (0x3b82f6)
+        const equatorGeo = new THREE.TorusGeometry(LINE_RADIUS, 0.005, 6, 64);
+        const equatorMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, opacity: 0.7, ...lineSharedMat });
+        const equatorRing = new THREE.Mesh(equatorGeo, equatorMat);
+        equatorRing.rotation.set(0, 0, 0); 
+        equatorRing.renderOrder = 2;
+        scene.add(equatorRing);
+
+        // Noon-Midnight Meridian Ring (Y-normal, lies on XZ vertical plane) is colored Green (0x4ade80)
+        const noonMidnightGeo = new THREE.TorusGeometry(LINE_RADIUS, 0.004, 6, 64);
+        const noonMidnightMat = new THREE.MeshBasicMaterial({ color: 0x4ade80, opacity: 0.6, ...lineSharedMat });
+        const noonMidnightRing = new THREE.Mesh(noonMidnightGeo, noonMidnightMat);
+        noonMidnightRing.rotation.x = Math.PI / 2; 
+        noonMidnightRing.renderOrder = 2;
+        scene.add(noonMidnightRing);
+
+        // Sunrise-Sunset Meridian Ring (X-normal, lies on YZ vertical plane) is colored Yellow (0xeab308)
+        const sunriseSunsetGeo = new THREE.TorusGeometry(LINE_RADIUS, 0.004, 6, 64);
+        const sunriseSunsetMat = new THREE.MeshBasicMaterial({ color: 0xeab308, opacity: 0.6, ...lineSharedMat });
+        const sunriseSunsetRing = new THREE.Mesh(sunriseSunsetGeo, sunriseSunsetMat);
+        sunriseSunsetRing.rotation.y = Math.PI / 2; 
+        sunriseSunsetRing.renderOrder = 2;
+        scene.add(sunriseSunsetRing);
+
+        const radius45 = LINE_RADIUS * Math.cos(Math.PI / 4);
+        const height45 = LINE_RADIUS * Math.sin(Math.PI / 4);
+        const parallelGeo = new THREE.TorusGeometry(radius45, 0.003, 6, 64);
+        const parallelMat = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.45, ...lineSharedMat });
+
+        const north45 = new THREE.Mesh(parallelGeo, parallelMat);
+        north45.position.z = height45;
+        north45.renderOrder = 2;
+        scene.add(north45);
+
+        const south45 = new THREE.Mesh(parallelGeo, parallelMat);
+        south45.position.z = -height45;
+        south45.renderOrder = 2;
+        scene.add(south45);
+
+        // --- TRACKABLE LANDMARK REGISTRY ---
+        const trackedLandmarks = [];
+
+        function createShieldedLandmark(text, emoji, positionVector, dotColor, transformOverride) {
+            const nodeDotGeo = new THREE.SphereGeometry(0.016, 16, 16);
+            const nodeDotMat = new THREE.MeshBasicMaterial({ color: dotColor, depthTest: true });
+            const nodeDot = new THREE.Mesh(nodeDotGeo, nodeDotMat);
+            nodeDot.position.copy(positionVector);
+            scene.add(nodeDot);
+
+            const domDiv = document.createElement('div');
+            domDiv.className = 'dom-label';
+            domDiv.innerHTML = `<span>${emoji}</span><span>${text}</span>`;
+            if (transformOverride) {
+                domDiv.style.transform = transformOverride;
+            }
+            labelsOverlay.appendChild(domDiv);
+
+            trackedLandmarks.push({
+                threeObject: nodeDot,
+                domElement: domDiv
+            });
+        }
+
+        const landmarkDefinitions = [
+            { id: "North Pole", emoji: "🐻❄️", pos: new THREE.Vector3(0, 0, LINE_RADIUS), color: 0x3b82f6, transform: "translate(-50%, -100%)" },
+            { id: "South Pole", emoji: "🐧", pos: new THREE.Vector3(0, 0, -LINE_RADIUS), color: 0x3b82f6, transform: "translate(-50%, 25%)" }, // sit below
+            { id: "Noon", emoji: "☀️", pos: new THREE.Vector3(LINE_RADIUS, 0, 0), color: 0x4ade80, transform: "translate(15px, -50%)" }, // sit right
+            { id: "Midnight", emoji: "🌙", pos: new THREE.Vector3(-LINE_RADIUS, 0, 0), color: 0x4ade80, transform: "translate(calc(-100% - 15px), -50%)" }, // sit left
+            { id: "Sunrise", emoji: "🌅", pos: new THREE.Vector3(0, -LINE_RADIUS, 0), color: 0xeab308, transform: "translate(-105%, -100%)" },
+            { id: "Sunset", emoji: "🌇", pos: new THREE.Vector3(0, LINE_RADIUS, 0), color: 0xeab308, transform: "translate(5%, -100%)" }
+        ];
+
+        landmarkDefinitions.forEach(m => createShieldedLandmark(m.id, m.emoji, m.pos, m.color, m.transform));
+
+        // --- RELATIVE ORIENTATION MOTORS ---
+        const GLOBAL_AXIS_Z = new THREE.Vector3(0, 0, 1);
+        // Solar rotation operates counterclockwise looking from the sun when positive
+        const GLOBAL_AXIS_X_COUNTERCLOCKWISE = new THREE.Vector3(1, 0, 0);
+
+        function applyDirectStepRotation(angleDegrees, rotationAxis) {
+            const rads = THREE.MathUtils.degToRad(angleDegrees);
+            const stepQ = new THREE.Quaternion().setFromAxisAngle(rotationAxis, rads);
+            planetGroup.quaternion.premultiply(stepQ);
+        }
+
+        document.getElementById('btn1-left').addEventListener('click', () => {
+            const val = parseFloat(document.getElementById('num1').value) || 0;
+            applyDirectStepRotation(-val, GLOBAL_AXIS_Z);
+        });
+        document.getElementById('btn1-right').addEventListener('click', () => {
+            const val = parseFloat(document.getElementById('num1').value) || 0;
+            applyDirectStepRotation(val, GLOBAL_AXIS_Z);
+        });
+
+        document.getElementById('btn2-left').addEventListener('click', () => {
+            const val = parseFloat(document.getElementById('num2').value) || 0;
+            applyDirectStepRotation(-val, GLOBAL_AXIS_X_COUNTERCLOCKWISE);
+        });
+        document.getElementById('btn2-right').addEventListener('click', () => {
+            const val = parseFloat(document.getElementById('num2').value) || 0;
+            applyDirectStepRotation(val, GLOBAL_AXIS_X_COUNTERCLOCKWISE);
+        });
+
+        // --- RESET CONTROLLER ACTION ---
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            // Restore planetGroup rotation
+            planetGroup.quaternion.set(0, 0, 0, 1);
+            
+            // Restore camera and controls view parameters
+            camera.up.set(0, 0, 1);
+            camera.position.set(1.9, -2.8, 1.0);
+            controls.target.set(0, 0, 0);
+
+            // Restore dials representation UI
+            document.getElementById('ind1').style.transform = "rotate(0deg)";
+            document.getElementById('val1').innerText = "0°";
+            document.getElementById('ind2').style.transform = "rotate(0deg)";
+            document.getElementById('val2').innerText = "0°";
+        });
+
+        // --- RELATIVE TOUCH CONTROLLER LOGIC ---
+        function setupRelativeRotaryDial(dialId, indicatorId, valueId, targetGlobalAxis) {
+            const dial = document.getElementById(dialId);
+            const indicator = document.getElementById(indicatorId);
+            const display = document.getElementById(valueId);
+
+            let active = false;
+            let centerPoint = { x: 0, y: 0 };
+            let initialGestureAngle = 0;
+            let currentAccumulatedDelta = 0;
+
+            function calculateInteractionAngle(clientX, clientY) {
+                const dy = clientY - centerPoint.y;
+                const dx = clientX - centerPoint.x;
+                return Math.atan2(dy, dx) * (180 / Math.PI);
+            }
+
+            function interactionStart(clientX, clientY) {
+                active = true;
+                const rect = dial.getBoundingClientRect();
+                centerPoint = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+                initialGestureAngle = calculateInteractionAngle(clientX, clientY);
+                currentAccumulatedDelta = 0;
+                display.style.color = "#3b82f6";
+            }
+
+            function interactionMove(clientX, clientY) {
+                if (!active) return;
+                const currentAngle = calculateInteractionAngle(clientX, clientY);
+                let rawDelta = currentAngle - initialGestureAngle;
+
+                if (rawDelta > 180) rawDelta -= 360;
+                if (rawDelta < -180) rawDelta += 360;
+
+                const frameIncrementStep = rawDelta - currentAccumulatedDelta;
+                currentAccumulatedDelta = rawDelta;
+
+                const displayAngle = Math.round(rawDelta);
+                indicator.style.transform = `rotate(${displayAngle}deg)`;
+                display.innerText = (displayAngle > 0 ? '+' : '') + displayAngle + '°';
+
+                applyDirectStepRotation(frameIncrementStep, targetGlobalAxis);
+            }
+
+            function interactionEnd() {
+                if (!active) return;
+                active = false;
+                indicator.style.transform = "rotate(0deg)";
+                display.innerText = "0°";
+                display.style.color = "#666";
+            }
+
+            dial.addEventListener('mousedown', (e) => { e.preventDefault(); interactionStart(e.clientX, e.clientY); });
+            window.addEventListener('mousemove', (e) => interactionMove(e.clientX, e.clientY));
+            window.addEventListener('mouseup', interactionEnd);
+
+            dial.addEventListener('touchstart', (e) => { e.preventDefault(); interactionStart(e.touches[0].clientX, e.touches[0].clientY); });
+            window.addEventListener('touchmove', (e) => { if (active) interactionMove(e.touches[0].clientX, e.touches[0].clientY); });
+            window.addEventListener('touchend', interactionEnd);
+        }
+
+        setupRelativeRotaryDial('dial1', 'ind1', 'val1', GLOBAL_AXIS_Z);
+        setupRelativeRotaryDial('dial2', 'ind2', 'val2', GLOBAL_AXIS_X_COUNTERCLOCKWISE);
+
+        // --- TELEMETRY READOUT UPDATES ---
+        const telemetryLat = document.getElementById('telemetry-lat');
+        const telemetryLon = document.getElementById('telemetry-lon');
+        const telemetryHdg = document.getElementById('telemetry-hdg');
+
+        const carWorldPos = new THREE.Vector3();
+        const carWorldQuat = new THREE.Quaternion();
+        const globalNorth = new THREE.Vector3(0, 0, 1);
+
+        function updateTelemetryData() {
+            chassisDot.getWorldPosition(carWorldPos);
+            carWorldPos.normalize();
+
+            // Latitude is formatted to positive magnitudes labeled N or S
+            const lat = Math.asin(carWorldPos.z) * THREE.MathUtils.RAD2DEG;
+            const absLat = Math.abs(lat).toFixed(1);
+            const latDirection = lat >= 0 ? "N" : "S";
+
+            // Longitude is converted into [-180, 180] range where positive values indicate East and negative indicate West
+            let lon = (Math.atan2(carWorldPos.y, carWorldPos.x) * THREE.MathUtils.RAD2DEG) + 90;
+            while (lon > 180) lon -= 360;
+            while (lon <= -180) lon += 360;
+            const absLon = Math.abs(lon).toFixed(1);
+            // Calibrated: going to the right of Sunrise (positive delta) is East, going left is West
+            const lonDirection = lon >= 0 ? "E" : "W";
+
+            carGroup.getWorldQuaternion(carWorldQuat);
+            const arrowWorldDir = new THREE.Vector3(1, 0, 0).applyQuaternion(carWorldQuat).normalize();
+
+            const localUp = carWorldPos.clone();
+            const localEast = new THREE.Vector3();
+            const localNorth = new THREE.Vector3();
+
+            if (Math.abs(localUp.z) > 0.9999) {
+                localEast.set(1, 0, 0);
+                localNorth.set(0, localUp.z > 0 ? -1 : 1, 0);
+            } else {
+                localEast.crossVectors(globalNorth, localUp).normalize();
+                localNorth.crossVectors(localUp, localEast).normalize();
+            }
+
+            const projEast = arrowWorldDir.dot(localEast);
+            const projNorth = arrowWorldDir.dot(localNorth);
+
+            // Compute local Tilt: pointing directly locally East (right) results in 0°
+            let tiltAngle = Math.atan2(projNorth, projEast) * THREE.MathUtils.RAD2DEG;
+            while (tiltAngle > 180) tiltAngle -= 360;
+            while (tiltAngle <= -180) tiltAngle += 360;
+
+            telemetryLat.innerText = `${absLat}° ${latDirection}`;
+            telemetryLon.innerText = `${absLon}° ${lonDirection}`;
+            telemetryHdg.innerText = `${tiltAngle.toFixed(1)}°`;
+        }
+
+        // --- HIGH-PERFORMANCE VECTOR MATRIX PROJECTION LOOP ---
+        const projectionVector = new THREE.Vector3();
+
+        function updateScreenSpaceLabels() {
+            const wHalf = container.clientWidth / 2;
+            const hHalf = container.clientHeight / 2;
+
+            for (let i = 0; i < trackedLandmarks.length; i++) {
+                const item = trackedLandmarks[i];
+                item.threeObject.getWorldPosition(projectionVector);
+                projectionVector.project(camera);
+
+                if(projectionVector.z > 1) {
+                    item.domElement.style.opacity = 0;
+                    continue;
+                }
+
+                const posX = (projectionVector.x * wHalf) + wHalf;
+                const posY = -(projectionVector.y * hHalf) + hHalf;
+
+                item.domElement.style.left = posX + 'px';
+                item.domElement.style.top = (posY - 6) + 'px';
+                item.domElement.style.opacity = 1;
+            }
+        }
+
+        function frameExecution() {
+            requestAnimationFrame(frameExecution);
+            controls.update();
+            updateScreenSpaceLabels();
+            updateTelemetryData();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+            controls.handleResize();
+        });
+
+        frameExecution();
+    </script>
+</body>
+</html>
