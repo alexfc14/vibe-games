@@ -277,7 +277,7 @@
 
         const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 50);
         
-        // Lock Z-axis vertically in the view and set camera to match reference orientation (with adjusted zoom out)
+        // Lock Z-axis vertically in the view and set camera to match reference orientation
         camera.up.set(0, 0, 1); 
         camera.position.set(1.9, -2.8, 1.0); 
 
@@ -298,14 +298,16 @@
         solarStream.position.set(8, 0, 0);
         scene.add(solarStream);
 
-        // --- Core Rotating Group (ONLY contains physical moving items like the car) ---
+        // --- Core Rotating Group (ONLY contains moving items like the car) ---
         const planetGroup = new THREE.Group();
         scene.add(planetGroup);
 
         const SPHERE_RADIUS = 1.0;
         
-        // --- STATIONARY ANCHORED PLANET SPHERE MESH (Anchored permanently to the poles in the main scene) ---
+        // --- STATIONARY ANCHORED PLANET SPHERE MESH (Converges perfectly at Z-poles, stationary in scene) ---
         const sphereGeo = new THREE.SphereGeometry(SPHERE_RADIUS, 40, 32);
+        sphereGeo.rotateX(Math.PI / 2); // Rotates poles from Y-axis to Z-axis (matching North & South Poles)
+        
         const sphereMat = new THREE.MeshStandardMaterial({
             color: 0x5dade2,
             wireframe: true,
@@ -363,7 +365,7 @@
         solarIndicatorRing.add(sCone);
         scene.add(solarIndicatorRing);
 
-        // --- The Car Rig ---
+        // --- The Car Rig (Starts back at Sunrise: 0, -SPHERE_RADIUS, 0) ---
         const carGroup = new THREE.Group();
         carGroup.position.set(0, -SPHERE_RADIUS, 0);
         planetGroup.add(carGroup);
@@ -456,8 +458,7 @@
 
         // --- RELATIVE ORIENTATION MOTORS ---
         const GLOBAL_AXIS_Z = new THREE.Vector3(0, 0, 1);
-        // Solar rotation operates counterclockwise looking from the sun when positive
-        const GLOBAL_AXIS_X_COUNTERCLOCKWISE = new THREE.Vector3(1, 0, 0);
+        const GLOBAL_AXIS_X_CLOCKWISE = new THREE.Vector3(1, 0, 0);
 
         function applyDirectStepRotation(angleDegrees, rotationAxis) {
             const rads = THREE.MathUtils.degToRad(angleDegrees);
@@ -476,11 +477,11 @@
 
         document.getElementById('btn2-left').addEventListener('click', () => {
             const val = parseFloat(document.getElementById('num2').value) || 0;
-            applyDirectStepRotation(-val, GLOBAL_AXIS_X_COUNTERCLOCKWISE);
+            applyDirectStepRotation(-val, GLOBAL_AXIS_X_CLOCKWISE);
         });
         document.getElementById('btn2-right').addEventListener('click', () => {
             const val = parseFloat(document.getElementById('num2').value) || 0;
-            applyDirectStepRotation(val, GLOBAL_AXIS_X_COUNTERCLOCKWISE);
+            applyDirectStepRotation(val, GLOBAL_AXIS_X_CLOCKWISE);
         });
 
         // --- RESET CONTROLLER ACTION ---
@@ -517,6 +518,7 @@
                 return Math.atan2(dy, dx) * (180 / Math.PI);
             }
 
+            // Bind relative gestures dynamically
             function interactionStart(clientX, clientY) {
                 active = true;
                 const rect = dial.getBoundingClientRect();
@@ -562,7 +564,7 @@
         }
 
         setupRelativeRotaryDial('dial1', 'ind1', 'val1', GLOBAL_AXIS_Z);
-        setupRelativeRotaryDial('dial2', 'ind2', 'val2', GLOBAL_AXIS_X_COUNTERCLOCKWISE);
+        setupRelativeRotaryDial('dial2', 'ind2', 'val2', GLOBAL_AXIS_X_CLOCKWISE);
 
         // --- TELEMETRY READOUT UPDATES ---
         const telemetryLat = document.getElementById('telemetry-lat');
@@ -577,17 +579,16 @@
             chassisDot.getWorldPosition(carWorldPos);
             carWorldPos.normalize();
 
-            // Latitude is formatted to positive magnitudes labeled N or S
+            // Latitude: formatted to positive magnitudes labeled N or S
             const lat = Math.asin(carWorldPos.z) * THREE.MathUtils.RAD2DEG;
             const absLat = Math.abs(lat).toFixed(1);
             const latDirection = lat >= 0 ? "N" : "S";
 
-            // Longitude is converted into [-180, 180] range where positive values indicate East and negative indicate West
+            // Longitude: mapped to positive East (E) to the right of Sunrise, West (W) to the left
             let lon = (Math.atan2(carWorldPos.y, carWorldPos.x) * THREE.MathUtils.RAD2DEG) + 90;
             while (lon > 180) lon -= 360;
             while (lon <= -180) lon += 360;
             const absLon = Math.abs(lon).toFixed(1);
-            // Calibrated: going to the right of Sunrise (positive delta) is East, going left is West
             const lonDirection = lon >= 0 ? "E" : "W";
 
             carGroup.getWorldQuaternion(carWorldQuat);
@@ -608,7 +609,7 @@
             const projEast = arrowWorldDir.dot(localEast);
             const projNorth = arrowWorldDir.dot(localNorth);
 
-            // Compute local Tilt: pointing directly locally East (right) results in 0°
+            // Compute local Tilt relative to local East (right) as 0°
             let tiltAngle = Math.atan2(projNorth, projEast) * THREE.MathUtils.RAD2DEG;
             while (tiltAngle > 180) tiltAngle -= 360;
             while (tiltAngle <= -180) tiltAngle += 360;
