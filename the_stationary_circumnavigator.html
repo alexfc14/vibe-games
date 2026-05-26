@@ -664,6 +664,49 @@
         ghostArrow.cone.material.opacity = 0.35;
         ghostGroup.add(ghostArrow);
 
+        // --- PATHFINDER TRACE (Leaves a thick gray trace matching the axis lines in all levels) ---
+        let traceCurvePoints = [];
+        let traceMesh = null;
+        const traceMaterial = new THREE.MeshBasicMaterial({ color: 0x7f8f9f, transparent: true, opacity: 0.55 });
+
+        function clearTrace() {
+            traceCurvePoints = [];
+            if (traceMesh) {
+                scene.remove(traceMesh);
+                traceMesh.geometry.dispose();
+                traceMesh = null;
+            }
+        }
+
+        function appendTracePoint(point) {
+            if (traceCurvePoints.length > 0) {
+                const last = traceCurvePoints[traceCurvePoints.length - 1];
+                if (last.distanceTo(point) < 0.012) return; // Prevent duplicate micro-redundancy
+            }
+            traceCurvePoints.push(point.clone());
+
+            // Limit points to maintain steady high-performance WebGL rendering
+            if (traceCurvePoints.length > 1000) {
+                traceCurvePoints.shift();
+            }
+
+            if (traceCurvePoints.length >= 2) {
+                const curve = new THREE.CatmullRomCurve3(traceCurvePoints);
+                // Thick 0.008 radius matches the axis cylinder thicknesses perfectly
+                const newGeo = new THREE.TubeGeometry(curve, traceCurvePoints.length * 2, 0.008, 6, false);
+                
+                if (traceMesh) {
+                    scene.remove(traceMesh);
+                    traceMesh.geometry.dispose();
+                    traceMesh.geometry = newGeo;
+                    scene.add(traceMesh);
+                } else {
+                    traceMesh = new THREE.Mesh(newGeo, traceMaterial);
+                    scene.add(traceMesh);
+                }
+            }
+        }
+
         // --- CALIBRATED FLUSH REFERENCE LINES ---
         const lineSharedMat = { transparent: true, depthTest: true, depthWrite: false };
 
@@ -742,18 +785,48 @@
 
         landmarkDefinitions.forEach(m => createShieldedLandmark(m.id, m.emoji, m.pos, m.color, m.transform, m.opacity));
 
+        // --- DYNAMIC GEOMETRY CONVERSION HELPERS ---
+        function getPoseVector(latDeg, lonDeg) {
+            const lat = latDeg * Math.PI / 180;
+            const lon = lonDeg * Math.PI / 180;
+            const x = Math.cos(lat) * Math.sin(lon);
+            const y = -Math.cos(lat) * Math.cos(lon);
+            const z = Math.sin(lat);
+            return new THREE.Vector3(x, y, z).multiplyScalar(SPHERE_RADIUS);
+        }
+
+        // Sets planetGroup orientation mathematically to match exact starting pose and zero tilt
+        function setPlanetOrientation(latDeg, lonDeg) {
+            const lat = latDeg * Math.PI / 180;
+            const lon = lonDeg * Math.PI / 180;
+
+            const cosLat = Math.cos(lat);
+            const sinLat = Math.sin(lat);
+            const cosLon = Math.cos(lon);
+            const sinLon = Math.sin(lon);
+
+            const m = new THREE.Matrix4();
+            m.set(
+                cosLon, -cosLat * sinLon, -sinLat * sinLon, 0,
+                sinLon,  cosLat * cosLon,  sinLat * cosLon, 0,
+                0,      -sinLat,           cosLat,          0,
+                0,       0,                0,              1
+            );
+            planetGroup.quaternion.setFromRotationMatrix(m);
+        }
+
         // --- GAME LEVEL PARADIGM, HISTORY & SYSTEM STATE ---
         let currentLevel = 1;
-        let maxLevelUnlocked = 1;
+        let maxLevelUnlocked = 8; // Enabled full skipping of all levels instantly for rapid debugging
         let isLevelCompleted = false;
 
-        // Persistent Highscore Storage
+        // Multipath Challenge Trackers
+        const completedPathsMap = {};
+        const activeCornerMarkers = [];
+
+        // Persistent Highscore Storage (Levels 1 to 8)
         const highscores = {
-            1: null,
-            2: null,
-            3: null,
-            4: null,
-            5: null // Level 4 (Index 5)
+            1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7: null, 8: null
         };
 
         const levelDefinitions = {
@@ -762,51 +835,97 @@
                 shortDesc: "Goal: Reach Sunrise pointing West (180°).<br><br><strong>Instructions:</strong><br>1. Rotate by +180° around the Z-axis (Polar Rotation ➡️) to reach Sunset.<br>2. Roll by +180° around the X-axis (Solar Rotation ➡️) to return to Sunrise.",
                 explanation: "As you can see, the car's orientation flipped exactly 180° without ever rotating around the local sunrise-sunset vertical axis! This fascinating topological behavior is known as <strong>holonomy</strong> or spherical parallel transport.<br><br>Going back to the same place does not guarantee looking in the same direction! Can you think of a way to control exactly how many degrees we rotate when coming back?",
                 targetPos: new THREE.Vector3(0, -SPHERE_RADIUS, 0), // Sunrise
-                targetTilt: 180, // West (flipped)
+                targetTilt: 180,
                 hideArrows: false,
-                isPhysicalDistance: false
+                isPhysicalDistance: false,
+                startPose: 'default'
             },
             2: {
                 title: "Level 2: The 15° Tilt Challenge",
                 shortDesc: "Goal: Return to Sunrise but pointing 15° Northwards.<br><br><strong>Instructions:</strong><br>Navigate the car back to the Sunrise spot with a local tilt angle of exactly <strong>+15.0°</strong>. Plan your spherical paths carefully!",
                 explanation: "Brilliant navigation! By combining specific polar and solar rotation loops, you have demonstrated exact orientation control. Since the order of non-parallel rotations is non-commutative on a sphere, you can achieve any desired 3D tilt simply by varying the paths you drive. You are now a master circumnavigator!",
                 targetPos: new THREE.Vector3(0, -SPHERE_RADIUS, 0), // Sunrise
-                targetTilt: 15, // Tilted 15 degrees up
+                targetTilt: 15,
                 hideArrows: false,
-                isPhysicalDistance: false
+                isPhysicalDistance: false,
+                startPose: 'default'
             },
             3: {
                 title: "Level 3: Southward Noon Parking",
                 shortDesc: "Goal: Reach Noon (90° E) at 15° N, pointing South (Tilt: -90°).<br><br><strong>Instructions:</strong><br>Navigate to the 15° North parallel over the Noon meridian line and face local South (pointing directly down).",
                 explanation: "Superb alignment! You navigated precisely to Noon at 15° N and aligned yourself facing local South. Moving along spherical lines of latitude and longitude demonstrates how orientation behaves differently across different paths.",
-                targetPos: new THREE.Vector3(Math.cos(15 * Math.PI / 180), 0, Math.sin(15 * Math.PI / 180)),
+                targetPos: getPoseVector(15, 90),
                 targetTilt: -90,
                 hideArrows: false,
-                isPhysicalDistance: false
+                isPhysicalDistance: false,
+                startPose: 'default'
             },
             4: {
                 title: "Level 3*: Position Match Only",
-                shortDesc: "Goal: Reach Noon (90° E) at 15° N, disregarding tilt.<br><br><strong>Instructions:</strong><br>The heading arrows have been hidden! Simply navigate the car to the target parking spot at 15° N over Noon. Any tilt angle is accepted.<br><br><em>Let's disregard the final tilt, can we find a path with less rotation?</em>",
+                shortDesc: "Goal: Reach Noon (90° E) at 15° N, disregarding tilt.<br><br><strong>Instructions:</strong><br>The heading arrows have been hidden! Simply navigate the car to the target parking spot at 15° N over Noon. Any tilt angle is accepted.<br><br><em>Can we find a path with less rotation?</em>",
                 explanation: "Fantastic job! By ignoring orientation constraints, navigation is simplified, but tracking your path remains essential for optimal efficiency.",
-                targetPos: new THREE.Vector3(Math.cos(15 * Math.PI / 180), 0, Math.sin(15 * Math.PI / 180)),
-                targetTilt: null, // Ignore tilt matching
+                targetPos: getPoseVector(15, 90),
+                targetTilt: null,
                 hideArrows: true,
-                isPhysicalDistance: false
+                isPhysicalDistance: false,
+                startPose: 'default'
             },
             5: {
                 title: "Level 4: Walk Distance Challenge",
                 shortDesc: "Goal: Revisit Level 1 (Sunrise pointing 180° West) but minimize physical walking distance instead of rotation angle.<br><br><strong>Instructions:</strong><br>The Odometer now measures <strong>physical walk distance (m)</strong>. A 15° sweep along a maximal arch equals exactly 1.0 m.<br><br><em>You've mastered the art of minimizing angle, but what about walking distance? Let's revisit Level 1, coming back to Sunrise looking West. How short can your walk be?</em>",
-                explanation: "Spectacular! You have mastered the distance minimization problem on a sphere! Geodesic travel paths allow the shortest paths, pointing to the beautiful connection between physics and geometry.",
-                targetPos: new THREE.Vector3(0, -SPHERE_RADIUS, 0), // Sunrise
-                targetTilt: 180, // West (flipped)
+                explanation: "", // Formulated dynamically based on score
+                targetPos: new THREE.Vector3(0, -SPHERE_RADIUS, 0),
+                targetTilt: 180,
                 hideArrows: false,
-                isPhysicalDistance: true // Uses physical arc distance tracker
+                isPhysicalDistance: true,
+                startPose: 'default'
+            },
+            6: {
+                title: "Level 5: Preserving East Orientation",
+                shortDesc: "Goal: Reach B (45° N, 30° E) with Tilt 0° starting from A (30° S, 45° W, Tilt 0°). Maintain orientation East (0° tilt) during the final pose.",
+                explanation: "Incredible! Moving across the sunset/sunrise ring preserves orientation and translates one to one the rotated angles into latitude because it's a maximal arch perpendicular to the axis, and also that moving through polar rotation preserves orientation and translates one to one with rotated longitude.",
+                targetPos: getPoseVector(45, 30),
+                targetTilt: 0,
+                hideArrows: false,
+                isPhysicalDistance: false,
+                startPose: 'A'
+            },
+            7: {
+                title: "Level 5*: The 8 Path Challenge",
+                shortDesc: "Goal: Go from A (30° S, 45° W) to B (45° N, 30° E) in exactly two moves, disregarding tilt. How many different paths exist with two moves? Try to find and complete all 8 possible paths! Every unique 2-move path you complete will mark its corner with a green dot.",
+                explanation: "Remarkable! You found all 8 possible 2-move paths! This is because there are 2 corner points (Z-first or X-first) × 2 z-values (positive or negative Y) × 2 ways to get to each corner (short way or long way) = 8 total paths. Completing them all shows your deep understanding of spherical geometry!",
+                targetPos: getPoseVector(45, 30),
+                targetTilt: null,
+                hideArrows: true,
+                isPhysicalDistance: false,
+                startPose: 'A',
+                isMultiPath: true,
+                totalPaths: 8
+            },
+            8: {
+                title: "Level 5**: High Latitude Constraints",
+                shortDesc: "Goal: Go from A (30° S, 45° W) to B (75° N, 30° E) in exactly two moves, disregarding tilt. How many solutions can you find now? Hint: Since B is higher than a vertical rotation around the sun can reach, some paths are physically impossible. Find all 4 valid 2-move paths!",
+                explanation: "Brilliant! You found all 4 valid 2-move paths. Because $x_a^2 + z_b^2 > 1$, there is no real solution for $y_c$ when moving Solar first. Thus, we are forced to move Polar first, leaving only 4 valid paths!",
+                targetPos: getPoseVector(75, 30),
+                targetTilt: null,
+                hideArrows: true,
+                isPhysicalDistance: false,
+                startPose: 'A',
+                isMultiPath: true,
+                totalPaths: 4
             }
         };
 
         // Resets the car position, orientation, and odometer completely
         function resetCarAndOdometer() {
-            planetGroup.quaternion.set(0, 0, 0, 1);
+            const lvl = levelDefinitions[currentLevel];
+            
+            if (lvl.startPose === 'A') {
+                // Correctly starting the vehicle at A (30S, 45W, Tilt 0) using exact spherical matrix solver
+                setPlanetOrientation(-30, -45);
+            } else {
+                planetGroup.quaternion.set(0, 0, 0, 1);
+            }
             
             // Restore dials representation UI
             document.getElementById('ind1').style.transform = "rotate(0deg)";
@@ -820,7 +939,11 @@
 
             // Reset Undo Stack
             rotationHistory.length = 0;
+            activeSegments.length = 0;
             updateUndoButtonState();
+
+            // Clear previous path tracks
+            clearTrace();
         }
 
         // Dynamically updates Odometer HUD labels with correct unit context
@@ -830,10 +953,17 @@
             odomElement.innerText = val.toFixed(1) + unit;
         }
 
-        // Updates active/disabled states for Level Nav buttons based on level unlocking progression
+        // Updates active/disabled states for Level Nav buttons based on level unlocking progression (Fully skipped navigation enabled)
         function updateLvlNavButtons() {
             document.getElementById('btn-prev-lvl').disabled = (currentLevel === 1);
-            document.getElementById('btn-next-lvl').disabled = (currentLevel >= maxLevelUnlocked || currentLevel === 5);
+            document.getElementById('btn-next-lvl').disabled = (currentLevel === 8); // Free navigation forwards allowed anytime!
+        }
+
+        function clearCornerMarkers() {
+            for (let m of activeCornerMarkers) {
+                scene.remove(m);
+            }
+            activeCornerMarkers.length = 0;
         }
 
         function configureLevel(lvlId) {
@@ -841,6 +971,10 @@
             
             // Cleanly restore rotation and odometer state automatically on level loads
             resetCarAndOdometer();
+
+            // Clear multi-path variables
+            for (let k in completedPathsMap) delete completedPathsMap[k];
+            clearCornerMarkers();
 
             // Re-hide successful panel overlay using the CSS transition class
             document.getElementById('completion-modal').classList.remove('show');
@@ -895,7 +1029,7 @@
             modal.classList.remove('show');
             
             setTimeout(() => {
-                if (currentLevel < 5) {
+                if (currentLevel < 8) {
                     currentLevel++;
                 } else {
                     currentLevel = 1;
@@ -917,6 +1051,9 @@
         // --- RELATIVE ORIENTATION MOTORS & UNDO STACK ---
         const GLOBAL_AXIS_Z = new THREE.Vector3(0, 0, 1);
         const GLOBAL_AXIS_X_CLOCKWISE = new THREE.Vector3(1, 0, 0);
+
+        // Segment logs for 2-Move analytical paths mapping
+        const activeSegments = [];
 
         // Stack to store action history states
         const rotationHistory = [];
@@ -961,18 +1098,44 @@
             planetGroup.quaternion.premultiply(stepQ);
         }
 
+        // Reconstructs active segments cleanly from the undo-revert stack
+        function rebuildActiveSegments() {
+            activeSegments.length = 0;
+            for (let hist of rotationHistory) {
+                const axis = hist.axis;
+                const angle = hist.angleDegrees;
+                if (activeSegments.length === 0) {
+                    activeSegments.push({ axis: axis, angle: angle });
+                } else {
+                    const lastSeg = activeSegments[activeSegments.length - 1];
+                    if (lastSeg.axis === axis) {
+                        lastSeg.angle += angle;
+                    } else {
+                        // Filter out accidental jitter
+                        if (Math.abs(angle) > 0.01) {
+                            activeSegments.push({ axis: axis, angle: angle });
+                        }
+                    }
+                }
+            }
+        }
+
         // Applies standard button shifts while saving history
         function applyStepWithHistory(angleDegrees, rotationAxis) {
             if (isLevelCompleted) return;
 
             const isDistanceMode = levelDefinitions[currentLevel].isPhysicalDistance;
             const odomAddition = isDistanceMode ? calculatePhysicalDistanceStep(angleDegrees, rotationAxis) : Math.abs(angleDegrees);
+            const axisName = (rotationAxis === GLOBAL_AXIS_Z) ? 'Z' : 'X';
 
             rotationHistory.push({
                 quaternion: planetGroup.quaternion.clone(),
-                odometerAdd: odomAddition
+                odometerAdd: odomAddition,
+                axis: axisName,
+                angleDegrees: angleDegrees
             });
             updateUndoButtonState();
+            rebuildActiveSegments();
 
             applyDirectStepRotation(angleDegrees, rotationAxis);
             addToOdometer(angleDegrees, rotationAxis);
@@ -1005,7 +1168,7 @@
         });
 
         document.getElementById('btn-next-lvl').addEventListener('click', () => {
-            if (currentLevel < maxLevelUnlocked && currentLevel < 5) {
+            if (currentLevel < 8) {
                 currentLevel++;
                 configureLevel(currentLevel);
             }
@@ -1025,6 +1188,7 @@
             updateOdometerDisplay(totalRotated);
 
             updateUndoButtonState();
+            rebuildActiveSegments();
         });
 
         // --- RESET / CLEAR CONTROLLER ACTION ---
@@ -1032,6 +1196,8 @@
             resetCarAndOdometer();
             isLevelCompleted = false;
             document.getElementById('completion-modal').classList.remove('show');
+            clearCornerMarkers();
+            for (let k in completedPathsMap) delete completedPathsMap[k];
         });
 
         // --- RELATIVE TOUCH CONTROLLER LOGIC ---
@@ -1089,6 +1255,7 @@
             }
 
             // Dial Release resets the dial needle to zero and adds the net session change to the odometer
+            // Groups continuous touch into a single transaction state cleanly
             function interactionEnd() {
                 if (!active) return;
                 active = false;
@@ -1097,13 +1264,17 @@
                 if (absoluteNetDelta > 0.05) {
                     const isDistanceMode = levelDefinitions[currentLevel].isPhysicalDistance;
                     const odomAddition = isDistanceMode ? calculatePhysicalDistanceStep(accumulatedDialRotation, targetGlobalAxis) : absoluteNetDelta;
+                    const axisName = (targetGlobalAxis === GLOBAL_AXIS_Z) ? 'Z' : 'X';
 
                     // Capture starting rotation and odometer additions as a single transaction state
                     rotationHistory.push({
                         quaternion: startQuat.clone(),
-                        odometerAdd: odomAddition
+                        odometerAdd: odomAddition,
+                        axis: axisName,
+                        angleDegrees: accumulatedDialRotation
                     });
                     updateUndoButtonState();
+                    rebuildActiveSegments();
                     addToOdometer(accumulatedDialRotation, targetGlobalAxis);
                 }
 
@@ -1136,6 +1307,9 @@
         function updateTelemetryData() {
             chassisDot.getWorldPosition(carWorldPos);
             carWorldPos.normalize();
+
+            // Track continuous trace positions
+            appendTracePoint(carWorldPos);
 
             // Latitude: formatted to positive magnitudes labeled N or S
             const lat = Math.asin(carWorldPos.z) * THREE.MathUtils.RAD2DEG;
@@ -1183,7 +1357,7 @@
                 
                 let isMatched = false;
                 if (currentLvl.targetTilt === null) {
-                    // Level 3* (Internal ID 4): Disregard tilt alignment matching entirely
+                    // Level 3* (Internal ID 4), Level 5*, 5** (Internal IDs 7, 8): Disregard tilt alignment matching entirely
                     isMatched = (positionDistance < 0.05);
                 } else {
                     let angleDiff = Math.abs(tiltAngle - currentLvl.targetTilt);
@@ -1192,15 +1366,77 @@
                 }
 
                 if (isMatched) {
-                    isLevelCompleted = true;
-                    
-                    // Increment unlocked levels progression immediately
-                    maxLevelUnlocked = Math.min(5, Math.max(maxLevelUnlocked, currentLevel + 1));
-                    updateLvlNavButtons(); // Instantly unlock navigation forwards
-                    
-                    triggerVictorySequence(currentLvl);
+                    if (currentLvl.isMultiPath) {
+                        // Special Handling for MultiPath Challenges (Level 5* and Level 5**)
+                        // Verify if it is completed in exactly 2 segments
+                        if (activeSegments.length === 2) {
+                            const seg1 = activeSegments[0];
+                            const seqIdx = (seg1.axis === 'Z') ? 0 : 1;
+                            
+                            // Estimate analytical corner vector
+                            const startVector = (currentLvl.startPose === 'A') ? poseA_vector.clone() : new THREE.Vector3(0, -SPHERE_RADIUS, 0);
+                            const axisVec = (seg1.axis === 'Z') ? GLOBAL_AXIS_Z : GLOBAL_AXIS_X_CLOCKWISE;
+                            const cornerVec = startVector.applyAxisAngle(axisVec, THREE.MathUtils.degToRad(seg1.angle));
+                            
+                            const signIdx = (cornerVec.y >= 0) ? 0 : 1;
+                            const lenIdx = (Math.abs(seg1.angle) <= 180) ? 0 : 1;
+                            const pathIdx = seqIdx * 4 + signIdx * 2 + lenIdx;
+
+                            // Skip paths that are mathematically impossible in Level 5** (Solar first is impossible)
+                            if (currentLevel === 8 && seqIdx === 1) {
+                                return; // Physically impossible segment
+                            }
+
+                            if (!completedPathsMap[pathIdx]) {
+                                completedPathsMap[pathIdx] = true;
+                                
+                                // Render a green marker at this newly completed corner point
+                                const cornerSphereGeo = new THREE.SphereGeometry(0.016, 16, 16);
+                                const cornerSphereMat = new THREE.MeshBasicMaterial({ color: 0x4ade80 });
+                                const cornerSphere = new THREE.Mesh(cornerSphereGeo, cornerSphereMat);
+                                cornerSphere.position.copy(cornerVec);
+                                scene.add(cornerSphere);
+                                activeCornerMarkers.push(cornerSphere);
+
+                                // Display transient HUD notification
+                                const count = Object.keys(completedPathsMap).length;
+                                triggerTemporaryHUDNotification(`Path ${count}/${currentLvl.totalPaths} Solved! Resetting...`);
+                                
+                                isLevelCompleted = true; // Block movement
+                                setTimeout(() => {
+                                    if (count >= currentLvl.totalPaths) {
+                                        // Level entirely unlocked!
+                                        maxLevelUnlocked = Math.min(8, Math.max(maxLevelUnlocked, currentLevel + 1));
+                                        updateLvlNavButtons();
+                                        triggerVictorySequence(currentLvl);
+                                    } else {
+                                        // Auto-reset position back so player can seek next remaining path
+                                        resetCarAndOdometer();
+                                        isLevelCompleted = false;
+                                    }
+                                }, 2000);
+                            }
+                        }
+                    } else {
+                        // Standard Single Pose Level completes immediately
+                        isLevelCompleted = true;
+                        maxLevelUnlocked = Math.min(8, Math.max(maxLevelUnlocked, currentLevel + 1));
+                        updateLvlNavButtons();
+                        triggerVictorySequence(currentLvl);
+                    }
                 }
             }
+        }
+
+        // Display quick flash message during MultiPath challenge resets
+        function triggerTemporaryHUDNotification(text) {
+            const banner = document.getElementById('celebration-banner');
+            banner.innerText = text;
+            banner.style.display = 'block';
+            setTimeout(() => {
+                banner.style.display = 'none';
+                banner.innerText = "⭐ ALIGNMENT MATCHED! ⭐";
+            }, 1900);
         }
 
         // Handles the intermediate celebration and 2-second timing transition
@@ -1230,7 +1466,17 @@
             const unit = lvl.isPhysicalDistance ? "m" : "°";
             const recordText = previousRecord !== null ? previousRecord.toFixed(1) + unit : 'No record set yet';
 
-            // Formulate scoreboard stats panel HTML (Correcting Previous Best & Personal Best bug)
+            // Custom description paragraphs for Level 4 distance success checks
+            let dynamicExplanation = lvl.explanation;
+            if (currentLevel === 5) {
+                if (currentScore <= 12.05) {
+                    dynamicExplanation = `Spectacular! You found the shortest possible path of exactly <strong>12.0m</strong>!<br><br>Notice how your Solar rotation didn't add any walk distance. This is because rotations inside the axis (when the vehicle lies directly on the axis of rotation) are pure and do not produce any displacement!`;
+                } else {
+                    dynamicExplanation = `You made it back! But your walk distance was <strong>${currentScore.toFixed(1)}m</strong>. Can you find a shorter path? Hint: Try rotating around the Solar axis first while sitting at Sunrise to see if you can bypass extra walking.`;
+                }
+            }
+
+            // Formulate scoreboard stats panel HTML
             const scoreboardHtml = `
                 <div style="font-family: monospace; background: #252830; border: 1px solid #4ade80; padding: 12px; border-radius: 8px; margin: 16px 0; font-size: 13px; text-align: left; line-height: 1.5;">
                     🛰️ <span style="color: #888;">ODOMETER SCORE:</span> <strong style="color: #4ade80; font-size: 14px;">${currentScore.toFixed(1)}${unit}</strong><br>
@@ -1243,7 +1489,7 @@
 
             // Replay optimization encourage text paragraph on completing all levels
             let encourageHtml = "";
-            if (currentLevel === 5) {
+            if (currentLevel === 8) {
                 encourageHtml = `
                     <p style="margin-top: 15px; color: #eab308; font-weight: bold; font-style: italic; border-top: 1px dashed #444; padding-top: 12px; font-size: 12.5px;">
                         💡 Optimization Challenge: You have completed all physical transport levels! Can you find a shorter route that reduces your odometer score even further? Replay Level 1 or Level 4 and try to minimize your path!
@@ -1252,7 +1498,7 @@
             }
 
             document.getElementById('modal-heading').innerHTML = `🚗 PARKING SUCCESSFUL! <span style="font-size: 15px;">(${lvl.title})</span>`;
-            document.getElementById('modal-content').innerHTML = lvl.explanation + scoreboardHtml + encourageHtml;
+            document.getElementById('modal-content').innerHTML = dynamicExplanation + scoreboardHtml + encourageHtml;
             
             const nextBtn = document.getElementById('modal-next-btn');
             if (currentLevel === 1) {
@@ -1263,6 +1509,12 @@
                 nextBtn.innerText = "Begin Challenge 3* 🚀";
             } else if (currentLevel === 4) {
                 nextBtn.innerText = "Begin Challenge 4 🚀";
+            } else if (currentLevel === 5) {
+                nextBtn.innerText = "Begin Challenge 5 🚀";
+            } else if (currentLevel === 6) {
+                nextBtn.innerText = "Begin Challenge 5* 🚀";
+            } else if (currentLevel === 7) {
+                nextBtn.innerText = "Begin Challenge 5** 🚀";
             } else {
                 nextBtn.innerText = "Replay Challenge 1 🔄";
             }
