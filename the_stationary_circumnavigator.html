@@ -945,7 +945,7 @@
             8: {
                 title: "Level 5*: The 8 Path Challenge",
                 shortDesc: "Goal: Go from A (30° S, 45° W) to B (45° N, 30° E) in exactly two moves, disregarding tilt.<br><br><strong>Instructions:</strong><br>First, navigate the car from A to target B. Once you successfully reach B, the quiz question will automatically appear here inside this HUD panel!",
-                explanation: "Remarkable! There are 8 possible 2-move paths! This is because there are 2 corner points (Z-first or X-first) × 2 z-values (positive or negative Y) × 2 ways to get to each corner (short way or long way) = 8 total paths.",
+                explanation: "Remarkable! There are 8 possible 2-move paths! This is because there are 2 corner points (polar or solar first) × 2 z-values (positive or negative) × 2 ways to get to each corner (short way or long way) = 8 total paths.",
                 targetPos: getPoseVector(45, 30),
                 targetTilt: null,
                 hideArrows: true,
@@ -1138,7 +1138,7 @@
             if (selectedValue === lvl.correctAnswer) {
                 selectedButton.style.background = 'rgba(74, 222, 128, 0.2)';
                 selectedButton.style.borderColor = '#4ade80';
-                feedback.innerHTML = `<span style="color: #4ade80; font-weight: bold;">Correct! 🎉</span><br><span style="font-size: 10px; color: #ddd; line-height: 1.3;">${lvl.quizExplanation}</span>`;
+                feedback.innerHTML = `<span style="color: #4ade80; font-weight: bold;">Correct! 🎉</span>`;
                 
                 if (!isLevelCompleted) {
                     isLevelCompleted = true;
@@ -1519,13 +1519,18 @@
 
         // Handles the intermediate celebration and 2-second timing transition
         function triggerVictorySequence(lvl) {
-            const banner = document.getElementById('celebration-banner');
-            banner.style.display = 'block';
-
-            setTimeout(() => {
-                banner.style.display = 'none';
+            if (lvl.isQuiz) {
+                // Instantly display the completed success modal, bypassing "aligned match" banner text
                 showLevelCompletedModal(lvl);
-            }, 2000);
+            } else {
+                const banner = document.getElementById('celebration-banner');
+                banner.style.display = 'block';
+
+                setTimeout(() => {
+                    banner.style.display = 'none';
+                    showLevelCompletedModal(lvl);
+                }, 2000);
+            }
         }
 
         // Triggers the successful modal sequence with highscore tracking and slow fade transition
