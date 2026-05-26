@@ -17,7 +17,7 @@
             position: relative;
         }
 
-        /* Floating Screen-Space DOM Labels - Configured with translucency to prevent occlusion of the car */
+        /* Floating Screen-Space DOM Labels */
         .dom-label {
             position: absolute;
             z-index: 5;
@@ -156,7 +156,7 @@
             justify-content: center;
         }
 
-        /* Color-specific overrides (Polar is Blue, Solar is Yellow) */
+        /* Color-specific overrides */
         .polar-theme-btn {
             background: #3b82f6 !important;
         }
@@ -203,11 +203,13 @@
             position: absolute;
             top: 10px;
             right: 10px;
-            background: rgba(15, 20, 30, 0.85);
+            background: rgba(15, 20, 30, 0.9);
             border: 1px solid #3b82f6;
             padding: 12px;
             border-radius: 8px;
-            width: 250px;
+            width: 258px;
+            max-height: 340px;
+            overflow-y: auto;
             font-size: 11.5px;
             z-index: 10;
             box-shadow: 0 4px 20px rgba(0,0,0,0.6);
@@ -222,7 +224,7 @@
             letter-spacing: 0.5px;
         }
 
-        /* Success & Level Explanation Modal Overlay - Styled with smooth CSS transitions */
+        /* Success & Level Explanation Modal Overlay */
         .completion-overlay {
             position: absolute;
             top: 0;
@@ -310,7 +312,7 @@
             background: #374151;
         }
 
-        /* Odometer Action Buttons (Undo and Clear) */
+        /* Odometer Action Buttons */
         #btn-undo {
             background: #4b5563;
             border: none;
@@ -366,7 +368,7 @@
             transform: scale(0.97);
         }
 
-        /* Level Navigation Buttons style */
+        /* Level Navigation Buttons */
         .lvl-nav-btn {
             background: #374151;
             border: none;
@@ -452,7 +454,7 @@
 
         <!-- Instructional Game HUD Overlay -->
         <div class="instructions-hud">
-            <div class="hud-title" id="hud-level-title" style="cursor: pointer;">Level 1: Holonomy Intro</div>
+            <div class="hud-title" id="hud-level-title">Level 1: Holonomy Intro</div>
             <div id="hud-level-desc" style="line-height: 1.4; color: #ddd; font-size: 11px;">Loading...</div>
         </div>
 
@@ -537,7 +539,7 @@
 
         const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 50);
         
-        // Lock Z-axis vertically in the view and set camera to match reference orientation (with adjusted zoom out)
+        // Lock Z-axis vertically in the view and set camera to match reference orientation
         camera.up.set(0, 0, 1); 
         camera.position.set(1.9, -2.8, 1.0); 
 
@@ -558,17 +560,17 @@
         solarStream.position.set(8, 0, 0);
         scene.add(solarStream);
 
-        // --- CORE GEOMETRIC CONSTANTS (Initialized first to prevent Temporal Dead Zone Reference Errors) ---
+        // --- CORE GEOMETRIC CONSTANTS ---
         const SPHERE_RADIUS = 1.0;
         const LINE_RADIUS = SPHERE_RADIUS * 0.998;
 
-        // --- Core Rotating Group (ONLY contains moving items like the car) ---
+        // --- Core Rotating Group ---
         const planetGroup = new THREE.Group();
         scene.add(planetGroup);
         
-        // --- STATIONARY ANCHORED PLANET SPHERE MESH (Converges perfectly at Z-poles, stationary in scene) ---
+        // --- STATIONARY ANCHORED PLANET SPHERE MESH ---
         const sphereGeo = new THREE.SphereGeometry(SPHERE_RADIUS, 40, 32);
-        sphereGeo.rotateX(Math.PI / 2); // Rotates poles from Y-axis to Z-axis (matching North & South Poles)
+        sphereGeo.rotateX(Math.PI / 2); // Rotates poles from Y-axis to Z-axis
         
         const sphereMat = new THREE.MeshStandardMaterial({
             color: 0x5dade2,
@@ -590,7 +592,7 @@
         const backShell = new THREE.Mesh(sphereGeo, backShellMat);
         scene.add(backShell); 
 
-        // --- FIXED STATIONARY ROTATION AXES (Polar is Blue, Solar is Yellow) ---
+        // --- FIXED STATIONARY ROTATION AXES ---
         const axisMaterialPolar = new THREE.MeshBasicMaterial({ color: 0x3b82f6 });
         const axisMaterialSolar = new THREE.MeshBasicMaterial({ color: 0xeab308 });
 
@@ -627,7 +629,7 @@
         solarIndicatorRing.add(sCone);
         scene.add(solarIndicatorRing);
 
-        // --- The Car Rig (Starts back at Sunrise: 0, -SPHERE_RADIUS, 0) ---
+        // --- The Car Rig ---
         const carGroup = new THREE.Group();
         carGroup.position.set(0, -SPHERE_RADIUS, 0);
         planetGroup.add(carGroup);
@@ -664,7 +666,7 @@
         ghostArrow.cone.material.opacity = 0.35;
         ghostGroup.add(ghostArrow);
 
-        // --- PATHFINDER TRACE & MOVEMENT END-MARKER DOTS ---
+        // --- PATHFINDER TRACE & DEFINITIVE ACTION MARKERS ---
         let traceCurvePoints = [];
         let traceMesh = null;
         const traceMaterial = new THREE.MeshBasicMaterial({ color: 0x7f8f9f, transparent: true, opacity: 0.55 });
@@ -697,39 +699,54 @@
             moveMarkers.push(m);
         }
 
-        // Reconstructs trace mathematically only from the finalized moves (prevents continuous drag jitter)
+        // Mathematically maps start posture quaternion matching level pose parameters
+        function getStartQuaternion(lvlId) {
+            const lvl = levelDefinitions[lvlId];
+            const q = new THREE.Quaternion();
+            if (lvl && lvl.startPose === 'A') {
+                const lat = -30 * Math.PI / 180;
+                const lon = -45 * Math.PI / 180;
+                const cosLat = Math.cos(lat);
+                const sinLat = Math.sin(lat);
+                const cosLon = Math.cos(lon);
+                const sinLon = Math.sin(lon);
+                const m = new THREE.Matrix4();
+                m.set(
+                    cosLon, -cosLat * sinLon, -sinLat * sinLon, 0,
+                    sinLon,  cosLat * cosLon,  sinLat * cosLon, 0,
+                    0,      -sinLat,           cosLat,          0,
+                    0,       0,                0,              1
+                );
+                q.setFromRotationMatrix(m);
+            } else {
+                q.set(0, 0, 0, 1);
+            }
+            return q;
+        }
+
+        // Redraws the slerped trace tube based *only* on the finalized moves inside the stack
         function rebuildTraceAndMarkers() {
             clearTrace();
-
-            let currentQ = new THREE.Quaternion(0, 0, 0, 1);
-            const lvl = levelDefinitions[currentLevel];
-            if (lvl.startPose === 'A') {
-                const tempQ = new THREE.Quaternion();
-                const qZ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), -45 * Math.PI / 180);
-                const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), -30 * Math.PI / 180);
-                tempQ.multiplyQuaternions(qZ, qX);
-                currentQ.copy(tempQ);
-            }
-
-            let points = [new THREE.Vector3(0, -SPHERE_RADIUS, 0).applyQuaternion(currentQ)];
-            addMarkerAt(points[0]); // Draw starting marker dot
-
+            
+            const startQ = getStartQuaternion(currentLevel);
+            const startPos = new THREE.Vector3(0, -SPHERE_RADIUS, 0).applyQuaternion(startQ);
+            addMarkerAt(startPos);
+            
+            let points = [startPos.clone()];
+            
             for (let i = 0; i < rotationHistory.length; i++) {
                 const hist = rotationHistory[i];
-                const startQ = hist.startQuaternion.clone();
-                const endQ = hist.endQuaternion.clone();
-
                 const steps = 30;
                 for (let j = 1; j <= steps; j++) {
                     const t = j / steps;
-                    const interpQ = startQ.clone().slerp(endQ, t);
+                    const interpQ = hist.startQuaternion.clone().slerp(hist.endQuaternion, t);
                     points.push(new THREE.Vector3(0, -SPHERE_RADIUS, 0).applyQuaternion(interpQ));
                 }
-
-                // Add a permanent marker dot at the end position of this definitive move
+                
+                // Put a marker sphere at the end of this finalized move
                 addMarkerAt(points[points.length - 1]);
             }
-
+            
             if (points.length >= 2) {
                 const curve = new THREE.CatmullRomCurve3(points);
                 const tubeGeo = new THREE.TubeGeometry(curve, points.length * 2, 0.008, 6, false);
@@ -741,7 +758,6 @@
         // --- CALIBRATED FLUSH REFERENCE LINES ---
         const lineSharedMat = { transparent: true, depthTest: true, depthWrite: false };
 
-        // Equator ring (Z-normal, lies on XY flat plane) is colored Blue (0x3b82f6)
         const equatorGeo = new THREE.TorusGeometry(LINE_RADIUS, 0.005, 6, 64);
         const equatorMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, opacity: 0.7, ...lineSharedMat });
         const equatorRing = new THREE.Mesh(equatorGeo, equatorMat);
@@ -749,7 +765,6 @@
         equatorRing.renderOrder = 2;
         scene.add(equatorRing);
 
-        // Noon-Midnight Meridian Ring (Y-normal, lies on XZ vertical plane) is colored Green (0x4ade80)
         const noonMidnightGeo = new THREE.TorusGeometry(LINE_RADIUS, 0.004, 6, 64);
         const noonMidnightMat = new THREE.MeshBasicMaterial({ color: 0x4ade80, opacity: 0.6, ...lineSharedMat });
         const noonMidnightRing = new THREE.Mesh(noonMidnightGeo, noonMidnightMat);
@@ -757,7 +772,6 @@
         noonMidnightRing.renderOrder = 2;
         scene.add(noonMidnightRing);
 
-        // Sunrise-Sunset Meridian Ring (X-normal, lies on YZ vertical plane) is colored Yellow (0xeab308)
         const sunriseSunsetGeo = new THREE.TorusGeometry(LINE_RADIUS, 0.004, 6, 64);
         const sunriseSunsetMat = new THREE.MeshBasicMaterial({ color: 0xeab308, opacity: 0.6, ...lineSharedMat });
         const sunriseSunsetRing = new THREE.Mesh(sunriseSunsetGeo, sunriseSunsetMat);
@@ -848,12 +862,9 @@
 
         // --- GAME LEVEL PARADIGM, HISTORY & SYSTEM STATE ---
         let currentLevel = 1;
-        let maxLevelUnlocked = 9; // Enabled full skipping of all levels instantly for rapid debugging
+        let maxLevelUnlocked = 9; 
         let isLevelCompleted = false;
-
-        // Multipath Challenge Trackers
-        const completedPathsMap = {};
-        const activeCornerMarkers = [];
+        let arrivedAtTarget = false; // State machine to control quiz display
 
         // Persistent Highscore Storage (Levels 1 to 9)
         const highscores = {
@@ -903,7 +914,7 @@
             },
             5: {
                 title: "Level 4: Walk Distance Challenge",
-                shortDesc: "Goal: Revisit Level 1 (Sunrise pointing 180° West) but minimize physical walking distance instead of rotation angle.<br><br><strong>Instructions:</strong><br>The Odometer now measures <strong>physical walk distance (m)</strong>. A 15° sweep along a maximal arch equals exactly 1.0 m.<br><br><em>You've mastered the art of minimizing angle, but what about walking distance? Let's revisit Level 1, coming back to Sunrise looking West. How short can your walk be?</em>",
+                shortDesc: "Goal: Revisit Level 1 (Sunrise pointing 180° West) but minimize physical walking distance instead of rotation angle.<br><br><strong>Instructions:</strong><br>The Odometer now measures <strong>physical walk distance (m)</strong>. A 15° sweep along a maximal arch equals exactly 1.0 m.",
                 explanation: "", // Formulated dynamically based on score
                 targetPos: new THREE.Vector3(0, -SPHERE_RADIUS, 0),
                 targetTilt: 180,
@@ -922,9 +933,9 @@
                 startPose: 'A'
             },
             7: {
-                title: "Level 5Pro: Non-Trivial Parking",
-                shortDesc: "Goal: Reach B (45° N, 30° E) with Tilt 15° starting from A (30° S, 45° W, Tilt 0°).<br><br><strong>Instructions:</strong><br>Coordinate your Polar and Solar rotations carefully. Align the vehicle precisely at B with a local tilt angle of exactly <strong>+15.0°</strong>.",
-                explanation: "Outstanding parking job! Resolving non-trivial parking targets on a sphere requires a series of coordinated, non-commutative rotations. You have successfully navigated to B while adjusting your heading to a precise 15° Tilt!",
+                title: "Level 5 Pro: High Precision Parking",
+                shortDesc: "Goal: Reach B (45° N, 30° E) with local Tilt +15.0° starting from A (30° S, 45° W, Tilt 0°).<br><br><strong>Instructions:</strong><br>Combine non-parallel rotations around both axes to arrive at B with the exact targeted heading angle!",
+                explanation: "Outstanding parking! Arriving at a specific high-latitude point with a non-trivial heading tilt demonstrates complete 3D control. You navigated from South-West to North-East and solved a complex orientation alignment problem.",
                 targetPos: getPoseVector(45, 30),
                 targetTilt: 15,
                 hideArrows: false,
@@ -933,66 +944,55 @@
             },
             8: {
                 title: "Level 5*: The 8 Path Challenge",
-                shortDesc: "Goal: Go from A (30° S, 45° W) to B (45° N, 30° E) in exactly two moves, disregarding tilt.<br><br><strong>Instructions:</strong><br>Navigate to B in exactly 2 moves. Once successful, test your spherical geometry knowledge on the quiz!<br><br><em>Can we find a path with less rotation?</em>",
+                shortDesc: "Goal: Go from A (30° S, 45° W) to B (45° N, 30° E) in exactly two moves, disregarding tilt.<br><br><strong>Instructions:</strong><br>First, navigate the car from A to target B. Once you successfully reach B, the quiz question will automatically appear here inside this HUD panel!",
+                explanation: "Remarkable! There are 8 possible 2-move paths! This is because there are 2 corner points (Z-first or X-first) × 2 z-values (positive or negative Y) × 2 ways to get to each corner (short way or long way) = 8 total paths.",
                 targetPos: getPoseVector(45, 30),
                 targetTilt: null,
                 hideArrows: true,
                 isPhysicalDistance: false,
                 startPose: 'A',
-                isQuizLevel: true,
+                isQuiz: true,
                 correctAnswer: "8",
-                quizQuestion: "How many different 2-move paths exist between A and B on the sphere?",
-                quizOptions: [
+                question: "How many different 2-move paths exist between A and B on the sphere?",
+                options: [
                     { value: "1", label: "1" },
                     { value: "2", label: "2" },
                     { value: "4", label: "4" },
                     { value: "8", label: "8" },
                     { value: "inf", label: "Infinite" }
                 ],
-                quizExplanation: "This is because there are 2 corner points (either Z-first or X-first) × 2 possible Y-latitudes for each corner × 2 directions around each circle to reach them. This holds true because both A and B are within latitudes where real geometric solutions exist.",
-                quizHint: "Think about how many corners exist, and how many ways around the circle can reach each."
+                quizExplanation: "There are 2 main choices for the first axis of rotation (Z first or X first). For each choice, there are 2 potential latitudes/longitudes where the paths can intersect, and for each intersection, there are 2 directions around each circle (the short way or the long way). This results in $2 \\times 2 \\times 2 = 8$ distinct paths!"
             },
             9: {
                 title: "Level 5**: High Latitude Constraints",
-                shortDesc: "Goal: Go from A (30° S, 45° W) to B (75° N, 30° E) in exactly two moves, disregarding tilt.<br><br><strong>Instructions:</strong><br>B has been moved extremely high up. Reach B in exactly 2 moves, then answer the quiz to complete the lab!",
+                shortDesc: "Goal: Go from A (30° S, 45° W) to B (75° N, 30° E) in exactly two moves, disregarding tilt.<br><br><strong>Instructions:</strong><br>Navigate to high latitude target B. Once you successfully reach B, the quiz question will appear here inside this HUD panel!",
+                explanation: "Brilliant! You recognized the constraint! Because B is so high up, some rotation intersections no longer lie on the sphere's surface (the equations have no real solutions), reducing the valid 2-move paths from 8 to 4!",
                 targetPos: getPoseVector(75, 30),
                 targetTilt: null,
                 hideArrows: true,
                 isPhysicalDistance: false,
                 startPose: 'A',
-                isQuizLevel: true,
+                isQuiz: true,
                 correctAnswer: "4",
-                quizQuestion: "How many different 2-move paths exist between A and B now?",
-                quizOptions: [
+                question: "How many different 2-move paths exist between A and B now?",
+                options: [
                     { value: "1", label: "1" },
                     { value: "2", label: "2" },
                     { value: "4", label: "4" },
                     { value: "8", label: "8" },
                     { value: "inf", label: "Infinite" }
                 ],
-                quizExplanation: "Because B is at 75° N, the sum of squares $x_a^2 + z_b^2 > 1$. This means the sphere's surface doesn't reach the required intersection for a Solar-first move (the mathematical equations have no real solutions for those corners). Thus, we are forced to move Polar first, reducing the number of valid paths from 8 to 4!",
-                quizHint: "Since B is now extremely high up, some rotation intersections no longer lie on the sphere's surface."
+                quizExplanation: "Because B is at 75° N, the sum of squares $x_a^2 + z_b^2 > 1$. This means the sphere's surface doesn't reach the required intersection for a Solar-first move (the mathematical equations have no real solutions for those corners). Thus, we are forced to move Polar first, reducing the number of valid paths from 8 to 4!"
             }
         };
-
-        // Removes all green corner dot markers from the scene
-        function clearCornerMarkers() {
-            for (let m of activeCornerMarkers) {
-                scene.remove(m);
-            }
-            activeCornerMarkers.length = 0;
-        }
 
         // Resets the car position, orientation, and odometer completely
         function resetCarAndOdometer() {
             const lvl = levelDefinitions[currentLevel];
+            arrivedAtTarget = false; // Reset the state machine lock
             
-            if (lvl.startPose === 'A') {
-                // Correctly starting the vehicle at A (30S, 45W, Tilt 0) using exact spherical matrix solver
-                setPlanetOrientation(-30, -45);
-            } else {
-                planetGroup.quaternion.set(0, 0, 0, 1);
-            }
+            planetGroup.quaternion.copy(getStartQuaternion(currentLevel));
+            planetGroup.updateMatrixWorld(true); // Forces immediate scene update to prevent trace logging errors
             
             // Restore dials representation UI
             document.getElementById('ind1').style.transform = "rotate(0deg)";
@@ -1009,8 +1009,8 @@
             activeSegments.length = 0;
             updateUndoButtonState();
 
-            // Clear previous path tracks and dots
-            clearTrace();
+            // Clear previous path tracks and rebuild empty state
+            rebuildTraceAndMarkers();
         }
 
         // Dynamically updates Odometer HUD labels with correct unit context
@@ -1023,11 +1023,12 @@
         // Updates active/disabled states for Level Nav buttons based on level unlocking progression
         function updateLvlNavButtons() {
             document.getElementById('btn-prev-lvl').disabled = (currentLevel === 1);
-            document.getElementById('btn-next-lvl').disabled = (currentLevel >= maxLevelUnlocked || currentLevel === 9);
+            document.getElementById('btn-next-lvl').disabled = (currentLevel === 9); 
         }
 
         function configureLevel(lvlId) {
             isLevelCompleted = false;
+            arrivedAtTarget = false;
             
             // Cleanly restore rotation and odometer state automatically on level loads
             resetCarAndOdometer();
@@ -1077,7 +1078,90 @@
 
             updateLvlNavButtons(); // Instantly configure state of level buttons
             updateTelemetryData();
-            rebuildTraceAndMarkers(); // Instantly map starting trace point
+        }
+
+        // Display the Quiz inside the instructions panel after reaching target
+        function renderQuizInHUD() {
+            const descContainer = document.getElementById('hud-level-desc');
+            const lvl = levelDefinitions[currentLevel];
+            if (!lvl || !lvl.isQuiz) return;
+
+            let optionsHtml = '';
+            lvl.options.forEach(opt => {
+                optionsHtml += `
+                    <button class="quiz-opt-btn" data-val="${opt.value}" style="
+                        background: #252830;
+                        border: 1px solid #3b82f6;
+                        padding: 6px 10px;
+                        border-radius: 4px;
+                        color: #fff;
+                        cursor: pointer;
+                        text-align: left;
+                        font-size: 11px;
+                        width: 100%;
+                        margin-top: 5px;
+                        transition: background 0.2s, border-color 0.2s;
+                    ">${opt.label}</button>
+                `;
+            });
+
+            descContainer.innerHTML = `
+                <div style="margin-bottom: 8px; font-weight: bold; color: #3b82f6;">📍 Target Arrived! Quiz Question:</div>
+                <div style="font-size: 11px; margin-bottom: 8px; line-height: 1.3;">${lvl.question}</div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    ${optionsHtml}
+                </div>
+                <div id="quiz-hud-feedback" style="margin-top: 8px; font-size: 10.5px; font-weight: bold; line-height: 1.3;"></div>
+            `;
+
+            // Add event listeners to newly inserted buttons
+            const buttons = descContainer.querySelectorAll('.quiz-opt-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const val = btn.getAttribute('data-val');
+                    handleQuizAnswerHUD(val, btn);
+                });
+            });
+        }
+
+        // Dynamic evaluation for selected answers inside the HUD
+        function handleQuizAnswerHUD(selectedValue, selectedButton) {
+            const lvl = levelDefinitions[currentLevel];
+            const feedback = document.getElementById('quiz-hud-feedback');
+            const buttons = document.querySelectorAll('.quiz-opt-btn');
+            
+            buttons.forEach(b => {
+                b.style.background = '#252830';
+                b.style.borderColor = '#3b82f6';
+            });
+
+            if (selectedValue === lvl.correctAnswer) {
+                selectedButton.style.background = 'rgba(74, 222, 128, 0.2)';
+                selectedButton.style.borderColor = '#4ade80';
+                feedback.innerHTML = `<span style="color: #4ade80; font-weight: bold;">Correct! 🎉</span><br><span style="font-size: 10px; color: #ddd; line-height: 1.3;">${lvl.quizExplanation}</span>`;
+                
+                if (!isLevelCompleted) {
+                    isLevelCompleted = true;
+                    maxLevelUnlocked = Math.min(9, Math.max(maxLevelUnlocked, currentLevel + 1));
+                    updateLvlNavButtons();
+                    triggerVictorySequence(lvl);
+                }
+            } else {
+                selectedButton.style.background = 'rgba(220, 38, 38, 0.2)';
+                selectedButton.style.borderColor = '#dc2626';
+                feedback.innerHTML = `<span style="color: #dc2626; font-weight: bold;">Incorrect! ❌</span><br><span style="font-size: 10px; color: #aaa;">Try again. Use the dials or buttons to visualize the paths!</span>`;
+            }
+        }
+
+        // Display quick flash message
+        function triggerTemporaryHUDNotification(text) {
+            const banner = document.getElementById('celebration-banner');
+            banner.innerText = text;
+            banner.style.display = 'block';
+            setTimeout(() => {
+                banner.style.display = 'none';
+                banner.innerText = "⭐ ALIGNMENT MATCHED! ⭐";
+            }, 2500);
         }
 
         // Proceed to next challenge action with transition handling
@@ -1092,7 +1176,7 @@
                     currentLevel = 1;
                 }
                 configureLevel(currentLevel);
-            }, 500); // Wait for transition fade-out to complete
+            }, 500); 
         });
 
         // Replay/Retry current challenge action
@@ -1101,7 +1185,7 @@
             modal.classList.remove('show');
 
             setTimeout(() => {
-                configureLevel(currentLevel); // Reloads active level, resetting pose & odometer
+                configureLevel(currentLevel); 
             }, 500);
         });
 
@@ -1109,29 +1193,21 @@
         const GLOBAL_AXIS_Z = new THREE.Vector3(0, 0, 1);
         const GLOBAL_AXIS_X_CLOCKWISE = new THREE.Vector3(1, 0, 0);
 
-        // Segment logs for 2-Move analytical paths mapping
         const activeSegments = [];
-
-        // Stack to store action history states
         const rotationHistory = [];
         const undoButton = document.getElementById('btn-undo');
 
-        // Track odometer (total absolute rotated angle / distance)
         let totalRotated = 0.0;
         const odomElement = document.getElementById('odom-value');
 
-        // Calculates physical arc walk distance matching 15 degrees = 1.0 meter
-        // Account for coordinate component offsets of rotation axes dynamically
         function calculatePhysicalDistanceStep(angleDegrees, rotationAxis) {
             chassisDot.getWorldPosition(carWorldPos);
             carWorldPos.normalize();
 
             let r = 1.0;
             if (rotationAxis === GLOBAL_AXIS_Z) {
-                // Polar rotation (Z-axis) - radius of rotation circle is sqrt(1 - z^2)
                 r = Math.sqrt(1 - carWorldPos.z * carWorldPos.z);
             } else {
-                // Solar rotation (X-axis) - radius of rotation circle is sqrt(1 - x^2)
                 r = Math.sqrt(1 - carWorldPos.x * carWorldPos.x);
             }
 
@@ -1155,7 +1231,6 @@
             planetGroup.quaternion.premultiply(stepQ);
         }
 
-        // Reconstructs active segments cleanly from the undo-revert stack
         function rebuildActiveSegments() {
             activeSegments.length = 0;
             for (let hist of rotationHistory) {
@@ -1168,7 +1243,6 @@
                     if (lastSeg.axis === axis) {
                         lastSeg.angle += angle;
                     } else {
-                        // Filter out accidental jitter
                         if (Math.abs(angle) > 0.01) {
                             activeSegments.push({ axis: axis, angle: angle });
                         }
@@ -1177,20 +1251,23 @@
             }
         }
 
-        // Applies standard button shifts while saving history
         function applyStepWithHistory(angleDegrees, rotationAxis) {
             if (isLevelCompleted) return;
 
             const isDistanceMode = levelDefinitions[currentLevel].isPhysicalDistance;
             const odomAddition = isDistanceMode ? calculatePhysicalDistanceStep(angleDegrees, rotationAxis) : Math.abs(angleDegrees);
             const axisName = (rotationAxis === GLOBAL_AXIS_Z) ? 'Z' : 'X';
+            
             const startQ = planetGroup.quaternion.clone();
 
             applyDirectStepRotation(angleDegrees, rotationAxis);
+            planetGroup.updateMatrixWorld(true);
+
+            const endQ = planetGroup.quaternion.clone();
 
             rotationHistory.push({
                 startQuaternion: startQ,
-                endQuaternion: planetGroup.quaternion.clone(),
+                endQuaternion: endQ,
                 odometerAdd: odomAddition,
                 axis: axisName,
                 angleDegrees: angleDegrees
@@ -1198,7 +1275,7 @@
             updateUndoButtonState();
             rebuildActiveSegments();
             addToOdometer(angleDegrees, rotationAxis);
-            rebuildTraceAndMarkers(); // Rebuild thick path trace on finalized step rotation!
+            rebuildTraceAndMarkers(); 
         }
 
         document.getElementById('btn1-left').addEventListener('click', () => {
@@ -1234,29 +1311,21 @@
             }
         });
 
-        // Developer Mode Level Skipping back door: Click Level Title to unlock all levels
-        document.getElementById('hud-level-title').addEventListener('click', () => {
-            maxLevelUnlocked = 9;
-            updateLvlNavButtons();
-            triggerTemporaryHUDNotification("Developer mode enabled! All levels unlocked.");
-        });
-
         // --- UNDO ACTION EVENT ---
         undoButton.addEventListener('click', () => {
             if (rotationHistory.length === 0 || isLevelCompleted) return;
 
             const previousState = rotationHistory.pop();
             
-            // Revert rotation to exact historical state
             planetGroup.quaternion.copy(previousState.startQuaternion);
+            planetGroup.updateMatrixWorld(true);
 
-            // Subtract rotation angle from odometer safely
             totalRotated = Math.max(0.0, totalRotated - previousState.odometerAdd);
             updateOdometerDisplay(totalRotated);
 
             updateUndoButtonState();
             rebuildActiveSegments();
-            rebuildTraceAndMarkers(); // Rebuild thick path trace immediately on Undo!
+            rebuildTraceAndMarkers(); 
         });
 
         // --- RESET / CLEAR CONTROLLER ACTION ---
@@ -1264,8 +1333,7 @@
             resetCarAndOdometer();
             isLevelCompleted = false;
             document.getElementById('completion-modal').classList.remove('show');
-            clearCornerMarkers();
-            for (let k in completedPathsMap) delete completedPathsMap[k];
+            configureLevel(currentLevel); // clean rebuild
         });
 
         // --- RELATIVE TOUCH CONTROLLER LOGIC ---
@@ -1277,10 +1345,9 @@
             let active = false;
             let centerPoint = { x: 0, y: 0 };
             let lastAngle = 0;
-            let accumulatedDialRotation = 0; // Tracks rotation specifically during the current gesture
-            let startQuat = null; // Tracks starting quaternion state of current gesture
+            let accumulatedDialRotation = 0; 
+            let startQuat = null; 
 
-            // Use matching panel theme active highlight colors (Polar is Blue, Solar is Yellow)
             const activeColor = dialId === 'dial1' ? "#3b82f6" : "#eab308";
 
             function calculateInteractionAngle(clientX, clientY) {
@@ -1304,10 +1371,8 @@
                 if (!active || isLevelCompleted) return;
                 const currentAngle = calculateInteractionAngle(clientX, clientY);
                 
-                // Calculate small frame-to-frame delta angle
                 let delta = currentAngle - lastAngle;
 
-                // Safely wrap the frame delta so branch-cut crossing doesn't cause a massive jump
                 if (delta > 180) delta -= 360;
                 if (delta < -180) delta += 360;
 
@@ -1318,12 +1383,10 @@
                 indicator.style.transform = `rotate(${displayAngle}deg)`;
                 display.innerText = (displayAngle > 0 ? '+' : '') + displayAngle + '°';
 
-                // Apply rotation only for the tiny step change
                 applyDirectStepRotation(delta, targetGlobalAxis);
+                planetGroup.updateMatrixWorld(true);
             }
 
-            // Dial Release resets the dial needle to zero and adds the net session change to the odometer
-            // Groups continuous touch into a single transaction state cleanly
             function interactionEnd() {
                 if (!active) return;
                 active = false;
@@ -1334,7 +1397,6 @@
                     const odomAddition = isDistanceMode ? calculatePhysicalDistanceStep(accumulatedDialRotation, targetGlobalAxis) : absoluteNetDelta;
                     const axisName = (targetGlobalAxis === GLOBAL_AXIS_Z) ? 'Z' : 'X';
 
-                    // Capture starting rotation and odometer additions as a single transaction state
                     rotationHistory.push({
                         startQuaternion: startQuat.clone(),
                         endQuaternion: planetGroup.quaternion.clone(),
@@ -1345,7 +1407,7 @@
                     updateUndoButtonState();
                     rebuildActiveSegments();
                     addToOdometer(accumulatedDialRotation, targetGlobalAxis);
-                    rebuildTraceAndMarkers(); // Rebuild path trace once rotary drag is finalized!
+                    rebuildTraceAndMarkers(); 
                 }
 
                 indicator.style.transform = "rotate(0deg)";
@@ -1378,12 +1440,12 @@
             chassisDot.getWorldPosition(carWorldPos);
             carWorldPos.normalize();
 
-            // Latitude: formatted to positive magnitudes labeled N or S
+            // Latitude
             const lat = Math.asin(carWorldPos.z) * THREE.MathUtils.RAD2DEG;
             const absLat = Math.abs(lat).toFixed(1);
             const latDirection = lat >= 0 ? "N" : "S";
 
-            // Longitude: mapped to positive East (E) to the right of Sunrise, West (W) to the left
+            // Longitude
             let lon = (Math.atan2(carWorldPos.y, carWorldPos.x) * THREE.MathUtils.RAD2DEG) + 90;
             while (lon > 180) lon -= 360;
             while (lon <= -180) lon += 360;
@@ -1408,64 +1470,51 @@
             const projEast = arrowWorldDir.dot(localEast);
             const projNorth = arrowWorldDir.dot(localNorth);
 
-            // Compute local Tilt relative to local East (right) as 0°
+            // Compute local Tilt
             let tiltAngle = Math.atan2(projNorth, projEast) * THREE.MathUtils.RAD2DEG;
             while (tiltAngle > 180) tiltAngle -= 360;
             while (tiltAngle <= -180) tiltAngle += 360;
 
             telemetryLat.innerText = `${absLat}° ${latDirection}`;
             telemetryLon.innerText = `${absLon}° ${lonDirection}`;
-            
-            // Check if 2-Move level criteria is breached (Took more than 2 moves)
-            const isTwoMoveLevel = (currentLevel === 8 || currentLevel === 9);
-            const positionDistance = carWorldPos.distanceTo(levelDefinitions[currentLevel].targetPos);
-            
-            if (isTwoMoveLevel && positionDistance < 0.05 && activeSegments.length !== 2) {
-                telemetryHdg.innerHTML = `<span style="color: #ef4444; font-weight: bold;">Needs exactly 2 moves (Took ${activeSegments.length})</span>`;
-            } else {
-                telemetryHdg.innerText = `${tiltAngle.toFixed(1)}°`;
-            }
+            telemetryHdg.innerText = `${tiltAngle.toFixed(1)}°`;
 
             // --- CHECK FOR PARKING SPOT COINCIDENCE (Pose matching Pose B) ---
             if (!isLevelCompleted) {
                 const currentLvl = levelDefinitions[currentLevel];
-                
-                let isMatched = false;
-                if (currentLvl.targetTilt === null) {
-                    // Level 3* (Internal ID 4), Level 5*, 5** (Internal IDs 8, 9): Disregard tilt alignment matching entirely
-                    isMatched = (positionDistance < 0.05);
-                } else {
-                    let angleDiff = Math.abs(tiltAngle - currentLvl.targetTilt);
-                    if (angleDiff > 180) angleDiff = 360 - angleDiff;
-                    isMatched = (positionDistance < 0.05 && angleDiff < 3.5);
-                }
+                if (currentLvl) {
+                    const positionDistance = carWorldPos.distanceTo(currentLvl.targetPos);
+                    
+                    if (currentLvl.isQuiz) {
+                        // For Quiz Levels, we check if they have successfully arrived at B (disregarding tilt)
+                        // Precise tolerance of 0.5 degrees on unit sphere = 0.008726 rad distance
+                        if (positionDistance < 0.008726 && !arrivedAtTarget) {
+                            arrivedAtTarget = true;
+                            triggerTemporaryHUDNotification("📍 Target reached! Now answer the quiz in the instruction panel.");
+                            renderQuizInHUD();
+                        }
+                    } else {
+                        // Standard Driving Levels
+                        let isMatched = false;
+                        if (currentLvl.targetTilt === null) {
+                            // Precise tolerance matching 0.5 degrees on the unit sphere
+                            isMatched = (positionDistance < 0.008726);
+                        } else {
+                            let angleDiff = Math.abs(tiltAngle - currentLvl.targetTilt);
+                            if (angleDiff > 180) angleDiff = 360 - angleDiff;
+                            // Precise 0.5 degrees tilt AND position tolerances
+                            isMatched = (positionDistance < 0.008726 && angleDiff < 0.5);
+                        }
 
-                if (isMatched) {
-                    // For the 2-move challenges, block victory if the path has more or fewer than exactly 2 distinct moves
-                    if (isTwoMoveLevel && activeSegments.length !== 2) {
-                        return; 
+                        if (isMatched) {
+                            isLevelCompleted = true;
+                            maxLevelUnlocked = Math.min(9, Math.max(maxLevelUnlocked, currentLevel + 1));
+                            updateLvlNavButtons();
+                            triggerVictorySequence(currentLvl);
+                        }
                     }
-                    
-                    isLevelCompleted = true;
-                    
-                    // Increment unlocked levels progression immediately
-                    maxLevelUnlocked = Math.min(9, Math.max(maxLevelUnlocked, currentLevel + 1));
-                    updateLvlNavButtons(); // Instantly unlock navigation forwards
-                    
-                    triggerVictorySequence(currentLvl);
                 }
             }
-        }
-
-        // Display quick flash message during MultiPath challenge resets
-        function triggerTemporaryHUDNotification(text) {
-            const banner = document.getElementById('celebration-banner');
-            banner.innerText = text;
-            banner.style.display = 'block';
-            setTimeout(() => {
-                banner.style.display = 'none';
-                banner.innerText = "⭐ ALIGNMENT MATCHED! ⭐";
-            }, 1900);
         }
 
         // Handles the intermediate celebration and 2-second timing transition
@@ -1473,7 +1522,6 @@
             const banner = document.getElementById('celebration-banner');
             banner.style.display = 'block';
 
-            // Wait 2000 milliseconds for the celebratory processing window so user can visualize their success
             setTimeout(() => {
                 banner.style.display = 'none';
                 showLevelCompletedModal(lvl);
@@ -1483,7 +1531,7 @@
         // Triggers the successful modal sequence with highscore tracking and slow fade transition
         function showLevelCompletedModal(lvl) {
             const currentScore = totalRotated;
-            const previousRecord = highscores[currentLevel]; // Cache previous best before writing new highscore
+            const previousRecord = highscores[currentLevel]; 
             let isNewRecord = false;
 
             if (previousRecord === null || currentScore < previousRecord) {
@@ -1505,27 +1553,7 @@
                 }
             }
 
-            // If this is an interactive Quiz Level, embed the radio button question
-            let quizHtml = "";
-            if (lvl.isQuizLevel) {
-                quizHtml = `
-                    <div style="margin: 15px 0; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; text-align: left; border: 1px solid #3b82f6;">
-                        <strong style="color: #3b82f6; display: block; margin-bottom: 8px; font-size: 11px; letter-spacing: 0.5px;">🧩 GEOMETRIC QUIZ CHALLENGE</strong>
-                        <span style="font-size: 12.5px; color: #ccc; display: block; margin-bottom: 10px;">${lvl.quizQuestion}</span>
-                        <div style="display: flex; flex-direction: column; gap: 8px;">
-                            ${lvl.quizOptions.map(opt => `
-                                <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; color: #eee;">
-                                    <input type="radio" name="quiz-option" value="${opt.value}" style="cursor: pointer;">
-                                    <span>${opt.label}</span>
-                                </label>
-                            `).join('')}
-                        </div>
-                        <div id="quiz-feedback" style="margin-top: 12px; font-size: 12px; font-weight: bold; min-height: 20px; line-height: 1.4;"></div>
-                    </div>
-                `;
-            }
-
-            // Formulate scoreboard stats panel HTML (Correcting Previous Best & Personal Best bug)
+            // Formulate scoreboard stats panel HTML
             const scoreboardHtml = `
                 <div style="font-family: monospace; background: #252830; border: 1px solid #4ade80; padding: 12px; border-radius: 8px; margin: 16px 0; font-size: 13px; text-align: left; line-height: 1.5;">
                     🛰️ <span style="color: #888;">ODOMETER SCORE:</span> <strong style="color: #4ade80; font-size: 14px;">${currentScore.toFixed(1)}${unit}</strong><br>
@@ -1547,42 +1575,31 @@
             }
 
             document.getElementById('modal-heading').innerHTML = `🚗 PARKING SUCCESSFUL! <span style="font-size: 15px;">(${lvl.title})</span>`;
-            document.getElementById('modal-content').innerHTML = dynamicExplanation + quizHtml + scoreboardHtml + encourageHtml;
+            document.getElementById('modal-content').innerHTML = dynamicExplanation + scoreboardHtml + encourageHtml;
             
             const nextBtn = document.getElementById('modal-next-btn');
-            if (currentLevel === 1) nextBtn.innerText = "Begin Challenge 2 🚀";
-            else if (currentLevel === 2) nextBtn.innerText = "Begin Challenge 3 🚀";
-            else if (currentLevel === 3) nextBtn.innerText = "Begin Challenge 3* 🚀";
-            else if (currentLevel === 4) nextBtn.innerText = "Begin Challenge 4 🚀";
-            else if (currentLevel === 5) nextBtn.innerText = "Begin Challenge 5 🚀";
-            else if (currentLevel === 6) nextBtn.innerText = "Begin Challenge 5Pro 🚀";
-            else if (currentLevel === 7) nextBtn.innerText = "Begin Challenge 5* 🚀";
-            else if (currentLevel === 8) nextBtn.innerText = "Begin Challenge 5** 🚀";
-            else nextBtn.innerText = "Replay Challenge 1 🔄";
+            if (currentLevel === 1) {
+                nextBtn.innerText = "Begin Challenge 2 🚀";
+            } else if (currentLevel === 2) {
+                nextBtn.innerText = "Begin Challenge 3 🚀";
+            } else if (currentLevel === 3) {
+                nextBtn.innerText = "Begin Challenge 3* 🚀";
+            } else if (currentLevel === 4) {
+                nextBtn.innerText = "Begin Challenge 4 🚀";
+            } else if (currentLevel === 5) {
+                nextBtn.innerText = "Begin Challenge 5 🚀";
+            } else if (currentLevel === 6) {
+                nextBtn.innerText = "Begin Challenge 5 Pro 🚀";
+            } else if (currentLevel === 7) {
+                nextBtn.innerText = "Begin Challenge 5* 🚀";
+            } else if (currentLevel === 8) {
+                nextBtn.innerText = "Begin Challenge 5** 🚀";
+            } else {
+                nextBtn.innerText = "Replay Challenge 1 🔄";
+            }
             
             // Trigger overlay fade-in transition
             document.getElementById('completion-modal').classList.add('show');
-
-            // Set up interactive radio buttons if this level features a Quiz
-            if (lvl.isQuizLevel) {
-                nextBtn.disabled = true;
-                const radios = document.getElementsByName('quiz-option');
-                for (let r of radios) {
-                    r.addEventListener('change', (e) => {
-                        const val = e.target.value;
-                        const feedback = document.getElementById('quiz-feedback');
-                        if (val === lvl.correctAnswer) {
-                            feedback.innerHTML = `<span style="color: #4ade80;">Correct! 🎉</span><br><br>${lvl.quizExplanation}`;
-                            nextBtn.disabled = false;
-                        } else {
-                            feedback.innerHTML = `<span style="color: #ef4444;">Incorrect, try again! ❌</span><br><span style="font-size: 11px; color: #888;">${lvl.quizHint}</span>`;
-                            nextBtn.disabled = true;
-                        }
-                    });
-                }
-            } else {
-                nextBtn.disabled = false;
-            }
         }
 
         // --- HIGH-PERFORMANCE VECTOR MATRIX PROJECTION LOOP ---
@@ -1607,7 +1624,7 @@
 
                 item.domElement.style.left = posX + 'px';
                 item.domElement.style.top = (posY - 6) + 'px';
-                item.domElement.style.opacity = item.targetOpacity; // Applies customized transparency seamlessly
+                item.domElement.style.opacity = item.targetOpacity; 
             }
         }
 
