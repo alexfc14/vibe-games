@@ -255,14 +255,14 @@
             pointer-events: auto;
         }
         
-        /* Capped spacious flex modal card design */
+        /* Capped spacious but vertically compact flex modal card design */
         .modal-card {
             background: #1e1e1e;
             border: 1px solid #4ade80;
-            max-width: 650px; /* Sized up from 560px to 650px for spacious feel */
+            max-width: 650px; /* Kept spacious width to allow side-by-side elements */
             width: 95%;
-            max-height: 94%; /* Keep strictly within bounds but expand slightly */
-            padding: 32px; /* Increased from 24px for visual depth */
+            max-height: 94%;
+            padding: 16px 24px; /* Reduced vertical padding from 32px to 16px to prevent scroll */
             border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.8);
             text-align: center;
@@ -279,18 +279,18 @@
         
         .modal-title {
             color: #4ade80;
-            font-size: 24px; /* Scaled up from 20px */
+            font-size: 20px; /* Reduced slightly from 24px to save vertical space */
             font-weight: bold;
-            margin-bottom: 16px;
+            margin-bottom: 10px; /* Reduced from 16px */
             flex-shrink: 0;
         }
         
         /* Inner scrollable area for rich content and scoreboards */
         .modal-body {
-            font-size: 15px; /* Scaled up from 13.5px */
-            line-height: 1.6;
+            font-size: 13.5px; /* Optimally sized for compact presentation */
+            line-height: 1.45; /* Compact line spacing */
             color: #ddd;
-            margin-bottom: 20px;
+            margin-bottom: 12px; /* Reduced from 20px */
             text-align: left;
             overflow-y: auto;
             flex: 1;
@@ -319,14 +319,14 @@
             justify-content: center;
             gap: 12px;
             flex-shrink: 0; /* Keep buttons from scaling down */
-            margin-top: auto;
+            margin-top: 8px; /* Compacted margin */
         }
 
         .modal-btn {
             background: #4ade80;
             border: none;
             color: #111;
-            padding: 10px 24px;
+            padding: 8px 24px;
             font-weight: bold;
             font-size: 13px;
             border-radius: 6px;
@@ -689,9 +689,9 @@
 
         const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 50);
         
-        // Lock Z-axis vertically in the view and set camera to match reference orientation
+        // Lock Z-axis vertically and apply panning offset to set the planet on the left side by default!
         camera.up.set(0, 0, 1); 
-        camera.position.set(1.9, -2.8, 1.0); 
+        camera.position.set(1.9 + 0.26, -2.8 + 0.18, 1.0); 
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(width, height);
@@ -704,6 +704,7 @@
         controls.panSpeed = 0.6;
         controls.staticMoving = false;
         controls.dynamicDampingFactor = 0.28;
+        controls.target.set(0.26, 0.18, 0.0); // Shift standard lookAt target horizontally to push planet left!
 
         scene.add(new THREE.AmbientLight(0x777777));
         const solarStream = new THREE.DirectionalLight(0xffffff, 1.4);
@@ -1886,6 +1887,7 @@
         }
 
         // Handles the intermediate celebration and 2-second timing transition
+        // Sized down vertical height to prevent forcing scrolling within limited canvas space
         function triggerVictorySequence(lvl) {
             if (lvl.isQuiz) {
                 showLevelCompletedModal(lvl);
@@ -1934,15 +1936,15 @@
                 `;
             }
 
-            // Formulate scoreboard stats panel HTML
+            // Formulate modern horizontal scoreboard stats row to save vertical space!
             const scoreboardHtml = `
-                <div style="font-family: monospace; background: #252830; border: 1px solid #4ade80; padding: 12px; border-radius: 8px; margin: 16px 0; font-size: 13px; text-align: left; line-height: 1.5;">
-                    🛰️ <span style="color: #888;">ODOMETER SCORE:</span> <strong style="color: #4ade80; font-size: 14px;">${currentScore.toFixed(1)}${unit}</strong><br>
-                    🏁 <span style="color: #888;">PREVIOUS BEST:</span> <strong style="color: #eab308; font-size: 14px;">${recordText}</strong><br>
-                    🏆 <span style="color: #888;">PERSONAL BEST:</span> <strong style="color: #3b82f6; font-size: 14px;">${bestScore.toFixed(1)}${unit}</strong>
-                    ${(isNewRecord && previousRecord !== null) ? '<span style="color: #4ade80; font-weight: bold; margin-left: 6px; text-transform: uppercase; font-size: 10px; display: block; margin-top: 5px;">★ New Personal Best! ★</span>' : ''}
-                    ${(isNewRecord && previousRecord === null) ? '<span style="color: #4ade80; font-weight: bold; margin-left: 6px; text-transform: uppercase; font-size: 10px; display: block; margin-top: 5px;">★ First Record Set! ★</span>' : ''}
+                <div style="font-family: monospace; background: #252830; border: 1px solid #4ade80; padding: 10px 16px; border-radius: 8px; margin: 12px 0; font-size: 12.5px; display: flex; justify-content: space-around; gap: 10px; text-align: center; flex-wrap: wrap; box-sizing: border-box; flex-shrink: 0;">
+                    <div style="flex: 1; min-width: 120px;"><span style="color: #888;">ODOMETER:</span> <strong style="color: #4ade80; font-size: 13.5px;">${currentScore.toFixed(1)}${unit}</strong></div>
+                    <div style="flex: 1; min-width: 120px; border-left: 1px solid rgba(255,255,255,0.1); border-right: 1px solid rgba(255,255,255,0.1);"><span style="color: #888;">PREV BEST:</span> <strong style="color: #eab308; font-size: 13.5px;">${recordText}</strong></div>
+                    <div style="flex: 1; min-width: 120px;"><span style="color: #888;">RECORD:</span> <strong style="color: #3b82f6; font-size: 13.5px;">${bestScore.toFixed(1)}${unit}</strong></div>
                 </div>
+                ${(isNewRecord && previousRecord !== null) ? '<div style="color: #4ade80; font-weight: bold; text-transform: uppercase; font-size: 10.5px; text-align: center; margin-top: 4px; letter-spacing: 0.5px;">★ New Personal Best! ★</div>' : ''}
+                ${(isNewRecord && previousRecord === null) ? '<div style="color: #4ade80; font-weight: bold; text-transform: uppercase; font-size: 10.5px; text-align: center; margin-top: 4px; letter-spacing: 0.5px;">★ First Record Set! ★</div>' : ''}
             `;
 
             document.getElementById('modal-heading').innerHTML = `🚗 PARKING SUCCESSFUL! <span style="font-size: 15px;">(${lvl.title})</span>`;
@@ -1987,16 +1989,16 @@
             document.getElementById('modal-heading').innerHTML = `🏆 Mission Control Record Book`;
             
             let highscoreOverviewHtml = `
-                <div style="text-align: left; margin-bottom: 15px;">
-                    <p style="font-size: 13px; color: #ddd; line-height: 1.4; margin-bottom: 12px;">
-                        Congratulations! You have completed all physical transport and holonomy challenges in this simulator. Here is your official laboratory record:
+                <div style="text-align: left; margin-bottom: 5px;">
+                    <p style="font-size: 12.5px; color: #ddd; line-height: 1.4; margin-bottom: 8px;">
+                        Congratulations! You have completed all physical transport and holonomy challenges. Official laboratory record:
                     </p>
                     <table style="width: 100%; border-collapse: collapse; font-size: 11px; font-family: monospace;">
                         <thead>
                             <tr style="border-bottom: 1px solid #444; color: #888; text-align: left;">
-                                <th style="padding: 4px 0; width: 10%;">Lvl</th>
-                                <th style="padding: 4px 0; width: 65%;">Challenge Name</th>
-                                <th style="padding: 4px 0; width: 25%; text-align: right;">Personal Best</th>
+                                <th style="padding: 3px 0; width: 10%;">Lvl</th>
+                                <th style="padding: 3px 0; width: 65%;">Challenge Name</th>
+                                <th style="padding: 3px 0; width: 25%; text-align: right;">Personal Best</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2010,9 +2012,9 @@
                 
                 highscoreOverviewHtml += `
                     <tr style="border-bottom: 1px solid #2d2d2d; color: #ddd;">
-                        <td style="padding: 5px 0; color: #888;">${lId}</td>
-                        <td style="padding: 5px 0;">${lDef.title}</td>
-                        <td style="padding: 5px 0; text-align: right; font-weight: bold; color: ${scoreVal !== null ? '#4ade80' : '#666'};">${displayScore}</td>
+                        <td style="padding: 4px 0; color: #888;">${lId}</td>
+                        <td style="padding: 4px 0;">${lDef.title}</td>
+                        <td style="padding: 4px 0; text-align: right; font-weight: bold; color: ${scoreVal !== null ? '#4ade80' : '#666'};">${displayScore}</td>
                     </tr>
                 `;
             }
@@ -2021,8 +2023,8 @@
                         </tbody>
                     </table>
                     
-                    <p style="margin-top: 15px; color: #eab308; font-weight: bold; font-style: italic; border-top: 1px dashed #444; padding-top: 12px; font-size: 12.5px; line-height: 1.4;">
-                        💡 Optimization Challenge: Can you find even shorter routes that reduce your odometer scores further? Try replaying Level 1 or Level 4!
+                    <p style="margin-top: 8px; color: #eab308; font-weight: bold; font-style: italic; border-top: 1px dashed #444; padding-top: 8px; font-size: 11.5px; line-height: 1.4;">
+                        💡 Optimization Challenge: Can you find even shorter routes? Try replaying Level 1 or Level 4!
                     </p>
                 </div>
             `;
@@ -2040,6 +2042,7 @@
         }
 
         // --- REAL-TIME GRAPHICAL BLINKING CONTROLLER (Slow and Smooth) ---
+        // Refactored to adjust brightness multiplication instead of raw hue overrides (prevents color shifts!)
         function applyTutorialBlinking(cycle) {
             const step = tutorialSteps[currentTutorialStep];
             if (!step) return;
@@ -2048,10 +2051,10 @@
 
             switch(step.targetBlink) {
                 case "planetStory":
-                    // Smooth glow planet and axes
+                    // Smooth glow planet and axes without hue shifts!
                     unitPlanet.material.opacity = cycle * 0.7;
-                    polarAxisPole.material.color.setRGB(0.23, 0.51, cycle);
-                    solarAxisPole.material.color.setRGB(cycle, 0.7, 0.03);
+                    polarAxisPole.material.color.setHex(0x3b82f6).multiplyScalar(0.4 + 0.6 * cycle);
+                    solarAxisPole.material.color.setHex(0xeab308).multiplyScalar(0.4 + 0.6 * cycle);
                     break;
                 case "roverGoal":
                     // Smooth alternate breathing glow rover and ghost parking spot
@@ -2080,7 +2083,7 @@
                     break;
                 case "polarAxis":
                     // Smooth blink on blue vertical polar pole
-                    polarAxisPole.material.color.setRGB(0.23, 0.51, cycle);
+                    polarAxisPole.material.color.setHex(0x3b82f6).multiplyScalar(0.3 + 0.7 * cycle);
                     polarIndicatorRing.children.forEach(c => {
                         c.material.transparent = true;
                         c.material.opacity = cycle;
@@ -2088,7 +2091,7 @@
                     break;
                 case "solarAxis":
                     // Smooth blink on yellow horizontal solar pole
-                    solarAxisPole.material.color.setRGB(cycle, 0.7, 0.03);
+                    solarAxisPole.material.color.setHex(0xeab308).multiplyScalar(0.3 + 0.7 * cycle);
                     solarIndicatorRing.children.forEach(c => {
                         c.material.transparent = true;
                         c.material.opacity = cycle;
@@ -2105,8 +2108,8 @@
 
         function resetVisualMaterials() {
             unitPlanet.material.opacity = 0.28;
-            polarAxisPole.material.color.setRGB(0.23, 0.51, 0.96);
-            solarAxisPole.material.color.setRGB(0.92, 0.70, 0.03);
+            polarAxisPole.material.color.setHex(0x3b82f6);
+            solarAxisPole.material.color.setHex(0xeab308);
 
             chassisDot.material.opacity = 1.0;
             headingArrow.line.material.transparent = false;
