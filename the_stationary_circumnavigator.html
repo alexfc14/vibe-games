@@ -724,7 +724,7 @@
             return q;
         }
 
-        // Redraws the slerped trace tube based *only* on the finalized moves inside the stack
+        // Redraws the trace tube based continuously along the actual rotation path taken
         function rebuildTraceAndMarkers() {
             clearTrace();
             
@@ -737,9 +737,14 @@
             for (let i = 0; i < rotationHistory.length; i++) {
                 const hist = rotationHistory[i];
                 const steps = 30;
+                const axisVec = (hist.axis === 'Z') ? GLOBAL_AXIS_Z : GLOBAL_AXIS_X_CLOCKWISE;
+                
+                // Reconstruct exact rotation path continuously around the recorded axis
                 for (let j = 1; j <= steps; j++) {
                     const t = j / steps;
-                    const interpQ = hist.startQuaternion.clone().slerp(hist.endQuaternion, t);
+                    const angleRads = THREE.MathUtils.degToRad(hist.angleDegrees * t);
+                    const stepRot = new THREE.Quaternion().setFromAxisAngle(axisVec, angleRads);
+                    const interpQ = hist.startQuaternion.clone().premultiply(stepRot);
                     points.push(new THREE.Vector3(0, -SPHERE_RADIUS, 0).applyQuaternion(interpQ));
                 }
                 
@@ -943,8 +948,8 @@
                 startPose: 'A'
             },
             8: {
-                title: "Level 5*: The 8 Path Challenge",
-                shortDesc: "Goal: Go from A (30° S, 45° W) to B (45° N, 30° E) in exactly two moves, disregarding tilt.<br><br><strong>Instructions:</strong><br>First, navigate the car from A to target B. Once you successfully reach B, the quiz question will automatically appear here inside this HUD panel!",
+                title: "Level 5*: The 2-Move Challenge",
+                shortDesc: "Goal: Go from A (30° S, 45° W) to B (45° N, 30° E) in exactly two moves, disregarding tilt.<br><br><strong>Instructions:</strong><br>Navigate the car to target B.",
                 explanation: "Remarkable! There are 8 possible 2-move paths! This is because there are 2 corner points (polar or solar first) × 2 z-values (positive or negative) × 2 ways to get to each corner (short way or long way) = 8 total paths.",
                 targetPos: getPoseVector(45, 30),
                 targetTilt: null,
@@ -965,7 +970,7 @@
             },
             9: {
                 title: "Level 5**: High Latitude Constraints",
-                shortDesc: "Goal: Go from A (30° S, 45° W) to B (75° N, 30° E) in exactly two moves, disregarding tilt.<br><br><strong>Instructions:</strong><br>Navigate to high latitude target B. Once you successfully reach B, the quiz question will appear here inside this HUD panel!",
+                shortDesc: "Goal: Go from A (30° S, 45° W) to B (75° N, 30° E) in exactly two moves, disregarding tilt.<br><br><strong>Instructions:</strong><br>B is now located at high latitude. Navigate the car to target B.",
                 explanation: "Brilliant! You recognized the constraint! Because B is so high up, some rotation intersections no longer lie on the sphere's surface (the equations have no real solutions), reducing the valid 2-move paths from 8 to 4!",
                 targetPos: getPoseVector(75, 30),
                 targetTilt: null,
