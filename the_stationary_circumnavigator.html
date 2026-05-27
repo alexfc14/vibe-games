@@ -700,6 +700,7 @@
         }
 
         // Mathematically maps start posture quaternion matching level pose parameters
+        // (1 is level 1, 8 is 5*, 9 is 5** etc)
         function getStartQuaternion(lvlId) {
             const lvl = levelDefinitions[lvlId];
             const q = new THREE.Quaternion();
@@ -1574,6 +1575,45 @@
                 </div>
             `;
 
+            // Build Highscore overview matrix table only upon completing the last level (Level 9)
+            let highscoreOverviewHtml = "";
+            if (currentLevel === 9) {
+                highscoreOverviewHtml = `
+                    <div style="margin-top: 15px; border-top: 1px dashed #444; padding-top: 12px; text-align: left;">
+                        <div style="font-size: 13px; font-weight: bold; color: #3b82f6; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">🏆 Mission Control Record Book (All Levels)</div>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 11px; font-family: monospace;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid #444; color: #888; text-align: left;">
+                                    <th style="padding: 4px 0; width: 10%;">Lvl</th>
+                                    <th style="padding: 4px 0; width: 65%;">Challenge Name</th>
+                                    <th style="padding: 4px 0; width: 25%; text-align: right;">Personal Best</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                for (let lId = 1; lId <= 9; lId++) {
+                    const lDef = levelDefinitions[lId];
+                    const scoreVal = highscores[lId];
+                    const lUnit = lDef.isPhysicalDistance ? "m" : "°";
+                    const displayScore = scoreVal !== null ? `${scoreVal.toFixed(1)}${lUnit}` : `<span style="color:#666;">-</span>`;
+                    
+                    highscoreOverviewHtml += `
+                        <tr style="border-bottom: 1px solid #2d2d2d; color: #ddd;">
+                            <td style="padding: 5px 0; color: #888;">${lId}</td>
+                            <td style="padding: 5px 0;">${lDef.title}</td>
+                            <td style="padding: 5px 0; text-align: right; font-weight: bold; color: ${scoreVal !== null ? '#4ade80' : '#666'};">${displayScore}</td>
+                        </tr>
+                    `;
+                }
+                
+                highscoreOverviewHtml += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
             // Replay optimization encourage text paragraph on completing all levels
             let encourageHtml = "";
             if (currentLevel === 9) {
@@ -1585,7 +1625,7 @@
             }
 
             document.getElementById('modal-heading').innerHTML = `🚗 PARKING SUCCESSFUL! <span style="font-size: 15px;">(${lvl.title})</span>`;
-            document.getElementById('modal-content').innerHTML = dynamicExplanation + scoreboardHtml + encourageHtml;
+            document.getElementById('modal-content').innerHTML = dynamicExplanation + scoreboardHtml + highscoreOverviewHtml + encourageHtml;
             
             const nextBtn = document.getElementById('modal-next-btn');
             if (currentLevel === 1) {
