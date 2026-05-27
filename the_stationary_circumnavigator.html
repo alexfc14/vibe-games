@@ -38,7 +38,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.6);
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
-            transition: opacity 0.1s;
+            transition: opacity 0.1s, box-shadow 0.2s;
             opacity: 0;
         }
 
@@ -69,6 +69,9 @@
             flex-direction: column;
             align-items: center;
             flex: 1;
+            border-radius: 8px;
+            padding: 8px;
+            transition: all 0.3s;
         }
 
         .knob-label {
@@ -95,6 +98,7 @@
             justify-content: center;
             touch-action: none;
             cursor: pointer;
+            transition: outline 0.3s, box-shadow 0.3s;
         }
 
         .knob-indicator {
@@ -130,6 +134,9 @@
             display: flex;
             align-items: center;
             gap: 5px;
+            border-radius: 4px;
+            padding: 2px;
+            transition: all 0.3s;
         }
 
         .manual-input-box input {
@@ -177,25 +184,23 @@
             color: #eab308 !important;
         }
 
-        .legend { position: absolute; top: 10px; left: 10px; background: rgba(15, 20, 30, 1.0); padding: 8px; border-radius: 6px; font-size: 10px; pointer-events: none; border: 1px solid #444; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10; }
-        .legend-item { display: flex; align-items: center; gap: 6px; margin-bottom: 3.5px; }
-        .legend-color { width: 10px; height: 10px; border-radius: 2px; }
-
         .telemetry-panel {
             position: absolute;
             bottom: 10px;
             right: 10px;
-            background: rgba(15, 20, 30, 1.0);
+            background: rgba(15, 20, 30, 0.75);
             padding: 10px;
             border-radius: 6px;
             font-size: 11px;
             font-family: monospace;
             pointer-events: none;
-            border: 1px solid #444;
+            border: 1px solid rgba(255, 255, 255, 0.15);
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
             z-index: 10;
             color: #4ade80;
             line-height: 1.4;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
         }
 
         /* Instruction HUD Overlay */
@@ -203,8 +208,8 @@
             position: absolute;
             top: 10px;
             right: 10px;
-            background: rgba(15, 20, 30, 0.9);
-            border: 1px solid #3b82f6;
+            background: rgba(15, 20, 30, 0.75);
+            border: 1px solid rgba(59, 130, 246, 0.4);
             padding: 12px;
             border-radius: 8px;
             width: 258px;
@@ -214,6 +219,7 @@
             z-index: 10;
             box-shadow: 0 4px 20px rgba(0,0,0,0.6);
             backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
         }
         .hud-title {
             color: #3b82f6;
@@ -249,14 +255,14 @@
             pointer-events: auto;
         }
         
-        /* Flex modal design to avoid canvas overflow */
+        /* Capped spacious flex modal card design */
         .modal-card {
             background: #1e1e1e;
             border: 1px solid #4ade80;
-            max-width: 500px;
-            width: 100%;
-            max-height: 90%; /* Keep within the container limits strictly */
-            padding: 20px 24px;
+            max-width: 650px; /* Sized up from 560px to 650px for spacious feel */
+            width: 95%;
+            max-height: 94%; /* Keep strictly within bounds but expand slightly */
+            padding: 32px; /* Increased from 24px for visual depth */
             border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.8);
             text-align: center;
@@ -273,18 +279,18 @@
         
         .modal-title {
             color: #4ade80;
-            font-size: 20px;
+            font-size: 24px; /* Scaled up from 20px */
             font-weight: bold;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
             flex-shrink: 0;
         }
         
         /* Inner scrollable area for rich content and scoreboards */
         .modal-body {
-            font-size: 13.5px;
-            line-height: 1.5;
+            font-size: 15px; /* Scaled up from 13.5px */
+            line-height: 1.6;
             color: #ddd;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
             text-align: left;
             overflow-y: auto;
             flex: 1;
@@ -455,6 +461,122 @@
             0% { transform: translate(-50%, -50%) scale(0.95); }
             100% { transform: translate(-50%, -50%) scale(1.05); }
         }
+
+        /* Dynamic Onboarding Interactive Tutorial bubble positioned TOP-RIGHT */
+        .tutorial-bubble {
+            position: absolute;
+            top: 10px; /* Placed exactly at the top, same as instructions-hud */
+            right: 10px; /* Placed exactly at the right, same as instructions-hud */
+            width: 258px; /* Matching exact footprint of instructions-hud */
+            max-width: 92%;
+            background: rgba(15, 20, 30, 0.85); /* Semi-transparent onboarding background */
+            border: 1.5px solid rgba(59, 130, 246, 0.6);
+            border-radius: 8px; /* Matching corner roundings */
+            padding: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+            box-sizing: border-box;
+            transform: translateY(10px);
+        }
+        .tutorial-bubble.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+        .tutorial-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+            padding-bottom: 6px;
+        }
+        .tutorial-title {
+            font-size: 10.5px;
+            font-weight: bold;
+            color: #3b82f6;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        .tutorial-skip-btn {
+            background: none;
+            border: none;
+            color: #8892b0;
+            font-size: 10px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .tutorial-skip-btn:hover {
+            color: #ef4444;
+        }
+        .tutorial-text {
+            font-size: 12px; /* Adjusted slightly to look gorgeous in a narrower profile */
+            line-height: 1.48;
+            color: #e2e8f0;
+            min-height: 110px; /* Set comfortable height so actions remain stable */
+            box-sizing: border-box;
+        }
+        .tutorial-text ul {
+            margin: 6px 0 0 0;
+            padding-left: 18px;
+        }
+        .tutorial-text li {
+            margin-bottom: 4px;
+        }
+        .tutorial-actions-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+        }
+        .tutorial-step-dots {
+            display: flex;
+            gap: 5px;
+        }
+        .step-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .step-dot.active {
+            background: #3b82f6;
+            box-shadow: 0 0 6px #3b82f6;
+        }
+        .tutorial-next-btn {
+            background: #3b82f6;
+            border: none;
+            color: #fff;
+            padding: 5px 12px;
+            font-weight: bold;
+            font-size: 10.5px;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+            transition: all 0.2s;
+        }
+        .tutorial-next-btn:hover {
+            background: #2563eb;
+            box-shadow: 0 2px 12px rgba(37, 99, 235, 0.6);
+        }
+
+        /* Dom-based interactive highlighted blinking animations (Slow and Smooth) */
+        @keyframes control-pulse {
+            0% { box-shadow: 0 0 0px transparent; border-color: rgba(255,255,255,0.25); background: rgba(30, 30, 30, 0); }
+            50% { box-shadow: 0 0 15px #3b82f6; border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+            100% { box-shadow: 0 0 0px transparent; border-color: rgba(255,255,255,0.25); background: rgba(30, 30, 30, 0); }
+        }
+        .element-blink {
+            animation: control-pulse 2.5s infinite ease-in-out !important; /* Slowed down for breathing effect */
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TrackballControls.js"></script>
@@ -467,23 +589,21 @@
         <!-- Celebratory Screen Message banner -->
         <div id="celebration-banner">⭐ ALIGNMENT MATCHED! ⭐</div>
 
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color" style="background: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px;">🚀</div>
-                <strong>🔴🚀 Car</strong>
+        <!-- Dynamic Onboarding Interactive Tutorial Dialog Box (Now aligned TOP-RIGHT) -->
+        <div class="tutorial-bubble" id="onboarding-tutorial">
+            <div class="tutorial-header">
+                <div class="tutorial-title" id="tutorial-step-header">SYSTEM ONBOARDING</div>
+                <button class="tutorial-skip-btn" id="tutorial-skip-btn">Skip Tutorial</button>
             </div>
-            <div class="legend-item" id="legend-ghost-item">
-                <div class="legend-color" style="background: rgba(239,68,68,0.25); border: 1px dashed rgba(255,255,255,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; opacity: 0.7;">🚀</div>
-                <strong style="opacity: 0.85;">🔴🚀 Parking Spot (Ghost)</strong>
+            <div class="tutorial-text" id="tutorial-text-content">Loading Gyronia telemetry...</div>
+            <div class="tutorial-actions-row">
+                <div class="tutorial-step-dots" id="tutorial-dots-container"></div>
+                <button class="tutorial-next-btn" id="tutorial-next-btn">Next Step ➡️</button>
             </div>
-            <div class="legend-item"><hr style="border:none; border-top:2px solid #eab308; width:10px; margin:0;"> <strong>Sunrise/Sunset Ring</strong></div>
-            <div class="legend-item"><hr style="border:none; border-top:2px solid #4ade80; width:10px; margin:0;"> <strong>Noon/Midnight Ring</strong></div>
-            <div class="legend-item"><hr style="border:none; border-top:2px solid #3b82f6; width:10px; margin:0;"> <strong>Equator Ring</strong></div>
-            <div class="legend-item"><hr style="border:none; border-top:1px dashed #ffffff; width:10px; margin:0;"> <strong>45° Parallels</strong></div>
         </div>
 
         <!-- Instructional Game HUD Overlay -->
-        <div class="instructions-hud">
+        <div class="instructions-hud" id="instructions-hud">
             <div class="hud-title" id="hud-level-title">Level 1: Holonomy Intro</div>
             <div id="hud-level-desc" style="line-height: 1.4; color: #ddd; font-size: 11px;">Loading...</div>
         </div>
@@ -501,7 +621,7 @@
         </div>
 
         <div class="telemetry-panel">
-            <strong>🛰️ CAR POSE</strong><br>
+            <strong>🚀 POSE</strong><br>
             Lat: <span id="telemetry-lat">0.0° N</span><br>
             Lon: <span id="telemetry-lon">0.0° E</span><br>
             Tilt: <span id="telemetry-hdg">0.0°</span>
@@ -511,9 +631,9 @@
     <div class="controls">
         <div class="knobs-container">
             <!-- Polar Rotation (Blue Theme - Cold) -->
-            <div class="knob-panel">
+            <div class="knob-panel" id="polar-knob-panel">
                 <div class="knob-label" style="color: #3b82f6;">Polar Rotation</div>
-                <div class="manual-input-box">
+                <div class="manual-input-box" id="polar-input-box">
                     <button id="btn1-left" class="polar-theme-btn">⬅️</button>
                     <input type="number" id="num1" class="polar-theme-input" value="15" step="5">
                     <button id="btn1-right" class="polar-theme-btn">➡️</button>
@@ -543,9 +663,9 @@
             </div>
 
             <!-- Solar Rotation (Yellow Theme - Hot) -->
-            <div class="knob-panel">
+            <div class="knob-panel" id="solar-knob-panel">
                 <div class="knob-label" style="color: #eab308;">Solar Rotation</div>
-                <div class="manual-input-box">
+                <div class="manual-input-box" id="solar-input-box">
                     <button id="btn2-left" class="solar-theme-btn">⬅️</button>
                     <input type="number" id="num2" class="solar-theme-input" value="15" step="5">
                     <button id="btn2-right" class="solar-theme-btn">➡️</button>
@@ -623,8 +743,8 @@
         scene.add(backShell); 
 
         // --- FIXED STATIONARY ROTATION AXES ---
-        const axisMaterialPolar = new THREE.MeshBasicMaterial({ color: 0x3b82f6 });
-        const axisMaterialSolar = new THREE.MeshBasicMaterial({ color: 0xeab308 });
+        const axisMaterialPolar = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 1.0 });
+        const axisMaterialSolar = new THREE.MeshBasicMaterial({ color: 0xeab308, transparent: true, opacity: 1.0 });
 
         // 1. Polar Axis (World Z)
         const polarAxisPole = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 2.6, 8), axisMaterialPolar);
@@ -664,7 +784,7 @@
         carGroup.position.set(0, -SPHERE_RADIUS, 0);
         planetGroup.add(carGroup);
 
-        const chassisDot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 16), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+        const chassisDot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 16), new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 1.0 }));
         carGroup.add(chassisDot);
 
         const arrowDirection = new THREE.Vector3(1, 0, 0);
@@ -832,6 +952,7 @@
         // --- TRACKABLE LANDMARK REGISTRY ---
         const trackedLandmarks = [];
 
+        // Adjusted default transform properties so HTML overlay anchors beautifully
         function createShieldedLandmark(text, emoji, positionVector, dotColor, transformOverride, targetOpacity) {
             const nodeDotGeo = new THREE.SphereGeometry(0.016, 16, 16);
             const nodeDotMat = new THREE.MeshBasicMaterial({ color: dotColor, depthTest: true });
@@ -1021,6 +1142,188 @@
             }
         };
 
+        // --- ONBOARDING INTERACTIVE TUTORIAL LORE ENGINE ---
+        let tutorialActive = false;
+        let currentTutorialStep = 0;
+        let typewriterInterval = null;
+        let isTypewriting = false;
+
+        const tutorialSteps = [
+            {
+                header: "Gyronia Onboarding (1/9)",
+                text: "<strong>Welcome, Operator!</strong> This is planet Gyronia—a celestial anomaly governed by non-Euclidean curvature. Unlike normal worlds, this planet does not rotate freely. Its movements are permanently bound to <strong>two fixed perpendicular axes</strong> consecutively.",
+                targetBlink: "planetStory"
+            },
+            {
+                header: "Mission Goal (2/9)",
+                text: "Your core directive is to <strong>park your rover</strong> (the red rocket 🚀) in the designated parking coordinates (the transparent ghost rocket). In this curved space, parking is only complete when you match both <strong>position</strong> (Latitude/Longitude) and your exact <strong>local heading</strong> (Tilt angle).",
+                targetBlink: "roverGoal"
+            },
+            {
+                header: "The Surface Landmarks (3/9)",
+                text: "To help you navigate, our mission control has placed landmarks on Gyronia's surface:<ul><li><strong>🌅 Sunrise</strong> & <strong>🌇 Sunset</strong>: Define our horizontal axis.</li><li><strong>☀️ Noon</strong> & <strong>🌙 Midnight</strong>: Mark our central meridian.</li><li><strong>🐻❄️ North Pole</strong> & <strong>🐧 South Pole</strong>: Cap the vertical axis.</li></ul>",
+                targetBlink: "landmarksOnly"
+            },
+            {
+                header: "Camera View Controls (4/9)",
+                text: "You have complete command over your view! Click and drag your mouse (or drag with one finger) on the empty space to <strong>rotate the camera</strong>. Use your scroll wheel (or pinch) to <strong>zoom</strong>, and right-click drag (or two-finger drag) to <strong>pan</strong>.",
+                targetBlink: "viewControls"
+            },
+            {
+                header: "The Polar Axis (5/9)",
+                text: "The <strong>Blue vertical cylinder</strong> is the Polar Axis. Rotating here (Polar Rotation) spins the planet around its poles. This shifts your Longitude East or West while keeping your relative alignment parallel to the equator.",
+                targetBlink: "polarAxis"
+            },
+            {
+                header: "The Solar Axis (6/9)",
+                text: "The <strong>Yellow horizontal cylinder</strong> is the Solar Axis. Rotating here (Solar Rotation) rolls the planet sideways. By executing consecutive rotations across both orthogonal axes, you can travel to any point on the sphere!",
+                targetBlink: "solarAxis"
+            },
+            {
+                header: "Precise Step Buttons (7/9)",
+                text: "You can drive with high precision! Use the manual input boxes inside the cockpit panel to specify a step size in degrees (e.g., 15°), and click the ⬅️ or ➡️ buttons to rotate the planet by that exact step size. (Feel free to try them now!)",
+                targetBlink: "stepButtons"
+            },
+            {
+                header: "Continuous Circular Dials (8/9)",
+                text: "For smooth, continuous physical exploration, grab the circular dials! Click and drag your mouse (or drag your finger on touchscreens) directly on the circular knobs to continuously rotate the planet in 3D space. (Fiddle with them now to practice!)",
+                targetBlink: "circularDials"
+            },
+            {
+                header: "Ready, Operator? (9/9)",
+                text: "Ready for your first mission? Launching in 3... 2... 1...",
+                targetBlink: "levelOneInstructions"
+            }
+        ];
+
+        function startTutorialOnboarding() {
+            tutorialActive = true;
+            currentTutorialStep = 0;
+            
+            // Generate visual dots
+            const dotsContainer = document.getElementById('tutorial-dots-container');
+            dotsContainer.innerHTML = '';
+            for(let i = 0; i < tutorialSteps.length; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'step-dot' + (i === 0 ? ' active' : '');
+                dotsContainer.appendChild(dot);
+            }
+
+            document.getElementById('instructions-hud').style.display = 'none'; // Temporarily hide instructions during onboarding
+            document.getElementById('onboarding-tutorial').classList.add('show');
+            loadTutorialStep(0);
+        }
+
+        function loadTutorialStep(stepIndex) {
+            currentTutorialStep = stepIndex;
+            const step = tutorialSteps[stepIndex];
+            
+            // Highlight step dots
+            const dots = document.querySelectorAll('.step-dot');
+            dots.forEach((dot, idx) => {
+                if (idx === stepIndex) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+
+            document.getElementById('tutorial-step-header').innerText = step.header;
+
+            // Trigger Typewriter Animation Snappily (Comfortable reading pace)
+            clearInterval(typewriterInterval);
+            isTypewriting = true;
+            let currentString = "";
+            let charIndex = 0;
+            const textElement = document.getElementById('tutorial-text-content');
+
+            typewriterInterval = setInterval(() => {
+                if (charIndex < step.text.length) {
+                    if (step.text.substring(charIndex, charIndex + 4) === "<br>") {
+                        currentString += "<br>";
+                        charIndex += 4;
+                    } else if (step.text.substring(charIndex, charIndex + 4) === "<ul>") {
+                        currentString += "<ul>";
+                        charIndex += 4;
+                    } else if (step.text.substring(charIndex, charIndex + 5) === "</ul>") {
+                        currentString += "</ul>";
+                        charIndex += 5;
+                    } else if (step.text.substring(charIndex, charIndex + 4) === "<li>") {
+                        currentString += "<li>";
+                        charIndex += 4;
+                    } else if (step.text.substring(charIndex, charIndex + 5) === "</li>") {
+                        currentString += "</li>";
+                        charIndex += 5;
+                    } else if (step.text.substring(charIndex, charIndex + 8) === "<strong>") {
+                        const endTag = step.text.indexOf("</strong>", charIndex);
+                        if (endTag !== -1) {
+                            currentString += step.text.substring(charIndex, endTag + 9);
+                            charIndex = endTag + 9;
+                        } else {
+                            currentString += step.text[charIndex];
+                            charIndex++;
+                        }
+                    } else {
+                        currentString += step.text[charIndex];
+                        charIndex++;
+                    }
+                    textElement.innerHTML = currentString;
+                } else {
+                    clearInterval(typewriterInterval);
+                    isTypewriting = false;
+                    document.getElementById('tutorial-next-btn').innerText = (stepIndex === tutorialSteps.length - 1) ? "Launch Rover 🚀" : "Next Step ➡️";
+                }
+            }, 25); // Relaxed typing speed from 12ms to 25ms
+
+            // Trigger DOM blinks corresponding to selected tutorial targets
+            clearAllDOMHighlights();
+            if (step.targetBlink === "stepButtons") {
+                document.getElementById('polar-input-box').classList.add('element-blink');
+                document.getElementById('solar-input-box').classList.add('element-blink');
+            } else if (step.targetBlink === "circularDials") {
+                document.getElementById('dial1').classList.add('element-blink');
+                document.getElementById('dial2').classList.add('element-blink');
+            }
+        }
+
+        function clearAllDOMHighlights() {
+            document.getElementById('polar-input-box').classList.remove('element-blink');
+            document.getElementById('solar-input-box').classList.remove('element-blink');
+            document.getElementById('dial1').classList.remove('element-blink');
+            document.getElementById('dial2').classList.remove('element-blink');
+        }
+
+        function endTutorialOnboarding() {
+            clearInterval(typewriterInterval);
+            isTypewriting = false;
+            tutorialActive = false;
+            clearAllDOMHighlights();
+            resetVisualMaterials();
+            document.getElementById('onboarding-tutorial').classList.remove('show');
+            document.getElementById('instructions-hud').style.display = 'block'; // Restore game instructions panel
+            
+            // Re-call clean state reset: any manual testing trace and posture moves are wiped so they start completely fresh!
+            resetCarAndOdometer();
+        }
+
+        // Onboarding Navigation Event Listeners
+        document.getElementById('tutorial-next-btn').addEventListener('click', () => {
+            if (isTypewriting) {
+                // If clicked during animation, complete typewriter text instantly
+                clearInterval(typewriterInterval);
+                isTypewriting = false;
+                document.getElementById('tutorial-text-content').innerHTML = tutorialSteps[currentTutorialStep].text;
+                document.getElementById('tutorial-next-btn').innerText = (currentTutorialStep === tutorialSteps.length - 1) ? "Launch Rover 🚀" : "Next Step ➡️";
+            } else {
+                if (currentTutorialStep < tutorialSteps.length - 1) {
+                    loadTutorialStep(currentTutorialStep + 1);
+                } else {
+                    endTutorialOnboarding();
+                }
+            }
+        });
+
+        document.getElementById('tutorial-skip-btn').addEventListener('click', () => {
+            endTutorialOnboarding();
+        });
+
         // Resets the car position, orientation, and odometer completely
         function resetCarAndOdometer() {
             const lvl = levelDefinitions[currentLevel];
@@ -1087,11 +1390,17 @@
             if (lvl.hideArrows) {
                 headingArrow.visible = false;
                 ghostArrow.visible = false;
-                document.getElementById('legend-ghost-item').style.display = 'none';
+                
+                // Safely safeguard legend-ghost-item which was removed from HTML
+                const legendGhostItem = document.getElementById('legend-ghost-item');
+                if (legendGhostItem) legendGhostItem.style.display = 'none';
             } else {
                 headingArrow.visible = true;
                 ghostArrow.visible = true;
-                document.getElementById('legend-ghost-item').style.display = 'flex';
+                
+                // Safely safeguard legend-ghost-item which was removed from HTML
+                const legendGhostItem = document.getElementById('legend-ghost-item');
+                if (legendGhostItem) legendGhostItem.style.display = 'flex';
             }
 
             // Compute target local orientation vector matching requested target Tilt angle
@@ -1113,6 +1422,13 @@
 
             updateLvlNavButtons(); // Instantly configure state of level buttons
             updateTelemetryData();
+
+            // Trigger onboarding tutorial only upon initiating Level 1
+            if (lvlId === 1) {
+                startTutorialOnboarding();
+            } else {
+                endTutorialOnboarding();
+            }
         }
 
         // Display the Quiz inside the instructions panel after reaching target
@@ -1272,6 +1588,7 @@
             updateOdometerDisplay(totalRotated);
         }
 
+        // Active control state helpers (No longer blocked by tutorialActive!)
         function updateUndoButtonState() {
             undoButton.disabled = rotationHistory.length === 0;
         }
@@ -1303,7 +1620,7 @@
         }
 
         function applyStepWithHistory(angleDegrees, rotationAxis) {
-            if (isLevelCompleted) return;
+            if (isLevelCompleted) return; // Inputs allowed freely during tutorial!
 
             const isDistanceMode = levelDefinitions[currentLevel].isPhysicalDistance;
             const odomAddition = isDistanceMode ? calculatePhysicalDistanceStep(angleDegrees, rotationAxis) : Math.abs(angleDegrees);
@@ -1364,7 +1681,7 @@
 
         // --- UNDO ACTION EVENT ---
         undoButton.addEventListener('click', () => {
-            if (rotationHistory.length === 0 || isLevelCompleted) return;
+            if (rotationHistory.length === 0 || isLevelCompleted) return; // Inputs allowed freely during tutorial!
 
             const previousState = rotationHistory.pop();
             
@@ -1408,7 +1725,7 @@
             }
 
             function interactionStart(clientX, clientY) {
-                if (isLevelCompleted) return;
+                if (isLevelCompleted) return; // Inputs allowed freely during tutorial!
                 active = true;
                 const rect = dial.getBoundingClientRect();
                 centerPoint = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
@@ -1419,7 +1736,7 @@
             }
 
             function interactionMove(clientX, clientY) {
-                if (!active || isLevelCompleted) return;
+                if (!active || isLevelCompleted) return; // Inputs allowed freely during tutorial!
                 const currentAngle = calculateInteractionAngle(clientX, clientY);
                 
                 let delta = currentAngle - lastAngle;
@@ -1531,7 +1848,7 @@
             telemetryHdg.innerText = `${tiltAngle.toFixed(1)}°`;
 
             // --- CHECK FOR PARKING SPOT COINCIDENCE (Pose matching Pose B) ---
-            if (!isLevelCompleted) {
+            if (!isLevelCompleted && !tutorialActive) {
                 const currentLvl = levelDefinitions[currentLevel];
                 if (currentLvl) {
                     const positionDistance = carWorldPos.distanceTo(currentLvl.targetPos);
@@ -1722,6 +2039,106 @@
             nextBtn.innerText = "Replay Challenge 1 🔄";
         }
 
+        // --- REAL-TIME GRAPHICAL BLINKING CONTROLLER (Slow and Smooth) ---
+        function applyTutorialBlinking(cycle) {
+            const step = tutorialSteps[currentTutorialStep];
+            if (!step) return;
+
+            resetVisualMaterials(); // Clean reset previous opacities first to avoid visual blending bugs
+
+            switch(step.targetBlink) {
+                case "planetStory":
+                    // Smooth glow planet and axes
+                    unitPlanet.material.opacity = cycle * 0.7;
+                    polarAxisPole.material.color.setRGB(0.23, 0.51, cycle);
+                    solarAxisPole.material.color.setRGB(cycle, 0.7, 0.03);
+                    break;
+                case "roverGoal":
+                    // Smooth alternate breathing glow rover and ghost parking spot
+                    chassisDot.material.opacity = cycle;
+                    headingArrow.line.material.transparent = true;
+                    headingArrow.line.material.opacity = cycle;
+                    headingArrow.cone.material.transparent = true;
+                    headingArrow.cone.material.opacity = cycle;
+                    
+                    ghostChassis.material.opacity = (1.0 - cycle) * 0.7 + 0.1;
+                    ghostArrow.line.material.opacity = (1.0 - cycle) * 0.7 + 0.1;
+                    ghostArrow.cone.material.opacity = (1.0 - cycle) * 0.7 + 0.1;
+                    break;
+                case "landmarksOnly":
+                case "coordinateRings":
+                    // Flash DOM landmark labels shadows slowly and smoothly
+                    document.querySelectorAll('.dom-label').forEach(el => {
+                        el.style.opacity = cycle * 0.95;
+                        el.style.boxShadow = `0 0 15px rgba(59, 130, 246, ${cycle * 0.7})`;
+                        el.style.borderColor = `rgba(255, 255, 255, ${cycle * 0.5})`;
+                    });
+                    break;
+                case "viewControls":
+                    // Calm pulse on the sphere to encourage mouse drag interactions
+                    unitPlanet.material.opacity = 0.2 + cycle * 0.2;
+                    break;
+                case "polarAxis":
+                    // Smooth blink on blue vertical polar pole
+                    polarAxisPole.material.color.setRGB(0.23, 0.51, cycle);
+                    polarIndicatorRing.children.forEach(c => {
+                        c.material.transparent = true;
+                        c.material.opacity = cycle;
+                    });
+                    break;
+                case "solarAxis":
+                    // Smooth blink on yellow horizontal solar pole
+                    solarAxisPole.material.color.setRGB(cycle, 0.7, 0.03);
+                    solarIndicatorRing.children.forEach(c => {
+                        c.material.transparent = true;
+                        c.material.opacity = cycle;
+                    });
+                    break;
+                case "levelOneInstructions":
+                    // Highly focus ghost parking spot
+                    ghostChassis.material.opacity = cycle * 0.9;
+                    ghostArrow.line.material.opacity = cycle * 0.9;
+                    ghostArrow.cone.material.opacity = cycle * 0.9;
+                    break;
+            }
+        }
+
+        function resetVisualMaterials() {
+            unitPlanet.material.opacity = 0.28;
+            polarAxisPole.material.color.setRGB(0.23, 0.51, 0.96);
+            solarAxisPole.material.color.setRGB(0.92, 0.70, 0.03);
+
+            chassisDot.material.opacity = 1.0;
+            headingArrow.line.material.transparent = false;
+            headingArrow.line.material.opacity = 1.0;
+            headingArrow.cone.material.transparent = false;
+            headingArrow.cone.material.opacity = 1.0;
+
+            ghostChassis.material.opacity = 0.30;
+            ghostArrow.line.material.opacity = 0.35;
+            ghostArrow.cone.material.opacity = 0.35;
+
+            equatorRing.material.opacity = 0.7;
+            noonMidnightRing.material.opacity = 0.6;
+            sunriseSunsetRing.material.opacity = 0.6;
+            north45.material.opacity = 0.45;
+            south45.material.opacity = 0.45;
+
+            polarIndicatorRing.children.forEach(c => {
+                c.material.transparent = false;
+                c.material.opacity = 1.0;
+            });
+            solarIndicatorRing.children.forEach(c => {
+                c.material.transparent = false;
+                c.material.opacity = 1.0;
+            });
+
+            document.querySelectorAll('.dom-label').forEach(el => {
+                el.style.boxShadow = '0 4px 10px rgba(0,0,0,0.6)';
+                el.style.borderColor = 'rgba(255, 255, 255, 0.25)';
+            });
+        }
+
         // --- HIGH-PERFORMANCE VECTOR MATRIX PROJECTION LOOP ---
         const projectionVector = new THREE.Vector3();
 
@@ -1744,7 +2161,11 @@
 
                 item.domElement.style.left = posX + 'px';
                 item.domElement.style.top = (posY - 6) + 'px';
-                item.domElement.style.opacity = item.targetOpacity; 
+                
+                // Do not override opacity when tutorial is managing landmark highlights
+                if (!tutorialActive) {
+                    item.domElement.style.opacity = item.targetOpacity; 
+                }
             }
         }
 
@@ -1753,6 +2174,13 @@
             controls.update();
             updateScreenSpaceLabels();
             updateTelemetryData();
+
+            if (tutorialActive) {
+                // Slower breathing wave oscillation timing (0.003 frequency) for slow and smooth blinking
+                const cycle = Math.sin(Date.now() * 0.003) * 0.35 + 0.65; 
+                applyTutorialBlinking(cycle);
+            }
+
             renderer.render(scene, camera);
         }
 
