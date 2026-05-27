@@ -249,17 +249,22 @@
             pointer-events: auto;
         }
         
+        /* Flex modal design to avoid canvas overflow */
         .modal-card {
             background: #1e1e1e;
             border: 1px solid #4ade80;
             max-width: 500px;
             width: 100%;
-            padding: 24px;
+            max-height: 90%; /* Keep within the container limits strictly */
+            padding: 20px 24px;
             border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.8);
             text-align: center;
             transform: scale(0.9);
             transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
         }
         
         .completion-overlay.show .modal-card {
@@ -271,19 +276,44 @@
             font-size: 20px;
             font-weight: bold;
             margin-bottom: 12px;
+            flex-shrink: 0;
         }
+        
+        /* Inner scrollable area for rich content and scoreboards */
         .modal-body {
             font-size: 13.5px;
             line-height: 1.5;
             color: #ddd;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             text-align: left;
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 6px;
+            box-sizing: border-box;
+        }
+
+        /* Dark themed scrollbar styles for inner modal */
+        .modal-body::-webkit-scrollbar {
+            width: 6px;
+        }
+        .modal-body::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+        .modal-body::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
         
         .modal-actions {
             display: flex;
             justify-content: center;
             gap: 12px;
+            flex-shrink: 0; /* Keep buttons from scaling down */
+            margin-top: auto;
         }
 
         .modal-btn {
@@ -700,7 +730,6 @@
         }
 
         // Mathematically maps start posture quaternion matching level pose parameters
-        // (1 is level 1, 8 is 5*, 9 is 5** etc)
         function getStartQuaternion(lvlId) {
             const lvl = levelDefinitions[lvlId];
             const q = new THREE.Quaternion();
@@ -951,7 +980,7 @@
             8: {
                 title: "Level 5*: The 2-Move Challenge",
                 shortDesc: "Goal: Go from A (30° S, 45° W) to B (45° N, 30° E) in exactly two moves, disregarding tilt.",
-                explanation: "Remarkable! There are 8 possible 2-move paths! This is because there are 2 corner points (polar or solar first) × 2 z-values (positive or negative) × 2 ways to get to each corner (short way or long way) = 8 total paths.",
+                explanation: "Remarkable! There are 8 possible 2-move paths! This is because there are 2 main choices (polar or solar first) × 2 y-values (positive or negative Y / sunrise-sunset axis) × 2 ways to get to each corner (short way or long way) = 8 total paths.",
                 targetPos: getPoseVector(45, 30),
                 targetTilt: null,
                 hideArrows: true,
@@ -967,7 +996,7 @@
                     { value: "8", label: "8" },
                     { value: "inf", label: "Infinite" }
                 ],
-                quizExplanation: "There are 2 main choices for the first axis of rotation (Z first or X first). For each choice, there are 2 potential latitudes/longitudes where the paths can intersect, and for each intersection, there are 2 directions around each circle (the short way or the long way). This results in $2 \\times 2 \\times 2 = 8$ distinct paths!"
+                quizExplanation: "There are 2 main choices for the first axis of rotation (Polar/Z first or Solar/X first). For each choice, there are 2 potential intermediate corner points (positive or negative Y coordinate / sunrise-sunset axis) where the paths intersect, and for each intersection, there are 2 directions around each circle (the short way or the long way). This results in $2 \\times 2 \\times 2 = 8$ distinct paths!"
             },
             9: {
                 title: "Level 5**: High Latitude Constraints",
@@ -988,7 +1017,7 @@
                     { value: "8", label: "8" },
                     { value: "inf", label: "Infinite" }
                 ],
-                quizExplanation: "Because B is at 75° N, the sum of squares $x_a^2 + z_b^2 > 1$. This means the sphere's surface doesn't reach the required intersection for a Solar-first move (the mathematical equations have no real solutions for those corners). Thus, we are forced to move Polar first, reducing the number of valid paths from 8 to 4!"
+                quizExplanation: "Because B is at 75° N, the sum of squares $x_a^2 + z_b^2 > 1$. This means the sphere's surface doesn't reach the required intersection for a Solar-first move (the mathematical equations have no real solutions for those corners with positive or negative Y coordinates). Thus, we are forced to move Polar first, reducing the number of valid paths from 8 to 4!"
             }
         };
 
@@ -1173,6 +1202,14 @@
         // Proceed to next challenge action with transition handling
         document.getElementById('modal-next-btn').addEventListener('click', () => {
             const modal = document.getElementById('completion-modal');
+            const nextBtnText = document.getElementById('modal-next-btn').innerText;
+
+            // Interactive choice check: If button says "View Scoreboard", show scoreboard instead of continuing
+            if (currentLevel === 9 && nextBtnText.includes("Scoreboard")) {
+                showScoreboardView();
+                return;
+            }
+
             modal.classList.remove('show');
             
             setTimeout(() => {
@@ -1187,6 +1224,14 @@
 
         // Replay/Retry current challenge action
         document.getElementById('modal-retry-btn').addEventListener('click', () => {
+            const retryBtnText = document.getElementById('modal-retry-btn').innerText;
+
+            // Interactive choice check: Back to Level 9 explanation from scoreboard screen
+            if (currentLevel === 9 && retryBtnText.includes("Explanation")) {
+                showLevelCompletedModal(levelDefinitions[9]);
+                return;
+            }
+
             const modal = document.getElementById('completion-modal');
             modal.classList.remove('show');
 
@@ -1526,7 +1571,6 @@
         // Handles the intermediate celebration and 2-second timing transition
         function triggerVictorySequence(lvl) {
             if (lvl.isQuiz) {
-                // Instantly display the completed success modal, bypassing "aligned match" banner text
                 showLevelCompletedModal(lvl);
             } else {
                 const banner = document.getElementById('celebration-banner');
@@ -1562,6 +1606,15 @@
                 } else {
                     dynamicExplanation = `You made it back! But your walk distance was <strong>${currentScore.toFixed(1)}m</strong>. Can you find a shorter path? Hint: Try rotating around the Solar axis first while sitting at Sunrise to see if you can bypass extra walking.`;
                 }
+            } else if (currentLevel === 9) {
+                // Incorporate both the basic congratulations explanation and the mathematical proof clearly
+                dynamicExplanation = `
+                    <p><strong>Amazing navigation!</strong> You successfully identified the geometric constraints at high latitude.</p>
+                    <p style="margin-top: 10px; line-height: 1.4;">${lvl.explanation}</p>
+                    <p style="margin-top: 10px; font-style: italic; border-left: 2px solid #eab308; padding-left: 10px; color: #ddd; font-size: 12.5px; line-height: 1.4;">
+                        <strong>Proof:</strong> ${lvl.quizExplanation}
+                    </p>
+                `;
             }
 
             // Formulate scoreboard stats panel HTML
@@ -1575,59 +1628,19 @@
                 </div>
             `;
 
-            // Build Highscore overview matrix table only upon completing the last level (Level 9)
-            let highscoreOverviewHtml = "";
-            if (currentLevel === 9) {
-                highscoreOverviewHtml = `
-                    <div style="margin-top: 15px; border-top: 1px dashed #444; padding-top: 12px; text-align: left;">
-                        <div style="font-size: 13px; font-weight: bold; color: #3b82f6; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">🏆 Mission Control Record Book (All Levels)</div>
-                        <table style="width: 100%; border-collapse: collapse; font-size: 11px; font-family: monospace;">
-                            <thead>
-                                <tr style="border-bottom: 1px solid #444; color: #888; text-align: left;">
-                                    <th style="padding: 4px 0; width: 10%;">Lvl</th>
-                                    <th style="padding: 4px 0; width: 65%;">Challenge Name</th>
-                                    <th style="padding: 4px 0; width: 25%; text-align: right;">Personal Best</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-                
-                for (let lId = 1; lId <= 9; lId++) {
-                    const lDef = levelDefinitions[lId];
-                    const scoreVal = highscores[lId];
-                    const lUnit = lDef.isPhysicalDistance ? "m" : "°";
-                    const displayScore = scoreVal !== null ? `${scoreVal.toFixed(1)}${lUnit}` : `<span style="color:#666;">-</span>`;
-                    
-                    highscoreOverviewHtml += `
-                        <tr style="border-bottom: 1px solid #2d2d2d; color: #ddd;">
-                            <td style="padding: 5px 0; color: #888;">${lId}</td>
-                            <td style="padding: 5px 0;">${lDef.title}</td>
-                            <td style="padding: 5px 0; text-align: right; font-weight: bold; color: ${scoreVal !== null ? '#4ade80' : '#666'};">${displayScore}</td>
-                        </tr>
-                    `;
-                }
-                
-                highscoreOverviewHtml += `
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            }
-
-            // Replay optimization encourage text paragraph on completing all levels
-            let encourageHtml = "";
-            if (currentLevel === 9) {
-                encourageHtml = `
-                    <p style="margin-top: 15px; color: #eab308; font-weight: bold; font-style: italic; border-top: 1px dashed #444; padding-top: 12px; font-size: 12.5px;">
-                        💡 Optimization Challenge: You have completed all physical transport levels! Can you find a shorter route that reduces your odometer score even further? Replay Level 1 or Level 4 and try to minimize your path!
-                    </p>
-                `;
-            }
-
             document.getElementById('modal-heading').innerHTML = `🚗 PARKING SUCCESSFUL! <span style="font-size: 15px;">(${lvl.title})</span>`;
-            document.getElementById('modal-content').innerHTML = dynamicExplanation + scoreboardHtml + highscoreOverviewHtml + encourageHtml;
+            document.getElementById('modal-content').innerHTML = dynamicExplanation + scoreboardHtml;
+            
+            // Ensure content viewport scrolls back to the top automatically on content switches
+            document.getElementById('modal-content').scrollTop = 0;
             
             const nextBtn = document.getElementById('modal-next-btn');
+            const retryBtn = document.getElementById('modal-retry-btn');
+
+            // Restore defaults
+            retryBtn.innerText = "Retry Challenge";
+            retryBtn.style.display = 'inline-block';
+
             if (currentLevel === 1) {
                 nextBtn.innerText = "Begin Challenge 2 🚀";
             } else if (currentLevel === 2) {
@@ -1644,12 +1657,69 @@
                 nextBtn.innerText = "Begin Challenge 5* 🚀";
             } else if (currentLevel === 8) {
                 nextBtn.innerText = "Begin Challenge 5** 🚀";
-            } else {
-                nextBtn.innerText = "Replay Challenge 1 🔄";
+            } else if (currentLevel === 9) {
+                nextBtn.innerText = "View Scoreboard 🏆";
             }
             
             // Trigger overlay fade-in transition
             document.getElementById('completion-modal').classList.add('show');
+        }
+
+        // Renders the highscore scoreboard overview dynamically inside the modal card
+        function showScoreboardView() {
+            document.getElementById('modal-heading').innerHTML = `🏆 Mission Control Record Book`;
+            
+            let highscoreOverviewHtml = `
+                <div style="text-align: left; margin-bottom: 15px;">
+                    <p style="font-size: 13px; color: #ddd; line-height: 1.4; margin-bottom: 12px;">
+                        Congratulations! You have completed all physical transport and holonomy challenges in this simulator. Here is your official laboratory record:
+                    </p>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; font-family: monospace;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid #444; color: #888; text-align: left;">
+                                <th style="padding: 4px 0; width: 10%;">Lvl</th>
+                                <th style="padding: 4px 0; width: 65%;">Challenge Name</th>
+                                <th style="padding: 4px 0; width: 25%; text-align: right;">Personal Best</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            for (let lId = 1; lId <= 9; lId++) {
+                const lDef = levelDefinitions[lId];
+                const scoreVal = highscores[lId];
+                const lUnit = lDef.isPhysicalDistance ? "m" : "°";
+                const displayScore = scoreVal !== null ? `${scoreVal.toFixed(1)}${lUnit}` : `<span style="color:#666;">-</span>`;
+                
+                highscoreOverviewHtml += `
+                    <tr style="border-bottom: 1px solid #2d2d2d; color: #ddd;">
+                        <td style="padding: 5px 0; color: #888;">${lId}</td>
+                        <td style="padding: 5px 0;">${lDef.title}</td>
+                        <td style="padding: 5px 0; text-align: right; font-weight: bold; color: ${scoreVal !== null ? '#4ade80' : '#666'};">${displayScore}</td>
+                    </tr>
+                `;
+            }
+            
+            highscoreOverviewHtml += `
+                        </tbody>
+                    </table>
+                    
+                    <p style="margin-top: 15px; color: #eab308; font-weight: bold; font-style: italic; border-top: 1px dashed #444; padding-top: 12px; font-size: 12.5px; line-height: 1.4;">
+                        💡 Optimization Challenge: Can you find even shorter routes that reduce your odometer scores further? Try replaying Level 1 or Level 4!
+                    </p>
+                </div>
+            `;
+
+            document.getElementById('modal-content').innerHTML = highscoreOverviewHtml;
+            
+            // Auto scroll container back to top so user is perfectly positioned
+            document.getElementById('modal-content').scrollTop = 0;
+
+            const nextBtn = document.getElementById('modal-next-btn');
+            const retryBtn = document.getElementById('modal-retry-btn');
+
+            retryBtn.innerText = "⬅️ Back to Explanation";
+            nextBtn.innerText = "Replay Challenge 1 🔄";
         }
 
         // --- HIGH-PERFORMANCE VECTOR MATRIX PROJECTION LOOP ---
