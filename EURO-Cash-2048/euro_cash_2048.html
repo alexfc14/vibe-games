@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>2048: Euro Cash Edition</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+    
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background-color: #FAF8F5;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .title-font {
+      font-family: 'Fredoka', sans-serif;
+    }
+
+    /* Soft shadow presets for realistic physical coins and bills */
+    .coin-shadow {
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), 
+                  0 4px 6px rgba(0,0,0,0.15), 
+                  0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .note-shadow {
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.5),
+                  0 6px 10px rgba(0,0,0,0.12),
+                  0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    /* Board Tile Position Classes */
+    .tile-pos-0-0 { top: 0%; left: 0%; }
+    .tile-pos-0-1 { top: 0%; left: 25%; }
+    .tile-pos-0-2 { top: 0%; left: 50%; }
+    .tile-pos-0-3 { top: 0%; left: 75%; }
+    .tile-pos-1-0 { top: 25%; left: 0%; }
+    .tile-pos-1-1 { top: 25%; left: 25%; }
+    .tile-pos-1-2 { top: 25%; left: 50%; }
+    .tile-pos-1-3 { top: 25%; left: 75%; }
+    .tile-pos-2-0 { top: 50%; left: 0%; }
+    .tile-pos-2-1 { top: 50%; left: 25%; }
+    .tile-pos-2-2 { top: 50%; left: 50%; }
+    .tile-pos-2-3 { top: 50%; left: 75%; }
+    .tile-pos-3-0 { top: 75%; left: 0%; }
+    .tile-pos-3-1 { top: 75%; left: 25%; }
+    .tile-pos-3-2 { top: 75%; left: 50%; }
+    .tile-pos-3-3 { top: 75%; left: 75%; }
+
+    /* Keyframes for spawning animation */
+    @keyframes popIn {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Keyframes for merging animation */
+    @keyframes mergePop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+
+    .animate-pop {
+      animation: popIn 180ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    .animate-merge {
+      animation: mergePop 180ms ease-in-out forwards;
+    }
+
+    /* Holographic ribbon shimmer on banknotes */
+    .hologram-strip {
+      background: linear-gradient(
+        135deg, 
+        rgba(255,255,255,0) 30%, 
+        rgba(255,255,255,0.7) 50%, 
+        rgba(255,255,255,0) 70%
+      );
+      background-size: 200% 200%;
+      animation: shimmer 4s infinite linear;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -100% -100%; }
+      100% { background-position: 100% 100%; }
+    }
+
+    /* Confetti Sparkles */
+    .sparkle {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 50;
+      animation: sparkleAnim 0.8s ease-out forwards;
+    }
+
+    @keyframes sparkleAnim {
+      0% { transform: translate(0, 0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col justify-between overflow-x-hidden antialiased">
+
+  <!-- Core Container -->
+  <div class="flex-1 max-w-md w-full mx-auto px-4 pt-4 flex flex-col justify-between select-none">
+    
+    <!-- Top Header & Score Area -->
+    <div>
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h1 class="text-3xl font-extrabold text-neutral-800 tracking-tight title-font flex items-center gap-1">
+            2048 <span class="text-amber-600 font-bold text-2xl">€</span>
+          </h1>
+          <p class="text-xs text-neutral-500 font-medium">European Cash Edition</p>
+        </div>
+        
+        <!-- Score Boxes -->
+        <div class="flex gap-2">
+          <div class="bg-neutral-800 text-white rounded-xl px-3 py-1.5 text-center min-w-[70px] relative">
+            <span class="block text-[9px] uppercase tracking-wider text-neutral-400 font-semibold leading-none">Score</span>
+            <span id="score-val" class="text-sm font-bold block mt-0.5">0.00 €</span>
+            <!-- Score Delta Popup container -->
+            <div id="score-popups" class="absolute left-0 right-0 -top-4 pointer-events-none flex justify-center text-emerald-600 font-bold text-xs"></div>
+          </div>
+          <div class="bg-neutral-200 text-neutral-800 rounded-xl px-3 py-1.5 text-center min-w-[70px]">
+            <span class="block text-[9px] uppercase tracking-wider text-neutral-500 font-semibold leading-none">Best</span>
+            <span id="best-val" class="text-sm font-bold block mt-0.5">0.00 €</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toolbar: Utility Buttons -->
+      <div class="flex justify-between items-center mb-4 bg-white rounded-xl p-2 shadow-sm border border-neutral-100">
+        <div class="flex gap-1.5">
+          <!-- Denomination Guide Toggle -->
+          <button id="btn-guide" class="p-2 bg-amber-50 text-amber-800 hover:bg-amber-100 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold" title="Show Denomination Progression">
+            <i data-lucide="info" class="w-4 h-4"></i>
+            Guide
+          </button>
+          
+          <!-- Sound Toggle -->
+          <button id="btn-sound" class="p-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg transition-colors" title="Toggle Sound FX">
+            <i data-lucide="volume-2" class="w-4 h-4" id="sound-icon"></i>
+          </button>
+        </div>
+
+        <div class="flex gap-1.5">
+          <!-- Undo Button -->
+          <button id="btn-undo" class="p-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-400 rounded-lg transition-all flex items-center gap-1 text-xs font-semibold" disabled title="Undo Last Move">
+            <i data-lucide="undo" class="w-4 h-4"></i>
+            Undo
+          </button>
+          
+          <!-- Restart Button -->
+          <button id="btn-restart" class="p-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold" title="Restart Game">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN GAME BOARD -->
+    <div class="relative w-full aspect-square bg-neutral-300 rounded-2xl p-3 shadow-inner overflow-hidden select-none border-4 border-neutral-400/30" id="game-board-container">
+      
+      <!-- Static Grid Slots (4x4) -->
+      <div class="grid grid-cols-4 grid-rows-4 gap-3 h-full w-full">
+        <!-- 16 empty cells with beautiful rounded square styling -->
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+        <div class="bg-neutral-200/60 rounded-xl shadow-inner border border-neutral-300/40"></div>
+      </div>
+
+      <!-- Dynamic Sliding Tiles Area -->
+      <div id="tile-container" class="absolute top-3 left-3 right-3 bottom-3 pointer-events-none"></div>
+
+      <!-- Overlay Screens (Game Over, Victory) -->
+      <div id="overlay" class="absolute inset-0 bg-black/60 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-6 text-center transition-all opacity-0 pointer-events-none duration-300">
+        <div id="overlay-content" class="bg-white rounded-2xl p-6 shadow-2xl max-w-xs w-full transform scale-95 transition-transform duration-300 flex flex-col items-center">
+          <div id="overlay-icon" class="text-yellow-500 mb-2"></div>
+          <h2 id="overlay-title" class="text-2xl font-black title-font text-neutral-800 mb-1">Victory!</h2>
+          <p id="overlay-desc" class="text-sm text-neutral-500 mb-4">You have achieved the legendary 500€ Note!</p>
+          <div class="flex gap-2 w-full">
+            <button id="overlay-btn-left" class="flex-1 py-2 rounded-xl font-bold text-sm bg-neutral-100 text-neutral-700 hover:bg-neutral-200 transition-colors"></button>
+            <button id="overlay-btn-right" class="flex-1 py-2 rounded-xl font-bold text-sm bg-amber-600 text-white hover:bg-amber-700 transition-colors"></button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Quick Legend Banner -->
+    <div class="mt-4 p-3 bg-neutral-100 rounded-xl text-center text-[11px] text-neutral-500 border border-neutral-200/60 shadow-sm leading-relaxed">
+      Swipe or use Arrow Keys to slide cash tiles. Match combinations to climb the value ladder (e.g. <span class="font-bold text-amber-700">1c + 1c = 2c</span>, and <span class="font-bold text-amber-700">2c + 1c + 2c = 5c</span> in any sliding order).
+    </div>
+
+  </div>
+
+  <!-- SLIDE-OUT DENOMINATION PROGRESSION DRAWER -->
+  <div id="drawer" class="fixed inset-y-0 right-0 max-w-xs w-full bg-white shadow-2xl z-40 transform translate-x-full transition-transform duration-300 flex flex-col border-l border-neutral-200">
+    <!-- Drawer Header -->
+    <div class="p-4 border-b border-neutral-100 flex items-center justify-between">
+      <div>
+        <h3 class="font-black text-lg text-neutral-800 flex items-center gap-1.5">
+          <i data-lucide="coins" class="w-5 h-5 text-amber-600"></i> Cash Progression
+        </h3>
+        <p class="text-[10px] text-neutral-400">Tap a value to test its realistic sound!</p>
+      </div>
+      <button id="btn-close-drawer" class="p-2 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 rounded-lg transition-colors">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <!-- Drawer Content (Scrollable List) -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-2.5 bg-neutral-50/50" id="legend-list">
+      <!-- Generated via JS -->
+    </div>
+  </div>
+
+  <!-- Backdrop for Drawer -->
+  <div id="drawer-backdrop" class="fixed inset-0 bg-black/40 backdrop-blur-xs z-35 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+  <!-- Footer Credits -->
+  <div class="py-3 text-center text-[10px] text-neutral-400">
+    2048: Euro Cash Edition &copy; 2026. Realistic CSS design tokens & synthesized spatial Audio.
+  </div>
+
+  <!-- CORE GAME LOGIC SCRIPT -->
+  <script>
+    // --- EURO DENOMINATION SPECIFICATIONS ---
+    const DENOMINATIONS = [
+      { value: 0.01, label: "1c", type: "copper", style: "background: radial-gradient(circle, #f3a683 0%, #cf6a4d 70%, #8f3d24 100%); color: #fff8f5; border-color: #7d321d;", radius: "rounded-full", sound: "coin_small" },
+      { value: 0.02, label: "2c", type: "copper", style: "background: radial-gradient(circle, #eea17d 0%, #c15f43 72%, #85371f 100%); color: #fff8f5; border-color: #722d19;", radius: "rounded-full", sound: "coin_small" },
+      { value: 0.05, label: "5c", type: "copper", style: "background: radial-gradient(circle, #f8a881 0%, #cb6446 75%, #8d3a21 100%); color: #fff8f5; border-color: #7a2f1a;", radius: "rounded-full", sound: "coin_medium" },
+      { value: 0.10, label: "10c", type: "gold_coin", style: "background: radial-gradient(circle, #ffeaa7 0%, #fdcb6e 70%, #b77a10 100%); color: #4a3407; border-color: #925f09;", radius: "rounded-full", sound: "coin_medium" },
+      { value: 0.20, label: "20c", type: "gold_coin", style: "background: radial-gradient(circle, #fff1b8 0%, #e1b12c 75%, #9f750b 100%); color: #4a3407; border-color: #886208;", radius: "rounded-full", sound: "coin_medium" },
+      { value: 0.50, label: "50c", type: "gold_coin", style: "background: radial-gradient(circle, #fff4cc 0%, #f1c40f 75%, #aa8705 100%); color: #4a3407; border-color: #917102;", radius: "rounded-full", sound: "coin_large" },
+      { value: 1.00, label: "1€", type: "bimetallic1", style: "background: radial-gradient(circle, #f1f2f6 0%, #ced6e0 48%, #eccc68 50%, #ffa502 100%); color: #2f3542; border-color: #a4b0be;", radius: "rounded-full", sound: "coin_large" },
+      { value: 2.00, label: "2€", type: "bimetallic2", style: "background: radial-gradient(circle, #eccc68 0%, #ffa502 48%, #f1f2f6 50%, #ced6e0 100%); color: #2f3542; border-color: #925f09;", radius: "rounded-full", sound: "coin_large" },
+      { value: 5.00, label: "5€", type: "note", style: "background: linear-gradient(135deg, #cad3c8 0%, #8395a7 100%); color: #1e272e; border-color: #718093;", radius: "rounded-lg", sound: "note_small" },
+      { value: 10.00, label: "10€", type: "note", style: "background: linear-gradient(135deg, #fbc531 0%, #ee5253 100%); color: #2f3542; border-color: #ea2027;", radius: "rounded-lg", sound: "note_small" },
+      { value: 20.00, label: "20€", type: "note", style: "background: linear-gradient(135deg, #a0dbf5 0%, #0082c8 100%); color: #0d2c54; border-color: #005a92;", radius: "rounded-lg", sound: "note_large" },
+      { value: 50.00, label: "50€", type: "note", style: "background: linear-gradient(135deg, #ffda79 0%, #cc8e35 100%); color: #442a08; border-color: #b33939;", radius: "rounded-lg", sound: "note_large" },
+      { value: 100.00, label: "100€", type: "note", style: "background: linear-gradient(135deg, #a8e6cf 0%, #10ac84 100%); color: #06522c; border-color: #1dd1a1;", radius: "rounded-lg", sound: "note_large" },
+      { value: 200.00, label: "200€", type: "note", style: "background: linear-gradient(135deg, #fef08a 0%, #ca8a04 100%); color: #422006; border-color: #a16207;", radius: "rounded-lg", sound: "note_heavy" },
+      { value: 500.00, label: "500€", type: "note", style: "background: linear-gradient(135deg, #f3d8ff 0%, #9013fe 100%); color: #3b0066; border-color: #6c0eb9;", radius: "rounded-lg", sound: "note_heavy" }
+    ];
+
+    // --- SOUND EFFECTS (SYNTHESIZED IN BROWSER) ---
+    class EuroSoundSynthesizer {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      }
+
+      play(type) {
+        if (this.muted) return;
+        this.init();
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+
+        switch(type) {
+          case 'slide':
+            this.synthSlide();
+            break;
+          case 'coin_small':
+            this.synthCoin(1500, 1800, 0.08);
+            break;
+          case 'coin_medium':
+            this.synthCoin(1200, 1400, 0.12);
+            break;
+          case 'coin_large':
+            this.synthCoin(800, 1100, 0.16);
+            break;
+          case 'note_small':
+            this.synthNote(0.12, 0.06);
+            break;
+          case 'note_large':
+            this.synthNote(0.18, 0.1);
+            break;
+          case 'note_heavy':
+            this.synthNote(0.24, 0.15);
+            break;
+          case 'victory':
+            this.synthVictory();
+            break;
+        }
+      }
+
+      synthSlide() {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(70, this.ctx.currentTime + 0.12);
+        
+        gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.12);
+        
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.12);
+      }
+
+      synthCoin(f1, f2, decay) {
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc1.frequency.setValueAtTime(f1, this.ctx.currentTime);
+        osc2.frequency.setValueAtTime(f2, this.ctx.currentTime);
+        
+        gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + decay);
+        
+        osc1.start();
+        osc2.start();
+        osc1.stop(this.ctx.currentTime + decay);
+        osc2.stop(this.ctx.currentTime + decay);
+      }
+
+      synthNote(duration, intensity) {
+        // Paper rustle with white noise + filter
+        const bufferSize = this.ctx.sampleRate * duration;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1800;
+        filter.Q.value = 1.5;
+        
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(intensity, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+        
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        noise.start();
+      }
+
+      synthVictory() {
+        const chord = [261.63, 329.63, 392.00, 523.25];
+        chord.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.1);
+          gain.gain.setValueAtTime(0.12, this.ctx.currentTime + idx * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.1 + 0.5);
+          
+          osc.start(this.ctx.currentTime + idx * 0.1);
+          osc.stop(this.ctx.currentTime + idx * 0.1 + 0.5);
+        });
+      }
+    }
+
+    const Sound = new EuroSoundSynthesizer();
+
+    // --- GAME ENGINE ---
+    class EuroCash2048 {
+      constructor() {
+        this.size = 4;
+        this.grid = [];
+        this.score = 0;
+        this.bestScore = 0;
+        this.history = []; // stack of { gridClone, score } for undo
+        this.keepPlaying = false;
+        this.tileUniqueId = 0;
+        
+        this.init();
+      }
+
+      init() {
+        this.grid = Array(this.size).fill().map(() => Array(this.size).fill(null));
+        this.score = 0;
+        this.keepPlaying = false;
+        this.history = [];
+        this.updateUndoButton();
+        this.addStartTiles();
+        this.render();
+      }
+
+      addStartTiles() {
+        this.spawnRandomTile();
+        this.spawnRandomTile();
+      }
+
+      // Spawns a random tile (90% chance of 1c, 10% chance of 2c)
+      spawnRandomTile() {
+        const empties = [];
+        for (let r = 0; r < this.size; r++) {
+          for (let c = 0; c < this.size; c++) {
+            if (!this.grid[r][c]) empties.push({ r, c });
+          }
+        }
+        if (empties.length > 0) {
+          const { r, c } = empties[Math.floor(Math.random() * empties.length)];
+          const denomIndex = Math.random() < 0.9 ? 0 : 1; // 1c (idx 0) or 2c (idx 1)
+          this.grid[r][c] = {
+            id: this.tileUniqueId++,
+            denomIndex: denomIndex,
+            isNew: true,
+            isMerged: false,
+            prevCoords: null
+          };
+        }
+      }
+
+      // Save history state before moving
+      saveHistory() {
+        const gridSnapshot = this.grid.map(row => 
+          row.map(cell => cell ? { ...cell, isNew: false, isMerged: false, prevCoords: null } : null)
+        );
+        this.history.push({
+          grid: gridSnapshot,
+          score: this.score
+        });
+        // Limit history to 20 moves
+        if (this.history.length > 20) {
+          this.history.shift();
+        }
+        this.updateUndoButton();
+      }
+
+      undo() {
+        if (this.history.length === 0) return;
+        const prev = this.history.pop();
+        this.grid = prev.grid;
+        this.score = prev.score;
+        Sound.play('slide');
+        this.updateUndoButton();
+        this.render();
+      }
+
+      updateUndoButton() {
+        const btn = document.getElementById('btn-undo');
+        if (this.history.length > 0) {
+          btn.removeAttribute('disabled');
+          btn.classList.remove('text-neutral-400');
+          btn.classList.add('text-neutral-800', 'hover:bg-neutral-200');
+        } else {
+          btn.setAttribute('disabled', 'true');
+          btn.classList.add('text-neutral-400');
+          btn.classList.remove('text-neutral-800', 'hover:bg-neutral-200');
+        }
+      }
+
+      // Deep slide logic with standard 2048 parameters
+      move(dir) {
+        this.clearTileStates();
+        const previousStateStr = JSON.stringify(this.grid.map(row => row.map(cell => cell ? cell.denomIndex : null)));
+        
+        this.saveHistory();
+
+        let moved = false;
+        let scoreEarned = 0;
+        let highestMergedValue = 0;
+
+        // Coordinates rotation depending on direction
+        const isHorizontal = dir === 'left' || dir === 'right';
+        const isForward = dir === 'right' || dir === 'down';
+
+        for (let i = 0; i < this.size; i++) {
+          // Extract current row or column line
+          let line = [];
+          for (let j = 0; j < this.size; j++) {
+            const r = isHorizontal ? i : j;
+            const c = isHorizontal ? j : i;
+            line.push(this.grid[r][c]);
+          }
+
+          // If moving forward (right/down), reverse line processing direction
+          if (isForward) line.reverse();
+
+          // Standard 2048 line shift and combine logic
+          const { shiftedLine, mergedValue, moveOccurred, peakDenom } = this.processLine(line);
+          if (moveOccurred) moved = true;
+          scoreEarned += mergedValue;
+          if (peakDenom > highestMergedValue) {
+            highestMergedValue = peakDenom;
+          }
+
+          if (isForward) shiftedLine.reverse();
+
+          // Set shifted line back to grid
+          for (let j = 0; j < this.size; j++) {
+            const r = isHorizontal ? i : j;
+            const c = isHorizontal ? j : i;
+            this.grid[r][c] = shiftedLine[j];
+          }
+        }
+
+        const currentStateStr = JSON.stringify(this.grid.map(row => row.map(cell => cell ? cell.denomIndex : null)));
+
+        if (moved || currentStateStr !== previousStateStr) {
+          this.score += scoreEarned;
+          if (this.score > this.bestScore) {
+            this.bestScore = this.score;
+          }
+
+          // Handle sound response depending on tile progression scale
+          if (scoreEarned > 0) {
+            const targetDenomObj = DENOMINATIONS[highestMergedValue];
+            Sound.play(targetDenomObj.sound);
+            this.showScorePopup(scoreEarned);
+            
+            // Check for reaching 500€ Note
+            if (highestMergedValue === 14 && !this.keepPlaying) {
+              setTimeout(() => this.showVictoryOverlay(), 400);
+            }
+          } else {
+            Sound.play('slide');
+          }
+
+          this.spawnRandomTile();
+          this.render();
+
+          // Check for Lose Scenario with accurate Simulator
+          if (this.isGameOver()) {
+            setTimeout(() => this.showGameOverOverlay(), 500);
+          }
+        } else {
+          // If no move was actually made, revert history to keep it clean
+          this.history.pop();
+          this.updateUndoButton();
+        }
+      }
+
+      // Core rule processor featuring both 3-tile (2+1+2, etc) and 2-tile merges
+      processLine(line) {
+        let activeTiles = line.filter(t => t !== null);
+        let shiftedLine = [];
+        let mergedValue = 0;
+        let moveOccurred = false;
+        let peakDenom = 0;
+
+        // All 3-tile sliding permutations for merging into values of 5, 50, and 500
+        const recipes3 = [
+          { input: [0, 1, 1], target: 2 }, // 1c + 2c + 2c -> 5c
+          { input: [1, 0, 1], target: 2 }, // 2c + 1c + 2c -> 5c
+          { input: [1, 1, 0], target: 2 }, // 2c + 2c + 1c -> 5c
+
+          { input: [3, 4, 4], target: 5 }, // 10c + 20c + 20c -> 50c
+          { input: [4, 3, 4], target: 5 }, // 20c + 10c + 20c -> 50c
+          { input: [4, 4, 3], target: 5 }, // 20c + 20c + 10c -> 50c
+
+          { input: [6, 7, 7], target: 8 }, // 1€ + 2€ + 2€ -> 5€
+          { input: [7, 6, 7], target: 8 }, // 2€ + 1€ + 2€ -> 5€
+          { input: [7, 7, 6], target: 8 }, // 2€ + 2€ + 1€ -> 5€
+
+          { input: [9, 10, 10], target: 11 }, // 10€ + 20€ + 20€ -> 50€
+          { input: [10, 9, 10], target: 11 }, // 20€ + 10€ + 20€ -> 50€
+          { input: [10, 10, 9], target: 11 }, // 20€ + 20€ + 10€ -> 50€
+
+          { input: [12, 13, 13], target: 14 }, // 100€ + 200€ + 200€ -> 500€
+          { input: [13, 12, 13], target: 14 }, // 200€ + 100€ + 200€ -> 500€
+          { input: [13, 13, 12], target: 14 }  // 200€ + 200€ + 100€ -> 500€
+        ];
+
+        const findRecipe3 = (idxA, idxB, idxC) => {
+          return recipes3.find(r => r.input[0] === idxA && r.input[1] === idxB && r.input[2] === idxC);
+        };
+
+        // All standard 2-tile merges that map directly to the next value
+        const recipes2 = {
+          0: 1,  // 1c + 1c -> 2c
+          2: 3,  // 5c + 5c -> 10c
+          3: 4,  // 10c + 10c -> 20c
+          5: 6,  // 50c + 50c -> 1€
+          6: 7,  // 1€ + 1€ -> 2€
+          8: 9,  // 5€ + 5€ -> 10€
+          9: 10, // 10€ + 10€ -> 20€
+          11: 12,// 50€ + 50€ -> 100€
+          12: 13 // 100€ + 100€ -> 200€
+        };
+
+        let i = 0;
+        while (i < activeTiles.length) {
+          const current = activeTiles[i];
+          const next1 = activeTiles[i + 1];
+          const next2 = activeTiles[i + 2];
+
+          // 1. Try 3-tile merge first (highest priority)
+          if (next1 && next2) {
+            const recipe = findRecipe3(current.denomIndex, next1.denomIndex, next2.denomIndex);
+            if (recipe) {
+              const targetIdx = recipe.target;
+              const mergedValueAmount = DENOMINATIONS[targetIdx].value;
+
+              shiftedLine.push({
+                id: current.id,
+                denomIndex: targetIdx,
+                isNew: false,
+                isMerged: true,
+                prevCoords: null
+              });
+
+              mergedValue += mergedValueAmount;
+              if (targetIdx > peakDenom) {
+                peakDenom = targetIdx;
+              }
+
+              moveOccurred = true;
+              i += 3; // Consume all 3 tiles
+              continue;
+            }
+          }
+
+          // 2. Try 2-tile merge
+          if (next1 && current.denomIndex === next1.denomIndex) {
+            const targetIdx = recipes2[current.denomIndex];
+            if (targetIdx !== undefined) {
+              const mergedValueAmount = DENOMINATIONS[targetIdx].value;
+
+              shiftedLine.push({
+                id: current.id,
+                denomIndex: targetIdx,
+                isNew: false,
+                isMerged: true,
+                prevCoords: null
+              });
+
+              mergedValue += mergedValueAmount;
+              if (targetIdx > peakDenom) {
+                peakDenom = targetIdx;
+              }
+
+              moveOccurred = true;
+              i += 2; // Consume 2 tiles
+              continue;
+            }
+          }
+
+          // 3. Keep single tile
+          shiftedLine.push({
+            ...current,
+            isNew: false,
+            isMerged: false
+          });
+          i++;
+        }
+
+        while (shiftedLine.length < this.size) {
+          shiftedLine.push(null);
+        }
+
+        // Determine if movement occurred
+        if (activeTiles.length !== line.length) moveOccurred = true;
+        for (let j = 0; j < activeTiles.length; j++) {
+          if (line[j] !== activeTiles[j]) moveOccurred = true;
+        }
+
+        return { shiftedLine, mergedValue, moveOccurred, peakDenom };
+      }
+
+      clearTileStates() {
+        for (let r = 0; r < this.size; r++) {
+          for (let c = 0; c < this.size; c++) {
+            if (this.grid[r][c]) {
+              this.grid[r][c].isNew = false;
+              this.grid[r][c].isMerged = false;
+            }
+          }
+        }
+      }
+
+      // Simulate moves in all directions to accurately check if any move is possible
+      isGameOver() {
+        // If there's at least one empty cell, the game is not over
+        for (let r = 0; r < this.size; r++) {
+          for (let c = 0; c < this.size; c++) {
+            if (!this.grid[r][c]) return false;
+          }
+        }
+
+        // Check if any slide direction is active and produces a changed state
+        const directions = ['left', 'right', 'up', 'down'];
+        for (const dir of directions) {
+          if (this.canMove(dir)) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      // Simulates a single directional line shift to verify potential moves
+      canMove(dir) {
+        const isHorizontal = dir === 'left' || dir === 'right';
+        const isForward = dir === 'right' || dir === 'down';
+
+        for (let i = 0; i < this.size; i++) {
+          let line = [];
+          for (let j = 0; j < this.size; j++) {
+            const r = isHorizontal ? i : j;
+            const c = isHorizontal ? j : i;
+            line.push(this.grid[r][c]);
+          }
+
+          if (isForward) line.reverse();
+
+          const { shiftedLine } = this.processLine(line);
+          
+          // Verify if the processed line has any changes in position or value
+          for (let j = 0; j < this.size; j++) {
+            const orig = line[j];
+            const shifted = shiftedLine[j];
+            if (!orig && shifted) return true;
+            if (orig && !shifted) return true;
+            if (orig && shifted && orig.denomIndex !== shifted.denomIndex) return true;
+          }
+        }
+        return false;
+      }
+
+      // Format score nicely with euro currency representation
+      formatEuro(val) {
+        return val.toFixed(2) + " €";
+      }
+
+      showScorePopup(delta) {
+        const container = document.getElementById('score-popups');
+        const pop = document.createElement('div');
+        pop.className = 'absolute animate-bounce text-emerald-600 font-black text-sm drop-shadow-sm pointer-events-none transition-all duration-700 opacity-100';
+        pop.textContent = `+${this.formatEuro(delta)}`;
+        pop.style.transform = `translateY(0)`;
+        container.appendChild(pop);
+        
+        setTimeout(() => {
+          pop.style.transform = `translateY(-24px)`;
+          pop.style.opacity = '0';
+        }, 50);
+
+        setTimeout(() => {
+          pop.remove();
+        }, 800);
+      }
+
+      render() {
+        // Render Scores
+        document.getElementById('score-val').textContent = this.formatEuro(this.score);
+        document.getElementById('best-val').textContent = this.formatEuro(this.bestScore);
+
+        const container = document.getElementById('tile-container');
+        container.innerHTML = '';
+
+        for (let r = 0; r < this.size; r++) {
+          for (let c = 0; c < this.size; c++) {
+            const tile = this.grid[r][c];
+            if (tile) {
+              const denom = DENOMINATIONS[tile.denomIndex];
+              const tileDiv = document.createElement('div');
+              
+              tileDiv.className = `absolute tile-pos-${r}-${c} w-1/4 h-1/4 p-1.5 transition-all duration-150 ease-out pointer-events-none`;
+              
+              const innerDiv = document.createElement('div');
+              innerDiv.style = denom.style;
+              innerDiv.className = `w-full h-full ${denom.radius} flex flex-col items-center justify-center relative font-black tracking-tight select-none border-2 shadow-md overflow-hidden transform transition-all duration-100`;
+              
+              if (tile.isNew) innerDiv.classList.add('animate-pop');
+              if (tile.isMerged) {
+                innerDiv.classList.add('animate-merge');
+                this.triggerSparkles(r, c, denom.type === 'note' ? '#a55eed' : '#fbc531');
+              }
+
+              // Apply physical aesthetics specific to coins vs banknotes
+              if (denom.type === 'note') {
+                innerDiv.classList.add('note-shadow');
+                innerDiv.innerHTML = `
+                  <!-- Shimmering holographic band -->
+                  <div class="absolute left-2 top-0 bottom-0 w-1.5 opacity-60 hologram-strip rounded-full"></div>
+                  <!-- Banknote watermark layout -->
+                  <div class="absolute inset-0 flex items-center justify-center opacity-10 font-bold text-5xl tracking-normal pointer-events-none">€</div>
+                  
+                  <div class="absolute top-1 left-2 text-[10px] leading-none opacity-80">${denom.label}</div>
+                  <div class="text-xl md:text-2xl font-black title-font mt-1 drop-shadow-xs">${denom.label}</div>
+                  <div class="absolute bottom-1 right-2 text-[8px] tracking-widest opacity-60 font-semibold uppercase">EURO</div>
+                `;
+              } else {
+                innerDiv.classList.add('coin-shadow');
+                
+                let bimetallicInner = "";
+                if (denom.type === 'bimetallic1') {
+                  bimetallicInner = `<div class="absolute inset-[15%] rounded-full bg-radial from-[#ffffff] to-[#ccd4dd] border border-[#a4b0be]/40 flex items-center justify-center font-black text-lg text-slate-800">${denom.label}</div>`;
+                } else if (denom.type === 'bimetallic2') {
+                  bimetallicInner = `<div class="absolute inset-[15%] rounded-full bg-radial from-[#ffeaa7] to-[#e1b12c] border border-[#d29b13]/40 flex items-center justify-center font-black text-lg text-yellow-950">${denom.label}</div>`;
+                } else {
+                  bimetallicInner = `
+                    <div class="absolute inset-[10%] rounded-full border border-white/10 flex flex-col items-center justify-center">
+                      <span class="text-lg md:text-xl drop-shadow-sm">${denom.label}</span>
+                    </div>
+                  `;
+                }
+
+                innerDiv.innerHTML = `
+                  <div class="absolute inset-[3%] rounded-full border-dashed border-black/5"></div>
+                  ${bimetallicInner}
+                `;
+              }
+
+              tileDiv.appendChild(innerDiv);
+              container.appendChild(tileDiv);
+            }
+          }
+        }
+      }
+
+      triggerSparkles(r, c, color) {
+        const board = document.getElementById('game-board-container');
+        const boardRect = board.getBoundingClientRect();
+        
+        const cellWidth = boardRect.width / 4;
+        const cellHeight = boardRect.height / 4;
+        const centerX = (c * cellWidth) + (cellWidth / 2);
+        const centerY = (r * cellHeight) + (cellHeight / 2);
+
+        for (let i = 0; i < 12; i++) {
+          const s = document.createElement('div');
+          s.className = 'sparkle';
+          s.style.backgroundColor = color;
+          s.style.left = `${centerX}px`;
+          s.style.top = `${centerY}px`;
+          
+          const angle = Math.random() * Math.PI * 2;
+          const dist = 30 + Math.random() * 40;
+          s.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+          s.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+          
+          board.appendChild(s);
+          setTimeout(() => s.remove(), 800);
+        }
+      }
+
+      showVictoryOverlay() {
+        Sound.play('victory');
+        this.displayOverlay(
+          "Victory!",
+          "You generated the 500€ Banknote! You are a master cash tycoon.",
+          "Restart",
+          "Keep Rolling",
+          () => this.init(),
+          () => {
+            this.keepPlaying = true;
+            this.hideOverlay();
+          },
+          "trophy"
+        );
+      }
+
+      showGameOverOverlay() {
+        this.displayOverlay(
+          "Out of Cash!",
+          `You've run out of space on the board. Total compiled savings: ${this.formatEuro(this.score)}`,
+          "Undo Move",
+          "Try Again",
+          () => {
+            this.undo();
+            this.hideOverlay();
+          },
+          () => this.init(),
+          "skull"
+        );
+      }
+
+      displayOverlay(title, desc, leftBtnText, rightBtnText, leftAction, rightAction, iconType) {
+        const overlay = document.getElementById('overlay');
+        const oTitle = document.getElementById('overlay-title');
+        const oDesc = document.getElementById('overlay-desc');
+        const btnLeft = document.getElementById('overlay-btn-left');
+        const btnRight = document.getElementById('overlay-btn-right');
+        const oIcon = document.getElementById('overlay-icon');
+
+        oTitle.textContent = title;
+        oDesc.textContent = desc;
+        btnLeft.textContent = leftBtnText;
+        btnRight.textContent = rightBtnText;
+
+        if (iconType === "trophy") {
+          oIcon.innerHTML = `<i data-lucide="trophy" class="w-12 h-12 text-yellow-500 animate-bounce"></i>`;
+        } else {
+          oIcon.innerHTML = `<i data-lucide="frown" class="w-12 h-12 text-neutral-400"></i>`;
+        }
+        lucide.createIcons();
+
+        const cloneLeft = btnLeft.cloneNode(true);
+        const cloneRight = btnRight.cloneNode(true);
+        btnLeft.parentNode.replaceChild(cloneLeft, btnLeft);
+        btnRight.parentNode.replaceChild(cloneRight, btnRight);
+
+        cloneLeft.addEventListener('click', () => {
+          leftAction();
+          this.hideOverlay();
+        });
+        cloneRight.addEventListener('click', () => {
+          rightAction();
+          this.hideOverlay();
+        });
+
+        overlay.classList.remove('opacity-0', 'pointer-events-none');
+        overlay.querySelector('#overlay-content').classList.remove('scale-95');
+        overlay.querySelector('#overlay-content').classList.add('scale-100');
+      }
+
+      hideOverlay() {
+        const overlay = document.getElementById('overlay');
+        overlay.classList.add('opacity-0', 'pointer-events-none');
+        overlay.querySelector('#overlay-content').classList.remove('scale-100');
+        overlay.querySelector('#overlay-content').classList.add('scale-95');
+      }
+    }
+
+    // --- VIEW / INTERACTIVE BINDINGS ---
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      const game = new EuroCash2048();
+
+      // Keyboard Controls
+      document.addEventListener('keydown', (e) => {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+          e.preventDefault();
+        }
+
+        switch (e.key) {
+          case 'ArrowLeft':
+          case 'a':
+            game.move('left');
+            break;
+          case 'ArrowRight':
+          case 'd':
+            game.move('right');
+            break;
+          case 'ArrowUp':
+          case 'w':
+            game.move('up');
+            break;
+          case 'ArrowDown':
+          case 's':
+            game.move('down');
+            break;
+        }
+      });
+
+      // Touch / Swipe Controls
+      const boardElement = document.getElementById('game-board-container');
+      let startX = 0, startY = 0;
+
+      boardElement.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        e.preventDefault();
+      }, { passive: false });
+
+      boardElement.addEventListener('touchend', (e) => {
+        const endX = e.changedTouches[0].clientX;
+        const endY = e.changedTouches[0].clientY;
+
+        const deltaX = endX - startX;
+        const deltaY = endY - startY;
+
+        const minSwipeThreshold = 35;
+
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          if (Math.abs(deltaX) > minSwipeThreshold) {
+            if (deltaX > 0) game.move('right');
+            else game.move('left');
+          }
+        } else {
+          if (Math.abs(deltaY) > minSwipeThreshold) {
+            if (deltaY > 0) game.move('down');
+            else game.move('up');
+          }
+        }
+      }, { passive: true });
+
+      // Build Progression List in Sidebar Drawer
+      const legendList = document.getElementById('legend-list');
+      DENOMINATIONS.forEach((denom, idx) => {
+        const item = document.createElement('div');
+        item.className = "flex items-center justify-between p-2.5 bg-white rounded-xl shadow-xs border border-neutral-100 hover:bg-amber-50/50 cursor-pointer active:scale-98 transition-all";
+        
+        let visualDot = "";
+        if (denom.type === 'note') {
+          visualDot = `<div class="w-10 h-6 ${denom.radius} flex items-center justify-center text-[9px] font-black border note-shadow" style="${denom.style}">${denom.label}</div>`;
+        } else {
+          visualDot = `<div class="w-8 h-8 ${denom.radius} flex items-center justify-center text-[9px] font-black border coin-shadow" style="${denom.style}">${denom.label}</div>`;
+        }
+
+        const ruleText = idx === 0 
+          ? "Spawn tile" 
+          : idx === 1 
+            ? `<span class="text-neutral-400 font-medium">Merge:</span> 1c + 1c`
+            : idx === 2 
+              ? `<span class="text-neutral-400 font-medium">Merge:</span> 2c + 1c + 2c (any order)` 
+              : idx === 5 
+                ? `<span class="text-neutral-400 font-medium">Merge:</span> 20c + 10c + 20c (any order)`
+                : idx === 8
+                  ? `<span class="text-neutral-400 font-medium">Merge:</span> 2€ + 1€ + 2€ (any order)`
+                  : idx === 11
+                    ? `<span class="text-neutral-400 font-medium">Merge:</span> 20€ + 10€ + 20€ (any order)`
+                    : idx === 14
+                      ? `<span class="text-neutral-400 font-medium">Merge:</span> 200€ + 100€ + 200€ (any order)`
+                      : `<span class="text-neutral-400 font-medium">Merge:</span> ${DENOMINATIONS[idx-1].label} + ${DENOMINATIONS[idx-1].label}`;
+
+        item.innerHTML = `
+          <div class="flex items-center gap-3">
+            ${visualDot}
+            <div class="text-left">
+              <span class="block text-xs font-bold text-neutral-800">${denom.type === 'note' ? denom.label + ' Note' : denom.label + ' Coin'}</span>
+              <span class="block text-[10px] text-neutral-500">${ruleText}</span>
+            </div>
+          </div>
+          <div class="text-neutral-300 group-hover:text-amber-600 transition-colors">
+            <i data-lucide="play" class="w-4.5 h-4.5 fill-current"></i>
+          </div>
+        `;
+
+        item.addEventListener('click', () => {
+          Sound.play(denom.sound);
+        });
+
+        legendList.appendChild(item);
+      });
+      lucide.createIcons();
+
+      // UI Control bindings
+      const drawer = document.getElementById('drawer');
+      const backdrop = document.getElementById('drawer-backdrop');
+      const btnGuide = document.getElementById('btn-guide');
+      const btnCloseDrawer = document.getElementById('btn-close-drawer');
+
+      const openDrawer = () => {
+        drawer.classList.remove('translate-x-full');
+        backdrop.classList.remove('opacity-0', 'pointer-events-none');
+        backdrop.classList.add('opacity-100');
+      };
+
+      const closeDrawer = () => {
+        drawer.classList.add('translate-x-full');
+        backdrop.classList.remove('opacity-100');
+        backdrop.classList.add('opacity-0', 'pointer-events-none');
+      };
+
+      btnGuide.addEventListener('click', openDrawer);
+      btnCloseDrawer.addEventListener('click', closeDrawer);
+      backdrop.addEventListener('click', closeDrawer);
+
+      // Sound Toggle Button
+      const btnSound = document.getElementById('btn-sound');
+      const soundIcon = document.getElementById('sound-icon');
+      btnSound.addEventListener('click', () => {
+        Sound.muted = !Sound.muted;
+        if (Sound.muted) {
+          soundIcon.setAttribute('data-lucide', 'volume-x');
+          btnSound.classList.replace('bg-neutral-100', 'bg-red-50');
+          btnSound.classList.replace('text-neutral-700', 'text-red-700');
+        } else {
+          soundIcon.setAttribute('data-lucide', 'volume-2');
+          btnSound.classList.replace('bg-red-50', 'bg-neutral-100');
+          btnSound.classList.replace('text-red-700', 'text-neutral-700');
+          Sound.play('coin_small');
+        }
+        lucide.createIcons();
+      });
+
+      // Undo Trigger
+      document.getElementById('btn-undo').addEventListener('click', () => {
+        game.undo();
+      });
+
+      // Restart Trigger
+      document.getElementById('btn-restart').addEventListener('click', () => {
+        if (confirm("Are you sure you want to reset this session? Your current score will be lost.")) {
+          game.init();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
