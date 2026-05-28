@@ -1,4 +1,4 @@
-EURO coins and bills version of 20248.
+EURO coins and bills version of 2048.
 - 1+1=2
 - 1+2+2=2+1+2=2+2+1=5
 - 5+5+1
