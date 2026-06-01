@@ -735,6 +735,25 @@
                     0,       0,                0,              1
                 );
                 q.setFromRotationMatrix(m);
+            } else if (lvl && lvl.startPose === 'random42') {
+                const lat = 39 * Math.PI / 180;
+                const lon = 40 * Math.PI / 180;
+                const tilt = 134 * Math.PI / 180;
+                const cosLat = Math.cos(lat);
+                const sinLat = Math.sin(lat);
+                const cosLon = Math.cos(lon);
+                const sinLon = Math.sin(lon);
+                const m = new THREE.Matrix4();
+                m.set(
+                    cosLon, -cosLat * sinLon, -sinLat * sinLon, 0,
+                    sinLon,  cosLat * cosLon,  sinLat * cosLon, 0,
+                    0,      -sinLat,           cosLat,          0,
+                    0,       0,                0,              1
+                );
+                q.setFromRotationMatrix(m);
+                // Corrected axis: Tilt rotates around local radial normal (0, -1, 0) of the car
+                const qTilt = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, -1, 0), tilt);
+                q.multiply(qTilt);
             } else {
                 q.set(0, 0, 0, 1);
             }
@@ -848,15 +867,15 @@
         }
 
         let currentLevel = 1;
-        let maxLevelUnlocked = 9; 
+        let maxLevelUnlocked = 10; 
         let isLevelCompleted = false;
         let arrivedAtTarget = false; 
         let isReplayingAnimation = false; 
         let level1SubStep = 1; // 1: Go to Noon, 2: Go to Sunset, 3: Go to North Pole, 4: Go back to Sunrise, 5: Explained.
 
-        const highscores = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7: null, 8: null, 9: null };
+        const highscores = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7: null, 8: null, 9: null, 10: null };
 
-        // Level definitions updated to replace 'heading' with 'tilt' inside Levels 3, 5*, and 5**
+        // Level definitions including the updated Level 10 (called Level 6 internally) with integer points
         const levelDefinitions = {
             1: {
                 title: "Level 1: The Flipped Heading",
@@ -961,6 +980,16 @@
                     { value: "1", label: "1" }, { value: "2", label: "2" }, { value: "4", label: "4" }, { value: "8", label: "8" }, { value: "inf", label: "Infinite" }
                 ],
                 quizExplanation: "Because target B is at 75° N, the planet's surface doesn't reach the required intersection for a Solar-first move due to the high latitude restriction of 75° N. Thus, you are forced to turn Polar first, cutting down the number of valid paths from 8 to 4!"
+            },
+            10: {
+                title: "Level 6: Three-Move Challenge",
+                shortDesc: "Goal: Go from A (39° N, 40° E) with Tilt 134° to B (17° S, 35° E) with Tilt -132° in exactly three moves.",
+                explanation: "Incredible navigation! You solved the arbitrary three-move transfer! On a sphere, any two orientations can be connected in at most three alternating perpendicular rotations (Euler angles). This is the fundamental basis of gyroscopic attitude control!",
+                targetPos: getPoseVector(-17.0, 35.0),
+                targetTilt: -132.0,
+                hideArrows: false,
+                isPhysicalDistance: false,
+                startPose: 'random42'
             }
         };
 
@@ -1229,9 +1258,10 @@
             odomElement.innerText = val.toFixed(1) + unit;
         }
 
+        // Keep highscore display rounded to integers for non-physical levels if preferred, but keeping float compatibility
         function updateLvlNavButtons() {
             document.getElementById('btn-prev-lvl').disabled = isReplayingAnimation; 
-            document.getElementById('btn-next-lvl').disabled = (currentLevel === 9) || isReplayingAnimation; 
+            document.getElementById('btn-next-lvl').disabled = (currentLevel === 10) || isReplayingAnimation; 
         }
 
         function configureLevel(lvlId) {
@@ -1288,7 +1318,6 @@
             }
         }
 
-        // Dynamically positions the target ghost arrow at the immediate designated guided goal (Step 3 adjusted to point towards Midnight)
         function updateLevel1GhostTarget() {
             let targetPos, targetTilt;
             if (level1SubStep === 1) {
@@ -1299,7 +1328,7 @@
                 targetTilt = 0;
             } else if (level1SubStep === 3) {
                 targetPos = getPoseVector(90, 0); // North Pole
-                targetTilt = 180; // Changed from 0 to 180 so the arrow points in the direction of Midnight
+                targetTilt = 180; // Points perfectly back in the direction of Midnight
             } else {
                 targetPos = getPoseVector(0, 0); // Sunrise
                 targetTilt = 180;
@@ -1322,7 +1351,6 @@
             ghostArrow.setDirection(headingDirVec);
         }
 
-        // Steers the user through the 4 core steps of Level 1 (with "blinking" terminology removed)
         function updateLevel1Guide() {
             if (currentLevel !== 1 || tutorialActive) return;
 
@@ -1389,7 +1417,6 @@
             }
         }
 
-        // Writes the mathematical explanation directly inside the HUD post-run
         function triggerLevel1HUDExplanation(lvl) {
             const titleElement = document.getElementById('hud-level-title');
             const descElement = document.getElementById('hud-level-desc');
@@ -1485,7 +1512,7 @@
                 
                 if (!isLevelCompleted) {
                     isLevelCompleted = true;
-                    maxLevelUnlocked = Math.min(9, Math.max(maxLevelUnlocked, currentLevel + 1));
+                    maxLevelUnlocked = Math.min(10, Math.max(maxLevelUnlocked, currentLevel + 1));
                     updateLvlNavButtons();
                     triggerReplayAndVictorySequence(lvl);
                 }
@@ -1505,21 +1532,21 @@
 
         document.getElementById('modal-next-btn').addEventListener('click', () => {
             const modal = document.getElementById('completion-modal');
-            if (currentLevel === 9 && document.getElementById('modal-next-btn').innerText.includes("Scoreboard")) {
+            if (currentLevel === 10 && document.getElementById('modal-next-btn').innerText.includes("Scoreboard")) {
                 showScoreboardView();
                 return;
             }
             modal.classList.remove('show');
             setTimeout(() => {
-                if (currentLevel < 9) currentLevel++;
+                if (currentLevel < 10) currentLevel++;
                 else currentLevel = 1;
                 configureLevel(currentLevel);
             }, 500); 
         });
 
         document.getElementById('modal-retry-btn').addEventListener('click', () => {
-            if (currentLevel === 9 && document.getElementById('modal-retry-btn').innerText.includes("Explanation")) {
-                showLevelCompletedModal(levelDefinitions[9]);
+            if (currentLevel === 10 && document.getElementById('modal-retry-btn').innerText.includes("Explanation")) {
+                showLevelCompletedModal(levelDefinitions[10]);
                 return;
             }
             document.getElementById('completion-modal').classList.remove('show');
@@ -1617,11 +1644,11 @@
                 currentLevel--; 
                 configureLevel(currentLevel); 
             } else {
-                startTutorialOnboarding(); // Allows going to tutorial from level 1
+                startTutorialOnboarding(); 
             }
         });
         
-        document.getElementById('btn-next-lvl').addEventListener('click', () => { if (currentLevel < 9 && !isReplayingAnimation) { currentLevel++; configureLevel(currentLevel); } });
+        document.getElementById('btn-next-lvl').addEventListener('click', () => { if (currentLevel < 10 && !isReplayingAnimation) { currentLevel++; configureLevel(currentLevel); } });
 
         undoButton.addEventListener('click', () => {
             if (rotationHistory.length === 0 || isLevelCompleted || isReplayingAnimation) return;
@@ -1796,7 +1823,7 @@
                         if (isMatched) {
                             activeDragCommits.forEach(commit => commit());
                             isLevelCompleted = true;
-                            maxLevelUnlocked = Math.min(9, Math.max(maxLevelUnlocked, currentLevel + 1));
+                            maxLevelUnlocked = Math.min(10, Math.max(maxLevelUnlocked, currentLevel + 1));
                             updateLvlNavButtons();
                             triggerReplayAndVictorySequence(currentLvl);
                         }
@@ -2001,7 +2028,8 @@
             else if (currentLevel === 6) nextBtn.innerText = "Begin Challenge 5 Pro 🚀";
             else if (currentLevel === 7) nextBtn.innerText = "Begin Challenge 5* 🚀";
             else if (currentLevel === 8) nextBtn.innerText = "Begin Challenge 5** 🚀";
-            else if (currentLevel === 9) nextBtn.innerText = "View Scoreboard 🏆";
+            else if (currentLevel === 9) nextBtn.innerText = "Begin Challenge 6 🚀";
+            else if (currentLevel === 10) nextBtn.innerText = "View Scoreboard 🏆";
             
             document.getElementById('completion-modal').classList.add('show');
         }
@@ -2024,7 +2052,7 @@
                         <tbody>
             `;
             
-            for (let lId = 1; lId <= 9; lId++) {
+            for (let lId = 1; lId <= 10; lId++) {
                 const lDef = levelDefinitions[lId];
                 const scoreVal = highscores[lId];
                 const displayScore = scoreVal !== null ? `${scoreVal.toFixed(1)}${lDef.isPhysicalDistance ? "m" : "°"}` : `<span style="color:#666;">-</span>`;
