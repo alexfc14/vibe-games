@@ -881,15 +881,15 @@
         }
 
         let currentLevel = 1;
-        let maxLevelUnlocked = 11; 
+        let maxLevelUnlocked = 12; 
         let isLevelCompleted = false;
         let arrivedAtTarget = false; 
         let isReplayingAnimation = false; 
         let level1SubStep = 1; // 1: Go to Noon, 2: Go to Sunset, 3: Go to North Pole, 4: Go back to Sunrise, 5: Explained.
 
-        const highscores = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7: null, 8: null, 9: null, 10: null, 11: null };
+        const highscores = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7: null, 8: null, 9: null, 10: null, 11: null, 12: null };
 
-        // Level definitions including the Level 11 (Level 7: Discretized Challenge)
+        // Level definitions updated to include the new Level 6* as ID 11, moving Discretized Challenge to ID 12
         const levelDefinitions = {
             1: {
                 title: "Level 1: The Flipped Heading",
@@ -1006,6 +1006,16 @@
                 startPose: 'random42'
             },
             11: {
+                title: "Level 6*: Three-Move Zero-Tilt",
+                shortDesc: "Goal: Go from A (39° N, 40° E) with Tilt 134° to B (17° S, 35° E) with Tilt 0° in exactly three moves.",
+                explanation: "Outstanding path planning! Arriving at B with a flat zero-degree tilt (facing East) requires a specific sequence of three rotations that cleanly aligns your heading coordinates with the local horizontal axis.",
+                targetPos: getPoseVector(-17.0, 35.0),
+                targetTilt: 0.0,
+                hideArrows: false,
+                isPhysicalDistance: false,
+                startPose: 'random42'
+            },
+            12: {
                 title: "Level 7: Discretized Challenge",
                 shortDesc: "Goal: Go from A (39° N, 40° E) with Tilt 134° to B (17° S, 35° E) with Tilt -132° in exactly three moves.<br><br>⚠️ <strong>Constraints:</strong> Manual dials are locked! You can only use precise step buttons with an angle value selectable between Lat A (39°), Lon A (40°), Tilt A (134°), 90°, Lat B (-17°), Lon B (35°), or Tilt B (-132°).",
                 explanation: "Remarkable maneuvering! Even with discretized angles and locked manual wheels, you utilized precise rotational components to execute the exact three-move Euler transfer. This demonstrates that continuous state transitions can be mapped precisely onto a discrete control input space!",
@@ -1288,7 +1298,7 @@
 
         function updateLvlNavButtons() {
             document.getElementById('btn-prev-lvl').disabled = isReplayingAnimation; 
-            document.getElementById('btn-next-lvl').disabled = (currentLevel === 11) || isReplayingAnimation; 
+            document.getElementById('btn-next-lvl').disabled = (currentLevel === 12) || isReplayingAnimation; 
         }
 
         function configureLevel(lvlId) {
@@ -1600,7 +1610,7 @@
                 
                 if (!isLevelCompleted) {
                     isLevelCompleted = true;
-                    maxLevelUnlocked = Math.min(11, Math.max(maxLevelUnlocked, currentLevel + 1));
+                    maxLevelUnlocked = Math.min(12, Math.max(maxLevelUnlocked, currentLevel + 1));
                     updateLvlNavButtons();
                     triggerReplayAndVictorySequence(lvl);
                 }
@@ -1620,21 +1630,21 @@
 
         document.getElementById('modal-next-btn').addEventListener('click', () => {
             const modal = document.getElementById('completion-modal');
-            if (currentLevel === 11 && document.getElementById('modal-next-btn').innerText.includes("Scoreboard")) {
+            if (currentLevel === 12 && document.getElementById('modal-next-btn').innerText.includes("Scoreboard")) {
                 showScoreboardView();
                 return;
             }
             modal.classList.remove('show');
             setTimeout(() => {
-                if (currentLevel < 11) currentLevel++;
+                if (currentLevel < 12) currentLevel++;
                 else currentLevel = 1;
                 configureLevel(currentLevel);
             }, 500); 
         });
 
         document.getElementById('modal-retry-btn').addEventListener('click', () => {
-            if (currentLevel === 11 && document.getElementById('modal-retry-btn').innerText.includes("Explanation")) {
-                showLevelCompletedModal(levelDefinitions[11]);
+            if (currentLevel === 12 && document.getElementById('modal-retry-btn').innerText.includes("Explanation")) {
+                showLevelCompletedModal(levelDefinitions[12]);
                 return;
             }
             document.getElementById('completion-modal').classList.remove('show');
@@ -1741,7 +1751,7 @@
             }
         });
         
-        document.getElementById('btn-next-lvl').addEventListener('click', () => { if (currentLevel < 11 && !isReplayingAnimation) { currentLevel++; configureLevel(currentLevel); } });
+        document.getElementById('btn-next-lvl').addEventListener('click', () => { if (currentLevel < 12 && !isReplayingAnimation) { currentLevel++; configureLevel(currentLevel); } });
 
         undoButton.addEventListener('click', () => {
             if (rotationHistory.length === 0 || isLevelCompleted || isReplayingAnimation) return;
@@ -1923,7 +1933,7 @@
                         if (isMatched) {
                             activeDragCommits.forEach(commit => commit());
                             isLevelCompleted = true;
-                            maxLevelUnlocked = Math.min(11, Math.max(maxLevelUnlocked, currentLevel + 1));
+                            maxLevelUnlocked = Math.min(12, Math.max(maxLevelUnlocked, currentLevel + 1));
                             updateLvlNavButtons();
                             triggerReplayAndVictorySequence(currentLvl);
                         }
@@ -2129,8 +2139,9 @@
             else if (currentLevel === 7) nextBtn.innerText = "Begin Challenge 5* 🚀";
             else if (currentLevel === 8) nextBtn.innerText = "Begin Challenge 5** 🚀";
             else if (currentLevel === 9) nextBtn.innerText = "Begin Challenge 6 🚀";
-            else if (currentLevel === 10) nextBtn.innerText = "Begin Challenge 7 🚀";
-            else if (currentLevel === 11) nextBtn.innerText = "View Scoreboard 🏆";
+            else if (currentLevel === 10) nextBtn.innerText = "Begin Challenge 6* 🚀";
+            else if (currentLevel === 11) nextBtn.innerText = "Begin Challenge 7 🚀";
+            else if (currentLevel === 12) nextBtn.innerText = "View Scoreboard 🏆";
             
             document.getElementById('completion-modal').classList.add('show');
         }
@@ -2153,7 +2164,7 @@
                         <tbody>
             `;
             
-            for (let lId = 1; lId <= 11; lId++) {
+            for (let lId = 1; lId <= 12; lId++) {
                 const lDef = levelDefinitions[lId];
                 const scoreVal = highscores[lId];
                 const displayScore = scoreVal !== null ? `${scoreVal.toFixed(1)}${lDef.isPhysicalDistance ? "m" : "°"}` : `<span style="color:#666;">-</span>`;
