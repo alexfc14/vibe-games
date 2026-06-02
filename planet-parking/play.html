@@ -121,7 +121,7 @@
             justify-content: center;
             touch-action: none;
             cursor: pointer;
-            transition: outline 0.3s, box-shadow 0.3s;
+            transition: opacity 0.3s, outline 0.3s, box-shadow 0.3s;
         }
 
         .knob-indicator {
@@ -174,6 +174,18 @@
             font-size: 12px;
         }
 
+        .manual-input-box select {
+            width: 82px;
+            background: #111;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 4px 2px;
+            font-weight: bold;
+            font-size: 11px;
+            text-align: center;
+            cursor: pointer;
+        }
+
         .manual-input-box button {
             border: none;
             color: white;
@@ -191,11 +203,11 @@
 
         .polar-theme-btn { background: #3b82f6 !important; }
         .polar-theme-btn:active { background: #2563eb !important; }
-        .polar-theme-input { color: #3b82f6 !important; }
+        .polar-theme-input { color: #3b82f6 !important; border-color: #3b82f6 !important; }
         
         .solar-theme-btn { background: #eab308 !important; }
         .solar-theme-btn:active { background: #ca8a04 !important; }
-        .solar-theme-input { color: #eab308 !important; }
+        .solar-theme-input { color: #eab308 !important; border-color: #eab308 !important; }
 
         .telemetry-panel {
             position: absolute;
@@ -518,6 +530,7 @@
                     <div class="manual-input-box" id="polar-input-box">
                         <button id="btn1-left" class="polar-theme-btn">⬅️</button>
                         <input type="number" id="num1" class="polar-theme-input" value="15" step="5">
+                        <select id="sel1" class="polar-theme-input" style="display: none;"></select>
                         <button id="btn1-right" class="polar-theme-btn">➡️</button>
                     </div>
                     <div class="knob-dial" id="dial1" style="border: 3px solid #3b82f6;">
@@ -546,6 +559,7 @@
                     <div class="manual-input-box" id="solar-input-box">
                         <button id="btn2-left" class="solar-theme-btn">⬅️</button>
                         <input type="number" id="num2" class="solar-theme-input" value="15" step="5">
+                        <select id="sel2" class="solar-theme-input" style="display: none;"></select>
                         <button id="btn2-right" class="solar-theme-btn">➡️</button>
                     </div>
                     <div class="knob-dial" id="dial2" style="border: 3px solid #eab308;">
@@ -867,15 +881,15 @@
         }
 
         let currentLevel = 1;
-        let maxLevelUnlocked = 10; 
+        let maxLevelUnlocked = 11; 
         let isLevelCompleted = false;
         let arrivedAtTarget = false; 
         let isReplayingAnimation = false; 
         let level1SubStep = 1; // 1: Go to Noon, 2: Go to Sunset, 3: Go to North Pole, 4: Go back to Sunrise, 5: Explained.
 
-        const highscores = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7: null, 8: null, 9: null, 10: null };
+        const highscores = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7: null, 8: null, 9: null, 10: null, 11: null };
 
-        // Level definitions including the updated Level 10 (called Level 6 internally) with integer points
+        // Level definitions including the Level 11 (Level 7: Discretized Challenge)
         const levelDefinitions = {
             1: {
                 title: "Level 1: The Flipped Heading",
@@ -990,6 +1004,18 @@
                 hideArrows: false,
                 isPhysicalDistance: false,
                 startPose: 'random42'
+            },
+            11: {
+                title: "Level 7: Discretized Challenge",
+                shortDesc: "Goal: Go from A (39° N, 40° E) with Tilt 134° to B (17° S, 35° E) with Tilt -132° in exactly three moves.<br><br>⚠️ <strong>Constraints:</strong> Manual dials are locked! You can only use precise step buttons with an angle value selectable between Lat A (39°), Lon A (40°), Tilt A (134°), 90°, Lat B (-17°), Lon B (35°), or Tilt B (-132°).",
+                explanation: "Remarkable maneuvering! Even with discretized angles and locked manual wheels, you utilized precise rotational components to execute the exact three-move Euler transfer. This demonstrates that continuous state transitions can be mapped precisely onto a discrete control input space!",
+                targetPos: getPoseVector(-17.0, 35.0),
+                targetTilt: -132.0,
+                hideArrows: false,
+                isPhysicalDistance: false,
+                startPose: 'random42',
+                disableDials: true,
+                restrictedAngles: [39, 40, 134, 90, -17, 35, -132]
             }
         };
 
@@ -1163,7 +1189,7 @@
                     else if (step.text.substring(charIndex, charIndex + 4) === "<li>") { currentString += "<li>"; charIndex += 4; }
                     else if (step.text.substring(charIndex, charIndex + 5) === "</li>") { currentString += "</li>"; charIndex += 5; }
                     else if (step.text.substring(charIndex, charIndex + 8) === "<strong>") {
-                        const endTag = step.text.indexOf("</strong>", charIndex);
+                        const endTag = step.text.indexOf("<strong>", charIndex);
                         if (endTag !== -1) { currentString += step.text.substring(charIndex, endTag + 9); charIndex = endTag + 9; }
                         else { currentString += step.text[charIndex]; charIndex++; }
                     } else { currentString += step.text[charIndex]; charIndex++; }
@@ -1198,6 +1224,8 @@
             document.getElementById('dial2').classList.remove('element-blink');
             document.getElementById('btn1-right').classList.remove('element-blink');
             document.getElementById('btn2-right').classList.remove('element-blink');
+            document.getElementById('btn1-left').classList.remove('element-blink');
+            document.getElementById('btn2-left').classList.remove('element-blink');
         }
 
         function endTutorialOnboarding() {
@@ -1258,13 +1286,13 @@
             odomElement.innerText = val.toFixed(1) + unit;
         }
 
-        // Keep highscore display rounded to integers for non-physical levels if preferred, but keeping float compatibility
         function updateLvlNavButtons() {
             document.getElementById('btn-prev-lvl').disabled = isReplayingAnimation; 
-            document.getElementById('btn-next-lvl').disabled = (currentLevel === 10) || isReplayingAnimation; 
+            document.getElementById('btn-next-lvl').disabled = (currentLevel === 11) || isReplayingAnimation; 
         }
 
         function configureLevel(lvlId) {
+            clearAllDOMHighlights(); // Ensure persistent blinks from level 1 or previous activities are cleaned up!
             isLevelCompleted = false;
             arrivedAtTarget = false;
             isReplayingAnimation = false;
@@ -1305,6 +1333,66 @@
                 const rad = lvl.targetTilt * Math.PI / 180;
                 const headingDirVec = eastVec.clone().multiplyScalar(Math.cos(rad)).add(northVec.clone().multiplyScalar(Math.sin(rad))).normalize();
                 ghostArrow.setDirection(headingDirVec);
+            }
+
+            // Setup Dial Visibility & Hiding Styles
+            const dial1 = document.getElementById('dial1');
+            const dial2 = document.getElementById('dial2');
+            const val1 = document.getElementById('val1');
+            const val2 = document.getElementById('val2');
+            if (lvl.disableDials) {
+                dial1.style.display = 'none';
+                dial2.style.display = 'none';
+                val1.style.display = 'none';
+                val2.style.display = 'none';
+            } else {
+                dial1.style.display = 'flex';
+                dial2.style.display = 'flex';
+                val1.style.display = 'block';
+                val2.style.display = 'block';
+            }
+
+            // Setup Step Selector options or generic manual input text fields
+            const num1 = document.getElementById('num1');
+            const num2 = document.getElementById('num2');
+            const sel1 = document.getElementById('sel1');
+            const sel2 = document.getElementById('sel2');
+            if (lvl.restrictedAngles) {
+                num1.style.display = 'none';
+                num2.style.display = 'none';
+                sel1.style.display = 'inline-block';
+                sel2.style.display = 'inline-block';
+
+                const optionsData = [
+                    { value: 39, label: "39° (Lat A)" },
+                    { value: 40, label: "40° (Lon A)" },
+                    { value: 134, label: "134° (Tilt A)" },
+                    { value: 90, label: "90°" },
+                    { value: -17, label: "-17° (Lat B)" },
+                    { value: 35, label: "35° (Lon B)" },
+                    { value: -132, label: "-132° (Tilt B)" }
+                ];
+
+                sel1.innerHTML = '';
+                sel2.innerHTML = '';
+                optionsData.forEach(opt => {
+                    const o1 = document.createElement('option');
+                    o1.value = opt.value;
+                    o1.text = opt.label;
+                    sel1.appendChild(o1);
+
+                    const o2 = document.createElement('option');
+                    o2.value = opt.value;
+                    o2.text = opt.label;
+                    sel2.appendChild(o2);
+                });
+                sel1.value = "90";
+                sel2.value = "90";
+            } else {
+                num1.style.display = 'inline-block';
+                num2.style.display = 'inline-block';
+                sel1.style.display = 'none';
+                sel2.style.display = 'none';
             }
 
             updateLvlNavButtons(); 
@@ -1512,7 +1600,7 @@
                 
                 if (!isLevelCompleted) {
                     isLevelCompleted = true;
-                    maxLevelUnlocked = Math.min(10, Math.max(maxLevelUnlocked, currentLevel + 1));
+                    maxLevelUnlocked = Math.min(11, Math.max(maxLevelUnlocked, currentLevel + 1));
                     updateLvlNavButtons();
                     triggerReplayAndVictorySequence(lvl);
                 }
@@ -1532,21 +1620,21 @@
 
         document.getElementById('modal-next-btn').addEventListener('click', () => {
             const modal = document.getElementById('completion-modal');
-            if (currentLevel === 10 && document.getElementById('modal-next-btn').innerText.includes("Scoreboard")) {
+            if (currentLevel === 11 && document.getElementById('modal-next-btn').innerText.includes("Scoreboard")) {
                 showScoreboardView();
                 return;
             }
             modal.classList.remove('show');
             setTimeout(() => {
-                if (currentLevel < 10) currentLevel++;
+                if (currentLevel < 11) currentLevel++;
                 else currentLevel = 1;
                 configureLevel(currentLevel);
             }, 500); 
         });
 
         document.getElementById('modal-retry-btn').addEventListener('click', () => {
-            if (currentLevel === 10 && document.getElementById('modal-retry-btn').innerText.includes("Explanation")) {
-                showLevelCompletedModal(levelDefinitions[10]);
+            if (currentLevel === 11 && document.getElementById('modal-retry-btn').innerText.includes("Explanation")) {
+                showLevelCompletedModal(levelDefinitions[11]);
                 return;
             }
             document.getElementById('completion-modal').classList.remove('show');
@@ -1625,17 +1713,22 @@
             rebuildTraceAndMarkers(); 
         }
 
+        // Action Trigger logic updated to handle dropdown select constraints or manual step input boxes
         document.getElementById('btn1-left').addEventListener('click', () => {
-            applyStepWithHistory(-(parseFloat(document.getElementById('num1').value) || 0), GLOBAL_AXIS_Z);
+            const val = levelDefinitions[currentLevel].restrictedAngles ? parseFloat(document.getElementById('sel1').value) : (parseFloat(document.getElementById('num1').value) || 0);
+            applyStepWithHistory(-val, GLOBAL_AXIS_Z);
         });
         document.getElementById('btn1-right').addEventListener('click', () => {
-            applyStepWithHistory(parseFloat(document.getElementById('num1').value) || 0, GLOBAL_AXIS_Z);
+            const val = levelDefinitions[currentLevel].restrictedAngles ? parseFloat(document.getElementById('sel1').value) : (parseFloat(document.getElementById('num1').value) || 0);
+            applyStepWithHistory(val, GLOBAL_AXIS_Z);
         });
         document.getElementById('btn2-left').addEventListener('click', () => {
-            applyStepWithHistory(-(parseFloat(document.getElementById('num2').value) || 0), GLOBAL_AXIS_X_CLOCKWISE);
+            const val = levelDefinitions[currentLevel].restrictedAngles ? parseFloat(document.getElementById('sel2').value) : (parseFloat(document.getElementById('num2').value) || 0);
+            applyStepWithHistory(-val, GLOBAL_AXIS_X_CLOCKWISE);
         });
         document.getElementById('btn2-right').addEventListener('click', () => {
-            applyStepWithHistory(parseFloat(document.getElementById('num2').value) || 0, GLOBAL_AXIS_X_CLOCKWISE);
+            const val = levelDefinitions[currentLevel].restrictedAngles ? parseFloat(document.getElementById('sel2').value) : (parseFloat(document.getElementById('num2').value) || 0);
+            applyStepWithHistory(val, GLOBAL_AXIS_X_CLOCKWISE);
         });
 
         document.getElementById('btn-prev-lvl').addEventListener('click', () => { 
@@ -1648,7 +1741,7 @@
             }
         });
         
-        document.getElementById('btn-next-lvl').addEventListener('click', () => { if (currentLevel < 10 && !isReplayingAnimation) { currentLevel++; configureLevel(currentLevel); } });
+        document.getElementById('btn-next-lvl').addEventListener('click', () => { if (currentLevel < 11 && !isReplayingAnimation) { currentLevel++; configureLevel(currentLevel); } });
 
         undoButton.addEventListener('click', () => {
             if (rotationHistory.length === 0 || isLevelCompleted || isReplayingAnimation) return;
@@ -1689,6 +1782,13 @@
 
             function interactionStart(clientX, clientY) {
                 if (isLevelCompleted || isReplayingAnimation) return;
+                
+                // Block continuous dial dragging in restricted level
+                if (levelDefinitions[currentLevel].disableDials) {
+                    triggerTemporaryHUDNotification("🔒 Manual dials are locked on this challenge!");
+                    return;
+                }
+
                 active = true;
                 const rect = dial.getBoundingClientRect();
                 centerPoint = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
@@ -1823,7 +1923,7 @@
                         if (isMatched) {
                             activeDragCommits.forEach(commit => commit());
                             isLevelCompleted = true;
-                            maxLevelUnlocked = Math.min(10, Math.max(maxLevelUnlocked, currentLevel + 1));
+                            maxLevelUnlocked = Math.min(11, Math.max(maxLevelUnlocked, currentLevel + 1));
                             updateLvlNavButtons();
                             triggerReplayAndVictorySequence(currentLvl);
                         }
@@ -2029,7 +2129,8 @@
             else if (currentLevel === 7) nextBtn.innerText = "Begin Challenge 5* 🚀";
             else if (currentLevel === 8) nextBtn.innerText = "Begin Challenge 5** 🚀";
             else if (currentLevel === 9) nextBtn.innerText = "Begin Challenge 6 🚀";
-            else if (currentLevel === 10) nextBtn.innerText = "View Scoreboard 🏆";
+            else if (currentLevel === 10) nextBtn.innerText = "Begin Challenge 7 🚀";
+            else if (currentLevel === 11) nextBtn.innerText = "View Scoreboard 🏆";
             
             document.getElementById('completion-modal').classList.add('show');
         }
@@ -2052,7 +2153,7 @@
                         <tbody>
             `;
             
-            for (let lId = 1; lId <= 10; lId++) {
+            for (let lId = 1; lId <= 11; lId++) {
                 const lDef = levelDefinitions[lId];
                 const scoreVal = highscores[lId];
                 const displayScore = scoreVal !== null ? `${scoreVal.toFixed(1)}${lDef.isPhysicalDistance ? "m" : "°"}` : `<span style="color:#666;">-</span>`;
