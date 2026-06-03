@@ -1179,7 +1179,7 @@
                 car.y = nextY;
             }
 
-            // Step 5: Parking Spot Centered Alignment Verification
+            // Step 5: Distance Centered Parking Check (Alignment free)
             const spot = lvl.parkingSpot;
             const spotCenterX = spot.x + spot.w / 2;
             const spotCenterY = spot.y + spot.h / 2;
@@ -1188,27 +1188,19 @@
             const isCentred = distToCenter < Math.max(spot.w, spot.h) * 0.45;
 
             if (isCentred) {
-                const deltaAngle = Math.abs((car.angle - spot.targetAngle) % Math.PI);
-                const isAligned = deltaAngle < 0.18 || deltaAngle > (Math.PI - 0.18);
-
                 if (Math.abs(car.speed) < 0.05) {
-                    if (isAligned) {
-                        this.updateStatusText("HOLD STILL...", "var(--accent-yellow)");
-                        if (!this.winTimer) {
-                            this.winTimer = setTimeout(() => {
-                                if (Math.abs(car.speed) < 0.05 && isCentred) {
-                                    this.active = false;
-                                    this.timerActive = false;
-                                    SoundSystem.playSuccessSound();
-                                    SoundSystem.stopEngine();
-                                    UI.triggerWin();
-                                }
-                                this.winTimer = null;
-                            }, 1000);
-                        }
-                    } else {
-                        this.updateStatusText("ALIGN VEHICLE", "#e67e22");
-                        if(this.winTimer) { clearTimeout(this.winTimer); this.winTimer = null; }
+                    this.updateStatusText("HOLD STILL...", "var(--accent-yellow)");
+                    if (!this.winTimer) {
+                        this.winTimer = setTimeout(() => {
+                            if (Math.abs(car.speed) < 0.05 && isCentred) {
+                                this.active = false;
+                                this.timerActive = false;
+                                SoundSystem.playSuccessSound();
+                                SoundSystem.stopEngine();
+                                UI.triggerWin();
+                            }
+                            this.winTimer = null;
+                        }, 1000);
                     }
                 } else {
                     this.updateStatusText("STOP VEHICLE", "var(--accent-green)");
