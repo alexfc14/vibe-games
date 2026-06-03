@@ -88,6 +88,7 @@
             align-items: center;
             gap: 12px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
         }
 
         .hud-label {
@@ -201,6 +202,113 @@
             transform: translateY(1px);
         }
 
+        /* Settings UI Controls styling */
+        .settings-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 380px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            text-align: left;
+        }
+
+        .setting-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .setting-label {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #bbb;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .setting-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .setting-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.2);
+            outline: none;
+            cursor: pointer;
+        }
+
+        .setting-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-yellow);
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
+        }
+
+        .switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 24px;
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider-round {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255,255,255,0.2);
+            transition: .3s;
+            border-radius: 24px;
+        }
+
+        .slider-round:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider-round {
+            background-color: var(--accent-green);
+        }
+
+        input:checked + .slider-round:before {
+            transform: translateX(22px);
+        }
+
         /* Mobile Controls Layout */
         #mobile-controls {
             position: absolute;
@@ -268,11 +376,18 @@
             border-color: var(--accent-red);
         }
 
-        /* Audio Indicator button */
-        #audio-toggle {
+        /* Interactive Action Buttons bottom bar */
+        #interactive-utilities {
             position: absolute;
             bottom: 15px;
             right: 15px;
+            display: flex;
+            gap: 12px;
+            z-index: 9;
+            pointer-events: auto;
+        }
+
+        .utility-btn {
             background: rgba(0,0,0,0.5);
             border: 1px solid rgba(255,255,255,0.2);
             padding: 8px;
@@ -280,11 +395,20 @@
             width: 38px;
             height: 38px;
             cursor: pointer;
-            z-index: 9;
             display: flex;
             align-items: center;
             justify-content: center;
             fill: #fff;
+            color: #fff;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .utility-btn:hover {
+            background: rgba(0,0,0,0.7);
+        }
+
+        .utility-btn:active {
+            transform: scale(0.9);
         }
 
         /* Responsive UI tweaks */
@@ -318,9 +442,9 @@
                 <div>
                     <div class="hud-label">Level</div>
                     <div class="hud-value" style="display: flex; align-items: center; gap: 8px;">
-                        <span id="hud-level">1/30</span>
+                        <span id="hud-level">1/35</span>
                         <select id="stage-select" onchange="UI.selectStage(this.value)" style="background: rgba(0,0,0,0.5); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 1px 4px; font-size: 11px; cursor: pointer; outline: none; pointer-events: auto;">
-                            <!-- Dynamically loaded with 30 options -->
+                            <!-- Dynamically loaded with 35 options -->
                         </select>
                     </div>
                 </div>
@@ -353,7 +477,41 @@
         <div id="screen-start" class="screen">
             <h1 style="color: var(--accent-yellow); -webkit-text-fill-color: inherit;">PARKING MASTER 2D</h1>
             <p>Maneuver your sports car carefully into the yellow parking bays. Avoid bumping walls and parked vehicles. Park quickly to earn 3 Stars!</p>
-            <button class="btn menu-btn" onclick="UI.startGame()">Drive & Park</button>
+            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                <button class="btn menu-btn" onclick="UI.startGame()">Drive & Park</button>
+                <button class="btn menu-btn" onclick="UI.toggleSettingsModal(true)" style="background: linear-gradient(135deg, #7f8c8d 0%, #34495e 100%); box-shadow: 0 8px 25px rgba(52, 73, 94, 0.4);">Settings</button>
+            </div>
+        </div>
+
+        <!-- Settings Config Screen (Modal) -->
+        <div id="screen-settings" class="screen hidden">
+            <h1 style="color: var(--accent-yellow); -webkit-text-fill-color: inherit; margin-bottom: 25px;">GAME CONFIGURATION</h1>
+            
+            <div class="settings-card">
+                <!-- Sensitivity Adjustment -->
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <span>Steering Sensitivity</span>
+                        <span id="sensitivity-display">100%</span>
+                    </div>
+                    <div class="setting-input-wrap">
+                        <input type="range" id="sensitivity-slider" class="setting-slider" min="0.4" max="2.2" step="0.1" value="1.0" oninput="UI.updateSensitivity(this.value)">
+                    </div>
+                </div>
+
+                <!-- No-Damage/God Mode Mode Switch -->
+                <div class="switch-container" onclick="document.getElementById('nodamage-checkbox').click()">
+                    <div class="setting-label" style="margin-bottom:0;">
+                        <span>Disable Damage (No Damage)</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="nodamage-checkbox" onchange="UI.updateNoDamage(this.checked)">
+                        <span class="slider-round"></span>
+                    </label>
+                </div>
+            </div>
+
+            <button class="btn menu-btn" onclick="UI.toggleSettingsModal(false)" style="background: linear-gradient(135deg, #f39c12 0%, #d35400 100%); box-shadow: 0 8px 25px rgba(230, 126, 34, 0.4);">Save & Resume</button>
         </div>
 
         <!-- Level Transition Screen -->
@@ -394,18 +552,35 @@
             </div>
         </div>
 
-        <!-- Audio mute/unmute visual toggler -->
-        <div id="audio-toggle" onclick="SoundSystem.toggleSound()">
-            <svg id="speaker-icon" viewBox="0 0 24 24" width="20" height="20">
-                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73(2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-            </svg>
+        <!-- Utility Action Buttons Container (Bottom Right) -->
+        <div id="interactive-utilities">
+            <!-- Toggle Settings Config Modal -->
+            <div class="utility-btn" id="settings-toggle-btn" onclick="UI.toggleSettingsModal(true)">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                </svg>
+            </div>
+            <!-- Audio Indicator button -->
+            <div class="utility-btn" id="audio-toggle" onclick="SoundSystem.toggleSound()">
+                <svg id="speaker-icon" viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                </svg>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
     /**
-     * SOUND ENGINE (No static files: Synthesized live using Web Audio API)
+     * GAME CONFIGURATION SETTINGS (Sensitivity, No Damage)
+     */
+    const GameSettings = {
+        sensitivity: 1.0,  // steering multiplier range: [0.4 to 2.2]
+        noDamage: false    // invincible mode if true
+    };
+
+    /**
+     * SOUND ENGINE (Synthesized live using Web Audio API)
      */
     const SoundSystem = {
         ctx: null,
@@ -429,7 +604,7 @@
                 const filter = this.ctx.createBiquadFilter();
 
                 this.engineOsc.type = 'sawtooth';
-                this.engineOsc.frequency.setValueAtTime(45, this.ctx.currentTime); // low pitch rumble
+                this.engineOsc.frequency.setValueAtTime(45, this.ctx.currentTime);
 
                 filter.type = 'lowpass';
                 filter.frequency.setValueAtTime(140, this.ctx.currentTime);
@@ -448,7 +623,7 @@
 
         updateEnginePitch(speed) {
             if (!this.soundEnabled || !this.ctx) return;
-            this.init(); // Lazy init if user interactions allow
+            this.init();
             
             if (this.ctx.state === 'suspended') {
                 this.ctx.resume();
@@ -456,8 +631,8 @@
 
             if (this.engineOsc && this.engineGain) {
                 const absSpeed = Math.abs(speed);
-                const targetFreq = 45 + (absSpeed * 45); // Pitch scales with car velocity
-                const targetGain = 0.05 + (absSpeed * 0.12); // Slightly louder when speeding up
+                const targetFreq = 45 + (absSpeed * 45);
+                const targetGain = 0.05 + (absSpeed * 0.12);
 
                 this.engineOsc.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.1);
                 this.engineGain.gain.setTargetAtTime(targetGain, this.ctx.currentTime, 0.1);
@@ -471,11 +646,10 @@
         },
 
         playCrashSound() {
-            if (!this.soundEnabled || !this.ctx) return;
+            if (!this.soundEnabled || !this.ctx || GameSettings.noDamage) return;
             this.init();
 
             try {
-                // White noise crash sound
                 const bufferSize = this.ctx.sampleRate * 0.4;
                 const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
                 const data = buffer.getChannelData(0);
@@ -513,7 +687,6 @@
                 const gain = this.ctx.createGain();
                 osc.type = 'triangle';
                 
-                // Arpeggio chord sweep
                 const now = this.ctx.currentTime;
                 osc.frequency.setValueAtTime(261.63, now); // C4
                 osc.frequency.setValueAtTime(329.63, now + 0.1); // E4
@@ -545,7 +718,7 @@
 
     /**
      * GEOMETRY & PHYSICS UTILS
-     * Robust implementation of the Separating Axis Theorem (SAT) for OBB (Oriented Bounding Box) collisions
+     * Robust Separating Axis Theorem (SAT)
      */
     const CollisionUtils = {
         projectPoints(points, axis) {
@@ -593,140 +766,166 @@
 
 
     /**
-     * MAPS & LEVELS CONFIGURATOR - 30 DISTINCT LEVELS OF INCREASING DIFFICULTY
+     * MAPS & LEVELS CONFIGURATOR - 35 DISTINCT LEVELS (5 Introductory + 30 Originals)
      */
     const LevelGenerator = {
-        totalStages: 30,
+        totalStages: 35,
 
         getLevel(idx) {
             const levelNo = idx + 1;
             const obstacles = [
                 // Surrounding structures always present
-                { x: 0, y: 0, w: 960, h: 25 }, // Top Wall
-                { x: 0, y: 515, w: 960, h: 25 }, // Bottom Wall
-                { x: 0, y: 0, w: 25, h: 540 }, // Left Wall
-                { x: 935, y: 0, w: 25, h: 540 }  // Right Wall
+                { x: 0, y: 0, w: 960, h: 25 }, 
+                { x: 0, y: 515, w: 960, h: 25 }, 
+                { x: 0, y: 0, w: 25, h: 540 }, 
+                { x: 935, y: 0, w: 25, h: 540 }  
             ];
 
             let startPos = { x: 120, y: 150, angle: 0 };
             let parkingSpot = { x: 740, y: 360, w: 90, h: 50, targetAngle: 0 };
-            
-            // Map design configurations based on level index modulo
-            const mapPattern = idx % 5;
-            const difficultyScale = Math.floor(idx / 5); // Ranges from 0 (Levels 1-5) to 5 (Levels 26-30)
 
-            if (mapPattern === 0) {
-                // TYPE 0: Open Bay with progressive divider blocks
-                startPos = { x: 100 + (idx * 5) % 50, y: 150 + (idx * 10) % 80, angle: 0 };
-                
-                // Tighten parking spot dimensions as difficulty rises
-                const spotWidth = Math.max(70, 95 - difficultyScale * 5);
-                const spotHeight = 50;
-                parkingSpot = { x: 750, y: 350, w: spotWidth, h: spotHeight, targetAngle: 0 };
-                
-                // Adding blockades
-                obstacles.push({ x: 300, y: 50, w: 30, h: 200 + difficultyScale * 25 });
-                obstacles.push({ x: 550, y: 200 - difficultyScale * 20, w: 30, h: 250 });
-                
-                // Adjacent parked cars surrounding target
-                obstacles.push({ x: 750, y: 350 - spotHeight - 15 - (5 - difficultyScale)*2, w: 90, h: 50, type: 'parked', color: '#3498db' });
-                obstacles.push({ x: 750, y: 350 + spotHeight + 15 + (5 - difficultyScale)*2, w: 90, h: 50, type: 'parked', color: '#16a085' });
-                
-                // Dynamic obstacle additions
-                if (difficultyScale >= 1) obstacles.push({ x: 150, y: 320, w: 80, h: 30 });
-                if (difficultyScale >= 2) obstacles.push({ x: 420, y: 90, w: 30, h: 140 });
-                if (difficultyScale >= 3) obstacles.push({ x: 660, y: 380, w: 30, h: 100 });
-                if (difficultyScale >= 4) obstacles.push({ x: 440, y: 410, w: 100, h: 30 });
-                if (difficultyScale >= 5) obstacles.push({ x: 200, y: 50, w: 30, h: 100 });
+            if (idx < 5) {
+                // ----------------------------------------------------
+                // FIVE INTRODUCTORY EASY TRAINING STAGES
+                // ----------------------------------------------------
+                if (idx === 0) {
+                    // Stage 1: Straight forward park
+                    startPos = { x: 150, y: 270, angle: 0 };
+                    parkingSpot = { x: 700, y: 235, w: 90, h: 70, targetAngle: 0 };
+                    // No additional obstacles. Wide open.
+                } 
+                else if (idx === 1) {
+                    // Stage 2: Gentle Curve Parking
+                    startPos = { x: 150, y: 150, angle: 0 };
+                    parkingSpot = { x: 740, y: 380, w: 90, h: 60, targetAngle: 0 };
+                    // Single obstacle right in center to teach navigating round corners
+                    obstacles.push({ x: 420, y: 120, w: 40, h: 120 });
+                } 
+                else if (idx === 2) {
+                    // Stage 3: Straight Reversing Drill
+                    startPos = { x: 750, y: 270, angle: 0 };
+                    parkingSpot = { x: 200, y: 235, w: 90, h: 70, targetAngle: 0 };
+                    // No obstacles, pure backward throttle training.
+                } 
+                else if (idx === 3) {
+                    // Stage 4: Easy Angled Parking spot
+                    startPos = { x: 150, y: 400, angle: 0 };
+                    parkingSpot = { x: 650, y: 150, w: 95, h: 60, targetAngle: Math.PI / 4 };
+                    // Generous room, single buffer wall on top
+                    obstacles.push({ x: 600, y: 25, w: 200, h: 30 });
+                } 
+                else if (idx === 4) {
+                    // Stage 5: Parallel Parking with double-sized clearances
+                    startPos = { x: 150, y: 270, angle: 0 };
+                    // Wide spot: 140px width (original spots are around ~70-90)
+                    parkingSpot = { x: 500, y: 240, w: 130, h: 50, targetAngle: 0 };
+                    // Parallel buffers placed further away
+                    obstacles.push({ x: 380, y: 240, w: 90, h: 50, type: 'parked', color: '#7f8c8d' });
+                    obstacles.push({ x: 660, y: 240, w: 90, h: 50, type: 'parked', color: '#95a5a6' });
+                }
             } 
-            else if (mapPattern === 1) {
-                // TYPE 1: Parallel Parking Alley
-                startPos = { x: 120, y: 420, angle: 0 };
-                
-                const spotWidth = Math.max(72, 98 - difficultyScale * 5);
-                parkingSpot = { x: 400, y: 240, w: spotWidth, h: 50, targetAngle: 0 };
-                
-                obstacles.push({ x: 220, y: 25, w: 40, h: 240 + difficultyScale * 20 });
-                obstacles.push({ x: 680, y: 215 - difficultyScale * 20, w: 40, h: 300 });
-                
-                // Hard side borders squeezing parallel slot
-                obstacles.push({ x: 400 - 95 - (5 - difficultyScale)*2, y: 240, w: 90, h: 50, type: 'parked', color: '#9b59b6' });
-                obstacles.push({ x: 400 + spotWidth + (5 - difficultyScale)*2, y: 240, w: 90, h: 50, type: 'parked', color: '#e67e22' });
-                
-                if (difficultyScale >= 1) obstacles.push({ x: 100, y: 250, w: 30, h: 100 });
-                if (difficultyScale >= 2) obstacles.push({ x: 480, y: 80, w: 120, h: 30 });
-                if (difficultyScale >= 3) obstacles.push({ x: 280, y: 380, w: 150, h: 30 });
-                if (difficultyScale >= 4) obstacles.push({ x: 800, y: 100, w: 30, h: 150 });
-                if (difficultyScale >= 5) obstacles.push({ x: 580, y: 380, w: 30, h: 100 });
-            } 
-            else if (mapPattern === 2) {
-                // TYPE 2: Maze Squeeze with Vertical parking slot
-                startPos = { x: 100, y: 100, angle: Math.PI / 2 };
-                
-                const spotHeight = Math.max(72, 90 - difficultyScale * 4);
-                
-                // FIXED: Swapped spotHeight and 50 and offset x & y so the unrotated base dimensions 
-                // match a horizontal car, making it perfectly vertical when rotated 90 degrees.
-                parkingSpot = { 
-                    x: 745 - spotHeight / 2, 
-                    y: 125 + spotHeight / 2, 
-                    w: spotHeight, 
-                    h: 50, 
-                    targetAngle: Math.PI / 2 
-                };
-                
-                obstacles.push({ x: 250, y: 120, w: 400 - difficultyScale * 12, h: 30 });
-                obstacles.push({ x: 300 + difficultyScale * 12, y: 320, w: 400, h: 30 });
-                obstacles.push({ x: 450, y: 150, w: 30, h: 170 });
-                
-                // Vertical adjacent vehicles
-                obstacles.push({ x: 720, y: 150 - 95 - (5 - difficultyScale)*2, w: 50, h: 90, type: 'parked', color: '#f39c12' });
-                obstacles.push({ x: 720, y: 150 + spotHeight + (5 - difficultyScale)*2, w: 50, h: 90, type: 'parked', color: '#c0392b' });
-                
-                if (difficultyScale >= 1) obstacles.push({ x: 100, y: 240, w: 80, h: 30 });
-                if (difficultyScale >= 2) obstacles.push({ x: 820, y: 280, w: 30, h: 120 });
-                if (difficultyScale >= 3) obstacles.push({ x: 550, y: 420, w: 120, h: 30 });
-                if (difficultyScale >= 4) obstacles.push({ x: 350, y: 50, w: 30, h: 70 });
-                if (difficultyScale >= 5) obstacles.push({ x: 100, y: 380, w: 100, h: 30 });
-            } 
-            else if (mapPattern === 3) {
-                // TYPE 3: Narrow Diagonal Drift Challenge (Angled target bay)
-                startPos = { x: 800, y: 440, angle: Math.PI };
-                
-                const spotWidth = Math.max(70, 90 - difficultyScale * 4);
-                parkingSpot = { x: 200, y: 150, w: spotWidth, h: 50, targetAngle: Math.PI / 4 };
-                
-                obstacles.push({ x: 400, y: 150, w: 200, h: 40 });
-                obstacles.push({ x: 150, y: 350, w: 450, h: 30 });
-                
-                // Nearby objects blockading angled entrance
-                obstacles.push({ x: 180, y: 50, w: 90, h: 50, type: 'parked', color: '#7f8c8d' });
-                obstacles.push({ x: 100, y: 180, w: 90, h: 50, type: 'parked', color: '#2c3e50' });
-                
-                if (difficultyScale >= 1) obstacles.push({ x: 680, y: 80, w: 30, h: 150 });
-                if (difficultyScale >= 2) obstacles.push({ x: 800, y: 220, w: 100, h: 30 });
-                if (difficultyScale >= 3) obstacles.push({ x: 450, y: 250, w: 30, h: 100 });
-                if (difficultyScale >= 4) obstacles.push({ x: 300, y: 50, w: 80, h: 30 });
-                if (difficultyScale >= 5) obstacles.push({ x: 680, y: 320, w: 150, h: 30 });
-            } 
-            else if (mapPattern === 4) {
-                // TYPE 4: Double Squeeze Corridor Parallel block
-                startPos = { x: 150, y: 80, angle: 0 };
-                
-                const spotWidth = Math.max(68, 88 - difficultyScale * 4);
-                parkingSpot = { x: 740, y: 220, w: spotWidth, h: 50, targetAngle: 0 };
-                
-                obstacles.push({ x: 100, y: 150, w: 500, h: 35 });
-                obstacles.push({ x: 350, y: 320, w: 500, h: 35 });
-                
-                obstacles.push({ x: 740 - 95 - (5 - difficultyScale)*2, y: 220, w: 90, h: 50, type: 'parked', color: '#1abc9c' });
-                obstacles.push({ x: 740 + spotWidth + (5 - difficultyScale)*2, y: 220, w: 90, h: 50, type: 'parked', color: '#2ecc71' });
-                
-                if (difficultyScale >= 1) obstacles.push({ x: 150, y: 400, w: 120, h: 30 });
-                if (difficultyScale >= 2) obstacles.push({ x: 50, y: 240, w: 30, h: 120 });
-                if (difficultyScale >= 3) obstacles.push({ x: 600, y: 50, w: 30, h: 100 });
-                if (difficultyScale >= 4) obstacles.push({ x: 250, y: 240, w: 100, h: 30 });
-                if (difficultyScale >= 5) obstacles.push({ x: 700, y: 410, w: 120, h: 30 });
+            else {
+                // ----------------------------------------------------
+                // ORIGINAL 30 LEVELS (Shifted cleanly by index - 5)
+                // ----------------------------------------------------
+                const originalIdx = idx - 5;
+                const mapPattern = originalIdx % 5;
+                const difficultyScale = Math.floor(originalIdx / 5);
+
+                if (mapPattern === 0) {
+                    startPos = { x: 100 + (originalIdx * 5) % 50, y: 150 + (originalIdx * 10) % 80, angle: 0 };
+                    const spotWidth = Math.max(70, 95 - difficultyScale * 5);
+                    const spotHeight = 50;
+                    parkingSpot = { x: 750, y: 350, w: spotWidth, h: spotHeight, targetAngle: 0 };
+                    
+                    obstacles.push({ x: 300, y: 50, w: 30, h: 200 + difficultyScale * 25 });
+                    obstacles.push({ x: 550, y: 200 - difficultyScale * 20, w: 30, h: 250 });
+                    
+                    obstacles.push({ x: 750, y: 350 - spotHeight - 15 - (5 - difficultyScale)*2, w: 90, h: 50, type: 'parked', color: '#3498db' });
+                    obstacles.push({ x: 750, y: 350 + spotHeight + 15 + (5 - difficultyScale)*2, w: 90, h: 50, type: 'parked', color: '#16a085' });
+                    
+                    if (difficultyScale >= 1) obstacles.push({ x: 150, y: 320, w: 80, h: 30 });
+                    if (difficultyScale >= 2) obstacles.push({ x: 420, y: 90, w: 30, h: 140 });
+                    if (difficultyScale >= 3) obstacles.push({ x: 660, y: 380, w: 30, h: 100 });
+                    if (difficultyScale >= 4) obstacles.push({ x: 440, y: 410, w: 100, h: 30 });
+                    if (difficultyScale >= 5) obstacles.push({ x: 200, y: 50, w: 30, h: 100 });
+                } 
+                else if (mapPattern === 1) {
+                    startPos = { x: 120, y: 420, angle: 0 };
+                    const spotWidth = Math.max(72, 98 - difficultyScale * 5);
+                    parkingSpot = { x: 400, y: 240, w: spotWidth, h: 50, targetAngle: 0 };
+                    
+                    obstacles.push({ x: 220, y: 25, w: 40, h: 240 + difficultyScale * 20 });
+                    obstacles.push({ x: 680, y: 215 - difficultyScale * 20, w: 40, h: 300 });
+                    
+                    obstacles.push({ x: 400 - 95 - (5 - difficultyScale)*2, y: 240, w: 90, h: 50, type: 'parked', color: '#9b59b6' });
+                    obstacles.push({ x: 400 + spotWidth + (5 - difficultyScale)*2, y: 240, w: 90, h: 50, type: 'parked', color: '#e67e22' });
+                    
+                    if (difficultyScale >= 1) obstacles.push({ x: 100, y: 250, w: 30, h: 100 });
+                    if (difficultyScale >= 2) obstacles.push({ x: 480, y: 80, w: 120, h: 30 });
+                    if (difficultyScale >= 3) obstacles.push({ x: 280, y: 380, w: 150, h: 30 });
+                    if (difficultyScale >= 4) obstacles.push({ x: 800, y: 100, w: 30, h: 150 });
+                    if (difficultyScale >= 5) obstacles.push({ x: 580, y: 380, w: 30, h: 100 });
+                } 
+                else if (mapPattern === 2) {
+                    startPos = { x: 100, y: 100, angle: Math.PI / 2 };
+                    const spotHeight = Math.max(72, 90 - difficultyScale * 4);
+                    
+                    parkingSpot = { 
+                        x: 745 - spotHeight / 2, 
+                        y: 125 + spotHeight / 2, 
+                        w: spotHeight, 
+                        h: 50, 
+                        targetAngle: Math.PI / 2 
+                    };
+                    
+                    obstacles.push({ x: 250, y: 120, w: 400 - difficultyScale * 12, h: 30 });
+                    obstacles.push({ x: 300 + difficultyScale * 12, y: 320, w: 400, h: 30 });
+                    obstacles.push({ x: 450, y: 150, w: 30, h: 170 });
+                    
+                    obstacles.push({ x: 720, y: 150 - 95 - (5 - difficultyScale)*2, w: 50, h: 90, type: 'parked', color: '#f39c12' });
+                    obstacles.push({ x: 720, y: 150 + spotHeight + (5 - difficultyScale)*2, w: 50, h: 90, type: 'parked', color: '#c0392b' });
+                    
+                    if (difficultyScale >= 1) obstacles.push({ x: 100, y: 240, w: 80, h: 30 });
+                    if (difficultyScale >= 2) obstacles.push({ x: 820, y: 280, w: 30, h: 120 });
+                    if (difficultyScale >= 3) obstacles.push({ x: 550, y: 420, w: 120, h: 30 });
+                    if (difficultyScale >= 4) obstacles.push({ x: 350, y: 50, w: 30, h: 70 });
+                    if (difficultyScale >= 5) obstacles.push({ x: 100, y: 380, w: 100, h: 30 });
+                } 
+                else if (mapPattern === 3) {
+                    startPos = { x: 800, y: 440, angle: Math.PI };
+                    const spotWidth = Math.max(70, 90 - difficultyScale * 4);
+                    parkingSpot = { x: 200, y: 150, w: spotWidth, h: 50, targetAngle: Math.PI / 4 };
+                    
+                    obstacles.push({ x: 400, y: 150, w: 200, h: 40 });
+                    obstacles.push({ x: 150, y: 350, w: 450, h: 30 });
+                    
+                    obstacles.push({ x: 180, y: 50, w: 90, h: 50, type: 'parked', color: '#7f8c8d' });
+                    obstacles.push({ x: 100, y: 180, w: 90, h: 50, type: 'parked', color: '#2c3e50' });
+                    
+                    if (difficultyScale >= 1) obstacles.push({ x: 680, y: 80, w: 30, h: 150 });
+                    if (difficultyScale >= 2) obstacles.push({ x: 800, y: 220, w: 100, h: 30 });
+                    if (difficultyScale >= 3) obstacles.push({ x: 450, y: 250, w: 30, h: 100 });
+                    if (difficultyScale >= 4) obstacles.push({ x: 300, y: 50, w: 80, h: 30 });
+                    if (difficultyScale >= 5) obstacles.push({ x: 680, y: 320, w: 150, h: 30 });
+                } 
+                else if (mapPattern === 4) {
+                    startPos = { x: 150, y: 80, angle: 0 };
+                    const spotWidth = Math.max(68, 88 - difficultyScale * 4);
+                    parkingSpot = { x: 740, y: 220, w: spotWidth, h: 50, targetAngle: 0 };
+                    
+                    obstacles.push({ x: 100, y: 150, w: 500, h: 35 });
+                    obstacles.push({ x: 350, y: 320, w: 500, h: 35 });
+                    
+                    obstacles.push({ x: 740 - 95 - (5 - difficultyScale)*2, y: 220, w: 90, h: 50, type: 'parked', color: '#1abc9c' });
+                    obstacles.push({ x: 740 + spotWidth + (5 - difficultyScale)*2, y: 220, w: 90, h: 50, type: 'parked', color: '#2ecc71' });
+                    
+                    if (difficultyScale >= 1) obstacles.push({ x: 150, y: 400, w: 120, h: 30 });
+                    if (difficultyScale >= 2) obstacles.push({ x: 50, y: 240, w: 30, h: 120 });
+                    if (difficultyScale >= 3) obstacles.push({ x: 600, y: 50, w: 30, h: 100 });
+                    if (difficultyScale >= 4) obstacles.push({ x: 250, y: 240, w: 100, h: 30 });
+                    if (difficultyScale >= 5) obstacles.push({ x: 700, y: 410, w: 120, h: 30 });
+                }
             }
 
             return {
@@ -747,17 +946,16 @@
         ctx: null,
         currentLevelIdx: 0,
         active: false,
+        wasActiveBeforeSettings: false,
         damage: 0,
         maxDamage: 100,
         keys: {},
         skidmarks: [],
         
-        // Timer elements
         levelStartTime: 0,
         elapsedTime: 0,
         timerActive: false,
 
-        // Car specs & live physics dynamics
         car: {
             x: 0,
             y: 0,
@@ -857,7 +1055,9 @@
         },
 
         updateHealthBar() {
-            const pct = Math.max(0, 100 - this.damage);
+            // No damage mode keeps health visual at 100%
+            const displayDamage = GameSettings.noDamage ? 0 : this.damage;
+            const pct = Math.max(0, 100 - displayDamage);
             const inner = document.getElementById('hud-health');
             inner.style.width = pct + '%';
             if(pct > 50) inner.style.backgroundColor = "var(--accent-green)";
@@ -890,10 +1090,10 @@
                 document.getElementById('hud-timer').innerText = this.formatTime(this.elapsedTime);
             }
 
-            // Step 1: Steering Mechanics
+            // Step 1: Steering Mechanics (With Steering Sensitivity Scalar)
             if (Math.abs(car.speed) > 0.05) {
                 const speedModifier = Math.min(1.0, Math.abs(car.speed) / 1.5);
-                const currentSteerSpeed = car.steeringSpeed * speedModifier * (car.speed > 0 ? 1 : -0.7);
+                const currentSteerSpeed = car.steeringSpeed * GameSettings.sensitivity * speedModifier * (car.speed > 0 ? 1 : -0.7);
 
                 if (this.keys['ArrowLeft'] || this.keys['a'] || this.keys['A']) {
                     car.angle -= currentSteerSpeed;
@@ -957,15 +1157,18 @@
             if (collided) {
                 SoundSystem.playCrashSound();
 
-                const crashIntensity = Math.ceil(Math.abs(car.speed) * 12);
-                this.damage += Math.max(8, crashIntensity);
+                // Compute kinetic damage if damage is active
+                if (!GameSettings.noDamage) {
+                    const crashIntensity = Math.ceil(Math.abs(car.speed) * 12);
+                    this.damage += Math.max(8, crashIntensity);
+                }
                 this.updateHealthBar();
 
                 car.speed = -car.speed * 0.45;
                 car.x -= Math.cos(car.angle) * 3;
                 car.y -= Math.sin(car.angle) * 3;
 
-                if (this.damage >= this.maxDamage) {
+                if (!GameSettings.noDamage && this.damage >= this.maxDamage) {
                     this.active = false;
                     this.timerActive = false;
                     SoundSystem.stopEngine();
@@ -976,13 +1179,12 @@
                 car.y = nextY;
             }
 
-            // Step 5: Advanced Rotational & Distance Centered Parking Check
+            // Step 5: Parking Spot Centered Alignment Verification
             const spot = lvl.parkingSpot;
             const spotCenterX = spot.x + spot.w / 2;
             const spotCenterY = spot.y + spot.h / 2;
             const distToCenter = Math.hypot(car.x - spotCenterX, car.y - spotCenterY);
             
-            // Check centering relative to target box scale
             const isCentred = distToCenter < Math.max(spot.w, spot.h) * 0.45;
 
             if (isCentred) {
@@ -1166,6 +1368,7 @@
             document.getElementById('screen-start').classList.add('hidden');
             document.getElementById('screen-win').classList.add('hidden');
             document.getElementById('screen-fail').classList.add('hidden');
+            document.getElementById('screen-settings').classList.add('hidden');
             
             GameEngine.loadLevel(0);
             GameEngine.active = true;
@@ -1176,9 +1379,40 @@
             document.getElementById('screen-start').classList.add('hidden');
             document.getElementById('screen-win').classList.add('hidden');
             document.getElementById('screen-fail').classList.add('hidden');
+            document.getElementById('screen-settings').classList.add('hidden');
             
             GameEngine.loadLevel(parseInt(stageIdx, 10));
             GameEngine.active = true;
+        },
+
+        // Toggle modal Settings window
+        toggleSettingsModal(open) {
+            SoundSystem.init();
+            const modal = document.getElementById('screen-settings');
+            
+            if (open) {
+                // Keep track of current game state, pause execution loops
+                GameEngine.wasActiveBeforeSettings = GameEngine.active;
+                GameEngine.active = false;
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+                // Restore previous loops states
+                if (GameEngine.wasActiveBeforeSettings) {
+                    GameEngine.active = true;
+                }
+            }
+        },
+
+        updateSensitivity(val) {
+            const floatVal = parseFloat(val);
+            GameSettings.sensitivity = floatVal;
+            document.getElementById('sensitivity-display').innerText = `${Math.round(floatVal * 100)}%`;
+        },
+
+        updateNoDamage(checked) {
+            GameSettings.noDamage = checked;
+            GameEngine.updateHealthBar();
         },
 
         triggerWin() {
@@ -1190,9 +1424,11 @@
             const silverTimeLimit = 18 + Math.floor(levelNo * 1.2);
             
             let starsEarned = 1;
-            if (GameEngine.elapsedTime <= goldTimeLimit && GameEngine.damage === 0) {
+            const effectiveDamage = GameSettings.noDamage ? 0 : GameEngine.damage;
+            
+            if (GameEngine.elapsedTime <= goldTimeLimit && effectiveDamage === 0) {
                 starsEarned = 3;
-            } else if (GameEngine.elapsedTime <= silverTimeLimit && GameEngine.damage < 40) {
+            } else if (GameEngine.elapsedTime <= silverTimeLimit && effectiveDamage < 40) {
                 starsEarned = 2;
             }
 
@@ -1202,8 +1438,8 @@
             // Generate diagnostic overview statistics
             document.getElementById('win-stats-summary').innerHTML = `
                 Stage ${levelNo} Completed!<br>
-                Time Score: <strong>${GameEngine.elapsedTime.toFixed(2)}s</strong> (Gold standard: ${goldTimeLimit}s)<br>
-                Vehicle Integrity: <strong>${(100 - GameEngine.damage)}%</strong>
+                Time Score: <strong>${GameEngine.elapsedTime.toFixed(2)}s</strong> (Gold limit: ${goldTimeLimit}s)<br>
+                Vehicle Integrity: <strong>${(100 - effectiveDamage)}%</strong> ${GameSettings.noDamage ? '<span style="color:var(--accent-green)">(Invincible)</span>' : ''}
             `;
 
             if (GameEngine.currentLevelIdx >= LevelGenerator.totalStages - 1) {
