@@ -500,15 +500,15 @@
                 </div>
 
                 <!-- No-Damage/God Mode Mode Switch -->
-                <div class="switch-container" onclick="document.getElementById('nodamage-checkbox').click()">
+                <label class="switch-container">
                     <div class="setting-label" style="margin-bottom:0;">
                         <span>Disable Damage (No Damage)</span>
                     </div>
-                    <label class="switch">
+                    <div class="switch">
                         <input type="checkbox" id="nodamage-checkbox" onchange="UI.updateNoDamage(this.checked)">
                         <span class="slider-round"></span>
-                    </label>
-                </div>
+                    </div>
+                </label>
             </div>
 
             <button class="btn menu-btn" onclick="UI.toggleSettingsModal(false)" style="background: linear-gradient(135deg, #f39c12 0%, #d35400 100%); box-shadow: 0 8px 25px rgba(230, 126, 34, 0.4);">Save & Resume</button>
