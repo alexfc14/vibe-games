@@ -266,6 +266,7 @@ let totalElapsed = 0;
 let lap = 1;
 let lastClosestIdx = -1; // -1 represents uninitialized startup state
 let checkpointPassed = false;
+let steerDuration = 0; // Tracks hold time of steering for subtle tap control
 
 // Keyboard state tracker
 const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, w: false, s: false, a: false, d: false };
@@ -286,7 +287,9 @@ const car = {
     length: 7.2,
     mesh: null,
     bodyMesh: null, // Submesh holding car visual elements to apply roll & vibration easily
-    wheels: []
+    wheels: [],
+    verticalVelocity: 0, // Airborne state velocity
+    isGrounded: true
 };
 
 // --- PROCEDURAL GENERATION: CHANNELS & DESERT ASSETS ---
@@ -294,33 +297,38 @@ let trackGroup;
 const trackWidth = 65; // Increased width for better high speed handling & drifting
 const wallLimit = (trackWidth / 2) - 1.8; // Distance from track center before hitting outer wall flange (30.7 units)
 
-// Relaxed, sweeping layout suitable for high speeds
+// Massive 3D Track Layout with significant elevation shifts and jumping ramp lip!
 const trackControlPoints = [
-    new THREE.Vector3(0, 0.1, 0),
-    new THREE.Vector3(150, 0.1, 30),
-    new THREE.Vector3(350, 0.1, 100),
-    new THREE.Vector3(550, 0.1, 50),
-    new THREE.Vector3(700, 0.1, -100),
-    new THREE.Vector3(650, 0.1, -300),
-    new THREE.Vector3(450, 0.1, -450),
-    new THREE.Vector3(150, 0.1, -400),
-    new THREE.Vector3(-150, 0.1, -450),
-    new THREE.Vector3(-450, 0.1, -350),
-    new THREE.Vector3(-600, 0.1, -150),
-    new THREE.Vector3(-500, 0.1, 150),
-    new THREE.Vector3(-250, 0.1, 100),
-    new THREE.Vector3(-100, 0.1, -20)
+    new THREE.Vector3(0, 0.1, 0),             // Start/Finish Line (Flat)
+    new THREE.Vector3(200, 15, 60),           // Ascending sweep
+    new THREE.Vector3(450, 45, 120),          // High altitude climb peak
+    new THREE.Vector3(700, 60, -50),          // Tallest hilltop corner
+    new THREE.Vector3(800, 40, -250),         // Swooping coastal descent
+    new THREE.Vector3(600, 15, -450),         // Running down canyon
+    new THREE.Vector3(350, 5, -550),          // Floor of the canyon
+    new THREE.Vector3(100, 30, -500),         // Steep ascent uphill toward launch ramp
+    new THREE.Vector3(-150, 50, -580),        // RAMP Takeoff peak (Upwards launch kick!)
+    new THREE.Vector3(-350, 18, -480),        // Deep landing slope (Huge air gap!)
+    new THREE.Vector3(-550, 5, -350),         // Valley straightaway
+    new THREE.Vector3(-700, 25, -100),        // Winding mountain ascent
+    new THREE.Vector3(-600, 45, 180),         // Elevated ridge sweep
+    new THREE.Vector3(-400, 20, 280),         // Crest descent turn
+    new THREE.Vector3(-200, 5, 120),          // Leveling out onto speedway plains
+    new THREE.Vector3(-100, 0.1, -20)         // Back home
 ];
 
 const trackCurve = new THREE.CatmullRomCurve3(trackControlPoints, true);
-const curvePointsCount = 600; // Increased sample count for a longer, smoother path
+const curvePointsCount = 750; // High count for smoother coordinate mapping on a long track
 const sampledCurvePoints = trackCurve.getSpacedPoints(curvePointsCount);
 
 // Helper function to find minimum distance from any position to the track spline
 function getMinDistanceToTrack(pos) {
     let minDist = Infinity;
-    for (let i = 0; i < curvePointsCount; i += 5) {
-        const d = pos.distanceTo(sampledCurvePoints[i]);
+    for (let i = 0; i < curvePointsCount; i += 3) {
+        // Calculate strictly flat 2D distance on X-Z plane to prevent elevation distortions
+        const dx = pos.x - sampledCurvePoints[i].x;
+        const dz = pos.z - sampledCurvePoints[i].z;
+        const d = Math.sqrt(dx * dx + dz * dz);
         if (d < minDist) minDist = d;
     }
     return minDist;
@@ -328,7 +336,7 @@ function getMinDistanceToTrack(pos) {
 
 // --- PARTICLE SYSTEM POOL (For Drifting Smoke & Wall Sparks) ---
 const particles = [];
-const maxParticles = 100;
+const maxParticles = 120;
 let particleGeometry;
 
 function initParticles() {
@@ -388,10 +396,10 @@ function init() {
     // Scene creation
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xdf9f53); // Warm Sand
-    scene.fog = new THREE.FogExp2(0xdf9f53, 0.002);
+    scene.fog = new THREE.FogExp2(0xdf9f53, 0.0012); // Slightly lowered fog so sprawling hills look gorgeous
 
     // Camera setup
-    camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.5, 1500);
+    camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.5, 2000);
     
     // Renderer
     renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
@@ -405,13 +413,13 @@ function init() {
     scene.add(ambientLight);
 
     const sunLight = new THREE.DirectionalLight(0xffddaa, 1.4);
-    sunLight.position.set(300, 200, -100);
+    sunLight.position.set(400, 300, -200);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 2048;
     sunLight.shadow.mapSize.height = 2048;
     sunLight.shadow.camera.near = 0.5;
-    sunLight.shadow.camera.far = 1500;
-    const side = 800;
+    sunLight.shadow.camera.far = 2500;
+    const side = 1200; // Enlarge bounds to match longer map
     sunLight.shadow.camera.left = -side;
     sunLight.shadow.camera.right = side;
     sunLight.shadow.camera.top = side;
@@ -419,7 +427,7 @@ function init() {
     scene.add(sunLight);
 
     // Ground Plane (Desert Sand)
-    const groundGeo = new THREE.PlaneGeometry(4000, 4000);
+    const groundGeo = new THREE.PlaneGeometry(5000, 5000);
     const groundMat = new THREE.MeshStandardMaterial({
         color: 0xdf9f53,
         roughness: 0.9,
@@ -465,7 +473,7 @@ function buildTrack() {
     trackGroup = new THREE.Group();
     scene.add(trackGroup);
 
-    const segmentsCount = 300;
+    const segmentsCount = 400; // More segments to render the vertical curves beautifully
     const pts = trackCurve.getSpacedPoints(segmentsCount);
 
     const roadPos = [];
@@ -487,20 +495,21 @@ function buildTrack() {
         const dir = new THREE.Vector3().subVectors(pNext, p).normalize();
         const right = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
 
+        // Ensure vertical offsets stay perfectly mapped on slopes
         const leftPt = p.clone().addScaledVector(right, -trackWidth / 2);
         const rightPt = p.clone().addScaledVector(right, trackWidth / 2);
 
-        // Road Vertices
-        roadPos.push(leftPt.x, 0.1, leftPt.z);   // 2 * i
-        roadPos.push(rightPt.x, 0.1, rightPt.z); // 2 * i + 1
+        // Road Vertices (fully mapping elevation coordinates)
+        roadPos.push(leftPt.x, leftPt.y, leftPt.z);   // 2 * i
+        roadPos.push(rightPt.x, rightPt.y, rightPt.z); // 2 * i + 1
 
         // Left Wall Vertices
-        leftWallPos.push(leftPt.x, 0.1, leftPt.z);              // 2 * i
-        leftWallPos.push(leftPt.x, 0.1 + wallHeight, leftPt.z);  // 2 * i + 1
+        leftWallPos.push(leftPt.x, leftPt.y, leftPt.z);              // 2 * i
+        leftWallPos.push(leftPt.x, leftPt.y + wallHeight, leftPt.z);  // 2 * i + 1
 
         // Right Wall Vertices
-        rightWallPos.push(rightPt.x, 0.1, rightPt.z);             // 2 * i
-        rightWallPos.push(rightPt.x, 0.1 + wallHeight, rightPt.z); // 2 * i + 1
+        rightWallPos.push(rightPt.x, rightPt.y, rightPt.z);             // 2 * i
+        rightWallPos.push(rightPt.x, rightPt.y + wallHeight, rightPt.z); // 2 * i + 1
 
         if (i < segmentsCount) {
             const r0 = 2 * i;
@@ -561,8 +570,12 @@ function buildTrack() {
     rightWallMesh.castShadow = true;
     trackGroup.add(rightWallMesh);
 
-    // Dashed Cyan center lane
-    const centerLinePoints = trackCurve.getPoints(400);
+    // Dashed Center Line (Cyan center lane)
+    const centerLinePoints = trackCurve.getSpacedPoints(500);
+    // Elevate centerline points slightly in geometry to avoid Z-fighting on 3D hills
+    for (let pt of centerLinePoints) {
+        pt.y += 0.15;
+    }
     const centerLineGeo = new THREE.BufferGeometry().setFromPoints(centerLinePoints);
     const centerLineMat = new THREE.LineDashedMaterial({
         color: 0x00ffff,
@@ -571,7 +584,6 @@ function buildTrack() {
     });
     centerLine = new THREE.Line(centerLineGeo, centerLineMat);
     centerLine.computeLineDistances();
-    centerLine.position.y += 0.15;
     trackGroup.add(centerLine);
 }
 
@@ -635,7 +647,6 @@ function buildFinishLineArch() {
 // --- SCATTER ENVIRONMENT (CACTI & DUNES) ---
 function scatterEnvironment() {
     // 1. Far Dunes / Mountains (Strictly isolated from track speedway corridor)
-    // Scale is set so maximum horizontal radius of any dune is ~220 units.
     const duneGeo = new THREE.SphereGeometry(100, 10, 10);
     duneGeo.scale(2.2, 0.4, 1.1);
     const duneMat = new THREE.MeshStandardMaterial({
@@ -644,15 +655,14 @@ function scatterEnvironment() {
         flatShading: true
     });
 
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 75; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const radius = 300 + Math.random() * 1000; 
+        const radius = 300 + Math.random() * 1200; 
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
         const tempPos = new THREE.Vector3(x, 0, z);
 
-        // Keep dunes completely clear of the track corridor (at least 280 units away)
-        // This solves any overlapping/colliding dunes on the racing road.
+        // Keep dunes completely clear of the track corridor (at least 280 units away horizontally)
         if (getMinDistanceToTrack(tempPos) > 280) {
             const dune = new THREE.Mesh(duneGeo, duneMat);
             dune.position.set(x, -5, z);
@@ -699,16 +709,16 @@ function scatterEnvironment() {
     const cachedCactusGeometry = buildCactusMesh();
 
     // Scatter cacti alongside the track as beautiful off-road decorations
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 250; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const radius = 100 + Math.random() * 900;
+        const radius = 100 + Math.random() * 1100;
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
         const tempPos = new THREE.Vector3(x, 0, z);
 
         const dist = getMinDistanceToTrack(tempPos);
         // Clean off-road clearance
-        if (dist > (trackWidth / 2 + 10) && dist < 800) {
+        if (dist > (trackWidth / 2 + 10) && dist < 1000) {
             const cactusInstance = cachedCactusGeometry.clone();
             cactusInstance.position.set(x, 0, z);
             const scale = 0.35 + Math.random() * 0.55;
@@ -721,6 +731,7 @@ function scatterEnvironment() {
 // --- TOY CAR CONSTRUCTION ---
 function buildToyCar() {
     car.mesh = new THREE.Group();
+    car.mesh.rotation.reorder('YXZ'); // Ensure clean yaw-pitch calculations on steep loops/hills
     car.bodyMesh = new THREE.Group(); // Holds chassis to tilt/vibrate without losing global track matrix
     car.mesh.add(car.bodyMesh);
 
@@ -904,10 +915,13 @@ function resetRace() {
     car.mesh.position.copy(car.position);
     car.velocity.set(0, 0, 0);
     car.speed = 0;
+    car.verticalVelocity = 0;
+    car.isGrounded = true;
+    steerDuration = 0;
     
     const startTangent = trackCurve.getTangentAt(0).normalize();
     car.heading = Math.atan2(startTangent.x, startTangent.z);
-    car.mesh.rotation.y = car.heading;
+    car.mesh.rotation.set(0, car.heading, 0);
     car.bodyMesh.rotation.z = 0;
 
     lap = 1;
@@ -1007,10 +1021,24 @@ function updatePhysics() {
         return;
     }
 
-    // 1. STEERING LOGIC
+    // 1. PROGRESSIVE SENSITIVITY STEERING LOGIC
     let steerValue = 0;
-    if (keys.ArrowLeft || keys.a || keys.A) steerValue = car.steerSpeed;
-    if (keys.ArrowRight || keys.d || keys.D) steerValue = -car.steerSpeed;
+    const steeringPressed = (keys.ArrowLeft || keys.a || keys.A || keys.ArrowRight || keys.d || keys.D);
+    
+    if (steeringPressed) {
+        // Increase hold timer gradually (Takes about 20 frames / 0.3s to reach maximum intensity)
+        steerDuration = Math.min(1.0, steerDuration + 0.05);
+    } else {
+        // Instantly reset steering accumulator on release
+        steerDuration = 0.0;
+    }
+
+    // Apply progressive non-linear response curve
+    // Extremely subtle on short taps (starting at 25% sensitivity) and ramps up to 100% on holds
+    const progressiveMultiplier = 0.25 + 0.75 * Math.pow(steerDuration, 2.0);
+
+    if (keys.ArrowLeft || keys.a || keys.A) steerValue = car.steerSpeed * progressiveMultiplier;
+    if (keys.ArrowRight || keys.d || keys.D) steerValue = -car.steerSpeed * progressiveMultiplier;
 
     // Apply steering relative to current speed direction
     if (Math.abs(car.speed) > 0.1) {
@@ -1040,19 +1068,65 @@ function updatePhysics() {
         driftFactor = 0.065; // Slide/drifting starts!
     }
 
+    // Apply steering direction interpolation
     car.velocity.lerp(headingVector.clone().multiplyScalar(car.speed), driftFactor);
 
-    // Translate global position
-    car.position.add(car.velocity);
-    car.position.y = 0.9; // Standard flat rolling height
+    // Translate global horizontal position
+    car.position.x += car.velocity.x;
+    car.position.z += car.velocity.z;
+
+    // 3D HEIGHT & AIRTIME SYSTEM (Gravity, ramps, leaps, and soft landings)
+    const ptOnSpline = sampledCurvePoints[closestIndex];
+    const trackHeight = ptOnSpline.y;
+    let targetY = trackHeight + 0.9;
+
+    if (car.isGrounded) {
+        const heightDifference = targetY - car.position.y;
+        
+        // If track drops quickly under high-speed (like cliff crests or launching off ramps), fly!
+        if (heightDifference < -1.2 && Math.abs(car.speed) > 2.0) {
+            car.isGrounded = false;
+            // Retain upward vertical lift based on forward ramp velocity and orientation tilt
+            car.verticalVelocity = Math.max(0, car.speed * Math.sin(car.mesh.rotation.x));
+        } else {
+            // Normal track rolling constraint
+            car.position.y = targetY;
+            car.verticalVelocity = 0;
+        }
+    } else {
+        // In-air vertical update (Gravity acceleration)
+        car.verticalVelocity -= 0.08; 
+        car.position.y += car.verticalVelocity;
+
+        // Collision landing detection on the spline surface
+        if (car.position.y <= targetY) {
+            car.position.y = targetY;
+            car.verticalVelocity = 0;
+            car.isGrounded = true;
+
+            // Spawn landing sand particles
+            for (let i = 0; i < 8; i++) {
+                spawnParticle(
+                    car.position.x + (Math.random() - 0.5) * 3,
+                    car.position.y - 0.5,
+                    car.position.z + (Math.random() - 0.5) * 3,
+                    (Math.random() - 0.5) * 0.4,
+                    0.1 + Math.random() * 0.2,
+                    (Math.random() - 0.5) * 0.4,
+                    0xdddddd, 'smoke', 20
+                );
+            }
+        }
+    }
 
     // 4. BOUNDARY COLLISIONS (Solid Wall Limit Clamping)
-    const ptOnSpline = sampledCurvePoints[closestIndex];
     const parameter = closestIndex / curvePointsCount;
     const tangent = trackCurve.getTangentAt(parameter).normalize();
     const right = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
 
     const vecToCar = new THREE.Vector3().subVectors(car.position, ptOnSpline);
+    // Ignore height component during boundary lateral projection
+    vecToCar.y = 0;
     const lateralDistance = vecToCar.dot(right);
 
     if (Math.abs(lateralDistance) > wallLimit) {
@@ -1089,8 +1163,20 @@ function updatePhysics() {
         }
     }
 
-    // Apply heading yaw to the car mesh
+    // Apply position to the global car mesh
     car.mesh.position.copy(car.position);
+
+    // Calculate pitching rotation to align with current uphill/downhill spline tangents
+    let targetPitch = 0;
+    if (car.isGrounded) {
+        const forward = new THREE.Vector3(Math.sin(car.heading), 0, Math.cos(car.heading)).normalize();
+        const directionScale = tangent.dot(forward) > 0 ? 1 : -1;
+        targetPitch = Math.asin(tangent.y) * directionScale;
+    } else {
+        // Airborne pitch: slowly dip nose downward based on flight gravity curve
+        targetPitch = car.verticalVelocity * 0.25;
+    }
+    car.mesh.rotation.x = THREE.MathUtils.lerp(car.mesh.rotation.x, targetPitch, 0.15);
     car.mesh.rotation.y = car.heading;
 
     // Apply centrifugal body roll tilt to bodyMesh (aesthetic chassis physics)
@@ -1133,7 +1219,7 @@ function updatePhysics() {
     const lapThresholdIndex = Math.floor(curvePointsCount * 0.9);
     const startWindowIndex = Math.floor(curvePointsCount * 0.1);
 
-    if (closestIndex > midPointIndex - 30 && closestIndex < midPointIndex + 30) {
+    if (closestIndex > midPointIndex - 40 && closestIndex < midPointIndex + 40) {
         checkpointPassed = true;
     }
 
