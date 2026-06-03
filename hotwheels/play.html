@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Hot Wheels: Desert Speedway 3D</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #df9f53;
+            font-family: 'Impact', 'Segoe UI', sans-serif;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        /* Top HUD elements */
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 15px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .hud-card {
+            background: rgba(0, 0, 0, 0.75);
+            border: 2px solid #ff5500;
+            box-shadow: 0 0 15px rgba(255, 85, 0, 0.5);
+            border-radius: 8px;
+            padding: 10px 20px;
+            color: #fff;
+            font-size: 24px;
+            font-style: italic;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px #000;
+        }
+        .hud-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #ffaa00;
+            margin-bottom: 2px;
+        }
+        #title-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #ff1100, #ff6600);
+            border: 3px solid #fff;
+            border-radius: 8px;
+            padding: 10px 20px;
+            color: #fff;
+            font-size: 26px;
+            font-weight: 900;
+            font-style: italic;
+            text-shadow: 2px 2px 0px #000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            pointer-events: none;
+            letter-spacing: 2px;
+        }
+        /* On-screen Countdown */
+        #countdown-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 120px;
+            color: #ffff00;
+            font-style: italic;
+            text-shadow: 5px 5px 0px #ff3300, -3px -3px 0px #000;
+            z-index: 20;
+            pointer-events: none;
+            transition: transform 0.2s ease-out;
+        }
+        /* Race Finished Panel */
+        #finish-panel {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 20, 0.95);
+            border: 4px solid #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            color: #fff;
+            z-index: 30;
+        }
+        #finish-panel h1 {
+            font-size: 48px;
+            color: #00ffff;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+        #finish-panel p {
+            font-size: 24px;
+            margin-bottom: 15px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .time-highlight {
+            color: #ffaa00;
+            font-weight: bold;
+            font-size: 32px;
+        }
+        .restart-btn {
+            background: linear-gradient(180deg, #ff5500, #ff2200);
+            border: 2px solid #fff;
+            border-radius: 8px;
+            color: #fff;
+            padding: 12px 30px;
+            font-size: 24px;
+            font-weight: bold;
+            font-family: 'Impact', sans-serif;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 34, 0, 0.4);
+            transition: transform 0.1s;
+            text-transform: uppercase;
+            margin-top: 15px;
+        }
+        .restart-btn:active {
+            transform: scale(0.95);
+        }
+        /* Mobile Controls */
+        #mobile-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 40px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .control-group {
+            display: flex;
+            gap: 20px;
+            pointer-events: auto;
+        }
+        .btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(5px);
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 36px;
+            font-weight: bold;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+            touch-action: manipulation;
+            cursor: pointer;
+            transition: background 0.1s, transform 0.1s;
+        }
+        .btn-orange {
+            border-color: #ff6a00;
+            text-shadow: 0 0 8px #ff6a00;
+        }
+        .btn-cyan {
+            border-color: #00e5ff;
+            text-shadow: 0 0 8px #00e5ff;
+        }
+        .btn:active {
+            background: rgba(255, 85, 0, 0.6);
+            transform: scale(0.9);
+        }
+        /* Responsiveness: Hide Mobile Controls on Desktop if hovering pointer exists */
+        @media (hover: hover) and (pointer: fine) {
+            #mobile-controls {
+                display: none;
+            }
+        }
+    </style>
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <!-- Top HUD info -->
+    <div id="hud">
+        <div class="hud-card">
+            <div class="hud-label">Speed</div>
+            <div><span id="speed-ui">0</span> <span style="font-size:14px">MPH</span></div>
+        </div>
+        <div class="hud-card">
+            <div class="hud-label">Lap</div>
+            <div><span id="lap-ui">1</span>/3</div>
+        </div>
+        <div class="hud-card">
+            <div class="hud-label">Time</div>
+            <div id="time-ui">00:00.00</div>
+        </div>
+    </div>
+
+    <div id="title-badge">HOT TRACKS 3D</div>
+
+    <!-- Countdown overlay -->
+    <div id="countdown-overlay">READY</div>
+
+    <!-- Finish overlay -->
+    <div id="finish-panel">
+        <h1>Race Complete!</h1>
+        <p>Your Final Time: <span id="final-time" class="time-highlight">00:00.00</span></p>
+        <button class="restart-btn" onclick="resetRace()">Race Again</button>
+    </div>
+
+    <!-- Mobile Screen Overlays -->
+    <div id="mobile-controls">
+        <!-- Steering on Left -->
+        <div class="control-group">
+            <div class="btn btn-cyan" id="btn-left">←</div>
+            <div class="btn btn-cyan" id="btn-right">→</div>
+        </div>
+        <!-- Drive Controls on Right -->
+        <div class="control-group">
+            <div class="btn btn-orange" id="btn-reverse">↓</div>
+            <div class="btn btn-orange" id="btn-gas">↑</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- CORE CONSTANTS & SETTING UP THREE.JS SCENE ---
+const canvas = document.getElementById('gameCanvas');
+const speedUi = document.getElementById('speed-ui');
+const lapUi = document.getElementById('lap-ui');
+const timeUi = document.getElementById('time-ui');
+const countdownOverlay = document.getElementById('countdown-overlay');
+const finishPanel = document.getElementById('finish-panel');
+const finalTimeSpan = document.getElementById('final-time');
+
+let scene, camera, renderer;
+let gameState = 'COUNTDOWN'; // COUNTDOWN, RACING, FINISHED
+let countdownVal = 3;
+let timerStart = 0;
+let totalElapsed = 0;
+let lap = 1;
+let lastClosestIdx = -1; // -1 represents uninitialized startup state
+let checkpointPassed = false;
+
+// Keyboard state tracker
+const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, w: false, s: false, a: false, d: false };
+
+// --- CAR PHYSICS & METADATA ---
+const car = {
+    position: new THREE.Vector3(0, 0.9, 0),
+    velocity: new THREE.Vector3(0, 0, 0),
+    heading: 0, // Rotation around Y axis (Radians)
+    speed: 0,
+    maxSpeed: 4.8, 
+    maxSpeedReverse: -1.6,
+    accel: 0.10,
+    decel: 0.04,
+    friction: 0.98,
+    steerSpeed: 0.045,
+    width: 3.6,
+    length: 7.2,
+    mesh: null,
+    bodyMesh: null, // Submesh holding car visual elements to apply roll & vibration easily
+    wheels: []
+};
+
+// --- PROCEDURAL GENERATION: CHANNELS & DESERT ASSETS ---
+let trackGroup;
+const trackWidth = 65; // Increased width for better high speed handling & drifting
+const wallLimit = (trackWidth / 2) - 1.8; // Distance from track center before hitting outer wall flange (30.7 units)
+
+// Relaxed, sweeping layout suitable for high speeds
+const trackControlPoints = [
+    new THREE.Vector3(0, 0.1, 0),
+    new THREE.Vector3(150, 0.1, 30),
+    new THREE.Vector3(350, 0.1, 100),
+    new THREE.Vector3(550, 0.1, 50),
+    new THREE.Vector3(700, 0.1, -100),
+    new THREE.Vector3(650, 0.1, -300),
+    new THREE.Vector3(450, 0.1, -450),
+    new THREE.Vector3(150, 0.1, -400),
+    new THREE.Vector3(-150, 0.1, -450),
+    new THREE.Vector3(-450, 0.1, -350),
+    new THREE.Vector3(-600, 0.1, -150),
+    new THREE.Vector3(-500, 0.1, 150),
+    new THREE.Vector3(-250, 0.1, 100),
+    new THREE.Vector3(-100, 0.1, -20)
+];
+
+const trackCurve = new THREE.CatmullRomCurve3(trackControlPoints, true);
+const curvePointsCount = 600; // Increased sample count for a longer, smoother path
+const sampledCurvePoints = trackCurve.getSpacedPoints(curvePointsCount);
+
+// Helper function to find minimum distance from any position to the track spline
+function getMinDistanceToTrack(pos) {
+    let minDist = Infinity;
+    for (let i = 0; i < curvePointsCount; i += 5) {
+        const d = pos.distanceTo(sampledCurvePoints[i]);
+        if (d < minDist) minDist = d;
+    }
+    return minDist;
+}
+
+// --- PARTICLE SYSTEM POOL (For Drifting Smoke & Wall Sparks) ---
+const particles = [];
+const maxParticles = 100;
+let particleGeometry;
+
+function initParticles() {
+    particleGeometry = new THREE.BoxGeometry(0.35, 0.35, 0.35);
+    for (let i = 0; i < maxParticles; i++) {
+        const mat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0 });
+        const mesh = new THREE.Mesh(particleGeometry, mat);
+        scene.add(mesh);
+        particles.push({
+            mesh: mesh,
+            velocity: new THREE.Vector3(),
+            life: 0,
+            maxLife: 0,
+            type: 'smoke'
+        });
+    }
+}
+
+function spawnParticle(x, y, z, vx, vy, vz, colorHex, type, maxLife = 30) {
+    const p = particles.find(pt => pt.life <= 0);
+    if (p) {
+        p.mesh.position.set(x, y, z);
+        p.velocity.set(vx, vy, vz);
+        p.mesh.material.color.setHex(colorHex);
+        p.mesh.material.opacity = 1.0;
+        p.life = maxLife;
+        p.maxLife = maxLife;
+        p.type = type;
+        p.mesh.scale.set(1, 1, 1);
+    }
+}
+
+function updateParticles() {
+    for (let p of particles) {
+        if (p.life > 0) {
+            p.mesh.position.add(p.velocity);
+            p.life--;
+            const ratio = p.life / p.maxLife;
+            p.mesh.material.opacity = ratio;
+            p.mesh.scale.set(ratio, ratio, ratio);
+            
+            if (p.type === 'smoke') {
+                p.velocity.y += 0.01;
+            } else if (p.type === 'spark') {
+                p.velocity.y -= 0.02;
+            }
+
+            if (p.life <= 0) {
+                p.mesh.material.opacity = 0;
+            }
+        }
+    }
+}
+
+// --- INIT GRAPHICS & GAME SCENE ---
+function init() {
+    // Scene creation
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xdf9f53); // Warm Sand
+    scene.fog = new THREE.FogExp2(0xdf9f53, 0.002);
+
+    // Camera setup
+    camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.5, 1500);
+    
+    // Renderer
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // Lighting (Harsh sunset style)
+    const ambientLight = new THREE.AmbientLight(0x443355, 1.2);
+    scene.add(ambientLight);
+
+    const sunLight = new THREE.DirectionalLight(0xffddaa, 1.4);
+    sunLight.position.set(300, 200, -100);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 1500;
+    const side = 800;
+    sunLight.shadow.camera.left = -side;
+    sunLight.shadow.camera.right = side;
+    sunLight.shadow.camera.top = side;
+    sunLight.shadow.camera.bottom = -side;
+    scene.add(sunLight);
+
+    // Ground Plane (Desert Sand)
+    const groundGeo = new THREE.PlaneGeometry(4000, 4000);
+    const groundMat = new THREE.MeshStandardMaterial({
+        color: 0xdf9f53,
+        roughness: 0.9,
+        metalness: 0.0
+    });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Build the 3D continuous ribbon track with beautiful blue walls
+    buildTrack();
+
+    // Create Checkered Arch at Start-Finish line
+    buildFinishLineArch();
+
+    // Scatter Desert Scenery (Dunes & Cacti) - Protected against track overlap
+    scatterEnvironment();
+
+    // Instantiate Custom Toy Car
+    buildToyCar();
+
+    // Setup starting camera position directly behind vehicle on startup
+    const startTangent = trackCurve.getTangentAt(0).normalize();
+    camera.position.copy(car.position).addScaledVector(startTangent, -16.5).add(new THREE.Vector3(0, 6.8, 0));
+    camera.lookAt(car.position);
+
+    // Initialize Particle engine pool
+    initParticles();
+
+    // Input Listeners Setup
+    setupInputs();
+
+    // Window Resizing Setup
+    window.addEventListener('resize', onWindowResize);
+
+    // Start UI Countdown
+    triggerCountdown();
+}
+
+// --- PROCEDURAL STABLE RIBBON METHOD FOR DETAILED TWIST-FREE TRACK ---
+function buildTrack() {
+    trackGroup = new THREE.Group();
+    scene.add(trackGroup);
+
+    const segmentsCount = 300;
+    const pts = trackCurve.getSpacedPoints(segmentsCount);
+
+    const roadPos = [];
+    const roadIndices = [];
+    const leftWallPos = [];
+    const leftWallIndices = [];
+    const rightWallPos = [];
+    const rightWallIndices = [];
+
+    const wallHeight = 4.0;
+
+    for (let i = 0; i <= segmentsCount; i++) {
+        const idx = i % segmentsCount;
+        const idxNext = (i + 1) % segmentsCount;
+        
+        const p = pts[idx];
+        const pNext = pts[idxNext];
+        
+        const dir = new THREE.Vector3().subVectors(pNext, p).normalize();
+        const right = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
+
+        const leftPt = p.clone().addScaledVector(right, -trackWidth / 2);
+        const rightPt = p.clone().addScaledVector(right, trackWidth / 2);
+
+        // Road Vertices
+        roadPos.push(leftPt.x, 0.1, leftPt.z);   // 2 * i
+        roadPos.push(rightPt.x, 0.1, rightPt.z); // 2 * i + 1
+
+        // Left Wall Vertices
+        leftWallPos.push(leftPt.x, 0.1, leftPt.z);              // 2 * i
+        leftWallPos.push(leftPt.x, 0.1 + wallHeight, leftPt.z);  // 2 * i + 1
+
+        // Right Wall Vertices
+        rightWallPos.push(rightPt.x, 0.1, rightPt.z);             // 2 * i
+        rightWallPos.push(rightPt.x, 0.1 + wallHeight, rightPt.z); // 2 * i + 1
+
+        if (i < segmentsCount) {
+            const r0 = 2 * i;
+            const r1 = 2 * i + 1;
+            const r2 = 2 * (i + 1);
+            const r3 = 2 * (i + 1) + 1;
+
+            // Road indices
+            roadIndices.push(r0, r2, r1);
+            roadIndices.push(r1, r2, r3);
+
+            // Left wall indices (facing inward)
+            leftWallIndices.push(r0, r1, r2);
+            leftWallIndices.push(r1, r3, r2);
+
+            // Right wall indices (facing inward)
+            rightWallIndices.push(r0, r2, r1);
+            rightWallIndices.push(r1, r2, r3);
+        }
+    }
+
+    // Road Mesh
+    const roadGeo = new THREE.BufferGeometry();
+    roadGeo.setAttribute('position', new THREE.Float32BufferAttribute(roadPos, 3));
+    roadGeo.setIndex(roadIndices);
+    roadGeo.computeVertexNormals();
+    const roadMat = new THREE.MeshStandardMaterial({
+        color: 0xff4c00, // Classic Hot Wheels Orange
+        roughness: 0.3,
+        metalness: 0.1,
+        side: THREE.DoubleSide
+    });
+    const roadMesh = new THREE.Mesh(roadGeo, roadMat);
+    roadMesh.receiveShadow = true;
+    trackGroup.add(roadMesh);
+
+    // Left Wall Mesh (Hot Wheels Royal Blue)
+    const leftWallGeo = new THREE.BufferGeometry();
+    leftWallGeo.setAttribute('position', new THREE.Float32BufferAttribute(leftWallPos, 3));
+    leftWallGeo.setIndex(leftWallIndices);
+    leftWallGeo.computeVertexNormals();
+    const wallMat = new THREE.MeshStandardMaterial({
+        color: 0x0044ff, 
+        roughness: 0.4,
+        metalness: 0.2,
+        side: THREE.DoubleSide
+    });
+    const leftWallMesh = new THREE.Mesh(leftWallGeo, wallMat);
+    leftWallMesh.castShadow = true;
+    trackGroup.add(leftWallMesh);
+
+    // Right Wall Mesh (Hot Wheels Royal Blue)
+    const rightWallGeo = new THREE.BufferGeometry();
+    rightWallGeo.setAttribute('position', new THREE.Float32BufferAttribute(rightWallPos, 3));
+    rightWallGeo.setIndex(rightWallIndices);
+    rightWallGeo.computeVertexNormals();
+    const rightWallMesh = new THREE.Mesh(rightWallGeo, wallMat);
+    rightWallMesh.castShadow = true;
+    trackGroup.add(rightWallMesh);
+
+    // Dashed Cyan center lane
+    const centerLinePoints = trackCurve.getPoints(400);
+    const centerLineGeo = new THREE.BufferGeometry().setFromPoints(centerLinePoints);
+    const centerLineMat = new THREE.LineDashedMaterial({
+        color: 0x00ffff,
+        dashSize: 4,
+        gapSize: 2
+    });
+    centerLine = new THREE.Line(centerLineGeo, centerLineMat);
+    centerLine.computeLineDistances();
+    centerLine.position.y += 0.15;
+    trackGroup.add(centerLine);
+}
+
+// --- CHECKERED START/FINISH ARCH ---
+function buildFinishLineArch() {
+    const archGroup = new THREE.Group();
+    const pillarMat = new THREE.MeshStandardMaterial({ color: 0xff2200, roughness: 0.3 });
+    
+    // Custom checkerboard texture
+    const size = 128;
+    const canvasTex = document.createElement('canvas');
+    canvasTex.width = size;
+    canvasTex.height = size;
+    const ctxTex = canvasTex.getContext('2d');
+    ctxTex.fillStyle = '#ffffff';
+    ctxTex.fillRect(0, 0, size, size);
+    ctxTex.fillStyle = '#111111';
+    const cell = size / 4;
+    for (let x = 0; x < 4; x++) {
+        for (let y = 0; y < 4; y++) {
+            if ((x + y) % 2 === 0) {
+                ctxTex.fillRect(x * cell, y * cell, cell, cell);
+            }
+        }
+    }
+    const checkerTexture = new THREE.CanvasTexture(canvasTex);
+    checkerTexture.wrapS = THREE.RepeatWrapping;
+    checkerTexture.wrapT = THREE.RepeatWrapping;
+    checkerTexture.repeat.set(8, 1);
+    
+    const checkerMat = new THREE.MeshStandardMaterial({ map: checkerTexture, roughness: 0.4 });
+
+    // Arch pillars (Placed safely outside the wider track edge)
+    const pillarLateralOffset = (trackWidth / 2) + 3.0; // Automatically adjusts to width (35.5 units)
+    const leftPillar = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 30, 10), pillarMat);
+    leftPillar.position.set(-pillarLateralOffset, 15, 0);
+    archGroup.add(leftPillar);
+
+    const rightPillar = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 30, 10), pillarMat);
+    rightPillar.position.set(pillarLateralOffset, 15, 0);
+    archGroup.add(rightPillar);
+
+    // Cross beam
+    const beamLength = (pillarLateralOffset * 2) + 2.0; // Scaled automatically (73 units)
+    const crossBar = new THREE.Mesh(new THREE.BoxGeometry(beamLength, 4.5, 5), checkerMat);
+    crossBar.position.set(0, 30, 0);
+    archGroup.add(crossBar);
+
+    // Place exactly at starting point (u=0)
+    const startPos = trackCurve.getPointAt(0);
+    archGroup.position.copy(startPos);
+    
+    // Rotate to match track direction
+    const tangent = trackCurve.getTangentAt(0).normalize();
+    const angle = Math.atan2(tangent.x, tangent.z);
+    archGroup.rotation.y = angle;
+
+    scene.add(archGroup);
+}
+
+// --- SCATTER ENVIRONMENT (CACTI & DUNES) ---
+function scatterEnvironment() {
+    // 1. Far Dunes / Mountains (Strictly isolated from track speedway corridor)
+    // Scale is set so maximum horizontal radius of any dune is ~220 units.
+    const duneGeo = new THREE.SphereGeometry(100, 10, 10);
+    duneGeo.scale(2.2, 0.4, 1.1);
+    const duneMat = new THREE.MeshStandardMaterial({
+        color: 0xce8334, 
+        roughness: 1.0,
+        flatShading: true
+    });
+
+    for (let i = 0; i < 60; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 300 + Math.random() * 1000; 
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        const tempPos = new THREE.Vector3(x, 0, z);
+
+        // Keep dunes completely clear of the track corridor (at least 280 units away)
+        // This solves any overlapping/colliding dunes on the racing road.
+        if (getMinDistanceToTrack(tempPos) > 280) {
+            const dune = new THREE.Mesh(duneGeo, duneMat);
+            dune.position.set(x, -5, z);
+            dune.rotation.y = Math.random() * Math.PI;
+            scene.add(dune);
+        }
+    }
+
+    // 2. Custom 3D Desert Cacti
+    function buildCactusMesh() {
+        const cactus = new THREE.Group();
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3d662f, roughness: 0.95 });
+
+        const spine = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 16, 6), bodyMat);
+        spine.position.y = 8;
+        spine.castShadow = true;
+        cactus.add(spine);
+
+        const b1_horiz = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 6, 6), bodyMat);
+        b1_horiz.rotation.z = Math.PI / 2;
+        b1_horiz.position.set(-3, 10, 0);
+        b1_horiz.castShadow = true;
+        cactus.add(b1_horiz);
+
+        const b1_vert = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 6, 6), bodyMat);
+        b1_vert.position.set(-6, 13, 0);
+        b1_vert.castShadow = true;
+        cactus.add(b1_vert);
+
+        const b2_horiz = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 5, 6), bodyMat);
+        b2_horiz.rotation.z = -Math.PI / 2;
+        b2_horiz.position.set(2.5, 7, 0);
+        b2_horiz.castShadow = true;
+        cactus.add(b2_horiz);
+
+        const b2_vert = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 7, 6), bodyMat);
+        b2_vert.position.set(5, 10.5, 0);
+        b2_vert.castShadow = true;
+        cactus.add(b2_vert);
+
+        return cactus;
+    }
+
+    const cachedCactusGeometry = buildCactusMesh();
+
+    // Scatter cacti alongside the track as beautiful off-road decorations
+    for (let i = 0; i < 200; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 100 + Math.random() * 900;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        const tempPos = new THREE.Vector3(x, 0, z);
+
+        const dist = getMinDistanceToTrack(tempPos);
+        // Clean off-road clearance
+        if (dist > (trackWidth / 2 + 10) && dist < 800) {
+            const cactusInstance = cachedCactusGeometry.clone();
+            cactusInstance.position.set(x, 0, z);
+            const scale = 0.35 + Math.random() * 0.55;
+            cactusInstance.scale.set(scale, scale, scale);
+            scene.add(cactusInstance);
+        }
+    }
+}
+
+// --- TOY CAR CONSTRUCTION ---
+function buildToyCar() {
+    car.mesh = new THREE.Group();
+    car.bodyMesh = new THREE.Group(); // Holds chassis to tilt/vibrate without losing global track matrix
+    car.mesh.add(car.bodyMesh);
+
+    // Material Styling
+    const bodyMat = new THREE.MeshStandardMaterial({
+        color: 0x0099ff, // Electric metallic cyan
+        metalness: 0.9,
+        roughness: 0.1,
+    });
+    const orangeAccent = new THREE.MeshStandardMaterial({ color: 0xff3300, roughness: 0.4 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.1 });
+    const tireMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.8 });
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.9, roughness: 0.1 });
+
+    // 1. Lower Chassis baseplate
+    const chassis = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.6, 7.2), tireMat);
+    chassis.position.y = 0.5;
+    car.bodyMesh.add(chassis);
+
+    // 2. Main sleek wedge cabin
+    const bodyMain = new THREE.Mesh(new THREE.BoxGeometry(3.3, 1.2, 5.5), bodyMat);
+    bodyMain.position.set(0, 1.1, -0.6);
+    bodyMain.castShadow = true;
+    car.bodyMesh.add(bodyMain);
+
+    // 3. Slope nose hood
+    const noseGeo = new THREE.BoxGeometry(3.3, 0.6, 2.2);
+    const nose = new THREE.Mesh(noseGeo, bodyMat);
+    nose.position.set(0, 0.8, 2.65);
+    nose.castShadow = true;
+    car.bodyMesh.add(nose);
+
+    // 4. Shiny Windshield / Glass Cabin
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.9, 3.0), glassMat);
+    cabin.position.set(0, 1.9, -1.0);
+    car.bodyMesh.add(cabin);
+
+    // 5. Classic Hot Wheels Orange spoiler wing
+    const wingLeft = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.6, 0.8), orangeAccent);
+    wingLeft.position.set(-1.5, 1.6, -3.5);
+    car.bodyMesh.add(wingLeft);
+
+    const wingRight = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.6, 0.8), orangeAccent);
+    wingRight.position.set(1.5, 1.6, -3.5);
+    car.bodyMesh.add(wingRight);
+
+    const wingFlap = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.25, 1.6), orangeAccent);
+    wingFlap.position.set(0, 2.4, -3.5);
+    car.bodyMesh.add(wingFlap);
+
+    // 6. Cylinder Wheels (4 items)
+    const wheelGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.7, 12);
+    wheelGeo.rotateZ(Math.PI / 2);
+
+    const createWheel = (x, y, z) => {
+        const wGroup = new THREE.Group();
+        const tire = new THREE.Mesh(wheelGeo, tireMat);
+        tire.castShadow = true;
+        wGroup.add(tire);
+
+        const rimGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.75, 10);
+        rimGeo.rotateZ(Math.PI / 2);
+        const rim = new THREE.Mesh(rimGeo, rimMat);
+        wGroup.add(rim);
+
+        wGroup.position.set(x, y, z);
+        car.mesh.add(wGroup); 
+        car.wheels.push(wGroup);
+    };
+
+    createWheel(-1.9, 0.8, 2.0);
+    createWheel(1.9, 0.8, 2.0);
+    createWheel(-1.9, 0.8, -2.0);
+    createWheel(1.9, 0.8, -2.0);
+
+    // Headlights
+    const lightMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+    const headlightL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), lightMat);
+    headlightL.position.set(-1.1, 0.85, 3.76);
+    car.bodyMesh.add(headlightL);
+
+    const headlightR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), lightMat);
+    headlightR.position.set(1.1, 0.85, 3.76);
+    car.bodyMesh.add(headlightR);
+
+    // Place car at start point
+    const startPoint = trackCurve.getPointAt(0);
+    car.position.copy(startPoint).add(new THREE.Vector3(0, 0.9, 0));
+    car.mesh.position.copy(car.position);
+
+    // Align car to starting direction of circuit
+    const tangent = trackCurve.getTangentAt(0).normalize();
+    car.heading = Math.atan2(tangent.x, tangent.z);
+    car.mesh.rotation.y = car.heading;
+
+    scene.add(car.mesh);
+}
+
+// --- HANDLERS FOR DEVICE CONTROLS ---
+function setupInputs() {
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.ArrowUp = true;
+        if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.ArrowDown = true;
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.ArrowLeft = true;
+        if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.ArrowRight = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.ArrowUp = false;
+        if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.ArrowDown = false;
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.ArrowLeft = false;
+        if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.ArrowRight = false;
+    });
+
+    // Touch setup helper for mobile UI buttons
+    function bindMobileTouch(elemId, actionKey) {
+        const element = document.getElementById(elemId);
+        if (!element) return;
+        
+        const startAction = (e) => {
+            e.preventDefault();
+            keys[actionKey] = true;
+        };
+        const endAction = (e) => {
+            e.preventDefault();
+            keys[actionKey] = false;
+        };
+
+        element.addEventListener('touchstart', startAction);
+        element.addEventListener('touchend', endAction);
+        element.addEventListener('touchcancel', endAction);
+
+        element.addEventListener('mousedown', startAction);
+        element.addEventListener('mouseup', endAction);
+        element.addEventListener('mouseleave', endAction);
+    }
+
+    bindMobileTouch('btn-gas', 'ArrowUp');
+    bindMobileTouch('btn-reverse', 'ArrowDown');
+    bindMobileTouch('btn-left', 'ArrowLeft');
+    bindMobileTouch('btn-right', 'ArrowRight');
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// --- GAME STATE TIMERS ---
+function triggerCountdown() {
+    countdownOverlay.style.display = 'block';
+    countdownVal = 3;
+    countdownOverlay.innerText = "READY";
+    
+    let interval = setInterval(() => {
+        if (countdownVal > 0) {
+            countdownOverlay.innerText = countdownVal;
+            countdownOverlay.style.transform = 'translate(-50%, -50%) scale(1.4)';
+            setTimeout(() => {
+                countdownOverlay.style.transform = 'translate(-50%, -50%) scale(1.0)';
+            }, 200);
+            countdownVal--;
+        } else if (countdownVal === 0) {
+            countdownOverlay.innerText = "GO!";
+            countdownOverlay.style.color = '#00ffff';
+            countdownOverlay.style.transform = 'translate(-50%, -50%) scale(1.6)';
+            gameState = 'RACING';
+            timerStart = performance.now();
+            countdownVal--;
+        } else {
+            countdownOverlay.style.display = 'none';
+            clearInterval(interval);
+        }
+    }, 1000);
+}
+
+function resetRace() {
+    const startPoint = trackCurve.getPointAt(0);
+    car.position.copy(startPoint).add(new THREE.Vector3(0, 0.9, 0));
+    car.mesh.position.copy(car.position);
+    car.velocity.set(0, 0, 0);
+    car.speed = 0;
+    
+    const startTangent = trackCurve.getTangentAt(0).normalize();
+    car.heading = Math.atan2(startTangent.x, startTangent.z);
+    car.mesh.rotation.y = car.heading;
+    car.bodyMesh.rotation.z = 0;
+
+    lap = 1;
+    lastClosestIdx = -1; // Force full scan on reset
+    checkpointPassed = false;
+    totalElapsed = 0;
+
+    // Reset HUD views
+    lapUi.innerText = "1";
+    speedUi.innerText = "0";
+    timeUi.innerText = "00:00.00";
+    finishPanel.style.display = "none";
+
+    // Setup starting camera position directly behind vehicle on startup
+    camera.position.copy(car.position).addScaledVector(startTangent, -16.5).add(new THREE.Vector3(0, 6.8, 0));
+    camera.lookAt(car.position);
+
+    // Start Countdown sequence
+    gameState = 'COUNTDOWN';
+    triggerCountdown();
+}
+
+function updateTimer() {
+    if (gameState === 'RACING') {
+        totalElapsed = performance.now() - timerStart;
+    }
+    const mins = Math.floor(totalElapsed / 60000).toString().padStart(2, '0');
+    const secs = Math.floor((totalElapsed % 60000) / 1000).toString().padStart(2, '0');
+    const ms = Math.floor((totalElapsed % 1000) / 10).toString().padStart(2, '0');
+    timeUi.innerText = `${mins}:${secs}.${ms}`;
+    return `${mins}:${secs}.${ms}`;
+}
+
+// --- CLAMP FUNCTION TO PREVENT CAMERA WALL CLIPPING ---
+function clampCameraToTrack(pos, maxLateral) {
+    let minDist = Infinity;
+    let closestIdx = lastClosestIdx === -1 ? 0 : lastClosestIdx;
+
+    const searchRange = 60;
+    const startSearch = closestIdx - searchRange;
+    const endSearch = closestIdx + searchRange;
+
+    for (let i = startSearch; i <= endSearch; i++) {
+        const idx = (i + curvePointsCount) % curvePointsCount;
+        const d = pos.distanceTo(sampledCurvePoints[idx]);
+        if (d < minDist) {
+            minDist = d;
+            closestIdx = idx;
+        }
+    }
+
+    const ptOnSpline = sampledCurvePoints[closestIdx];
+    const parameter = closestIdx / curvePointsCount;
+    const tangent = trackCurve.getTangentAt(parameter).normalize();
+    
+    // Perpendicular horizontal normal
+    const right = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+    const vecToPos = new THREE.Vector3().subVectors(pos, ptOnSpline);
+    const lateralDistance = vecToPos.dot(right);
+
+    // If camera sweeps past physical boundaries, softly slide it back inside
+    if (Math.abs(lateralDistance) > maxLateral) {
+        const boundarySign = Math.sign(lateralDistance);
+        const penetration = Math.abs(lateralDistance) - maxLateral;
+        pos.addScaledVector(right, -boundarySign * penetration);
+    }
+}
+
+// --- GAME LOGIC LOOP ---
+function updatePhysics() {
+    // Perform lookup scan even during countdown to keep camera positioning and index setup ready
+    let minDist = Infinity;
+    let closestIndex = 0;
+
+    let startSearch, endSearch;
+    if (lastClosestIdx === -1) {
+        // Full scan on startup
+        startSearch = 0;
+        endSearch = curvePointsCount - 1;
+    } else {
+        const searchRange = 50;
+        startSearch = lastClosestIdx - searchRange;
+        endSearch = lastClosestIdx + searchRange;
+    }
+
+    for (let i = startSearch; i <= endSearch; i++) {
+        const idx = (i + curvePointsCount) % curvePointsCount;
+        const d = car.position.distanceTo(sampledCurvePoints[idx]);
+        if (d < minDist) {
+            minDist = d;
+            closestIndex = idx;
+        }
+    }
+
+    if (gameState === 'COUNTDOWN') {
+        lastClosestIdx = closestIndex;
+        return;
+    }
+
+    // 1. STEERING LOGIC
+    let steerValue = 0;
+    if (keys.ArrowLeft || keys.a || keys.A) steerValue = car.steerSpeed;
+    if (keys.ArrowRight || keys.d || keys.D) steerValue = -car.steerSpeed;
+
+    // Apply steering relative to current speed direction
+    if (Math.abs(car.speed) > 0.1) {
+        const headingModifier = car.speed > 0 ? 1 : -1;
+        const speedScale = Math.min(Math.abs(car.speed) / car.maxSpeed, 1.0);
+        car.heading += steerValue * headingModifier * (0.45 + speedScale * 0.55);
+    }
+
+    // 2. ACCELERATION / DECELERATION
+    if ((keys.ArrowUp || keys.w || keys.W) && gameState !== 'FINISHED') {
+        car.speed += car.accel;
+    } else if ((keys.ArrowDown || keys.s || keys.S) && gameState !== 'FINISHED') {
+        car.speed -= car.accel;
+    } else {
+        car.speed *= car.friction;
+        if (Math.abs(car.speed) < 0.02) car.speed = 0;
+    }
+
+    // Clamp speed limits
+    car.speed = Math.max(car.maxSpeedReverse, Math.min(car.maxSpeed, car.speed));
+
+    // 3. FREE 2D COORDINATE MOVEMENT
+    const headingVector = new THREE.Vector3(Math.sin(car.heading), 0, Math.cos(car.heading));
+    
+    let driftFactor = 0.16; // Traction hold
+    if (Math.abs(steerValue) > 0.01 && Math.abs(car.speed) > car.maxSpeed * 0.45) {
+        driftFactor = 0.065; // Slide/drifting starts!
+    }
+
+    car.velocity.lerp(headingVector.clone().multiplyScalar(car.speed), driftFactor);
+
+    // Translate global position
+    car.position.add(car.velocity);
+    car.position.y = 0.9; // Standard flat rolling height
+
+    // 4. BOUNDARY COLLISIONS (Solid Wall Limit Clamping)
+    const ptOnSpline = sampledCurvePoints[closestIndex];
+    const parameter = closestIndex / curvePointsCount;
+    const tangent = trackCurve.getTangentAt(parameter).normalize();
+    const right = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+    const vecToCar = new THREE.Vector3().subVectors(car.position, ptOnSpline);
+    const lateralDistance = vecToCar.dot(right);
+
+    if (Math.abs(lateralDistance) > wallLimit) {
+        const boundarySign = Math.sign(lateralDistance);
+        const penetration = Math.abs(lateralDistance) - wallLimit;
+
+        // Softly clamp car back inside the boundaries along the perpendicular normal vector
+        car.position.addScaledVector(right, -boundarySign * penetration);
+
+        // TRUE ELASTIC BOUNCE PHYSICS: Reflect velocity along the wall normal
+        const velocityProjectedOnNormal = car.velocity.dot(right);
+        if (velocityProjectedOnNormal * boundarySign > 0) {
+            car.velocity.addScaledVector(right, -velocityProjectedOnNormal * 1.45);
+            car.speed *= 0.82; // Slight slide friction speed reduction
+        }
+
+        // Produce high action metal spark particles
+        const collisionLoc = ptOnSpline.clone()
+            .addScaledVector(right, boundarySign * (wallLimit + 0.5))
+            .add(new THREE.Vector3(0, 0.8, 0));
+
+        for (let i = 0; i < 5; i++) {
+            spawnParticle(
+                collisionLoc.x + (Math.random() - 0.5) * 2,
+                collisionLoc.y + (Math.random() - 0.5) * 1.5,
+                collisionLoc.z + (Math.random() - 0.5) * 2,
+                (Math.random() - 0.5) * 0.8 - tangent.x * 0.25,
+                0.2 + Math.random() * 0.4,
+                (Math.random() - 0.5) * 0.8 - tangent.z * 0.25,
+                0xff6600, // Sparks
+                'spark',
+                15 + Math.floor(Math.random() * 10)
+            );
+        }
+    }
+
+    // Apply heading yaw to the car mesh
+    car.mesh.position.copy(car.position);
+    car.mesh.rotation.y = car.heading;
+
+    // Apply centrifugal body roll tilt to bodyMesh (aesthetic chassis physics)
+    let turnAmount = 0;
+    if (keys.ArrowLeft || keys.a || keys.A) turnAmount = 1;
+    if (keys.ArrowRight || keys.d || keys.D) turnAmount = -1;
+    const targetTilt = turnAmount * (car.speed / car.maxSpeed) * 0.12;
+    car.bodyMesh.rotation.z = THREE.MathUtils.lerp(car.bodyMesh.rotation.z, targetTilt, 0.1);
+
+    // Micro vibration speed-dependent suspension hover effect
+    const vibration = Math.sin(performance.now() * 0.06) * 0.025 * (car.speed / car.maxSpeed);
+    car.bodyMesh.position.y = vibration;
+
+    // Rotate tires to simulate roll speed
+    const wheelRotScale = car.speed * 0.28;
+    car.wheels.forEach(w => {
+        w.rotation.x += wheelRotScale;
+    });
+
+    // 5. DRIFT SMOKE EFFECTS
+    const isDrifting = Math.abs(steerValue) > 0.01 && Math.abs(car.speed) > 2.0;
+    if (isDrifting && Math.random() < 0.45) {
+        const leftRearWorld = new THREE.Vector3(-1.9, 0.4, -2.0).applyMatrix4(car.mesh.matrixWorld);
+        const rightRearWorld = new THREE.Vector3(1.9, 0.4, -2.0).applyMatrix4(car.mesh.matrixWorld);
+
+        spawnParticle(
+            leftRearWorld.x, leftRearWorld.y, leftRearWorld.z,
+            (Math.random() - 0.5) * 0.2, 0.05 + Math.random() * 0.08, (Math.random() - 0.5) * 0.2,
+            0xeeeeee, 'smoke', 20
+        );
+        spawnParticle(
+            rightRearWorld.x, rightRearWorld.y, rightRearWorld.z,
+            (Math.random() - 0.5) * 0.2, 0.05 + Math.random() * 0.08, (Math.random() - 0.5) * 0.2,
+            0xeeeeee, 'smoke', 20
+        );
+    }
+
+    // 6. DYNAMIC LAP CHECKPOINTS (Robust percent-based mapping framework)
+    const midPointIndex = Math.floor(curvePointsCount * 0.5);
+    const lapThresholdIndex = Math.floor(curvePointsCount * 0.9);
+    const startWindowIndex = Math.floor(curvePointsCount * 0.1);
+
+    if (closestIndex > midPointIndex - 30 && closestIndex < midPointIndex + 30) {
+        checkpointPassed = true;
+    }
+
+    // Dynamic lap crossing index wrap-around detection
+    if (closestIndex < startWindowIndex && lastClosestIdx > lapThresholdIndex) {
+        if (checkpointPassed) {
+            lap++;
+            checkpointPassed = false;
+            
+            if (lap <= 3) {
+                lapUi.innerText = lap;
+            } else {
+                gameState = 'FINISHED';
+                const finalTimeStr = updateTimer();
+                finalTimeSpan.innerText = finalTimeStr;
+                finishPanel.style.display = 'block';
+            }
+        }
+    }
+
+    lastClosestIdx = closestIndex;
+
+    // Speed display mapping
+    speedUi.innerText = Math.round(Math.abs(car.speed) * 38);
+}
+
+// --- DYNAMIC COORDINATE-LOCKED CAMERA TRACKING ENGINE ---
+function updateCamera() {
+    if (!car.mesh) return;
+
+    // Ideal position is behind and above the car matching rotation yaw
+    const backOffset = new THREE.Vector3(
+        -Math.sin(car.heading),
+        0,
+        -Math.cos(car.heading)
+    ).normalize();
+
+    const cameraTargetPos = car.position.clone()
+        .addScaledVector(backOffset, 16.5) // Distance behind car
+        .add(new THREE.Vector3(0, 6.8, 0)); // Height above car
+
+    // Smooth camera lag interpolation for enhanced velocity sensation
+    camera.position.lerp(cameraTargetPos, 0.08);
+
+    // Keep camera smoothly bounded inside blue walls (wallLimit - 5.0 cushion)
+    clampCameraToTrack(camera.position, wallLimit - 5.0);
+
+    // Look slightly in front of the vehicle
+    const trackingLookPoint = car.position.clone().add(
+        new THREE.Vector3(Math.sin(car.heading) * 4, 1.2, Math.cos(car.heading) * 4)
+    );
+    camera.lookAt(trackingLookPoint);
+}
+
+// --- RENDER GAME TICK LOOP ---
+function animate() {
+    requestAnimationFrame(animate);
+
+    updatePhysics();
+    updateParticles();
+    updateCamera();
+    updateTimer();
+
+    renderer.render(scene, camera);
+}
+
+// Ensure load triggers properly on entry point
+window.onload = function() {
+    init();
+    animate();
+};
+</script>
+
+</body>
+</html>
