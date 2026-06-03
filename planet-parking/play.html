@@ -540,13 +540,17 @@
                     <div class="knob-value" id="val1">0°</div>
                 </div>
 
-                <div class="middle-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-width: 130px; border-left: 1px solid #333; border-right: 1px solid #333; padding: 0 15px; align-self: stretch;">
-                    <div style="font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Odometer</div>
-                    <div id="odom-value" style="font-size: 20px; font-weight: bold; color: #4ade80; font-family: monospace; margin-bottom: 2px;">0.0°</div>
-                    <div style="font-size: 9px; font-weight: bold; color: #888; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">
+                <div class="middle-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-width: 130px; border-left: 1px solid #333; border-right: 1px solid #333; padding: 0 15px; align-self: stretch;">
+                    <div style="font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; height: 12px; line-height: 12px;">Odometer</div>
+                    <div id="odom-value" style="font-size: 18px; font-weight: bold; color: #4ade80; font-family: monospace; height: 20px; line-height: 20px;">0.0°</div>
+                    
+                    <div style="font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; height: 12px; line-height: 12px;">Moves</div>
+                    <div id="move-value" style="font-size: 18px; font-weight: bold; color: #eab308; font-family: monospace; height: 20px; line-height: 20px;">0</div>
+
+                    <div style="font-size: 9px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.5px; height: 12px; line-height: 12px;">
                         Best: <span id="highscore-value" style="color: #3b82f6; font-family: monospace;">-</span>
                     </div>
-                    <button id="btn-undo" disabled>Undo ↩️</button>
+                    <button id="btn-undo" disabled style="margin-top: 2px;">Undo ↩️</button>
                     <button id="btn-reset">Clear</button>
                     <div style="display: flex; gap: 6px; width: 100%; justify-content: center; margin-top: 4px;">
                         <button id="btn-prev-lvl" class="lvl-nav-btn" title="Previous Level">◀ Lvl</button>
@@ -884,12 +888,13 @@
         let maxLevelUnlocked = 12; 
         let isLevelCompleted = false;
         let arrivedAtTarget = false; 
+        let quizLockedStateActive = false; 
         let isReplayingAnimation = false; 
         let level1SubStep = 1; // 1: Go to Noon, 2: Go to Sunset, 3: Go to North Pole, 4: Go back to Sunrise, 5: Explained.
 
         const highscores = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7: null, 8: null, 9: null, 10: null, 11: null, 12: null };
 
-        // Level definitions updated to include the new Level 6* as ID 11, moving Discretized Challenge to ID 12
+        // Level definitions updated to explicitly support maxMoves enforcement where applicable
         const levelDefinitions = {
             1: {
                 title: "Level 1: The Flipped Heading",
@@ -976,7 +981,8 @@
                 options: [
                     { value: "1", label: "1" }, { value: "2", label: "2" }, { value: "4", label: "4" }, { value: "8", label: "8" }, { value: "inf", label: "Infinite" }
                 ],
-                quizExplanation: "There are 2 choices for the first axis of rotation (Polar first or Solar first). For each, there are 2 potential intermediate corners where the loops cross, and 2 directions around each loop (short way or long way). This results in 2 x 2 x 2 = 8 distinct paths!"
+                quizExplanation: "There are 2 choices for the first axis of rotation (Polar first or Solar first). For each, there are 2 potential intermediate corners where the loops cross, and 2 directions around each loop (short way or long way). This results in 2 x 2 x 2 = 8 distinct paths!",
+                maxMoves: 2
             },
             9: {
                 title: "Level 5**: High Latitude Constraints",
@@ -993,7 +999,8 @@
                 options: [
                     { value: "1", label: "1" }, { value: "2", label: "2" }, { value: "4", label: "4" }, { value: "8", label: "8" }, { value: "inf", label: "Infinite" }
                 ],
-                quizExplanation: "Because target B is at 75° N, the planet's surface doesn't reach the required intersection for a Solar-first move due to the high latitude restriction of 75° N. Thus, you are forced to turn Polar first, cutting down the number of valid paths from 8 to 4!"
+                quizExplanation: "Because target B is at 75° N, the planet's surface doesn't reach the required intersection for a Solar-first move due to the high latitude restriction of 75° N. Thus, you are forced to turn Polar first, cutting down the number of valid paths from 8 to 4!",
+                maxMoves: 2
             },
             10: {
                 title: "Level 6: Three-Move Challenge",
@@ -1003,7 +1010,8 @@
                 targetTilt: -132.0,
                 hideArrows: false,
                 isPhysicalDistance: false,
-                startPose: 'random42'
+                startPose: 'random42',
+                maxMoves: 3
             },
             11: {
                 title: "Level 6*: Three-Move Zero-Tilt",
@@ -1013,7 +1021,8 @@
                 targetTilt: 0.0,
                 hideArrows: false,
                 isPhysicalDistance: false,
-                startPose: 'random42'
+                startPose: 'random42',
+                maxMoves: 3
             },
             12: {
                 title: "Level 7: Discretized Challenge",
@@ -1025,7 +1034,8 @@
                 isPhysicalDistance: false,
                 startPose: 'random42',
                 disableDials: true,
-                restrictedAngles: [39, 40, 134, 90, -17, 35, -132]
+                restrictedAngles: [39, 40, 134, 90, -17, 35, -132],
+                maxMoves: 3
             }
         };
 
@@ -1268,6 +1278,7 @@
 
         function resetCarAndOdometer() {
             arrivedAtTarget = false; 
+            quizLockedStateActive = false;
             planetGroup.quaternion.copy(getStartQuaternion(currentLevel));
             planetGroup.updateMatrixWorld(true); 
             
@@ -1283,6 +1294,7 @@
             activeSegments.length = 0;
             updateUndoButtonState();
             rebuildTraceAndMarkers();
+            updateMoveCounter(); 
 
             if (currentLevel === 1) {
                 level1SubStep = 1;
@@ -1296,15 +1308,39 @@
             odomElement.innerText = val.toFixed(1) + unit;
         }
 
+        function updateMoveCounter() {
+            const currentLvl = levelDefinitions[currentLevel];
+            const moveValEl = document.getElementById('move-value');
+            if (!moveValEl) return;
+            
+            const movesCount = getConsolidatedSegments().length;
+            
+            if (currentLvl && currentLvl.maxMoves) {
+                const limit = currentLvl.maxMoves;
+                moveValEl.innerText = `${movesCount} / ${limit}`;
+                if (movesCount > limit) {
+                    moveValEl.style.color = '#ef4444'; // Red
+                } else if (movesCount === limit) {
+                    moveValEl.style.color = '#eab308'; // Orange/Yellow
+                } else {
+                    moveValEl.style.color = '#4ade80'; // Green
+                }
+            } else {
+                moveValEl.innerText = `${movesCount}`;
+                moveValEl.style.color = '#eab308'; // Default gold
+            }
+        }
+
         function updateLvlNavButtons() {
             document.getElementById('btn-prev-lvl').disabled = isReplayingAnimation; 
             document.getElementById('btn-next-lvl').disabled = (currentLevel === 12) || isReplayingAnimation; 
         }
 
         function configureLevel(lvlId) {
-            clearAllDOMHighlights(); // Ensure persistent blinks from level 1 or previous activities are cleaned up!
+            clearAllDOMHighlights(); // Clean up blinks
             isLevelCompleted = false;
             arrivedAtTarget = false;
+            quizLockedStateActive = false;
             isReplayingAnimation = false;
             ghostGroup.visible = true;
             
@@ -1570,6 +1606,20 @@
             const lvl = levelDefinitions[currentLevel];
             if (!lvl || !lvl.isQuiz) return;
 
+            const movesCount = getConsolidatedSegments().length;
+            if (lvl.maxMoves && movesCount > lvl.maxMoves) {
+                descContainer.innerHTML = `
+                    <div style="margin-bottom: 8px; font-weight: bold; color: #ef4444;">🔒 Quiz Locked!</div>
+                    <div style="font-size: 11px; margin-bottom: 8px; line-height: 1.35;">
+                        You are positioned at the target, but you have used <strong>${movesCount}</strong> moves (Max allowed: <strong>${lvl.maxMoves}</strong>).
+                    </div>
+                    <div style="font-size: 10.5px; color: #aaa; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 6px;">
+                        👉 Press <strong>Undo ↩️</strong> or <strong>Clear</strong> to revert your extra moves and unlock the quiz options.
+                    </div>
+                `;
+                return;
+            }
+
             let optionsHtml = '';
             lvl.options.forEach(opt => {
                 optionsHtml += `
@@ -1601,6 +1651,12 @@
             const feedback = document.getElementById('quiz-hud-feedback');
             const buttons = document.querySelectorAll('.quiz-opt-btn');
             
+            const movesCount = getConsolidatedSegments().length;
+            if (lvl.maxMoves && movesCount > lvl.maxMoves) {
+                feedback.innerHTML = `<span style="color: #dc2626; font-weight: bold;">❌ Move Limit Exceeded!</span><br><span style="font-size: 10px; color: #aaa;">Undo your extra moves to submit.</span>`;
+                return;
+            }
+
             buttons.forEach(b => { b.style.background = '#252830'; b.style.borderColor = '#3b82f6'; });
 
             if (selectedValue === lvl.correctAnswer) {
@@ -1621,11 +1677,26 @@
             }
         }
 
-        function triggerTemporaryHUDNotification(text) {
+        function triggerTemporaryHUDNotification(text, isError = false) {
             const banner = document.getElementById('celebration-banner');
             banner.innerText = text;
             banner.style.display = 'block';
-            setTimeout(() => { banner.style.display = 'none'; banner.innerText = "⭐ PERFECTLY PARKED! ⭐"; }, 2500);
+            if (isError) {
+                banner.style.background = 'rgba(220, 38, 38, 0.95)'; // Glowing warning red
+                banner.style.color = '#ffffff';
+                banner.style.borderColor = '#ff6b6b';
+            } else {
+                banner.style.background = 'rgba(74, 222, 128, 0.95)'; // Perfect park green
+                banner.style.color = '#111';
+                banner.style.borderColor = '#ffffff';
+            }
+            setTimeout(() => { 
+                banner.style.display = 'none'; 
+                banner.innerText = "⭐ PERFECTLY PARKED! ⭐"; 
+                banner.style.background = 'rgba(74, 222, 128, 0.95)';
+                banner.style.color = '#111';
+                banner.style.borderColor = '#ffffff';
+            }, 3000);
         }
 
         document.getElementById('modal-next-btn').addEventListener('click', () => {
@@ -1795,7 +1866,7 @@
                 
                 // Block continuous dial dragging in restricted level
                 if (levelDefinitions[currentLevel].disableDials) {
-                    triggerTemporaryHUDNotification("🔒 Manual dials are locked on this challenge!");
+                    triggerTemporaryHUDNotification("🔒 Manual dials are locked on this challenge!", true);
                     return;
                 }
 
@@ -1905,6 +1976,8 @@
             telemetryLon.innerText = `${absLon}° ${lonDirection}`;
             telemetryHdg.innerText = `${tiltAngle.toFixed(1)}°`;
 
+            updateMoveCounter(); 
+
             if (currentLevel === 1 && !isLevelCompleted && !tutorialActive) {
                 updateLevel1Guide();
             }
@@ -1913,24 +1986,50 @@
                 const currentLvl = levelDefinitions[currentLevel];
                 if (currentLvl) {
                     const positionDistance = carWorldPos.distanceTo(currentLvl.targetPos);
+                    const movesCount = getConsolidatedSegments().length;
                     
+                    // Widened tolerance threshold: 0.75 degrees = ~0.01309 radians in world-space chord length on unit sphere.
+                    const toleranceRad = 0.01309; 
+                    const toleranceTilt = 0.75; 
+
                     if (currentLvl.isQuiz) {
-                        if (positionDistance < 0.008726 && !arrivedAtTarget) {
-                            activeDragCommits.forEach(commit => commit());
-                            arrivedAtTarget = true;
-                            triggerTemporaryHUDNotification("📍 Target reached! Now answer the quiz in the instruction panel.");
-                            renderQuizInHUD();
+                        if (positionDistance < toleranceRad) {
+                            if (currentLvl.maxMoves && movesCount > currentLvl.maxMoves) {
+                                if (!arrivedAtTarget || !quizLockedStateActive) {
+                                    arrivedAtTarget = true;
+                                    quizLockedStateActive = true;
+                                    renderQuizInHUD();
+                                }
+                            } else {
+                                if (!arrivedAtTarget || quizLockedStateActive) {
+                                    activeDragCommits.forEach(commit => commit());
+                                    arrivedAtTarget = true;
+                                    quizLockedStateActive = false;
+                                    triggerTemporaryHUDNotification("📍 Target reached! Now answer the quiz in the instruction panel.");
+                                    renderQuizInHUD();
+                                }
+                            }
+                        } else {
+                            if (arrivedAtTarget) {
+                                arrivedAtTarget = false;
+                                quizLockedStateActive = false;
+                                document.getElementById('hud-level-desc').innerHTML = currentLvl.shortDesc;
+                            }
                         }
                     } else {
                         let isMatched = false;
-                        if (currentLvl.targetTilt === null) { isMatched = (positionDistance < 0.008726); }
+                        if (currentLvl.targetTilt === null) { isMatched = (positionDistance < toleranceRad); }
                         else {
                             let angleDiff = Math.abs(tiltAngle - currentLvl.targetTilt);
                             if (angleDiff > 180) angleDiff = 360 - angleDiff;
-                            isMatched = (positionDistance < 0.008726 && angleDiff < 0.5);
+                            isMatched = (positionDistance < toleranceRad && angleDiff < toleranceTilt);
                         }
 
                         if (isMatched) {
+                            if (currentLvl.maxMoves && movesCount > currentLvl.maxMoves) {
+                                triggerTemporaryHUDNotification(`❌ Exceeded Move Limit! Used: ${movesCount} / Max: ${currentLvl.maxMoves}`, true);
+                                return;
+                            }
                             activeDragCommits.forEach(commit => commit());
                             isLevelCompleted = true;
                             maxLevelUnlocked = Math.min(12, Math.max(maxLevelUnlocked, currentLevel + 1));
