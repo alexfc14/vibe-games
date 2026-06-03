@@ -78,6 +78,32 @@
             pointer-events: none;
             letter-spacing: 2px;
         }
+        /* Minimap Overlay styling */
+        #minimap-container {
+            position: absolute;
+            top: 95px;
+            right: 20px;
+            width: 140px;
+            height: 140px;
+            background: rgba(10, 10, 20, 0.85);
+            border: 2px solid #ff5500;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(255, 85, 0, 0.4);
+            padding: 5px;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        #minimap {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
         /* On-screen Countdown */
         #countdown-overlay {
             position: absolute;
@@ -143,6 +169,23 @@
         .restart-btn:active {
             transform: scale(0.95);
         }
+        /* Audio Unlocking Prompt Hint */
+        #audio-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.7);
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 12px;
+            background: rgba(0,0,0,0.5);
+            padding: 4px 12px;
+            border-radius: 15px;
+            pointer-events: none;
+            z-index: 5;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
         /* Mobile Controls */
         #mobile-controls {
             position: absolute;
@@ -190,6 +233,38 @@
             background: rgba(255, 85, 0, 0.6);
             transform: scale(0.9);
         }
+        
+        /* Responsive adjustments for mid & small devices */
+        @media (max-width: 768px) {
+            #minimap-container {
+                width: 105px;
+                height: 105px;
+                top: 85px;
+                right: 15px;
+            }
+            #title-badge {
+                font-size: 18px;
+                padding: 6px 12px;
+                top: 15px;
+                right: 15px;
+            }
+            #hud {
+                top: 15px;
+                left: 15px;
+                gap: 8px;
+            }
+            .hud-card {
+                padding: 6px 12px;
+                font-size: 16px;
+            }
+            .hud-label {
+                font-size: 9px;
+            }
+            #audio-hint {
+                font-size: 10px;
+                bottom: 120px;
+            }
+        }
         /* Responsiveness: Hide Mobile Controls on Desktop if hovering pointer exists */
         @media (hover: hover) and (pointer: fine) {
             #mobile-controls {
@@ -223,6 +298,14 @@
 
     <div id="title-badge">HOT TRACKS 3D</div>
 
+    <!-- Live Track Minimap overlay -->
+    <div id="minimap-container">
+        <canvas id="minimap" width="130" height="130"></canvas>
+    </div>
+
+    <!-- Dynamic Audio system unlock notice -->
+    <div id="audio-hint">Press any control to start Sound Engine</div>
+
     <!-- Countdown overlay -->
     <div id="countdown-overlay">READY</div>
 
@@ -230,7 +313,7 @@
     <div id="finish-panel">
         <h1>Race Complete!</h1>
         <p>Your Final Time: <span id="final-time" class="time-highlight">00:00.00</span></p>
-        <button class="restart-btn" onclick="resetRace()">Race Again</button>
+        <button class="restart-btn" onclick="startAudioEngine(); resetRace()">Race Again</button>
     </div>
 
     <!-- Mobile Screen Overlays -->
@@ -257,6 +340,9 @@ const timeUi = document.getElementById('time-ui');
 const countdownOverlay = document.getElementById('countdown-overlay');
 const finishPanel = document.getElementById('finish-panel');
 const finalTimeSpan = document.getElementById('final-time');
+const minimapCanvas = document.getElementById('minimap');
+const minimapCtx = minimapCanvas.getContext('2d');
+const audioHint = document.getElementById('audio-hint');
 
 let scene, camera, renderer;
 let gameState = 'COUNTDOWN'; // COUNTDOWN, RACING, FINISHED
@@ -267,6 +353,9 @@ let lap = 1;
 let lastClosestIdx = -1; // -1 represents uninitialized startup state
 let checkpointPassed = false;
 let steerDuration = 0; // Tracks hold time of steering for subtle tap control
+
+// Minimap Bounds tracker
+let minimapBounds = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
 
 // Keyboard state tracker
 const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, w: false, s: false, a: false, d: false };
@@ -333,6 +422,253 @@ function getMinDistanceToTrack(pos) {
     }
     return minDist;
 }
+
+// --- SYNTHESIZED WEB AUDIO ENGINE CLASS (No external MP3 required) ---
+class GameSoundEngine {
+    constructor() {
+        this.ctx = null;
+        this.engineOsc = null;
+        this.engineSub = null;
+        this.engineGain = null;
+        this.engineFilter = null;
+        
+        this.driftOsc = null;
+        this.driftGain = null;
+        this.driftFilter = null;
+        
+        this.initialized = false;
+    }
+
+    init() {
+        if (this.initialized) return;
+        try {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) return;
+            this.ctx = new AudioContextClass();
+            
+            // Build the Synthesized Engine notes
+            this.setupEngineSound();
+            // Build the Synthesized Drifting slide noise
+            this.setupDriftSound();
+            
+            this.initialized = true;
+            if (audioHint) audioHint.style.display = 'none';
+        } catch (e) {
+            console.warn("Audio system failed to initialize:", e);
+        }
+    }
+
+    setupEngineSound() {
+        // Aggressive sawtooth growl
+        this.engineOsc = this.ctx.createOscillator();
+        this.engineOsc.type = 'sawtooth';
+        this.engineOsc.frequency.setValueAtTime(45, this.ctx.currentTime);
+
+        // Sub-harmonic triangle note to add beefy bass rumble
+        this.engineSub = this.ctx.createOscillator();
+        this.engineSub.type = 'triangle';
+        this.engineSub.frequency.setValueAtTime(22.5, this.ctx.currentTime);
+
+        // Low-pass filter to block harsh treble squeals on low idle speeds
+        this.engineFilter = this.ctx.createBiquadFilter();
+        this.engineFilter.type = 'lowpass';
+        this.engineFilter.frequency.setValueAtTime(200, this.ctx.currentTime);
+
+        this.engineGain = this.ctx.createGain();
+        this.engineGain.gain.setValueAtTime(0.0, this.ctx.currentTime); // Silent initially
+
+        this.engineOsc.connect(this.engineFilter);
+        this.engineSub.connect(this.engineFilter);
+        this.engineFilter.connect(this.engineGain);
+        this.engineGain.connect(this.ctx.destination);
+
+        this.engineOsc.start();
+        this.engineSub.start();
+    }
+
+    setupDriftSound() {
+        // Harsh tires slide screech sound
+        this.driftOsc = this.ctx.createOscillator();
+        this.driftOsc.type = 'triangle';
+        this.driftOsc.frequency.setValueAtTime(750, this.ctx.currentTime);
+
+        this.driftFilter = this.ctx.createBiquadFilter();
+        this.driftFilter.type = 'bandpass';
+        this.driftFilter.frequency.setValueAtTime(950, this.ctx.currentTime);
+        this.driftFilter.Q.setValueAtTime(4.0, this.ctx.currentTime);
+
+        this.driftGain = this.ctx.createGain();
+        this.driftGain.gain.setValueAtTime(0.0, this.ctx.currentTime); // Silent initially
+
+        this.driftOsc.connect(this.driftFilter);
+        this.driftFilter.connect(this.driftGain);
+        this.driftGain.connect(this.ctx.destination);
+
+        this.driftOsc.start();
+    }
+
+    updateEngine(speed, maxSpeed, isGrounded) {
+        if (!this.initialized || !this.ctx) return;
+        if (this.ctx.state === 'suspended') return;
+
+        const speedRatio = Math.max(0, Math.min(1.0, Math.abs(speed) / maxSpeed));
+        
+        // Base growl frequencies
+        let baseFreq = 42 + speedRatio * 150;
+        
+        // Simulating erratic engine sound floating when airborne
+        if (!isGrounded) {
+            baseFreq = 165 + Math.sin(Date.now() * 0.08) * 30; // RPM peaks and bounces out of touch bounds!
+        }
+
+        this.engineOsc.frequency.setTargetAtTime(baseFreq, this.ctx.currentTime, 0.08);
+        this.engineSub.frequency.setTargetAtTime(baseFreq * 0.5, this.ctx.currentTime, 0.08);
+
+        // Brighten low-pass cutoff as car speeds up, giving real "exhaust open" simulation
+        const filterCutoff = 160 + speedRatio * 500;
+        this.engineFilter.frequency.setTargetAtTime(filterCutoff, this.ctx.currentTime, 0.08);
+
+        // Adjust overall gain levels
+        let volume = 0.04 + speedRatio * 0.14;
+        if (!isGrounded) volume *= 0.65; // Soften when high in air
+
+        this.engineGain.gain.setTargetAtTime(volume, this.ctx.currentTime, 0.06);
+    }
+
+    updateDrift(isDrifting, speed) {
+        if (!this.initialized || !this.ctx) return;
+        if (this.ctx.state === 'suspended') return;
+
+        if (isDrifting && speed > 1.8) {
+            // High frequency modulations for burning rubber
+            const squealFreq = 580 + Math.sin(Date.now() * 0.12) * 140 + speed * 45;
+            this.driftOsc.frequency.setTargetAtTime(squealFreq, this.ctx.currentTime, 0.05);
+            this.driftFilter.frequency.setTargetAtTime(squealFreq * 1.15, this.ctx.currentTime, 0.05);
+            
+            this.driftGain.gain.setTargetAtTime(0.04, this.ctx.currentTime, 0.05);
+        } else {
+            // Squeal fade away instantly
+            this.driftGain.gain.setTargetAtTime(0.0, this.ctx.currentTime, 0.12);
+        }
+    }
+
+    playBump(intensity = 1.0) {
+        if (!this.initialized || !this.ctx) return;
+        if (this.ctx.state === 'suspended') return;
+
+        try {
+            // 1. Thump Impact Sound
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(15, this.ctx.currentTime + 0.3);
+
+            gain.gain.setValueAtTime(0.45 * intensity, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.35);
+
+            // 2. High Spark Friction crackle
+            const bufferSize = this.ctx.sampleRate * 0.2;
+            const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
+
+            const noiseFilter = this.ctx.createBiquadFilter();
+            noiseFilter.type = 'bandpass';
+            noiseFilter.frequency.setValueAtTime(1400, this.ctx.currentTime);
+
+            const noiseGain = this.ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.12 * intensity, this.ctx.currentTime);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.18);
+
+            noise.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(this.ctx.destination);
+
+            noise.start();
+            noise.stop(this.ctx.currentTime + 0.2);
+        } catch (e) {
+            console.warn(e);
+        }
+    }
+
+    playBeep(isHigh = false) {
+        if (!this.initialized || !this.ctx) return;
+        if (this.ctx.state === 'suspended') return;
+
+        try {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(isHigh ? 920 : 460, this.ctx.currentTime);
+
+            gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + (isHigh ? 0.45 : 0.2));
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start();
+            osc.stop(this.ctx.currentTime + (isHigh ? 0.5 : 0.25));
+        } catch (e) {}
+    }
+
+    playLapChime() {
+        if (!this.initialized || !this.ctx) return;
+        if (this.ctx.state === 'suspended') return;
+
+        try {
+            const now = this.ctx.currentTime;
+            
+            const triggerTone = (freq, delay, length) => {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + delay);
+                
+                gain.gain.setValueAtTime(0.0, now + delay);
+                gain.gain.linearRampToValueAtTime(0.15, now + delay + 0.04);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + delay + length);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start(now + delay);
+                osc.stop(now + delay + length + 0.05);
+            };
+
+            // Uplifting arcade dual chime sweep (C5 -> E5 -> G5 -> C6)
+            triggerTone(523.25, 0.0, 0.3);      // C5
+            triggerTone(659.25, 0.08, 0.3);     // E5
+            triggerTone(783.99, 0.16, 0.3);     // G5
+            triggerTone(1046.50, 0.24, 0.5);    // C6
+        } catch (e) {}
+    }
+}
+
+const soundManager = new GameSoundEngine();
+
+// Quick interface to trigger audio initialization safe-unlocks
+function startAudioEngine() {
+    soundManager.init();
+    if (soundManager.ctx && soundManager.ctx.state === 'suspended') {
+        soundManager.ctx.resume();
+    }
+}
+
 
 // --- PARTICLE SYSTEM POOL (For Drifting Smoke & Wall Sparks) ---
 const particles = [];
@@ -454,6 +790,9 @@ function init() {
     const startTangent = trackCurve.getTangentAt(0).normalize();
     camera.position.copy(car.position).addScaledVector(startTangent, -16.5).add(new THREE.Vector3(0, 6.8, 0));
     camera.lookAt(car.position);
+
+    // Track Bounding Limits for 2D Minimap System
+    initMinimapBounds();
 
     // Initialize Particle engine pool
     initParticles();
@@ -830,9 +1169,99 @@ function buildToyCar() {
     scene.add(car.mesh);
 }
 
+// --- MINIMAP STATIC CALCULATIONS ---
+function initMinimapBounds() {
+    sampledCurvePoints.forEach(pt => {
+        if (pt.x < minimapBounds.minX) minimapBounds.minX = pt.x;
+        if (pt.x > minimapBounds.maxX) minimapBounds.maxX = pt.x;
+        if (pt.z < minimapBounds.minZ) minimapBounds.minZ = pt.z;
+        if (pt.z > minimapBounds.maxZ) minimapBounds.maxZ = pt.z;
+    });
+}
+
+// Draw live miniature tracking canvas
+function drawMinimap() {
+    if (minimapBounds.minX === Infinity) return;
+    
+    minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+    
+    const w = minimapCanvas.width;
+    const h = minimapCanvas.height;
+    const pad = 12; // margins inside 2D box
+    
+    const trackW = minimapBounds.maxX - minimapBounds.minX;
+    const trackH = minimapBounds.maxZ - minimapBounds.minZ;
+    
+    // Scale preserving aspect ratios perfectly
+    const scale = Math.min((w - pad * 2) / trackW, (h - pad * 2) / trackH);
+    
+    const mapX = (x) => pad + (x - minimapBounds.minX) * scale;
+    const mapY = (z) => pad + (z - minimapBounds.minZ) * scale;
+    
+    // 1. Draw glowing background track path
+    minimapCtx.strokeStyle = 'rgba(255, 76, 0, 0.35)'; // Classic Orange track glow
+    minimapCtx.lineWidth = 6;
+    minimapCtx.lineCap = 'round';
+    minimapCtx.lineJoin = 'round';
+    minimapCtx.beginPath();
+    sampledCurvePoints.forEach((pt, idx) => {
+        if (idx === 0) minimapCtx.moveTo(mapX(pt.x), mapY(pt.z));
+        else minimapCtx.lineTo(mapX(pt.x), mapY(pt.z));
+    });
+    minimapCtx.closePath();
+    minimapCtx.stroke();
+    
+    // Inner cyan neon guide lines
+    minimapCtx.strokeStyle = '#00f2ff';
+    minimapCtx.lineWidth = 1.5;
+    minimapCtx.beginPath();
+    sampledCurvePoints.forEach((pt, idx) => {
+        if (idx === 0) minimapCtx.moveTo(mapX(pt.x), mapY(pt.z));
+        else minimapCtx.lineTo(mapX(pt.x), mapY(pt.z));
+    });
+    minimapCtx.closePath();
+    minimapCtx.stroke();
+    
+    // 2. Draw Start/Finish line checkered notch
+    const startPt = sampledCurvePoints[0];
+    const startX = mapX(startPt.x);
+    const startY = mapY(startPt.z);
+    
+    minimapCtx.fillStyle = '#ffffff';
+    minimapCtx.beginPath();
+    minimapCtx.arc(startX, startY, 4.5, 0, Math.PI * 2);
+    minimapCtx.fill();
+    minimapCtx.strokeStyle = '#000000';
+    minimapCtx.lineWidth = 1.2;
+    minimapCtx.stroke();
+    
+    // 3. Draw Player Glowing Beacon dot
+    if (car.mesh) {
+        const px = mapX(car.position.x);
+        const py = mapY(car.position.z);
+        
+        // Pulsing circular ring
+        const pulseSize = 5.5 + Math.sin(Date.now() * 0.015) * 1.8;
+        minimapCtx.fillStyle = 'rgba(0, 240, 255, 0.38)';
+        minimapCtx.beginPath();
+        minimapCtx.arc(px, py, pulseSize + 3, 0, Math.PI * 2);
+        minimapCtx.fill();
+        
+        // White core with neon border
+        minimapCtx.fillStyle = '#ffffff';
+        minimapCtx.strokeStyle = '#ff3c00'; // Hot red pointer border
+        minimapCtx.lineWidth = 2.0;
+        minimapCtx.beginPath();
+        minimapCtx.arc(px, py, 4.0, 0, Math.PI * 2);
+        minimapCtx.fill();
+        minimapCtx.stroke();
+    }
+}
+
 // --- HANDLERS FOR DEVICE CONTROLS ---
 function setupInputs() {
     window.addEventListener('keydown', (e) => {
+        startAudioEngine(); // Unlock audio context safely
         if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.ArrowUp = true;
         if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.ArrowDown = true;
         if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.ArrowLeft = true;
@@ -853,6 +1282,7 @@ function setupInputs() {
         
         const startAction = (e) => {
             e.preventDefault();
+            startAudioEngine(); // Unlock context safely
             keys[actionKey] = true;
         };
         const endAction = (e) => {
@@ -891,6 +1321,7 @@ function triggerCountdown() {
         if (countdownVal > 0) {
             countdownOverlay.innerText = countdownVal;
             countdownOverlay.style.transform = 'translate(-50%, -50%) scale(1.4)';
+            soundManager.playBeep(false); // Quick tick chime
             setTimeout(() => {
                 countdownOverlay.style.transform = 'translate(-50%, -50%) scale(1.0)';
             }, 200);
@@ -899,6 +1330,7 @@ function triggerCountdown() {
             countdownOverlay.innerText = "GO!";
             countdownOverlay.style.color = '#00ffff';
             countdownOverlay.style.transform = 'translate(-50%, -50%) scale(1.6)';
+            soundManager.playBeep(true); // Aggressive high start chime
             gameState = 'RACING';
             timerStart = performance.now();
             countdownVal--;
@@ -1018,6 +1450,8 @@ function updatePhysics() {
 
     if (gameState === 'COUNTDOWN') {
         lastClosestIdx = closestIndex;
+        // Keep Audio idle humming
+        soundManager.updateEngine(0, car.maxSpeed, true);
         return;
     }
 
@@ -1104,6 +1538,9 @@ function updatePhysics() {
             car.verticalVelocity = 0;
             car.isGrounded = true;
 
+            // Trigger landing thud sound effect
+            soundManager.playBump(0.65);
+
             // Spawn landing sand particles
             for (let i = 0; i < 8; i++) {
                 spawnParticle(
@@ -1142,6 +1579,9 @@ function updatePhysics() {
             car.velocity.addScaledVector(right, -velocityProjectedOnNormal * 1.45);
             car.speed *= 0.82; // Slight slide friction speed reduction
         }
+
+        // Trigger heavy collision crash sound effect
+        soundManager.playBump(1.0);
 
         // Produce high action metal spark particles
         const collisionLoc = ptOnSpline.clone()
@@ -1214,6 +1654,10 @@ function updatePhysics() {
         );
     }
 
+    // Update dynamic synthesizer nodes with current state
+    soundManager.updateEngine(car.speed, car.maxSpeed, car.isGrounded);
+    soundManager.updateDrift(isDrifting, Math.abs(car.speed));
+
     // 6. DYNAMIC LAP CHECKPOINTS (Robust percent-based mapping framework)
     const midPointIndex = Math.floor(curvePointsCount * 0.5);
     const lapThresholdIndex = Math.floor(curvePointsCount * 0.9);
@@ -1231,11 +1675,14 @@ function updatePhysics() {
             
             if (lap <= 3) {
                 lapUi.innerText = lap;
+                soundManager.playLapChime(); // Celebratory lap-complete audio chime!
             } else {
                 gameState = 'FINISHED';
                 const finalTimeStr = updateTimer();
                 finalTimeSpan.innerText = finalTimeStr;
                 finishPanel.style.display = 'block';
+                // Stop engine idle humming upon completion
+                soundManager.updateEngine(0, car.maxSpeed, true);
             }
         }
     }
@@ -1282,6 +1729,7 @@ function animate() {
     updateParticles();
     updateCamera();
     updateTimer();
+    drawMinimap(); // Redraw our glowing miniature circuit map every frame
 
     renderer.render(scene, camera);
 }
