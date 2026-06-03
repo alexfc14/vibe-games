@@ -209,7 +209,7 @@
             border-radius: 16px;
             padding: 24px;
             width: 100%;
-            max-width: 380px;
+            max-width: 420px;
             margin-bottom: 25px;
             display: flex;
             flex-direction: column;
@@ -265,6 +265,7 @@
             align-items: center;
             justify-content: space-between;
             cursor: pointer;
+            padding: 4px 0;
         }
 
         .switch {
@@ -509,6 +510,17 @@
                         <span class="slider-round"></span>
                     </div>
                 </label>
+
+                <!-- Whole Car Inside Switch -->
+                <label class="switch-container">
+                    <div class="setting-label" style="margin-bottom:0;">
+                        <span>Whole Car Must Fit Inside Spot</span>
+                    </div>
+                    <div class="switch">
+                        <input type="checkbox" id="wholecar-checkbox" onchange="UI.updateWholeCarInside(this.checked)">
+                        <span class="slider-round"></span>
+                    </div>
+                </label>
             </div>
 
             <button class="btn menu-btn" onclick="UI.toggleSettingsModal(false)" style="background: linear-gradient(135deg, #f39c12 0%, #d35400 100%); box-shadow: 0 8px 25px rgba(230, 126, 34, 0.4);">Save & Resume</button>
@@ -554,10 +566,22 @@
 
         <!-- Utility Action Buttons Container (Bottom Right) -->
         <div id="interactive-utilities">
+            <!-- Reset Level Button -->
+            <div class="utility-btn" id="reset-level-btn" onclick="GameEngine.loadLevel(GameEngine.currentLevelIdx)" title="Reset Level (R)">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                </svg>
+            </div>
+            <!-- Skip Level Button -->
+            <div class="utility-btn" id="skip-level-btn" onclick="UI.skipLevel()" title="Skip Level">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/>
+                </svg>
+            </div>
             <!-- Toggle Settings Config Modal -->
             <div class="utility-btn" id="settings-toggle-btn" onclick="UI.toggleSettingsModal(true)">
                 <svg viewBox="0 0 24 24" width="20" height="20">
-                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.44.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
                 </svg>
             </div>
             <!-- Audio Indicator button -->
@@ -572,11 +596,12 @@
 
 <script>
     /**
-     * GAME CONFIGURATION SETTINGS (Sensitivity, No Damage)
+     * GAME CONFIGURATION SETTINGS (Sensitivity, No Damage, Fit Spot Constraint)
      */
     const GameSettings = {
-        sensitivity: 1.0,  // steering multiplier range: [0.4 to 2.2]
-        noDamage: false    // invincible mode if true
+        sensitivity: 1.0,     // steering multiplier range: [0.4 to 2.2]
+        noDamage: false,      // invincible mode if true
+        wholeCarInside: false // true if all 4 corners of car must fit inside spot
     };
 
     /**
@@ -631,8 +656,9 @@
 
             if (this.engineOsc && this.engineGain) {
                 const absSpeed = Math.abs(speed);
-                const targetFreq = 45 + (absSpeed * 45);
-                const targetGain = 0.05 + (absSpeed * 0.12);
+                // Clamp audio pitch safely at high uncapped speeds to avoid dog whistles
+                const targetFreq = Math.min(300, 45 + (absSpeed * 25));
+                const targetGain = Math.min(0.25, 0.05 + (absSpeed * 0.04));
 
                 this.engineOsc.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.1);
                 this.engineGain.gain.setTargetAtTime(targetGain, this.ctx.currentTime, 0.1);
@@ -792,34 +818,28 @@
                     // Stage 1: Straight forward park
                     startPos = { x: 150, y: 270, angle: 0 };
                     parkingSpot = { x: 700, y: 235, w: 90, h: 70, targetAngle: 0 };
-                    // No additional obstacles. Wide open.
                 } 
                 else if (idx === 1) {
                     // Stage 2: Gentle Curve Parking
                     startPos = { x: 150, y: 150, angle: 0 };
                     parkingSpot = { x: 740, y: 380, w: 90, h: 60, targetAngle: 0 };
-                    // Single obstacle right in center to teach navigating round corners
                     obstacles.push({ x: 420, y: 120, w: 40, h: 120 });
                 } 
                 else if (idx === 2) {
                     // Stage 3: Straight Reversing Drill
                     startPos = { x: 750, y: 270, angle: 0 };
                     parkingSpot = { x: 200, y: 235, w: 90, h: 70, targetAngle: 0 };
-                    // No obstacles, pure backward throttle training.
                 } 
                 else if (idx === 3) {
                     // Stage 4: Easy Angled Parking spot
                     startPos = { x: 150, y: 400, angle: 0 };
                     parkingSpot = { x: 650, y: 150, w: 95, h: 60, targetAngle: Math.PI / 4 };
-                    // Generous room, single buffer wall on top
                     obstacles.push({ x: 600, y: 25, w: 200, h: 30 });
                 } 
                 else if (idx === 4) {
                     // Stage 5: Parallel Parking with double-sized clearances
                     startPos = { x: 150, y: 270, angle: 0 };
-                    // Wide spot: 140px width (original spots are around ~70-90)
                     parkingSpot = { x: 500, y: 240, w: 130, h: 50, targetAngle: 0 };
-                    // Parallel buffers placed further away
                     obstacles.push({ x: 380, y: 240, w: 90, h: 50, type: 'parked', color: '#7f8c8d' });
                     obstacles.push({ x: 660, y: 240, w: 90, h: 50, type: 'parked', color: '#95a5a6' });
                 }
@@ -963,8 +983,6 @@
             height: 28,
             angle: 0,
             speed: 0,
-            maxForwardSpeed: 3.2,
-            maxBackwardSpeed: -1.6,
             acceleration: 0.12,
             brakingDecel: 0.22,
             steeringLimit: 0.042,
@@ -1008,6 +1026,10 @@
         setupInput() {
             window.addEventListener('keydown', (e) => {
                 this.keys[e.key] = true;
+                // Add convenient 'R' level reset shortcut
+                if ((e.key === 'r' || e.key === 'R') && this.active) {
+                    this.loadLevel(this.currentLevelIdx);
+                }
                 if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
                     e.preventDefault();
                 }
@@ -1055,7 +1077,6 @@
         },
 
         updateHealthBar() {
-            // No damage mode keeps health visual at 100%
             const displayDamage = GameSettings.noDamage ? 0 : this.damage;
             const pct = Math.max(0, 100 - displayDamage);
             const inner = document.getElementById('hud-health');
@@ -1078,6 +1099,19 @@
             return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${centis.toString().padStart(2, '0')}`;
         },
 
+        // Fast Rotated Point within Area test
+        isPointInsideSpot(pt, spot) {
+            const cx = spot.x + spot.w / 2;
+            const cy = spot.y + spot.h / 2;
+            const tx = pt.x - cx;
+            const ty = pt.y - cy;
+            const cos = Math.cos(-spot.targetAngle);
+            const sin = Math.sin(-spot.targetAngle);
+            const localX = tx * cos - ty * sin;
+            const localY = tx * sin + ty * cos;
+            return Math.abs(localX) <= spot.w / 2 && Math.abs(localY) <= spot.h / 2;
+        },
+
         update() {
             if (!this.active) return;
 
@@ -1090,26 +1124,46 @@
                 document.getElementById('hud-timer').innerText = this.formatTime(this.elapsedTime);
             }
 
-            // Step 1: Steering Mechanics (With Steering Sensitivity Scalar)
+            // Step 1: Steering Mechanics (with Wall Anti-Clipping Reversion Lock)
             if (Math.abs(car.speed) > 0.05) {
                 const speedModifier = Math.min(1.0, Math.abs(car.speed) / 1.5);
                 const currentSteerSpeed = car.steeringSpeed * GameSettings.sensitivity * speedModifier * (car.speed > 0 ? 1 : -0.7);
 
+                const originalAngle = car.angle;
                 if (this.keys['ArrowLeft'] || this.keys['a'] || this.keys['A']) {
                     car.angle -= currentSteerSpeed;
                 }
                 if (this.keys['ArrowRight'] || this.keys['d'] || this.keys['D']) {
                     car.angle += currentSteerSpeed;
                 }
+
+                // Prevent steering rotation from clipping corner vertices through barriers
+                const testCorners = car.getCorners();
+                let steeringClip = false;
+                for (let obs of lvl.obstacles) {
+                    const obsPolygon = [
+                        { x: obs.x, y: obs.y },
+                        { x: obs.x + obs.w, y: obs.y },
+                        { x: obs.x + obs.w, y: obs.y + obs.h },
+                        { x: obs.x, y: obs.y + obs.h }
+                    ];
+                    if (CollisionUtils.checkPolygonCollision(testCorners, obsPolygon)) {
+                        steeringClip = true;
+                        break;
+                    }
+                }
+                if (steeringClip) {
+                    car.angle = originalAngle; // Revert clipping rotation
+                }
             }
 
-            // Step 2: Drive Pedal Accelerations
+            // Step 2: Drive Pedal Accelerations (NO speed ceiling limits!)
             if (this.keys['ArrowUp'] || this.keys['w'] || this.keys['W']) {
                 if (car.speed < 0) car.speed += car.brakingDecel;
-                else if (car.speed < car.maxForwardSpeed) car.speed += car.acceleration;
+                else car.speed += car.acceleration;
             } else if (this.keys['ArrowDown'] || this.keys['s'] || this.keys['S']) {
                 if (car.speed > 0) car.speed -= car.brakingDecel;
-                else if (car.speed > car.maxBackwardSpeed) car.speed -= car.acceleration;
+                else car.speed -= car.acceleration;
             } else {
                 if (car.speed > 0) car.speed = Math.max(0, car.speed - car.drag);
                 if (car.speed < 0) car.speed = Math.min(0, car.speed + car.drag);
@@ -1132,67 +1186,89 @@
                 if(this.skidmarks.length > 200) this.skidmarks.shift();
             }
 
-            // Step 4: Spatial Updates & SAT Collision Test
-            const nextX = car.x + car.speed * Math.cos(car.angle);
-            const nextY = car.y + car.speed * Math.sin(car.angle);
+            // Step 4: Continuous Collision Detection (CCD via 2px sub-stepping)
+            // Completely prevents high-speed tunneling through thin walls/borders
+            const speedMagnitude = Math.abs(car.speed);
+            const stepCount = Math.max(1, Math.ceil(speedMagnitude / 2));
+            const stepX = (car.speed * Math.cos(car.angle)) / stepCount;
+            const stepY = (car.speed * Math.sin(car.angle)) / stepCount;
 
-            const targetCar = { ...car, x: nextX, y: nextY };
-            const carPolygon = targetCar.getCorners();
             let collided = false;
+            for (let step = 0; step < stepCount; step++) {
+                const nextX = car.x + stepX;
+                const nextY = car.y + stepY;
 
-            for (let obs of lvl.obstacles) {
-                const obsPolygon = [
-                    { x: obs.x, y: obs.y },
-                    { x: obs.x + obs.w, y: obs.y },
-                    { x: obs.x + obs.w, y: obs.y + obs.h },
-                    { x: obs.x, y: obs.y + obs.h }
-                ];
+                const targetCar = { ...car, x: nextX, y: nextY };
+                const carPolygon = targetCar.getCorners();
+                let stepCollided = false;
 
-                if (CollisionUtils.checkPolygonCollision(carPolygon, obsPolygon)) {
+                for (let obs of lvl.obstacles) {
+                    const obsPolygon = [
+                        { x: obs.x, y: obs.y },
+                        { x: obs.x + obs.w, y: obs.y },
+                        { x: obs.x + obs.w, y: obs.y + obs.h },
+                        { x: obs.x, y: obs.y + obs.h }
+                    ];
+
+                    if (CollisionUtils.checkPolygonCollision(carPolygon, obsPolygon)) {
+                        stepCollided = true;
+                        break;
+                    }
+                }
+
+                if (stepCollided) {
                     collided = true;
-                    break;
+                    SoundSystem.playCrashSound();
+
+                    // Kinetic damage calculation
+                    if (!GameSettings.noDamage) {
+                        const crashIntensity = Math.ceil(Math.abs(car.speed) * 12);
+                        this.damage += Math.max(8, crashIntensity);
+                    }
+                    this.updateHealthBar();
+
+                    // Physics bounce reaction
+                    car.speed = -car.speed * 0.45;
+                    car.x -= Math.cos(car.angle) * 3;
+                    car.y -= Math.sin(car.angle) * 3;
+
+                    if (!GameSettings.noDamage && this.damage >= this.maxDamage) {
+                        this.active = false;
+                        this.timerActive = false;
+                        SoundSystem.stopEngine();
+                        UI.triggerFailure("Your vehicle was completely totaled!");
+                    }
+                    break; // stop sub-stepping on collision
+                } else {
+                    car.x = nextX;
+                    car.y = nextY;
                 }
             }
 
-            if (collided) {
-                SoundSystem.playCrashSound();
-
-                // Compute kinetic damage if damage is active
-                if (!GameSettings.noDamage) {
-                    const crashIntensity = Math.ceil(Math.abs(car.speed) * 12);
-                    this.damage += Math.max(8, crashIntensity);
-                }
-                this.updateHealthBar();
-
-                car.speed = -car.speed * 0.45;
-                car.x -= Math.cos(car.angle) * 3;
-                car.y -= Math.sin(car.angle) * 3;
-
-                if (!GameSettings.noDamage && this.damage >= this.maxDamage) {
-                    this.active = false;
-                    this.timerActive = false;
-                    SoundSystem.stopEngine();
-                    UI.triggerFailure("Your vehicle was completely totaled!");
-                }
-            } else {
-                car.x = nextX;
-                car.y = nextY;
-            }
-
-            // Step 5: Distance Centered Parking Check (Alignment free)
+            // Step 5: Parking Spot Check (Center vs. Complete Bounding Fit)
             const spot = lvl.parkingSpot;
-            const spotCenterX = spot.x + spot.w / 2;
-            const spotCenterY = spot.y + spot.h / 2;
-            const distToCenter = Math.hypot(car.x - spotCenterX, car.y - spotCenterY);
-            
-            const isCentred = distToCenter < Math.max(spot.w, spot.h) * 0.45;
+            let isInsideSpot = false;
 
-            if (isCentred) {
+            if (GameSettings.wholeCarInside) {
+                // All 4 corners of the car must fit perfectly within rotated spot boundaries
+                const corners = car.getCorners();
+                isInsideSpot = corners.every(corner => this.isPointInsideSpot(corner, spot));
+            } else {
+                // Classic center check (Only center mass of the car needs to sit inside spot)
+                isInsideSpot = this.isPointInsideSpot({ x: car.x, y: car.y }, spot);
+            }
+
+            if (isInsideSpot) {
                 if (Math.abs(car.speed) < 0.05) {
                     this.updateStatusText("HOLD STILL...", "var(--accent-yellow)");
                     if (!this.winTimer) {
                         this.winTimer = setTimeout(() => {
-                            if (Math.abs(car.speed) < 0.05 && isCentred) {
+                            // double check still inside on timeout completion
+                            let checkInside = GameSettings.wholeCarInside 
+                                ? car.getCorners().every(corner => this.isPointInsideSpot(corner, spot))
+                                : this.isPointInsideSpot({ x: car.x, y: car.y }, spot);
+
+                            if (Math.abs(car.speed) < 0.05 && checkInside) {
                                 this.active = false;
                                 this.timerActive = false;
                                 SoundSystem.playSuccessSound();
@@ -1207,7 +1283,7 @@
                     if(this.winTimer) { clearTimeout(this.winTimer); this.winTimer = null; }
                 }
             } else {
-                this.updateStatusText("GO TO BAY", "var(--accent-yellow)");
+                this.updateStatusText(GameSettings.wholeCarInside ? "FIT FULLY IN BAY" : "GO TO BAY", "var(--accent-yellow)");
                 if(this.winTimer) { clearTimeout(this.winTimer); this.winTimer = null; }
             }
         },
@@ -1377,7 +1453,16 @@
             GameEngine.active = true;
         },
 
-        // Toggle modal Settings window
+        skipLevel() {
+            SoundSystem.init();
+            const nextIdx = (GameEngine.currentLevelIdx + 1) % LevelGenerator.totalStages;
+            GameEngine.loadLevel(nextIdx);
+            GameEngine.active = true;
+            document.getElementById('screen-win').classList.add('hidden');
+            document.getElementById('screen-fail').classList.add('hidden');
+        },
+
+        // Toggle modal Settings window with explicit UI syncing
         toggleSettingsModal(open) {
             SoundSystem.init();
             const modal = document.getElementById('screen-settings');
@@ -1386,6 +1471,13 @@
                 // Keep track of current game state, pause execution loops
                 GameEngine.wasActiveBeforeSettings = GameEngine.active;
                 GameEngine.active = false;
+
+                // Sync current settings values to DOM elements safely
+                document.getElementById('nodamage-checkbox').checked = GameSettings.noDamage;
+                document.getElementById('wholecar-checkbox').checked = GameSettings.wholeCarInside;
+                document.getElementById('sensitivity-slider').value = GameSettings.sensitivity;
+                document.getElementById('sensitivity-display').innerText = `${Math.round(GameSettings.sensitivity * 100)}%`;
+
                 modal.classList.remove('hidden');
             } else {
                 modal.classList.add('hidden');
@@ -1405,6 +1497,10 @@
         updateNoDamage(checked) {
             GameSettings.noDamage = checked;
             GameEngine.updateHealthBar();
+        },
+
+        updateWholeCarInside(checked) {
+            GameSettings.wholeCarInside = checked;
         },
 
         triggerWin() {
