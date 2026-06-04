@@ -32,56 +32,56 @@
             width: 100%;
             height: 100%;
         }
-        /* Top HUD elements */
+        /* Top HUD elements with absolute positioning, wrap-safety and layout shift protection */
         #hud {
             position: absolute;
             top: 20px;
             left: 20px;
             display: flex;
-            gap: 15px;
+            flex-wrap: wrap;
+            gap: 12px;
             pointer-events: none;
             z-index: 10;
+            max-width: calc(100% - 200px); /* Leave plenty of space for the minimap on the right */
         }
         .hud-card {
             background: rgba(0, 0, 0, 0.75);
             border: 2px solid #ff5500;
             box-shadow: 0 0 15px rgba(255, 85, 0, 0.5);
             border-radius: 8px;
-            padding: 10px 20px;
+            padding: 10px 15px;
             color: #fff;
-            font-size: 24px;
+            font-size: 22px;
             font-style: italic;
             letter-spacing: 1px;
             text-shadow: 1px 1px 2px #000;
+            white-space: nowrap;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        /* Explicit widths lock the layout in place, preventing variable numbers from causing shifts */
+        .hud-card:nth-child(1) { min-width: 115px; } /* Speed Card */
+        .hud-card:nth-child(2) { min-width: 85px; }  /* Lap Card */
+        .hud-card:nth-child(3) { min-width: 160px; } /* Timer Card */
+        .hud-card:nth-child(4) { min-width: 230px; } /* Track Selector Card */
+
+        .hud-card span, #time-ui {
+            font-variant-numeric: tabular-nums; /* Monospaced digital clock layout */
         }
         .hud-label {
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
             color: #ffaa00;
             margin-bottom: 2px;
         }
-        #title-badge {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #ff1100, #ff6600);
-            border: 3px solid #fff;
-            border-radius: 8px;
-            padding: 10px 20px;
-            color: #fff;
-            font-size: 26px;
-            font-weight: 900;
-            font-style: italic;
-            text-shadow: 2px 2px 0px #000;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-            z-index: 10;
-            pointer-events: none;
-            letter-spacing: 2px;
-        }
-        /* Minimap Overlay styling */
+        /* Minimap Overlay styling - Placed directly in the top right corner */
         #minimap-container {
             position: absolute;
-            top: 95px;
+            top: 20px;
             right: 20px;
             width: 140px;
             height: 140px;
@@ -235,28 +235,32 @@
         }
         
         /* Responsive adjustments for mid & small devices */
+        @media (max-width: 1024px) {
+            #hud {
+                max-width: calc(100% - 180px);
+            }
+        }
         @media (max-width: 768px) {
             #minimap-container {
-                width: 105px;
-                height: 105px;
-                top: 85px;
-                right: 15px;
-            }
-            #title-badge {
-                font-size: 18px;
-                padding: 6px 12px;
-                top: 15px;
+                width: 110px;
+                height: 110px;
+                top: 20px;
                 right: 15px;
             }
             #hud {
                 top: 15px;
                 left: 15px;
                 gap: 8px;
+                max-width: calc(100% - 140px);
             }
             .hud-card {
-                padding: 6px 12px;
-                font-size: 16px;
+                padding: 6px 10px;
+                font-size: 15px;
             }
+            .hud-card:nth-child(1) { min-width: 75px; }
+            .hud-card:nth-child(2) { min-width: 55px; }
+            .hud-card:nth-child(3) { min-width: 110px; }
+            .hud-card:nth-child(4) { min-width: 165px; }
             .hud-label {
                 font-size: 9px;
             }
@@ -284,7 +288,7 @@
     <div id="hud">
         <div class="hud-card">
             <div class="hud-label">Speed</div>
-            <div><span id="speed-ui">0</span> <span style="font-size:14px">MPH</span></div>
+            <div><span id="speed-ui">0</span> <span style="font-size:13px">MPH</span></div>
         </div>
         <div class="hud-card">
             <div class="hud-label">Lap</div>
@@ -294,9 +298,12 @@
             <div class="hud-label">Time</div>
             <div id="time-ui">00:00.00</div>
         </div>
+        <!-- Live Track Swapping HUD toggle -->
+        <div class="hud-card" style="pointer-events: auto; cursor: pointer; border-color: #00ffff; box-shadow: 0 0 15px rgba(0, 242, 255, 0.5);" onclick="toggleLevel()">
+            <div class="hud-label" style="color: #00ffff;">Track (Click)</div>
+            <div id="level-ui" style="color: #fff; text-transform: uppercase;">DESERT SPEEDWAY</div>
+        </div>
     </div>
-
-    <div id="title-badge">HOT TRACKS 3D</div>
 
     <!-- Live Track Minimap overlay -->
     <div id="minimap-container">
@@ -354,8 +361,65 @@ let lastClosestIdx = -1; // -1 represents uninitialized startup state
 let checkpointPassed = false;
 let steerDuration = 0; // Tracks hold time of steering for subtle tap control
 
+// Level Configurations - Corrected level 2 with butter-smooth altitude gradients and non-crossing points
+let currentLevel = 1;
+const levelConfigs = {
+    1: {
+        name: "DESERT SPEEDWAY",
+        points: [
+            new THREE.Vector3(0, 0.1, 0),             // Start/Finish Line (Flat)
+            new THREE.Vector3(200, 15, 60),           // Ascending sweep
+            new THREE.Vector3(450, 45, 120),          // High altitude climb peak
+            new THREE.Vector3(700, 60, -50),          // Tallest hilltop corner
+            new THREE.Vector3(800, 40, -250),         // Swooping coastal descent
+            new THREE.Vector3(600, 15, -450),         // Running down canyon
+            new THREE.Vector3(350, 5, -550),          // Floor of the canyon
+            new THREE.Vector3(100, 30, -500),         // Steep ascent uphill toward launch ramp
+            new THREE.Vector3(-150, 50, -580),        // RAMP Takeoff peak (Upwards launch kick!)
+            new THREE.Vector3(-350, 18, -480),        // Deep landing slope (Huge air gap!)
+            new THREE.Vector3(-550, 5, -350),         // Valley straightaway
+            new THREE.Vector3(-700, 25, -100),        // Winding mountain ascent
+            new THREE.Vector3(-600, 45, 180),         // Elevated ridge sweep
+            new THREE.Vector3(-400, 20, 280),         // Crest descent turn
+            new THREE.Vector3(-200, 5, 120),          // Leveling out onto speedway plains
+            new THREE.Vector3(-100, 0.1, -20)         // Back home
+        ]
+    },
+    2: {
+        name: "SPIRAL ASCENSION",
+        points: [
+            new THREE.Vector3(-200, 0.1, -200),        // 0: Start/Finish (Flat runway start)
+            new THREE.Vector3(-200, 15.0, -50),        // 1: Ramp climb starts (No overshoot kinks)
+            new THREE.Vector3(-200, 40.0, 150),        // 2: Steady ascent
+            new THREE.Vector3(-200, 65.0, 350),        // 3: Steady ascent
+            new THREE.Vector3(-160, 80.0, 520),        // 4: Peak elevation crest
+            new THREE.Vector3(0, 80.0, 580),           // 5: Clean sweeping turn
+            new THREE.Vector3(180, 65.0, 500),         // 6: Transition into descent
+            new THREE.Vector3(340, 50.0, 320),         // 7: Descending outer spiral (Smooth pitch increments)
+            new THREE.Vector3(340, 35.0, 100),         // 8: Smooth descent glide
+            new THREE.Vector3(180, 22.0, -80),         // 9: Descent loop corner
+            new THREE.Vector3(10, 12.0, -30),          // 10: Smooth lower sweep
+            new THREE.Vector3(-80, 5.0, 100),          // 11: Smooth landing slide
+            new THREE.Vector3(40, 1.0, 220),           // 12: Transition into lake basin
+            new THREE.Vector3(180, 0.1, 150),          // 13: Ground level lake entrance
+            new THREE.Vector3(220, 0.1, -120),         // 14: Ground level lake exit
+            new THREE.Vector3(40, 0.1, -300),          // 15: Ground level loop return
+            new THREE.Vector3(-120, 0.1, -300)         // 16: Aligning run back to start point
+        ]
+    }
+};
+
+let trackCurve = new THREE.CatmullRomCurve3(levelConfigs[currentLevel].points, true);
+const curvePointsCount = 750; // High count for smoother coordinate mapping on a long track
+let sampledCurvePoints = trackCurve.getSpacedPoints(curvePointsCount);
+
 // Minimap Bounds tracker
 let minimapBounds = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
+
+// Environment holding array (so they can be cleared/removed dynamically on level swap)
+let environmentObjects = [];
+let finishLineArch = null;
+let waterGroup = null; // Container for dynamic oasis lakes
 
 // Keyboard state tracker
 const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, w: false, s: false, a: false, d: false };
@@ -386,29 +450,23 @@ let trackGroup;
 const trackWidth = 65; // Increased width for better high speed handling & drifting
 const wallLimit = (trackWidth / 2) - 1.8; // Distance from track center before hitting outer wall flange (30.7 units)
 
-// Massive 3D Track Layout with significant elevation shifts and jumping ramp lip!
-const trackControlPoints = [
-    new THREE.Vector3(0, 0.1, 0),             // Start/Finish Line (Flat)
-    new THREE.Vector3(200, 15, 60),           // Ascending sweep
-    new THREE.Vector3(450, 45, 120),          // High altitude climb peak
-    new THREE.Vector3(700, 60, -50),          // Tallest hilltop corner
-    new THREE.Vector3(800, 40, -250),         // Swooping coastal descent
-    new THREE.Vector3(600, 15, -450),         // Running down canyon
-    new THREE.Vector3(350, 5, -550),          // Floor of the canyon
-    new THREE.Vector3(100, 30, -500),         // Steep ascent uphill toward launch ramp
-    new THREE.Vector3(-150, 50, -580),        // RAMP Takeoff peak (Upwards launch kick!)
-    new THREE.Vector3(-350, 18, -480),        // Deep landing slope (Huge air gap!)
-    new THREE.Vector3(-550, 5, -350),         // Valley straightaway
-    new THREE.Vector3(-700, 25, -100),        // Winding mountain ascent
-    new THREE.Vector3(-600, 45, 180),         // Elevated ridge sweep
-    new THREE.Vector3(-400, 20, 280),         // Crest descent turn
-    new THREE.Vector3(-200, 5, 120),          // Leveling out onto speedway plains
-    new THREE.Vector3(-100, 0.1, -20)         // Back home
-];
-
-const trackCurve = new THREE.CatmullRomCurve3(trackControlPoints, true);
-const curvePointsCount = 750; // High count for smoother coordinate mapping on a long track
-const sampledCurvePoints = trackCurve.getSpacedPoints(curvePointsCount);
+// Helper function to calculate banking tilt angle at any percentage `u` along the spline
+function getBankingAngle(u, level) {
+    if (level !== 2) return 0;
+    // Spiral region for Level 2 is from u = 0.22 to u = 0.70
+    if (u >= 0.22 && u <= 0.70) {
+        let baseBank = 0.45; // ~26 degrees roll towards the inner side
+        if (u < 0.28) {
+            // Smoothly ramp up the tilt entering the spiral
+            return baseBank * ((u - 0.22) / 0.06);
+        } else if (u > 0.64) {
+            // Smoothly ramp down the tilt exiting the spiral
+            return baseBank * ((0.70 - u) / 0.06);
+        }
+        return baseBank;
+    }
+    return 0;
+}
 
 // Helper function to find minimum distance from any position to the track spline
 function getMinDistanceToTrack(pos) {
@@ -535,19 +593,26 @@ class GameSoundEngine {
         this.engineGain.gain.setTargetAtTime(volume, this.ctx.currentTime, 0.06);
     }
 
-    updateDrift(isDrifting, speed) {
+    updateDrift(isDrifting, speed, inWater = false) {
         if (!this.initialized || !this.ctx) return;
         if (this.ctx.state === 'suspended') return;
 
-        if (isDrifting && speed > 1.8) {
-            // High frequency modulations for burning rubber
+        if (inWater && speed > 0.4) {
+            // Synthesize churning, bubbly water splashes instead of tire screeches
+            const waterFreq = 220 + Math.sin(Date.now() * 0.22) * 90 + speed * 25;
+            this.driftOsc.frequency.setTargetAtTime(waterFreq, this.ctx.currentTime, 0.05);
+            this.driftFilter.frequency.setTargetAtTime(waterFreq * 1.6, this.ctx.currentTime, 0.05);
+            this.driftFilter.Q.setValueAtTime(1.5, this.ctx.currentTime); // Muffled, wider band Q
+            this.driftGain.gain.setTargetAtTime(0.09, this.ctx.currentTime, 0.05);
+        } else if (isDrifting && speed > 1.8) {
+            // Dynamic sharp screeching sound
             const squealFreq = 580 + Math.sin(Date.now() * 0.12) * 140 + speed * 45;
             this.driftOsc.frequency.setTargetAtTime(squealFreq, this.ctx.currentTime, 0.05);
             this.driftFilter.frequency.setTargetAtTime(squealFreq * 1.15, this.ctx.currentTime, 0.05);
-            
+            this.driftFilter.Q.setValueAtTime(4.0, this.ctx.currentTime); // High pitch focus Q
             this.driftGain.gain.setTargetAtTime(0.04, this.ctx.currentTime, 0.05);
         } else {
-            // Squeal fade away instantly
+            // Squeal / splash fade away instantly
             this.driftGain.gain.setTargetAtTime(0.0, this.ctx.currentTime, 0.12);
         }
     }
@@ -670,7 +735,7 @@ function startAudioEngine() {
 }
 
 
-// --- PARTICLE SYSTEM POOL (For Drifting Smoke & Wall Sparks) ---
+// --- PARTICLE SYSTEM POOL (For Drifting Smoke & Wall Sparks & Water Splashes) ---
 const particles = [];
 const maxParticles = 120;
 let particleGeometry;
@@ -716,8 +781,8 @@ function updateParticles() {
             
             if (p.type === 'smoke') {
                 p.velocity.y += 0.01;
-            } else if (p.type === 'spark') {
-                p.velocity.y -= 0.02;
+            } else if (p.type === 'spark' || p.type === 'splash') {
+                p.velocity.y -= 0.015; // Gravity pulls splash drops down
             }
 
             if (p.life <= 0) {
@@ -780,6 +845,9 @@ function init() {
     // Create Checkered Arch at Start-Finish line
     buildFinishLineArch();
 
+    // Render dynamic blue Oasis lakes (Water obstacles!) centered in the valley basin
+    buildOasisLakes();
+
     // Scatter Desert Scenery (Dunes & Cacti) - Protected against track overlap
     scatterEnvironment();
 
@@ -809,6 +877,7 @@ function init() {
 
 // --- PROCEDURAL STABLE RIBBON METHOD FOR DETAILED TWIST-FREE TRACK ---
 function buildTrack() {
+    if (trackGroup) scene.remove(trackGroup);
     trackGroup = new THREE.Group();
     scene.add(trackGroup);
 
@@ -834,21 +903,29 @@ function buildTrack() {
         const dir = new THREE.Vector3().subVectors(pNext, p).normalize();
         const right = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
 
-        // Ensure vertical offsets stay perfectly mapped on slopes
-        const leftPt = p.clone().addScaledVector(right, -trackWidth / 2);
-        const rightPt = p.clone().addScaledVector(right, trackWidth / 2);
+        // Incorporate banking angles into Level 2 curves
+        const u = idx / segmentsCount;
+        const bankingAngle = getBankingAngle(u, currentLevel);
+        const bankedRight = right.clone().applyAxisAngle(dir, bankingAngle);
+
+        // Calculate perpendicular normal pointing straight "up" from banked plane
+        const bankedUp = new THREE.Vector3().crossVectors(bankedRight, dir).normalize();
+
+        // Elevate edges along banked normal
+        const leftPt = p.clone().addScaledVector(bankedRight, -trackWidth / 2);
+        const rightPt = p.clone().addScaledVector(bankedRight, trackWidth / 2);
 
         // Road Vertices (fully mapping elevation coordinates)
         roadPos.push(leftPt.x, leftPt.y, leftPt.z);   // 2 * i
         roadPos.push(rightPt.x, rightPt.y, rightPt.z); // 2 * i + 1
 
-        // Left Wall Vertices
+        // Left Wall Vertices (drawn relative to banked coordinate frame)
         leftWallPos.push(leftPt.x, leftPt.y, leftPt.z);              // 2 * i
-        leftWallPos.push(leftPt.x, leftPt.y + wallHeight, leftPt.z);  // 2 * i + 1
+        leftWallPos.push(leftPt.x + bankedUp.x * wallHeight, leftPt.y + bankedUp.y * wallHeight, leftPt.z + bankedUp.z * wallHeight);  // 2 * i + 1
 
-        // Right Wall Vertices
+        // Right Wall Vertices (drawn relative to banked coordinate frame)
         rightWallPos.push(rightPt.x, rightPt.y, rightPt.z);             // 2 * i
-        rightWallPos.push(rightPt.x, rightPt.y + wallHeight, rightPt.z); // 2 * i + 1
+        rightWallPos.push(rightPt.x + bankedUp.x * wallHeight, rightPt.y + bankedUp.y * wallHeight, rightPt.z + bankedUp.z * wallHeight); // 2 * i + 1
 
         if (i < segmentsCount) {
             const r0 = 2 * i;
@@ -909,11 +986,19 @@ function buildTrack() {
     rightWallMesh.castShadow = true;
     trackGroup.add(rightWallMesh);
 
-    // Dashed Center Line (Cyan center lane)
+    // Dashed Center Line (Cyan center lane elevated along banked up normals)
     const centerLinePoints = trackCurve.getSpacedPoints(500);
-    // Elevate centerline points slightly in geometry to avoid Z-fighting on 3D hills
-    for (let pt of centerLinePoints) {
-        pt.y += 0.15;
+    for (let i = 0; i < centerLinePoints.length; i++) {
+        const pt = centerLinePoints[i];
+        const u = i / centerLinePoints.length;
+        
+        const tangent = trackCurve.getTangentAt(u).normalize();
+        const rightVec = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+        const bankingAngle = getBankingAngle(u, currentLevel);
+        const bankedRightVec = rightVec.clone().applyAxisAngle(tangent, bankingAngle);
+        const bankedUpNormal = new THREE.Vector3().crossVectors(bankedRightVec, tangent).normalize();
+
+        pt.addScaledVector(bankedUpNormal, 0.15); // Float slightly above track to avoid z-fighting
     }
     const centerLineGeo = new THREE.BufferGeometry().setFromPoints(centerLinePoints);
     const centerLineMat = new THREE.LineDashedMaterial({
@@ -928,6 +1013,8 @@ function buildTrack() {
 
 // --- CHECKERED START/FINISH ARCH ---
 function buildFinishLineArch() {
+    if (finishLineArch) scene.remove(finishLineArch);
+
     const archGroup = new THREE.Group();
     const pillarMat = new THREE.MeshStandardMaterial({ color: 0xff2200, roughness: 0.3 });
     
@@ -980,11 +1067,57 @@ function buildFinishLineArch() {
     const angle = Math.atan2(tangent.x, tangent.z);
     archGroup.rotation.y = angle;
 
-    scene.add(archGroup);
+    finishLineArch = archGroup;
+    scene.add(finishLineArch);
+}
+
+// --- PROCEDURAL GENERATION OF OASIS WATER LAKES ---
+function buildOasisLakes() {
+    if (waterGroup) scene.remove(waterGroup);
+    waterGroup = new THREE.Group();
+    scene.add(waterGroup);
+
+    // Dynamic, shimmering, semi-transparent blue water meshes for submerged track sections
+    // This turns sections sunk in sand (from Screenshot 2026-06-04 at 01.45.14.png) into a gorgeous lake obstacle!
+    const waterMat = new THREE.MeshStandardMaterial({
+        color: 0x0088ff,
+        roughness: 0.05,
+        metalness: 0.2,
+        transparent: true,
+        opacity: 0.72,
+        depthWrite: false
+    });
+
+    if (currentLevel === 2) {
+        // Main valley lake covering the central bottom coordinates
+        const lakeGeo1 = new THREE.RingGeometry(0, 480, 32);
+        const lake1 = new THREE.Mesh(lakeGeo1, waterMat);
+        lake1.rotation.x = -Math.PI / 2;
+        lake1.position.set(120, 0.45, -40); // Soft elevation of water plane
+        waterGroup.add(lake1);
+
+        // Secondary small water pocket on the finish loop corridor
+        const lakeGeo2 = new THREE.RingGeometry(0, 220, 32);
+        const lake2 = new THREE.Mesh(lakeGeo2, waterMat);
+        lake2.rotation.x = -Math.PI / 2;
+        lake2.position.set(-80, 0.45, -280);
+        waterGroup.add(lake2);
+    } else {
+        // Minor decorative oasis for Level 1 to keep visual thematic styling matching perfectly
+        const lakeGeo1 = new THREE.RingGeometry(0, 250, 24);
+        const lake1 = new THREE.Mesh(lakeGeo1, waterMat);
+        lake1.rotation.x = -Math.PI / 2;
+        lake1.position.set(-300, 0.45, -350);
+        waterGroup.add(lake1);
+    }
 }
 
 // --- SCATTER ENVIRONMENT (CACTI & DUNES) ---
 function scatterEnvironment() {
+    // Clear out preexisting scene elements when changing levels
+    environmentObjects.forEach(obj => scene.remove(obj));
+    environmentObjects = [];
+
     // 1. Far Dunes / Mountains (Strictly isolated from track speedway corridor)
     const duneGeo = new THREE.SphereGeometry(100, 10, 10);
     duneGeo.scale(2.2, 0.4, 1.1);
@@ -1007,6 +1140,7 @@ function scatterEnvironment() {
             dune.position.set(x, -5, z);
             dune.rotation.y = Math.random() * Math.PI;
             scene.add(dune);
+            environmentObjects.push(dune);
         }
     }
 
@@ -1063,14 +1197,17 @@ function scatterEnvironment() {
             const scale = 0.35 + Math.random() * 0.55;
             cactusInstance.scale.set(scale, scale, scale);
             scene.add(cactusInstance);
+            environmentObjects.push(cactusInstance);
         }
     }
 }
 
 // --- TOY CAR CONSTRUCTION ---
 function buildToyCar() {
+    if (car.mesh) scene.remove(car.mesh);
+
     car.mesh = new THREE.Group();
-    car.mesh.rotation.reorder('YXZ'); // Ensure clean yaw-pitch calculations on steep loops/hills
+    car.mesh.rotation.reorder('YXZ'); // Ensure clean yaw-pitch-roll calculations on steep loops/hills
     car.bodyMesh = new THREE.Group(); // Holds chassis to tilt/vibrate without losing global track matrix
     car.mesh.add(car.bodyMesh);
 
@@ -1125,6 +1262,7 @@ function buildToyCar() {
     const wheelGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.7, 12);
     wheelGeo.rotateZ(Math.PI / 2);
 
+    car.wheels = [];
     const createWheel = (x, y, z) => {
         const wGroup = new THREE.Group();
         const tire = new THREE.Mesh(wheelGeo, tireMat);
@@ -1258,6 +1396,38 @@ function drawMinimap() {
     }
 }
 
+// --- HUD LEVEL SWAPPING INTERFACE ---
+function toggleLevel() {
+    startAudioEngine();
+    const targetLvl = currentLevel === 1 ? 2 : 1;
+    loadLevel(targetLvl);
+}
+
+function loadLevel(levelNum) {
+    currentLevel = levelNum;
+    
+    // Reconfigure Splines
+    trackCurve = new THREE.CatmullRomCurve3(levelConfigs[currentLevel].points, true);
+    sampledCurvePoints = trackCurve.getSpacedPoints(curvePointsCount);
+    
+    // Re-calculate visual boundaries
+    minimapBounds = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
+    initMinimapBounds();
+    
+    // Rebuild track mesh elements, scenery, water, and vehicle placements
+    buildTrack();
+    buildFinishLineArch();
+    buildOasisLakes();
+    scatterEnvironment();
+    buildToyCar();
+    
+    // Synchronize HUD updates
+    document.getElementById('level-ui').innerText = levelConfigs[currentLevel].name;
+    
+    // Begin countdown for newly chosen arena
+    resetRace();
+}
+
 // --- HANDLERS FOR DEVICE CONTROLS ---
 function setupInputs() {
     window.addEventListener('keydown', (e) => {
@@ -1330,7 +1500,7 @@ function triggerCountdown() {
             countdownOverlay.innerText = "GO!";
             countdownOverlay.style.color = '#00ffff';
             countdownOverlay.style.transform = 'translate(-50%, -50%) scale(1.6)';
-            soundManager.playBeep(true); // Aggressive high start chime
+            soundManager.playBeep(true); // Aggressive start chime
             gameState = 'RACING';
             timerStart = performance.now();
             countdownVal--;
@@ -1411,14 +1581,19 @@ function clampCameraToTrack(pos, maxLateral) {
     
     // Perpendicular horizontal normal
     const right = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+    
+    // Incorporate local level banking rotation into camera boundary tracking checks
+    const bankingAngle = getBankingAngle(parameter, currentLevel);
+    const bankedRight = right.clone().applyAxisAngle(tangent, bankingAngle);
+    
     const vecToPos = new THREE.Vector3().subVectors(pos, ptOnSpline);
-    const lateralDistance = vecToPos.dot(right);
+    const lateralDistance = vecToPos.dot(bankedRight);
 
     // If camera sweeps past physical boundaries, softly slide it back inside
     if (Math.abs(lateralDistance) > maxLateral) {
         const boundarySign = Math.sign(lateralDistance);
         const penetration = Math.abs(lateralDistance) - maxLateral;
-        pos.addScaledVector(right, -boundarySign * penetration);
+        pos.addScaledVector(bankedRight, -boundarySign * penetration);
     }
 }
 
@@ -1455,6 +1630,23 @@ function updatePhysics() {
         return;
     }
 
+    // Interactive Oasis check: Are we submerged in a water obstacle? (Y altitude is very low, below 1.35)
+    // This addresses the "sunken in sand" feedback with an engaging, interactive soft water hazard!
+    const inWater = (car.position.y < 1.35);
+
+    // Dynamic water drag / hydroplane steering variables
+    let maxAllowedSpeed = car.maxSpeed;
+    let driftFactor = 0.16; // Normal road grip traction
+    let tireParticleColor = 0xeeeeee; // Normal gray sand dust
+    let tireParticleType = 'smoke';
+
+    if (inWater) {
+        maxAllowedSpeed = 2.4; // Soft drag resistance slows the vehicle down
+        driftFactor = 0.035;   // Slippery hydroplaning! Decreased traction makes it slide beautifully
+        tireParticleColor = 0x33b8ff; // Bright blue water splashes!
+        tireParticleType = 'splash';
+    }
+
     // 1. PROGRESSIVE SENSITIVITY STEERING LOGIC
     let steerValue = 0;
     const steeringPressed = (keys.ArrowLeft || keys.a || keys.A || keys.ArrowRight || keys.d || keys.D);
@@ -1477,7 +1669,7 @@ function updatePhysics() {
     // Apply steering relative to current speed direction
     if (Math.abs(car.speed) > 0.1) {
         const headingModifier = car.speed > 0 ? 1 : -1;
-        const speedScale = Math.min(Math.abs(car.speed) / car.maxSpeed, 1.0);
+        const speedScale = Math.min(Math.abs(car.speed) / maxAllowedSpeed, 1.0);
         car.heading += steerValue * headingModifier * (0.45 + speedScale * 0.55);
     }
 
@@ -1491,40 +1683,56 @@ function updatePhysics() {
         if (Math.abs(car.speed) < 0.02) car.speed = 0;
     }
 
-    // Clamp speed limits
-    car.speed = Math.max(car.maxSpeedReverse, Math.min(car.maxSpeed, car.speed));
+    // Clamp speed limits dynamically accounting for water drag
+    car.speed = Math.max(car.maxSpeedReverse, Math.min(maxAllowedSpeed, car.speed));
 
     // 3. FREE 2D COORDINATE MOVEMENT
     const headingVector = new THREE.Vector3(Math.sin(car.heading), 0, Math.cos(car.heading));
     
-    let driftFactor = 0.16; // Traction hold
-    if (Math.abs(steerValue) > 0.01 && Math.abs(car.speed) > car.maxSpeed * 0.45) {
-        driftFactor = 0.065; // Slide/drifting starts!
-    }
+    const isDrifting = Math.abs(steerValue) > 0.01 && Math.abs(car.speed) > maxAllowedSpeed * 0.45;
+    const appliedDriftFactor = (isDrifting && !inWater) ? 0.065 : driftFactor;
 
     // Apply steering direction interpolation
-    car.velocity.lerp(headingVector.clone().multiplyScalar(car.speed), driftFactor);
+    car.velocity.lerp(headingVector.clone().multiplyScalar(car.speed), appliedDriftFactor);
 
     // Translate global horizontal position
     car.position.x += car.velocity.x;
     car.position.z += car.velocity.z;
 
-    // 3D HEIGHT & AIRTIME SYSTEM (Gravity, ramps, leaps, and soft landings)
+    // 3D HEIGHT, AIRTIME & BANKING TILT SYSTEM
     const ptOnSpline = sampledCurvePoints[closestIndex];
     const trackHeight = ptOnSpline.y;
-    let targetY = trackHeight + 0.9;
+
+    const parameter = closestIndex / curvePointsCount;
+    const tangent = trackCurve.getTangentAt(parameter).normalize();
+    const right = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+    
+    const bankingAngle = getBankingAngle(parameter, currentLevel);
+    // Project local banking normals for precise car vertical snapping
+    const bankedRight = right.clone().applyAxisAngle(tangent, bankingAngle);
+
+    // Lateral distance calculation from center-line, taking height vectors into account
+    const vecToCar = new THREE.Vector3().subVectors(car.position, ptOnSpline);
+    const lateralDistance = vecToCar.dot(bankedRight);
+
+    // Height offset generated by lateral placement on tilted bank slopes
+    const bankingHeightOffset = lateralDistance * -Math.sin(bankingAngle);
+    let targetY = trackHeight + 0.9 + bankingHeightOffset;
 
     if (car.isGrounded) {
         const heightDifference = targetY - car.position.y;
         
-        // If track drops quickly under high-speed (like cliff crests or launching off ramps), fly!
-        if (heightDifference < -1.2 && Math.abs(car.speed) > 2.0) {
+        // If track drops quickly under high-speed, initiate flight state
+        // Increased threshold to 2.5 to avoid false bumps triggering floating airtime
+        if (heightDifference < -2.5 && Math.abs(car.speed) > 2.0) {
             car.isGrounded = false;
             // Retain upward vertical lift based on forward ramp velocity and orientation tilt
             car.verticalVelocity = Math.max(0, car.speed * Math.sin(car.mesh.rotation.x));
         } else {
-            // Normal track rolling constraint
-            car.position.y = targetY;
+            // Normal track rolling constraint - ACTIVE SUSPENSION LERP
+            // Lerping the vertical position (0.32 factor) acts as a beautiful spring absorber
+            // which filters out all mathematical coordinate micro-bumps, making the track feel buttery smooth!
+            car.position.y = THREE.MathUtils.lerp(car.position.y, targetY, 0.32);
             car.verticalVelocity = 0;
         }
     } else {
@@ -1541,7 +1749,7 @@ function updatePhysics() {
             // Trigger landing thud sound effect
             soundManager.playBump(0.65);
 
-            // Spawn landing sand particles
+            // Spawn landing dust / splash particles
             for (let i = 0; i < 8; i++) {
                 spawnParticle(
                     car.position.x + (Math.random() - 0.5) * 3,
@@ -1550,33 +1758,24 @@ function updatePhysics() {
                     (Math.random() - 0.5) * 0.4,
                     0.1 + Math.random() * 0.2,
                     (Math.random() - 0.5) * 0.4,
-                    0xdddddd, 'smoke', 20
+                    tireParticleColor, tireParticleType, 20
                 );
             }
         }
     }
 
-    // 4. BOUNDARY COLLISIONS (Solid Wall Limit Clamping)
-    const parameter = closestIndex / curvePointsCount;
-    const tangent = trackCurve.getTangentAt(parameter).normalize();
-    const right = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
-
-    const vecToCar = new THREE.Vector3().subVectors(car.position, ptOnSpline);
-    // Ignore height component during boundary lateral projection
-    vecToCar.y = 0;
-    const lateralDistance = vecToCar.dot(right);
-
+    // 4. BOUNDARY COLLISIONS (Solid Wall Limit Clamping on Banked curves)
     if (Math.abs(lateralDistance) > wallLimit) {
         const boundarySign = Math.sign(lateralDistance);
         const penetration = Math.abs(lateralDistance) - wallLimit;
 
-        // Softly clamp car back inside the boundaries along the perpendicular normal vector
-        car.position.addScaledVector(right, -boundarySign * penetration);
+        // Softly clamp car back inside the boundaries along the perpendicular normal vector of banked surface
+        car.position.addScaledVector(bankedRight, -boundarySign * penetration);
 
         // TRUE ELASTIC BOUNCE PHYSICS: Reflect velocity along the wall normal
-        const velocityProjectedOnNormal = car.velocity.dot(right);
+        const velocityProjectedOnNormal = car.velocity.dot(bankedRight);
         if (velocityProjectedOnNormal * boundarySign > 0) {
-            car.velocity.addScaledVector(right, -velocityProjectedOnNormal * 1.45);
+            car.velocity.addScaledVector(bankedRight, -velocityProjectedOnNormal * 1.45);
             car.speed *= 0.82; // Slight slide friction speed reduction
         }
 
@@ -1585,7 +1784,7 @@ function updatePhysics() {
 
         // Produce high action metal spark particles
         const collisionLoc = ptOnSpline.clone()
-            .addScaledVector(right, boundarySign * (wallLimit + 0.5))
+            .addScaledVector(bankedRight, boundarySign * (wallLimit + 0.5))
             .add(new THREE.Vector3(0, 0.8, 0));
 
         for (let i = 0; i < 5; i++) {
@@ -1619,15 +1818,18 @@ function updatePhysics() {
     car.mesh.rotation.x = THREE.MathUtils.lerp(car.mesh.rotation.x, targetPitch, 0.15);
     car.mesh.rotation.y = car.heading;
 
+    // Apply 3D banked curve roll frames smoothly to standard car mesh matrix
+    car.mesh.rotation.z = THREE.MathUtils.lerp(car.mesh.rotation.z, bankingAngle, 0.15);
+
     // Apply centrifugal body roll tilt to bodyMesh (aesthetic chassis physics)
     let turnAmount = 0;
     if (keys.ArrowLeft || keys.a || keys.A) turnAmount = 1;
     if (keys.ArrowRight || keys.d || keys.D) turnAmount = -1;
-    const targetTilt = turnAmount * (car.speed / car.maxSpeed) * 0.12;
+    const targetTilt = turnAmount * (car.speed / maxAllowedSpeed) * 0.12;
     car.bodyMesh.rotation.z = THREE.MathUtils.lerp(car.bodyMesh.rotation.z, targetTilt, 0.1);
 
     // Micro vibration speed-dependent suspension hover effect
-    const vibration = Math.sin(performance.now() * 0.06) * 0.025 * (car.speed / car.maxSpeed);
+    const vibration = Math.sin(performance.now() * 0.06) * 0.025 * (car.speed / maxAllowedSpeed);
     car.bodyMesh.position.y = vibration;
 
     // Rotate tires to simulate roll speed
@@ -1636,27 +1838,26 @@ function updatePhysics() {
         w.rotation.x += wheelRotScale;
     });
 
-    // 5. DRIFT SMOKE EFFECTS
-    const isDrifting = Math.abs(steerValue) > 0.01 && Math.abs(car.speed) > 2.0;
-    if (isDrifting && Math.random() < 0.45) {
+    // 5. DRIFT / WATER SPLASH EMISSION
+    if ((isDrifting || inWater) && Math.random() < (inWater ? 0.75 : 0.45)) {
         const leftRearWorld = new THREE.Vector3(-1.9, 0.4, -2.0).applyMatrix4(car.mesh.matrixWorld);
         const rightRearWorld = new THREE.Vector3(1.9, 0.4, -2.0).applyMatrix4(car.mesh.matrixWorld);
 
         spawnParticle(
             leftRearWorld.x, leftRearWorld.y, leftRearWorld.z,
-            (Math.random() - 0.5) * 0.2, 0.05 + Math.random() * 0.08, (Math.random() - 0.5) * 0.2,
-            0xeeeeee, 'smoke', 20
+            (Math.random() - 0.5) * 0.3, (inWater ? 0.15 : 0.05) + Math.random() * 0.12, (Math.random() - 0.5) * 0.3,
+            tireParticleColor, tireParticleType, 20
         );
         spawnParticle(
             rightRearWorld.x, rightRearWorld.y, rightRearWorld.z,
-            (Math.random() - 0.5) * 0.2, 0.05 + Math.random() * 0.08, (Math.random() - 0.5) * 0.2,
-            0xeeeeee, 'smoke', 20
+            (Math.random() - 0.5) * 0.3, (inWater ? 0.15 : 0.05) + Math.random() * 0.12, (Math.random() - 0.5) * 0.3,
+            tireParticleColor, tireParticleType, 20
         );
     }
 
-    // Update dynamic synthesizer nodes with current state
-    soundManager.updateEngine(car.speed, car.maxSpeed, car.isGrounded);
-    soundManager.updateDrift(isDrifting, Math.abs(car.speed));
+    // Update dynamic synthesizer nodes with current state ( screeches or splashing )
+    soundManager.updateEngine(car.speed, maxAllowedSpeed, car.isGrounded);
+    soundManager.updateDrift(isDrifting, Math.abs(car.speed), inWater);
 
     // 6. DYNAMIC LAP CHECKPOINTS (Robust percent-based mapping framework)
     const midPointIndex = Math.floor(curvePointsCount * 0.5);
@@ -1682,7 +1883,7 @@ function updatePhysics() {
                 finalTimeSpan.innerText = finalTimeStr;
                 finishPanel.style.display = 'block';
                 // Stop engine idle humming upon completion
-                soundManager.updateEngine(0, car.maxSpeed, true);
+                soundManager.updateEngine(0, maxAllowedSpeed, true);
             }
         }
     }
