@@ -389,22 +389,26 @@ const levelConfigs = {
         name: "SPIRAL ASCENSION",
         points: [
             new THREE.Vector3(-200, 0.1, -200),        // 0: Start/Finish (Flat runway start)
-            new THREE.Vector3(-200, 15.0, -50),        // 1: Ramp climb starts (No overshoot kinks)
-            new THREE.Vector3(-200, 40.0, 150),        // 2: Steady ascent
-            new THREE.Vector3(-200, 65.0, 350),        // 3: Steady ascent
-            new THREE.Vector3(-160, 80.0, 520),        // 4: Peak elevation crest
-            new THREE.Vector3(0, 80.0, 580),           // 5: Clean sweeping turn
-            new THREE.Vector3(180, 65.0, 500),         // 6: Transition into descent
-            new THREE.Vector3(340, 50.0, 320),         // 7: Descending outer spiral (Smooth pitch increments)
-            new THREE.Vector3(340, 35.0, 100),         // 8: Smooth descent glide
-            new THREE.Vector3(180, 22.0, -80),         // 9: Descent loop corner
-            new THREE.Vector3(10, 12.0, -30),          // 10: Smooth lower sweep
-            new THREE.Vector3(-80, 5.0, 100),          // 11: Smooth landing slide
-            new THREE.Vector3(40, 1.0, 220),           // 12: Transition into lake basin
-            new THREE.Vector3(180, 0.1, 150),          // 13: Ground level lake entrance
-            new THREE.Vector3(220, 0.1, -120),         // 14: Ground level lake exit
-            new THREE.Vector3(40, 0.1, -300),          // 15: Ground level loop return
-            new THREE.Vector3(-120, 0.1, -300)         // 16: Aligning run back to start point
+            new THREE.Vector3(-200, 0.1, -150),        // 1: Straight approach before loop entry
+            new THREE.Vector3(-250, 12.0, -100),       // 2: Entering left loop, climbing & banking
+            new THREE.Vector3(-350, 26.0, -50),        // 3: High apex of the left corner sweep
+            new THREE.Vector3(-400, 38.0, 50),         // 4: Sweeping forward/left
+            new THREE.Vector3(-350, 50.0, 150),        // 5: Sweeping back right, climbing high
+            new THREE.Vector3(-200, 62.0, 250),        // 6: Merging back cleanly into the main ascent ramp
+            new THREE.Vector3(-200, 75.0, 400),        // 7: Continuing steady ascent
+            new THREE.Vector3(-160, 80.0, 520),        // 8: Peak elevation crest
+            new THREE.Vector3(0, 80.0, 580),           // 9: Clean sweeping turn
+            new THREE.Vector3(180, 65.0, 500),         // 10: Transition into descent
+            new THREE.Vector3(340, 50.0, 320),         // 11: Descending outer spiral
+            new THREE.Vector3(340, 35.0, 100),         // 12: Smooth descent glide
+            new THREE.Vector3(180, 22.0, -80),         // 13: Descent loop corner
+            new THREE.Vector3(10, 12.0, -30),          // 14: Smooth lower sweep
+            new THREE.Vector3(-80, 5.0, 100),          // 15: Smooth landing slide
+            new THREE.Vector3(40, 1.0, 220),           // 16: Transition into lake basin
+            new THREE.Vector3(180, 0.1, 150),          // 17: Ground level lake entrance
+            new THREE.Vector3(220, 0.1, -120),         // 18: Ground level lake exit
+            new THREE.Vector3(40, 0.1, -300),          // 19: Ground level loop return
+            new THREE.Vector3(-120, 0.1, -300)         // 20: Aligning run back to start point
         ]
     }
 };
@@ -453,17 +457,17 @@ const wallLimit = (trackWidth / 2) - 1.8; // Distance from track center before h
 // Helper function to calculate banking tilt angle at any percentage `u` along the spline
 function getBankingAngle(u, level) {
     if (level !== 2) return 0;
-    // Spiral region for Level 2 is from u = 0.22 to u = 0.70
-    if (u >= 0.22 && u <= 0.70) {
-        let baseBank = 0.45; // ~26 degrees roll towards the inner side
-        if (u < 0.28) {
-            // Smoothly ramp up the tilt entering the spiral
-            return baseBank * ((u - 0.22) / 0.06);
-        } else if (u > 0.64) {
-            // Smoothly ramp down the tilt exiting the spiral
-            return baseBank * ((0.70 - u) / 0.06);
-        }
-        return baseBank;
+    
+    // Bank the new left-hand corner (u = 0.04 to 0.22)
+    if (u >= 0.04 && u <= 0.22) {
+        let baseBank = -0.42; // Tilt inward towards the left corner sweep
+        return baseBank * Math.sin((u - 0.04) / 0.18 * Math.PI);
+    }
+    
+    // Bank the descending outer spiral (u = 0.45 to 0.72)
+    if (u >= 0.45 && u <= 0.72) {
+        let baseBank = 0.45; // Tilt inward towards the right spiral center
+        return baseBank * Math.sin((u - 0.45) / 0.27 * Math.PI);
     }
     return 0;
 }
@@ -1093,21 +1097,21 @@ function buildOasisLakes() {
         const lakeGeo1 = new THREE.RingGeometry(0, 480, 32);
         const lake1 = new THREE.Mesh(lakeGeo1, waterMat);
         lake1.rotation.x = -Math.PI / 2;
-        lake1.position.set(120, 0.45, -40); // Soft elevation of water plane
+        lake1.position.set(120, 0.12, -40); // Lowered visual level from 0.45 to 0.12
         waterGroup.add(lake1);
 
         // Secondary small water pocket on the finish loop corridor
         const lakeGeo2 = new THREE.RingGeometry(0, 220, 32);
         const lake2 = new THREE.Mesh(lakeGeo2, waterMat);
         lake2.rotation.x = -Math.PI / 2;
-        lake2.position.set(-80, 0.45, -280);
+        lake2.position.set(-80, 0.12, -280); // Lowered visual level from 0.45 to 0.12
         waterGroup.add(lake2);
     } else {
         // Minor decorative oasis for Level 1 to keep visual thematic styling matching perfectly
         const lakeGeo1 = new THREE.RingGeometry(0, 250, 24);
         const lake1 = new THREE.Mesh(lakeGeo1, waterMat);
         lake1.rotation.x = -Math.PI / 2;
-        lake1.position.set(-300, 0.45, -350);
+        lake1.position.set(-300, 0.12, -350); // Lowered visual level from 0.45 to 0.12
         waterGroup.add(lake1);
     }
 }
@@ -1630,9 +1634,8 @@ function updatePhysics() {
         return;
     }
 
-    // Interactive Oasis check: Are we submerged in a water obstacle? (Y altitude is very low, below 1.35)
-    // This addresses the "sunken in sand" feedback with an engaging, interactive soft water hazard!
-    const inWater = (car.position.y < 1.35);
+    // Interactive Oasis check: Are we submerged in a water obstacle? (Track is at 0.1, car is at 1.0)
+    const inWater = (car.position.y < 1.15); // Decreased check threshold from 1.35 to 1.15
 
     // Dynamic water drag / hydroplane steering variables
     let maxAllowedSpeed = car.maxSpeed;
