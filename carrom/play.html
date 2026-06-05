@@ -7,7 +7,7 @@
     <!-- Tailwind CSS for rich responsive UI styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts for premium typography -->
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght=600;800&family=Inter:wght=300;400;600;800&display=swap" rel="stylesheet">
     <!-- FontAwesome for beautiful iconography -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Tone.js for high-fidelity interactive synthesizer sound effects -->
@@ -73,36 +73,18 @@
             <!-- Turn & Game Mode Banner -->
             <div class="bg-gradient-to-b from-amber-900/40 to-amber-950/60 border border-amber-700/30 rounded-2xl p-4 shadow-xl text-center">
                 <span class="text-xs text-amber-400 tracking-widest font-bold uppercase">Game Status</span>
-                <div id="gameStatusText" class="text-lg font-bold text-amber-100 mt-1">
+                <div id="gameStatusText" class="text-sm md:text-base font-bold text-amber-100 mt-1">
                     Initializing table...
                 </div>
                 <!-- Dynamic active indicator bar -->
                 <div class="w-full bg-amber-950 h-1.5 rounded-full mt-3 overflow-hidden border border-amber-900/30">
-                    <div id="turnIndicatorBar" class="bg-gradient-to-r from-amber-400 to-amber-600 h-full w-1/2 transition-all duration-300"></div>
+                    <div id="turnIndicatorBar" class="bg-gradient-to-r from-amber-400 to-amber-600 h-full w-1/3 transition-all duration-300"></div>
                 </div>
             </div>
 
-            <!-- Scoreboards Container -->
-            <div class="grid grid-cols-2 lg:grid-cols-1 gap-4">
-                <!-- Player 1 Score (White) -->
-                <div id="player1Card" class="bg-amber-900/20 border-2 border-amber-600/50 rounded-2xl p-4 shadow-lg flex flex-col items-center transition duration-300 relative overflow-hidden">
-                    <div class="absolute top-2 right-2 flex space-x-1" id="p1TokenList"></div>
-                    <span class="text-xs font-bold text-amber-300 tracking-wider">PLAYER 1 (WHITE)</span>
-                    <span id="p1Score" class="text-4xl font-extrabold text-amber-100 my-1">0</span>
-                    <span class="text-[10px] text-amber-400/80">Goal: Pocket Whites</span>
-                    <!-- Active glow effect overlay -->
-                    <div id="p1ActiveGlow" class="absolute inset-0 border-2 border-amber-400 rounded-2xl animate-pulse pointer-events-none opacity-0 transition-opacity"></div>
-                </div>
-
-                <!-- Player 2 / AI Score (Black) -->
-                <div id="player2Card" class="bg-amber-900/20 border border-amber-900/40 rounded-2xl p-4 shadow-lg flex flex-col items-center transition duration-300 relative overflow-hidden">
-                    <div class="absolute top-2 right-2 flex space-x-1" id="p2TokenList"></div>
-                    <span id="p2Label" class="text-xs font-bold text-amber-400/60 tracking-wider">PLAYER 2 (BLACK)</span>
-                    <span id="p2Score" class="text-4xl font-extrabold text-amber-100 my-1">0</span>
-                    <span class="text-[10px] text-amber-400/80">Goal: Pocket Blacks</span>
-                    <!-- Active glow effect overlay -->
-                    <div id="p2ActiveGlow" class="absolute inset-0 border-2 border-amber-400 rounded-2xl animate-pulse pointer-events-none opacity-0 transition-opacity"></div>
-                </div>
+            <!-- Scoreboards Container (Populated dynamically) -->
+            <div id="scoreboardContainer" class="flex flex-col gap-3">
+                <!-- Populated via Javascript depending on the selected mode -->
             </div>
 
             <!-- Queen Status & Cover Card -->
@@ -123,10 +105,11 @@
                 <button onclick="startNewGame()" class="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-amber-950 font-bold py-3 px-4 rounded-xl transition duration-150 transform active:scale-95 shadow-lg flex items-center justify-center gap-2 border border-amber-400/40">
                     <i class="fa-solid fa-rotate-right"></i> Reset Board
                 </button>
-                <div class="grid grid-cols-3 gap-2">
-                    <button onclick="changeMode('2p')" id="mode2pBtn" class="bg-amber-900/80 hover:bg-amber-800 text-xs font-bold py-2 rounded-lg border border-amber-600/30 text-amber-200 transition activeClass">Local 2P</button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="changeMode('2p')" id="mode2pBtn" class="bg-amber-900/80 hover:bg-amber-800 text-xs font-bold py-2 rounded-lg border border-amber-600/30 text-amber-200 transition">2 Player</button>
                     <button onclick="changeMode('ai')" id="modeAiBtn" class="bg-amber-950/40 hover:bg-amber-800 text-xs font-bold py-2 rounded-lg border border-amber-600/20 text-amber-400 transition">vs AI</button>
-                    <button onclick="changeMode('practice')" id="modePracticeBtn" class="bg-amber-950/40 hover:bg-amber-800 text-xs font-bold py-2 rounded-lg border border-amber-600/20 text-amber-400 transition">Practice</button>
+                    <button onclick="changeMode('3p')" id="mode3pBtn" class="bg-amber-950/40 hover:bg-amber-800 text-xs font-bold py-2 rounded-lg border border-amber-600/20 text-amber-400 transition">3 Player</button>
+                    <button onclick="changeMode('doubles')" id="modeDoublesBtn" class="bg-amber-950/40 hover:bg-amber-800 text-xs font-bold py-2 rounded-lg border border-amber-600/20 text-amber-400 transition">Doubles</button>
                 </div>
                 <div id="aiLevelSelect" class="hidden grid grid-cols-3 gap-1 bg-amber-950/60 p-1 rounded-lg border border-amber-900/60">
                     <button onclick="setAiDifficulty('easy')" id="diffEasy" class="text-[10px] py-1 font-semibold rounded text-amber-400 bg-amber-900/40 border border-amber-600/30">Easy</button>
@@ -147,16 +130,16 @@
                 <!-- On-Screen Shot Helper / Overlay -->
                 <div id="aimHintOverlay" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-amber-950/90 border border-amber-600/40 px-3 py-1.5 rounded-full text-xs text-amber-300 font-semibold shadow-xl flex items-center gap-2 pointer-events-none transition opacity-100">
                     <i class="fa-solid fa-arrows-up-down-left-right animate-pulse text-amber-400"></i>
-                    <span>Position slider, then Drag back from Striker to Shoot</span>
+                    <span>Position Slider, Drag Backward from Striker to Shoot</span>
                 </div>
             </div>
 
-            <!-- Position Slider for exact placing of Striker -->
+            <!-- Position Slider for exact placing of Striker on Active Baseline -->
             <div class="w-full max-w-[620px] mt-4 flex flex-col items-center gap-2 bg-amber-950/40 p-4 border border-amber-900/30 rounded-2xl">
                 <div class="flex justify-between w-full text-xs font-semibold text-amber-400/80 px-1">
-                    <span><i class="fa-solid fa-chevron-left"></i> Shift Striker Left</span>
+                    <span id="sliderContainerTextLeft"><i class="fa-solid fa-chevron-left"></i> Shift Striker Left</span>
                     <span id="sliderValueText">Center Position</span>
-                    <span>Shift Striker Right <i class="fa-solid fa-chevron-right"></i></span>
+                    <span id="sliderContainerTextRight">Shift Striker Right <i class="fa-solid fa-chevron-right"></i></span>
                 </div>
                 <input type="range" id="strikerPositionSlider" min="0" max="100" value="50" class="w-full h-2 bg-amber-950 rounded-lg appearance-none cursor-pointer accent-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50">
             </div>
@@ -177,27 +160,28 @@
                 <i class="fa-solid fa-circle-xmark"></i>
             </button>
             <h3 class="header-font text-2xl text-amber-300 font-bold border-b border-amber-700/60 pb-3 flex items-center gap-2">
-                <i class="fa-solid fa-circle-info"></i> Traditional Carrom Rules
+                <i class="fa-solid fa-circle-info"></i> Royal Carrom Rules
             </h3>
             
             <div class="mt-4 space-y-3 text-sm text-amber-100 max-h-[400px] overflow-y-auto pr-2">
-                <p class="font-semibold text-amber-300">Basic Concept:</p>
-                <p>The goal is to pocket all of your colored carrom men (coins) before your opponent does. Player 1 shoots Whites, and Player 2/AI shoots Blacks.</p>
+                <p class="font-semibold text-amber-300">Active Baselines:</p>
+                <p>Each active player sits on their designated side of the board and shoots from their own baseline. The game controls will automatically slide the slider and mirror your targeting direction to match your side!</p>
+
+                <p class="font-semibold text-amber-300">Game Modes:</p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li><span class="font-bold text-amber-400">2 Player / vs AI:</span> Classic 2-player rules. Bottom player shoots Whites, Left player shoots Blacks.</li>
+                    <li><span class="font-bold text-amber-400">3 Player:</span> Player 1 (Bottom) pockets Whites, Player 2 (Left) pockets Silvers, Player 3 (Top) pockets Blacks.</li>
+                    <li><span class="font-bold text-amber-400">Doubles:</span> 4-player team match. P1 & P3 (Team A - Whites) vs P2 & P4 (Team B - Blacks) taking turns clockwise.</li>
+                </ul>
                 
                 <p class="font-semibold text-amber-300">The Queen (Red Coin):</p>
-                <p>The Queen can be pocketed at any time once at least one of your own coins has been pocketed. To secure the Queen, you must pocket one of your own coins on the same or immediately following shot (the "cover"). If you fail to cover, the Queen is returned to the center.</p>
-
-                <p class="font-semibold text-amber-300">Shooting & Positioning:</p>
-                <p>Place your striker anywhere along the bottom baseline using the horizontal slider. Touch/click & drag backward from the striker to aim, determine power, and release to shoot!</p>
+                <p>Can be pocketed after you've scored at least one of your own target coins. To secure the Queen, you must pocket another of your coins on the same or immediately following shot (the "cover"). If you fail to cover, the Queen goes back to the center.</p>
 
                 <p class="font-semibold text-amber-300">Fouls & Penalties:</p>
                 <ul class="list-disc pl-5 space-y-1">
-                    <li>If you pocket the Striker, it's a foul! Turn passes, and one of your pocketed coins returns to center.</li>
-                    <li>Pocketing opponent's coin grants them the coin, and your turn passes.</li>
+                    <li>If you pocket the Striker, it's a foul! Your turn passes and one of your pocketed coins returns to the center.</li>
+                    <li>Pocketing an opponent's coin gives them the point and passes the turn.</li>
                 </ul>
-
-                <p class="font-semibold text-amber-300">Turns:</p>
-                <p>You keep shooting as long as you pocket your own coin on a valid strike without committing a foul!</p>
             </div>
 
             <div class="mt-6 border-t border-amber-700/60 pt-4 text-center">
@@ -226,14 +210,11 @@
 
         let soundMuted = false;
         let soundInitialized = false;
-        let gameMode = '2p'; // '2p', 'ai', 'practice'
+        let gameMode = '2p'; // '2p', 'ai', '3p', 'doubles'
         let aiDifficulty = 'easy'; // 'easy', 'medium', 'hard'
 
-        let players = [
-            { id: 1, name: "Player 1", color: "white", score: 0 },
-            { id: 2, name: "Player 2", color: "black", score: 0 }
-        ];
-        let currentPlayerIdx = 0; // 0 for Player 1, 1 for Player 2/AI
+        let players = [];
+        let currentPlayerIdx = 0;
         let gameState = 'placing'; // 'placing', 'aiming', 'shooting', 'evaluating', 'gameover'
         
         let coins = [];
@@ -247,9 +228,6 @@
         let queenCoverAttemptPlayer = null;
         let extraTurnGranted = false;
         let foulCommitted = false;
-
-        // Visual design assets (wood textures)
-        let woodPattern = null;
 
         /*
          * TONE.JS SOUND CREATION (Self-Contained Synthesizers)
@@ -348,7 +326,6 @@
         }
 
         /*
-         * STREAMING_CHUNK: Designing the board components and layouts...
          * BOARD DRAWING GRAPHICS
          */
         const boardBounds = {
@@ -458,18 +435,17 @@
             ctx.lineWidth = 1;
             ctx.stroke();
 
-            // 5. Draw Baselines & Circles (On all 4 sides)
-            drawBaselineGroup('bottom', center, 620, 642);
-            drawBaselineGroup('top', center, 180, 158);
-            drawBaselineGroup('left', center, 180, 158);
-            drawBaselineGroup('right', center, 620, 642);
+            // 5. Draw Baselines & Circles ONLY for currently active players
+            players.forEach(p => {
+                drawBaselineGroup(p.baseline, center);
+            });
 
             // 6. Diagonal arrow paths pointing from corners to the center
             drawDiagonalArrows(center);
         }
 
-        // Helper to draw double baselines and end circles
-        function drawBaselineGroup(side, center, line1, line2) {
+        // Helper to draw double baselines and end circles uniformly using rotations
+        function drawBaselineGroup(side, center) {
             ctx.strokeStyle = '#1b1008';
             ctx.lineWidth = 2;
             
@@ -478,13 +454,14 @@
             let circleR = 14;
 
             ctx.save();
+            // Perform 2D rotation matrix transformations to simplify position coordinates mapping
             if (side === 'left') {
                 ctx.translate(center, center);
-                ctx.rotate(-Math.PI / 2);
+                ctx.rotate(Math.PI / 2);
                 ctx.translate(-center, -center);
             } else if (side === 'right') {
                 ctx.translate(center, center);
-                ctx.rotate(Math.PI / 2);
+                ctx.rotate(-Math.PI / 2);
                 ctx.translate(-center, -center);
             } else if (side === 'top') {
                 ctx.translate(center, center);
@@ -492,17 +469,21 @@
                 ctx.translate(-center, -center);
             }
 
+            // Standard baseline lines drawn relative to bottom, rotated space coordinates handles the rest!
+            let l1 = 620;
+            let l2 = 642;
+
             // Two parallel lines
             ctx.beginPath();
-            ctx.moveTo(start, line1);
-            ctx.lineTo(end, line1);
-            ctx.moveTo(start, line2);
-            ctx.lineTo(end, line2);
+            ctx.moveTo(start, l1);
+            ctx.lineTo(end, l1);
+            ctx.moveTo(start, l2);
+            ctx.lineTo(end, l2);
             ctx.stroke();
 
             // Outer circles on both sides
             ctx.beginPath();
-            ctx.arc(start, (line1 + line2)/2, circleR, 0, Math.PI * 2);
+            ctx.arc(start, (l1 + l2)/2, circleR, 0, Math.PI * 2);
             ctx.fillStyle = '#f4e2bf';
             ctx.fill();
             ctx.strokeStyle = '#8b261b';
@@ -510,12 +491,12 @@
             ctx.stroke();
 
             ctx.beginPath();
-            ctx.arc(start, (line1 + line2)/2, 6, 0, Math.PI * 2);
+            ctx.arc(start, (l1 + l2)/2, 6, 0, Math.PI * 2);
             ctx.fillStyle = '#b91c1c';
             ctx.fill();
 
             ctx.beginPath();
-            ctx.arc(end, (line1 + line2)/2, circleR, 0, Math.PI * 2);
+            ctx.arc(end, (l1 + l2)/2, circleR, 0, Math.PI * 2);
             ctx.fillStyle = '#f4e2bf';
             ctx.fill();
             ctx.strokeStyle = '#8b261b';
@@ -523,7 +504,7 @@
             ctx.stroke();
 
             ctx.beginPath();
-            ctx.arc(end, (line1 + line2)/2, 6, 0, Math.PI * 2);
+            ctx.arc(end, (l1 + l2)/2, 6, 0, Math.PI * 2);
             ctx.fillStyle = '#b91c1c';
             ctx.fill();
 
@@ -561,7 +542,6 @@
         }
 
         /*
-         * STREAMING_CHUNK: Instantiating classes for striker and carrom pieces...
          * GAME COIN & STRIKER CLASS DEFINITION
          */
         class CarromPiece {
@@ -570,7 +550,7 @@
                 this.y = y;
                 this.radius = radius;
                 this.type = type; // 'coin' or 'striker'
-                this.color = color; // 'white', 'black', 'queen', 'gold' (striker)
+                this.color = color; // 'white', 'black', 'silver', 'queen', 'gold' (striker)
                 this.vx = 0;
                 this.vy = 0;
                 this.mass = color === 'gold' ? STRIKER_MASS : COIN_MASS;
@@ -680,6 +660,30 @@
                     ctx.lineWidth = 1;
                     ctx.stroke();
 
+                } else if (this.color === 'silver') {
+                    // Shiny silver/chrome coin (Used for 3-player mode)
+                    let gr = ctx.createRadialGradient(-2, -2, 1, 0, 0, this.radius);
+                    gr.addColorStop(0, '#ffffff');
+                    gr.addColorStop(0.3, '#e2e8f0');
+                    gr.addColorStop(0.7, '#64748b');
+                    gr.addColorStop(1, '#334155');
+                    ctx.fillStyle = gr;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.shadowColor = 'transparent';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius * 0.6, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius * 0.2, 0, Math.PI * 2);
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.fill();
+
                 } else if (this.color === 'black') {
                     // Dark wooden black coin
                     let gr = ctx.createRadialGradient(-1, -1, 1, 0, 0, this.radius);
@@ -758,7 +762,7 @@
                     collided = true;
                 }
 
-                // Top & Bottom rebound
+                // Bottom & Top rebound
                 if (this.y < borderMin) {
                     this.y = borderMin;
                     this.vy = -this.vy * RESTITUTION;
@@ -779,7 +783,6 @@
         }
 
         /*
-         * STREAMING_CHUNK: Setting up the carrom layout geometry...
          * ROSETTE INITIAL COIN ARRANGEMENT
          */
         function spawnCoins() {
@@ -790,88 +793,178 @@
             // 1. Arrange Red Queen in center
             coins.push(new CarromPiece(center, center, coinRadius, 'coin', 'queen'));
 
-            // 2. Ring 1: 6 coins tightly surrounding center (alternating white/black)
-            const ring1Radius = coinRadius * 2;
-            for (let i = 0; i < 6; i++) {
-                let angle = (i * Math.PI) / 3; // 60 degrees step
-                let cx = center + Math.cos(angle) * ring1Radius;
-                let cy = center + Math.sin(angle) * ring1Radius;
-                let color = i % 2 === 0 ? 'white' : 'black';
-                coins.push(new CarromPiece(cx, cy, coinRadius, 'coin', color));
+            if (gameMode === '3p') {
+                // 3 Player Layout: 6 Whites, 6 Silvers, 6 Blacks
+                // Inner ring of 6 coins: alternating White, Silver, Black
+                const ring1Radius = coinRadius * 2;
+                const ring1Colors = ['white', 'silver', 'black', 'white', 'silver', 'black'];
+                for (let i = 0; i < 6; i++) {
+                    let angle = (i * Math.PI) / 3;
+                    let cx = center + Math.cos(angle) * ring1Radius;
+                    let cy = center + Math.sin(angle) * ring1Radius;
+                    coins.push(new CarromPiece(cx, cy, coinRadius, 'coin', ring1Colors[i]));
+                }
+
+                // Outer ring of 12 coins: alternating Black, White, Silver
+                const ring2Radius = coinRadius * 3.46;
+                const ring2Colors = ['black', 'white', 'silver', 'black', 'white', 'silver', 'black', 'white', 'silver', 'black', 'white', 'silver'];
+                for (let i = 0; i < 12; i++) {
+                    let angle = (i * Math.PI) / 6;
+                    let cx = center + Math.cos(angle) * ring2Radius;
+                    let cy = center + Math.sin(angle) * ring2Radius;
+                    coins.push(new CarromPiece(cx, cy, coinRadius, 'coin', ring2Colors[i]));
+                }
+            } else {
+                // Standard 2 Player / Doubles layout (9 Whites, 9 Blacks)
+                // Ring 1: 6 coins tightly surrounding center
+                const ring1Radius = coinRadius * 2;
+                for (let i = 0; i < 6; i++) {
+                    let angle = (i * Math.PI) / 3; 
+                    let cx = center + Math.cos(angle) * ring1Radius;
+                    let cy = center + Math.sin(angle) * ring1Radius;
+                    let color = i % 2 === 0 ? 'white' : 'black';
+                    coins.push(new CarromPiece(cx, cy, coinRadius, 'coin', color));
+                }
+
+                // Ring 2: 12 nested coins
+                const ring2Radius = coinRadius * 3.46;
+                for (let i = 0; i < 12; i++) {
+                    let angle = (i * Math.PI) / 6; 
+                    let cx = center + Math.cos(angle) * ring2Radius;
+                    let cy = center + Math.sin(angle) * ring2Radius;
+                    let color = i % 2 === 0 ? 'black' : 'white';
+                    coins.push(new CarromPiece(cx, cy, coinRadius, 'coin', color));
+                }
             }
 
-            // 3. Ring 2: 12 coins nested in external ring (alternating black/white)
-            // Precise spacing distance to arrange outer coins nested between inner nodes
-            const ring2Radius = coinRadius * 3.46;
-            for (let i = 0; i < 12; i++) {
-                let angle = (i * Math.PI) / 6; // 30 degrees step
-                let cx = center + Math.cos(angle) * ring2Radius;
-                let cy = center + Math.sin(angle) * ring2Radius;
-                
-                // Color configuration: alternate black & white nicely
-                let color = i % 2 === 0 ? 'black' : 'white';
-                coins.push(new CarromPiece(cx, cy, coinRadius, 'coin', color));
-            }
-
-            // Create custom Striker
+            // Create custom gold striker at bottom center initially
             striker = new CarromPiece(center, 631, 22, 'striker', 'gold');
         }
 
         /*
-         * STREAMING_CHUNK: Handling state variables and initialization...
-         * GAME MODE & STATE HANDLING FLOWS
+         * BASELINE PLACEMENT & HELPERS
+         */
+        function getBaselineCoords(playerIdx, percent) {
+            let p = players[playerIdx];
+            if (!p) return { x: 400, y: 631 };
+            
+            let offset = 210 + (percent / 100) * 380;
+            
+            if (p.baseline === 'bottom') {
+                return { x: offset, y: 631 };
+            } else if (p.baseline === 'top') {
+                return { x: 800 - offset, y: 169 }; // Mirrored to preserve natural perspective shift
+            } else if (p.baseline === 'left') {
+                return { x: 169, y: offset }; // Moves downwards as percent increases
+            } else if (p.baseline === 'right') {
+                return { x: 631, y: 800 - offset }; // Moves upwards as percent increases
+            }
+            return { x: 400, y: 631 };
+        }
+
+        function updateSliderLabel() {
+            let p = players[currentPlayerIdx];
+            if (!p) return;
+
+            let sliderContainerTextLeft = document.getElementById('sliderContainerTextLeft');
+            let sliderContainerTextRight = document.getElementById('sliderContainerTextRight');
+
+            if (p.baseline === 'bottom' || p.baseline === 'top') {
+                sliderContainerTextLeft.innerHTML = `<i class="fa-solid fa-chevron-left"></i> Shift Striker Left`;
+                sliderContainerTextRight.innerHTML = `Shift Striker Right <i class="fa-solid fa-chevron-right"></i>`;
+            } else {
+                sliderContainerTextLeft.innerHTML = `<i class="fa-solid fa-chevron-up"></i> Shift Striker Up`;
+                sliderContainerTextRight.innerHTML = `Shift Striker Down <i class="fa-solid fa-chevron-down"></i>`;
+            }
+        }
+
+        function resetStrikerToBaseline(playerIdx) {
+            striker.isPocketed = false;
+            striker.vx = 0;
+            striker.vy = 0;
+            striker.shrinkScale = 1.0;
+            
+            let coords = getBaselineCoords(playerIdx, 50);
+            striker.x = coords.x;
+            striker.y = coords.y;
+
+            positionSlider.value = 50;
+            positionSlider.disabled = false;
+            document.getElementById('sliderValueText').innerText = "Center Position";
+            updateSliderLabel();
+        }
+
+        /*
+         * GAME STATE INITIALIZATION
          */
         function startNewGame() {
-            spawnCoins();
             currentPlayerIdx = 0;
+            
+            // Set up player arrays depending on active game mode
+            if (gameMode === '2p' || gameMode === 'ai') {
+                players = [
+                    { id: 1, name: "Player 1", color: "white", score: 0, baseline: 'bottom' },
+                    { id: 2, name: gameMode === 'ai' ? "Royal Bot" : "Player 2", color: "black", score: 0, baseline: 'left' }
+                ];
+            } else if (gameMode === '3p') {
+                players = [
+                    { id: 1, name: "Player 1", color: "white", score: 0, baseline: 'bottom' },
+                    { id: 2, name: "Player 2", color: "silver", score: 0, baseline: 'left' },
+                    { id: 3, name: "Player 3", color: "black", score: 0, baseline: 'top' }
+                ];
+            } else if (gameMode === 'doubles') {
+                players = [
+                    { id: 1, name: "P1 (Team A)", color: "white", score: 0, baseline: 'bottom', team: 'A' },
+                    { id: 2, name: "P2 (Team B)", color: "black", score: 0, baseline: 'left', team: 'B' },
+                    { id: 3, name: "P3 (Team A)", color: "white", score: 0, baseline: 'top', team: 'A' },
+                    { id: 4, name: "P4 (Team B)", color: "black", score: 0, baseline: 'right', team: 'B' }
+                ];
+            }
+
+            spawnCoins();
             gameState = 'placing';
             queenStatus = 'center';
             queenCoverAttemptActive = false;
             queenCoverAttemptPlayer = null;
-            players[0].score = 0;
-            players[1].score = 0;
+            foulCommitted = false;
+            extraTurnGranted = false;
 
-            document.getElementById('p1Score').innerText = '0';
-            document.getElementById('p2Score').innerText = '0';
             document.getElementById('queenStatusText').innerText = "Queen is in center (+3 pts)";
             
-            positionSlider.value = 50;
-            positionSlider.disabled = false;
-            
+            const badge = document.getElementById('queenStatusBadge');
+            badge.className = "w-10 h-10 rounded-full bg-red-600 border border-red-400 flex items-center justify-center shadow-lg shadow-red-900/50 transition";
+
+            resetStrikerToBaseline(0);
             updateScoreUI();
             updateTurnBanner();
         }
 
         function changeMode(mode) {
             gameMode = mode;
-            document.getElementById('mode2pBtn').classList.remove('bg-amber-600', 'text-amber-950', 'activeClass');
-            document.getElementById('mode2pBtn').classList.add('bg-amber-950/40', 'text-amber-400');
-            document.getElementById('modeAiBtn').classList.remove('bg-amber-600', 'text-amber-950', 'activeClass');
-            document.getElementById('modeAiBtn').classList.add('bg-amber-950/40', 'text-amber-400');
-            document.getElementById('modePracticeBtn').classList.remove('bg-amber-600', 'text-amber-950', 'activeClass');
-            document.getElementById('modePracticeBtn').classList.add('bg-amber-950/40', 'text-amber-400');
+            
+            // Reset state highlight classes on mode buttons
+            ['2p', 'ai', '3p', 'doubles'].forEach(m => {
+                const btn = document.getElementById(`mode${m.charAt(0).toUpperCase() + m.slice(1)}Btn`);
+                btn.className = "bg-amber-950/40 hover:bg-amber-800 text-xs font-bold py-2 rounded-lg border border-amber-600/20 text-amber-400 transition";
+            });
+
+            const activeBtn = document.getElementById(`mode${mode.charAt(0).toUpperCase() + mode.slice(1)}Btn`);
+            activeBtn.className = "bg-amber-600 text-amber-950 font-bold py-2 rounded-lg border border-amber-400/40 transition";
 
             const levelSelect = document.getElementById('aiLevelSelect');
-            levelSelect.classList.add('hidden');
-
-            if (mode === '2p') {
-                document.getElementById('mode2pBtn').className = "bg-amber-600 text-amber-950 font-bold py-2 rounded-lg border border-amber-400/40 transition";
-                document.getElementById('p2Label').innerText = "PLAYER 2 (BLACK)";
-            } else if (mode === 'ai') {
-                document.getElementById('modeAiBtn').className = "bg-amber-600 text-amber-950 font-bold py-2 rounded-lg border border-amber-400/40 transition";
-                document.getElementById('p2Label').innerText = "ROYAL BOT (AI)";
+            if (mode === 'ai') {
                 levelSelect.classList.remove('hidden');
             } else {
-                document.getElementById('modePracticeBtn').className = "bg-amber-600 text-amber-950 font-bold py-2 rounded-lg border border-amber-400/40 transition";
-                document.getElementById('p2Label').innerText = "PRACTICE TARGETS";
+                levelSelect.classList.add('hidden');
             }
+
             startNewGame();
         }
 
         function setAiDifficulty(level) {
             aiDifficulty = level;
-            ['Easy', 'Medium', 'Hard'].forEach(lvl => {
-                const btn = document.getElementById(`diff${lvl}`);
+            ['easy', 'medium', 'hard'].forEach(lvl => {
+                const btn = document.getElementById(`diff${lvl.charAt(0).toUpperCase() + lvl.slice(1)}`);
                 btn.className = "text-[10px] py-1 font-semibold rounded text-amber-400/60";
             });
             const capLvl = level.charAt(0).toUpperCase() + level.slice(1);
@@ -880,66 +973,126 @@
 
         function updateTurnBanner() {
             const label = document.getElementById('gameStatusText');
-            const p1Card = document.getElementById('player1Card');
-            const p2Card = document.getElementById('player2Card');
-            const p1Glow = document.getElementById('p1ActiveGlow');
-            const p2Glow = document.getElementById('p2ActiveGlow');
             const bar = document.getElementById('turnIndicatorBar');
 
-            p1Glow.style.opacity = "0";
-            p2Glow.style.opacity = "0";
-            p1Card.className = "bg-amber-900/10 border border-amber-900/20 rounded-2xl p-4 shadow-lg flex flex-col items-center transition relative";
-            p2Card.className = "bg-amber-900/10 border border-amber-900/20 rounded-2xl p-4 shadow-lg flex flex-col items-center transition relative";
+            let p = players[currentPlayerIdx];
+            if (!p) return;
 
-            if (gameMode === 'practice') {
-                label.innerHTML = `<span class="text-amber-300">Target Shooting Practice</span>`;
-                p1Card.className = "bg-amber-900/30 border-2 border-amber-500 rounded-2xl p-4 shadow-lg flex flex-col items-center transition relative";
-                p1Glow.style.opacity = "1";
-                bar.style.width = "100%";
-                return;
-            }
-
-            if (currentPlayerIdx === 0) {
-                label.innerHTML = `<i class="fa-solid fa-gamepad text-amber-400 mr-1 animate-pulse"></i> Player 1's Turn (Whites)`;
-                p1Card.className = "bg-amber-900/30 border-2 border-amber-500 rounded-2xl p-4 shadow-lg flex flex-col items-center transition relative";
-                p1Glow.style.opacity = "1";
-                bar.style.width = "35%";
-                bar.style.marginLeft = "0%";
+            let sideText = p.baseline.toUpperCase();
+            
+            if (gameMode === 'ai' && currentPlayerIdx === 1) {
+                label.innerHTML = `<i class="fa-solid fa-robot text-red-400 mr-1 animate-pulse"></i> Royal Bot is planning (${sideText})...`;
             } else {
-                if (gameMode === 'ai') {
-                    label.innerHTML = `<i class="fa-solid fa-robot text-red-400 mr-1 animate-pulse"></i> Royal Bot is planning...`;
-                } else {
-                    label.innerHTML = `<i class="fa-solid fa-gamepad text-amber-400 mr-1 animate-pulse"></i> Player 2's Turn (Blacks)`;
-                }
-                p2Card.className = "bg-amber-900/30 border-2 border-amber-500 rounded-2xl p-4 shadow-lg flex flex-col items-center transition relative";
-                p2Glow.style.opacity = "1";
-                bar.style.width = "35%";
-                bar.style.marginLeft = "65%";
+                let colorDisplay = p.color.charAt(0).toUpperCase() + p.color.slice(1) + 's';
+                label.innerHTML = `<i class="fa-solid fa-gamepad text-amber-400 mr-1 animate-pulse"></i> ${p.name}'s Turn (${colorDisplay} - ${sideText})`;
             }
+
+            // Adjust turn indicator bar width/margin
+            let totalPlayers = players.length;
+            let percentageWidth = 100 / totalPlayers;
+            bar.style.width = `${percentageWidth}%`;
+            bar.style.marginLeft = `${currentPlayerIdx * percentageWidth}%`;
+            
+            updateScoreUI();
         }
 
+        /*
+         * DYNAMIC SCOREBOARD INTERFACE BUILDER
+         */
         function updateScoreUI() {
-            // Re-render scoring indicator list (circles representing collected pieces)
-            const p1List = document.getElementById('p1TokenList');
-            const p2List = document.getElementById('p2TokenList');
-            
-            p1List.innerHTML = '';
-            p2List.innerHTML = '';
+            const container = document.getElementById('scoreboardContainer');
+            container.innerHTML = ''; 
 
-            const p1Count = players[0].score;
-            const p2Count = players[1].score;
+            if (gameMode === '2p' || gameMode === 'ai') {
+                players.forEach((p, idx) => {
+                    let isActive = (currentPlayerIdx === idx);
+                    let activeGlow = isActive ? 'border-amber-400 shadow-amber-950/50 shadow-2xl scale-[1.01]' : 'border-amber-900/40 opacity-60';
+                    let coinStyle = p.color === 'white' ? 'bg-amber-100 border-amber-900/60' : 'bg-neutral-800 border-neutral-600';
+                    
+                    let tokensHtml = '';
+                    for (let i = 0; i < p.score; i++) {
+                        tokensHtml += `<div class="w-3 h-3 rounded-full ${coinStyle} border shadow-sm"></div>`;
+                    }
 
-            for (let i = 0; i < p1Count; i++) {
-                p1List.innerHTML += `<div class="w-3.5 h-3.5 rounded-full bg-amber-100 border border-amber-900/60 shadow"></div>`;
-            }
-            for (let i = 0; i < p2Count; i++) {
-                p2List.innerHTML += `<div class="w-3.5 h-3.5 rounded-full bg-neutral-800 border border-neutral-600 shadow"></div>`;
+                    container.innerHTML += `
+                        <div class="bg-amber-900/20 border-2 ${activeGlow} rounded-2xl p-4 flex flex-col items-center transition-all duration-300 relative overflow-hidden">
+                            <div class="absolute top-2 right-2 flex space-x-1">${tokensHtml}</div>
+                            <span class="text-xs font-bold text-amber-300 tracking-wider">${p.name.toUpperCase()} (${p.color.toUpperCase()})</span>
+                            <span class="text-4xl font-extrabold text-amber-100 my-1">${p.score}</span>
+                            <span class="text-[10px] text-amber-400/80">Goal: Pocket ${p.color}s</span>
+                            ${isActive ? '<div class="absolute inset-0 border-2 border-amber-400 rounded-2xl animate-pulse pointer-events-none"></div>' : ''}
+                        </div>
+                    `;
+                });
+            } else if (gameMode === '3p') {
+                players.forEach((p, idx) => {
+                    let isActive = (currentPlayerIdx === idx);
+                    let activeGlow = isActive ? 'border-amber-400 shadow-amber-950/50 shadow-2xl scale-[1.01]' : 'border-amber-900/40 opacity-60';
+                    
+                    let coinStyle = '';
+                    if (p.color === 'white') coinStyle = 'bg-amber-100 border-amber-900/60';
+                    else if (p.color === 'silver') coinStyle = 'bg-slate-300 border-slate-500 shadow-[inset_0_1px_3px_rgba(255,255,255,0.8)]';
+                    else coinStyle = 'bg-neutral-800 border-neutral-600';
+
+                    let tokensHtml = '';
+                    for (let i = 0; i < p.score; i++) {
+                        tokensHtml += `<div class="w-3 h-3 rounded-full ${coinStyle} border shadow-sm"></div>`;
+                    }
+
+                    container.innerHTML += `
+                        <div class="bg-amber-900/20 border-2 ${activeGlow} rounded-2xl p-3 flex flex-col items-center transition-all duration-300 relative overflow-hidden">
+                            <div class="absolute top-2 right-2 flex space-x-1">${tokensHtml}</div>
+                            <span class="text-xs font-bold text-amber-300 tracking-wider">${p.name.toUpperCase()} (${p.color.toUpperCase()})</span>
+                            <span class="text-3xl font-extrabold text-amber-100 my-1">${p.score}</span>
+                            <span class="text-[10px] text-amber-400/80">Goal: Pocket ${p.color}s</span>
+                            ${isActive ? '<div class="absolute inset-0 border-2 border-amber-400 rounded-2xl animate-pulse pointer-events-none"></div>' : ''}
+                        </div>
+                    `;
+                });
+            } else if (gameMode === 'doubles') {
+                let teamAScore = players[0].score + players[2].score;
+                let teamBScore = players[1].score + players[3].score;
+
+                // Render Team A Card
+                let isTeamAActive = (currentPlayerIdx === 0 || currentPlayerIdx === 2);
+                let activeGlowA = isTeamAActive ? 'border-amber-400 shadow-amber-950/50 shadow-2xl scale-[1.01]' : 'border-amber-900/40 opacity-60';
+                let tokensHtmlA = '';
+                for (let i = 0; i < teamAScore; i++) {
+                    tokensHtmlA += `<div class="w-3 h-3 rounded-full bg-amber-100 border border-amber-900/60 shadow-sm"></div>`;
+                }
+
+                container.innerHTML += `
+                    <div class="bg-amber-900/20 border-2 ${activeGlowA} rounded-2xl p-4 flex flex-col items-center transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute top-2 right-2 flex space-x-1">${tokensHtmlA}</div>
+                        <span class="text-xs font-bold text-amber-300 tracking-wider">TEAM A (P1 & P3 - WHITE)</span>
+                        <span class="text-4xl font-extrabold text-amber-100 my-1">${teamAScore}</span>
+                        <span class="text-[10px] text-amber-400/80">Goal: Pocket Whites</span>
+                        ${isTeamAActive ? '<div class="absolute inset-0 border-2 border-amber-400 rounded-2xl animate-pulse pointer-events-none"></div>' : ''}
+                    </div>
+                `;
+
+                // Render Team B Card
+                let isTeamBActive = (currentPlayerIdx === 1 || currentPlayerIdx === 3);
+                let activeGlowB = isTeamBActive ? 'border-amber-400 shadow-amber-950/50 shadow-2xl scale-[1.01]' : 'border-amber-900/40 opacity-60';
+                let tokensHtmlB = '';
+                for (let i = 0; i < teamBScore; i++) {
+                    tokensHtmlB += `<div class="w-3 h-3 rounded-full bg-neutral-800 border border-neutral-600 shadow-sm"></div>`;
+                }
+
+                container.innerHTML += `
+                    <div class="bg-amber-900/20 border-2 ${activeGlowB} rounded-2xl p-4 flex flex-col items-center transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute top-2 right-2 flex space-x-1">${tokensHtmlB}</div>
+                        <span class="text-xs font-bold text-amber-400 tracking-wider">TEAM B (P2 & P4 - BLACK)</span>
+                        <span class="text-4xl font-extrabold text-amber-100 my-1">${teamBScore}</span>
+                        <span class="text-[10px] text-amber-400/80">Goal: Pocket Blacks</span>
+                        ${isTeamBActive ? '<div class="absolute inset-0 border-2 border-amber-400 rounded-2xl animate-pulse pointer-events-none"></div>' : ''}
+                    </div>
+                `;
             }
         }
 
         /*
-         * STREAMING_CHUNK: Setting up the carrom physics engine...
-         * DETAILED ELASTIC COLLISION MATH (Cicle-to-Circle Solver)
+         * DETAILED ELASTIC COLLISION MATH (Circle-to-Circle Solver)
          */
         function resolvePieceCollisions() {
             let allPieces = [striker, ...coins.filter(c => !c.isPocketed)];
@@ -1011,11 +1164,15 @@
                             // Striker Foul!
                             triggerSound('pocket');
                             p.isPocketed = true;
+                            p.vx = 0; // Zero out immediately to prevent sliding lockup!
+                            p.vy = 0;
                             foulCommitted = true;
                         } else {
                             // Valid pocket hit
                             triggerSound('pocket');
                             p.isPocketed = true;
+                            p.vx = 0; // Zero out immediately to prevent sliding lockup!
+                            p.vy = 0;
                             handlePocketedCoin(p);
                         }
                     }
@@ -1041,15 +1198,13 @@
             } else if (coin.color === playerColor) {
                 // Pocketed own coin!
                 players[currentPlayerIdx].score++;
-                document.getElementById(`p${currentPlayerIdx + 1}Score`).innerText = players[currentPlayerIdx].score;
                 
                 // If queen cover was pending and player hits own coin, cover completes successfully
                 if (queenCoverAttemptActive && queenCoverAttemptPlayer === currentPlayerIdx) {
                     queenCoverAttemptActive = false;
                     queenStatus = `covered_p${currentPlayerIdx + 1}`;
                     players[currentPlayerIdx].score += 3; // Queen bonus reward
-                    document.getElementById(`p${currentPlayerIdx + 1}Score`).innerText = players[currentPlayerIdx].score;
-                    document.getElementById('queenStatusText').innerText = `Queen won by P${currentPlayerIdx + 1}!`;
+                    document.getElementById('queenStatusText').innerText = `${players[currentPlayerIdx].name} covered Queen! (+3)`;
                     
                     const badge = document.getElementById('queenStatusBadge');
                     badge.className = "w-10 h-10 rounded-full bg-emerald-600 border border-emerald-400 flex items-center justify-center shadow-lg";
@@ -1060,11 +1215,11 @@
 
             } else {
                 // Pocketed opponent's coin!
-                // Add point to opponent and turn changes
-                let oppIdx = currentPlayerIdx === 0 ? 1 : 0;
-                players[oppIdx].score++;
-                document.getElementById(`p${oppIdx + 1}Score`).innerText = players[oppIdx].score;
-                
+                // Add point to the matching opponent player
+                let opponent = players.find(p => p.color === coin.color);
+                if (opponent) {
+                    opponent.score++;
+                }
                 updateScoreUI();
             }
         }
@@ -1083,7 +1238,6 @@
         }
 
         /*
-         * STREAMING_CHUNK: Setting up turn validation after coins stop...
          * TURN VALIDATION & PENALTIES
          */
         function concludeTurn() {
@@ -1094,7 +1248,6 @@
                 // If player had coins, deduct 1 as a foul penalty and place in center
                 if (players[currentPlayerIdx].score > 0) {
                     players[currentPlayerIdx].score--;
-                    document.getElementById(`p${currentPlayerIdx + 1}Score`).innerText = players[currentPlayerIdx].score;
                     
                     // Resurrect one coin back to center
                     let targetColor = players[currentPlayerIdx].color;
@@ -1135,43 +1288,51 @@
                 }
             }
 
-            // 3. Reset Striker Status & Coordinates
-            striker.isPocketed = false;
-            striker.vx = 0;
-            striker.vy = 0;
-            striker.x = 400; // Recenter baseline
-            striker.y = 631;
-            striker.shrinkScale = 1.0;
-
-            // Reset Slider Position UI
-            positionSlider.value = 50;
-            positionSlider.disabled = false;
-            document.getElementById('sliderValueText').innerText = "Center Position";
-
-            // 4. Verify Win/Endgame Conditions
+            // 3. Verify Win/Endgame Conditions
             let remainingWhites = coins.filter(c => !c.isPocketed && c.color === 'white').length;
             let remainingBlacks = coins.filter(c => !c.isPocketed && c.color === 'black').length;
+            let remainingSilvers = coins.filter(c => !c.isPocketed && c.color === 'silver').length;
 
-            if (remainingWhites === 0 && remainingBlacks === 0) {
-                // Game completely finishes
-                concludeWinner();
-                return;
-            } else if (remainingWhites === 0 && gameMode !== 'practice') {
-                concludeWinner(0); // Player 1 wins
-                return;
-            } else if (remainingBlacks === 0 && gameMode !== 'practice') {
-                concludeWinner(1); // Player 2 wins
-                return;
+            if (gameMode === '3p') {
+                if (remainingWhites === 0) {
+                    concludeWinner(0); // Player 1 wins
+                    return;
+                } else if (remainingSilvers === 0) {
+                    concludeWinner(1); // Player 2 wins
+                    return;
+                } else if (remainingBlacks === 0) {
+                    concludeWinner(2); // Player 3 wins
+                    return;
+                }
+            } else if (gameMode === 'doubles') {
+                if (remainingWhites === 0) {
+                    concludeWinner('Team A');
+                    return;
+                } else if (remainingBlacks === 0) {
+                    concludeWinner('Team B');
+                    return;
+                }
+            } else {
+                if (remainingWhites === 0) {
+                    concludeWinner(0); // Player 1 wins
+                    return;
+                } else if (remainingBlacks === 0) {
+                    concludeWinner(1); // Player 2 wins
+                    return;
+                }
             }
 
-            // 5. Alternate Turn Passes
-            if (!extraTurnGranted && gameMode !== 'practice') {
-                currentPlayerIdx = currentPlayerIdx === 0 ? 1 : 0;
+            // 4. Alternate Turn Passes
+            if (!extraTurnGranted) {
+                currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
             }
 
             // Clear internal turn flags
             extraTurnGranted = false;
             foulCommitted = false;
+
+            // 5. Reset Striker Status & Coordinates to the current active player's lane!
+            resetStrikerToBaseline(currentPlayerIdx);
 
             gameState = 'placing';
             updateTurnBanner();
@@ -1182,23 +1343,19 @@
             }
         }
 
-        function concludeWinner(winnerIdx) {
+        function concludeWinner(winnerVal) {
             gameState = 'gameover';
             positionSlider.disabled = true;
             
             let banner = document.getElementById('gameStatusText');
-            if (winnerIdx === 0) {
-                banner.innerHTML = `<span class="text-green-400 font-extrabold text-xl animate-bounce">🏆 PLAYER 1 (WHITE) WINS!</span>`;
-            } else if (winnerIdx === 1) {
-                let name = gameMode === 'ai' ? "Royal Bot" : "Player 2";
-                banner.innerHTML = `<span class="text-green-400 font-extrabold text-xl animate-bounce">🏆 ${name} (BLACK) WINS!</span>`;
+            if (typeof winnerVal === 'string') {
+                banner.innerHTML = `<span class="text-green-400 font-extrabold text-xl animate-bounce">🏆 ${winnerVal} WINS THE GAME!</span>`;
             } else {
-                banner.innerHTML = `<span class="text-amber-400 font-extrabold text-lg">Clear Arena Complete!</span>`;
+                banner.innerHTML = `<span class="text-green-400 font-extrabold text-xl animate-bounce">🏆 ${players[winnerVal].name} WINS!</span>`;
             }
         }
 
         /*
-         * STREAMING_CHUNK: Setting up smart AI calculations...
          * INTELLIGENT AI GAMEPLAY STRATEGY SYSTEM
          */
         function initiateAiStrikerShot() {
@@ -1207,14 +1364,12 @@
             // AI needs to choose a target piece (Black coins or Queen if unlocked)
             let targets = coins.filter(c => !c.isPocketed && (c.color === 'black' || (c.color === 'queen' && queenStatus === 'center')));
             if (targets.length === 0) {
-                // Fallback targets if player has somehow finished
                 targets = coins.filter(c => !c.isPocketed);
             }
 
             if (targets.length === 0) return;
 
             // Simple strategic AI algorithm:
-            // Find a target that has closest alignment with pockets, or simply choose the best direct target
             let bestTarget = null;
             let bestWeight = -999999;
             let chosenSliderVal = 50;
@@ -1226,7 +1381,6 @@
 
             targets.forEach(t => {
                 pockets.forEach(pock => {
-                    // Compute angle from pocket to target coin
                     let pToT_dx = t.x - pock.x;
                     let pToT_dy = t.y - pock.y;
                     let pToT_dist = Math.sqrt(pToT_dx * pToT_dx + pToT_dy * pToT_dy);
@@ -1237,24 +1391,29 @@
                     let impactX = t.x + (pToT_dx / pToT_dist) * (t.radius + striker.radius);
                     let impactY = t.y + (pToT_dy / pToT_dist) * (t.radius + striker.radius);
 
-                    // Test baseline coordinates for clear shoot pathways
                     baselinePositions.forEach(percent => {
-                        let tempStrikerX = 210 + (percent / 100) * 380;
-                        let tempStrikerY = 631;
+                        let tempCoords = getBaselineCoords(currentPlayerIdx, percent);
+                        let tempStrikerX = tempCoords.x;
+                        let tempStrikerY = tempCoords.y;
 
                         let sToI_dx = impactX - tempStrikerX;
                         let sToI_dy = impactY - tempStrikerY;
                         let sToI_dist = Math.sqrt(sToI_dx * sToI_dx + sToI_dy * sToI_dy);
 
-                        // Path direction vector
-                        let angleDiff = Math.atan2(sToI_dy, sToI_dx);
-
                         // Weight calculations:
-                        // High weight is given to smaller distances and forward direct hits (fewer acute back angles)
                         let weight = 1000 - sToI_dist - (pToT_dist * 0.8);
                         
-                        // Avoid aiming heavily backwards or hitting own pockets
-                        if (sToI_dy > 0) weight -= 500; 
+                        // Avoid aiming heavily backwards relative to active baseline
+                        let p = players[currentPlayerIdx];
+                        let aimingBackwards = false;
+                        if (p.baseline === 'bottom' && sToI_dy > 0) aimingBackwards = true;
+                        else if (p.baseline === 'top' && sToI_dy < 0) aimingBackwards = true;
+                        else if (p.baseline === 'left' && sToI_dx < 0) aimingBackwards = true;
+                        else if (p.baseline === 'right' && sToI_dx > 0) aimingBackwards = true;
+
+                        if (aimingBackwards) {
+                            weight -= 500;
+                        }
 
                         if (weight > bestWeight) {
                             bestWeight = weight;
@@ -1274,13 +1433,14 @@
             } else if (aiDifficulty === 'medium') {
                 accuracyNoise = (Math.random() - 0.5) * 20; // Small deviation
             } else {
-                accuracyNoise = (Math.random() - 0.5) * 4; // Absolute pinpoint laser accuracy
+                accuracyNoise = (Math.random() - 0.5) * 4; // Absolute pinpoint accuracy
             }
 
             // Apply AI choices to the board elements
             positionSlider.value = chosenSliderVal;
-            // Update visual placement
-            striker.x = 210 + (chosenSliderVal / 100) * 380;
+            let finalCoords = getBaselineCoords(currentPlayerIdx, chosenSliderVal);
+            striker.x = finalCoords.x;
+            striker.y = finalCoords.y;
             
             // Show planning aim visual briefly
             gameState = 'aiming';
@@ -1310,35 +1470,33 @@
                 positionSlider.disabled = true;
 
                 // Fire striker
-                let shotForceFactor = 0.15 + (capDist / 220) * 0.18; // Velocity translation ratio
+                let shotForceFactor = 0.15 + (capDist / 220) * 0.18; 
                 striker.vx = dirX * capDist * shotForceFactor;
-                striker.vy = dirY * capDist * shotForceFactor;
+                striker.vy = dirY * shotForceFactor * capDist;
                 
                 triggerSound('collision', 1.0);
             }, 800);
         }
 
         /*
-         * STREAMING_CHUNK: Processing interface input and dragging mechanics...
          * SLIDER & TOUCH INPUT EVENTS
          */
         positionSlider.addEventListener('input', (e) => {
             if (gameState !== 'placing' || (gameMode === 'ai' && currentPlayerIdx === 1)) return;
             
             let percent = parseFloat(e.target.value);
-            // Translate range value smoothly to the bottom baseline coordinates (x between 210 and 590)
-            striker.x = 210 + (percent / 100) * 380;
+            let coords = getBaselineCoords(currentPlayerIdx, percent);
+            striker.x = coords.x;
+            striker.y = coords.y;
             
             document.getElementById('sliderValueText').innerText = percent === 50 ? "Center Position" : `Aligned ${percent}%`;
         });
 
         function getMousePos(evt) {
             let rect = canvas.getBoundingClientRect();
-            // Scale correctly based on true internal 800x800 resolution mapping
             let scaleX = BOARD_SIZE / rect.width;
             let scaleY = BOARD_SIZE / rect.height;
             
-            // Handle Touch Event vs Mouse Event
             let clientX, clientY;
             if (evt.touches && evt.touches.length > 0) {
                 clientX = evt.touches[0].clientX;
@@ -1356,7 +1514,6 @@
 
         function handlePointerStart(evt) {
             if (gameState === 'gameover' || gameState === 'shooting' || gameState === 'evaluating') return;
-            // Prevent humans from moving during AI's action phase
             if (gameMode === 'ai' && currentPlayerIdx === 1) return;
 
             let pos = getMousePos(evt);
@@ -1366,16 +1523,14 @@
             let dy = pos.y - striker.y;
             let dist = Math.sqrt(dx * dx + dy * dy);
 
-            if (dist < striker.radius + 30) { // Large tap target buffer for easy touch control
+            if (dist < striker.radius + 35) { // Responsive tap buffer
                 isDragging = true;
                 dragStartPos = { x: striker.x, y: striker.y };
                 dragCurrentPos = pos;
                 gameState = 'aiming';
                 
-                // Audio context initiation trigger for web safety policies
                 if (!soundInitialized) initAudio();
                 
-                // Disable positioning slider during actual aiming
                 positionSlider.disabled = true;
                 document.getElementById('aimHintOverlay').style.opacity = '0';
             }
@@ -1384,7 +1539,7 @@
         function handlePointerMove(evt) {
             if (!isDragging) return;
             dragCurrentPos = getMousePos(evt);
-            evt.preventDefault(); // Lock screen gestures scrolling
+            evt.preventDefault(); // Lock mobile scroll dragging
         }
 
         function handlePointerEnd(evt) {
@@ -1398,14 +1553,14 @@
             // Set dynamic limit for drawing aim length
             let shootPower = Math.min(200, dist);
 
-            if (shootPower > 12) { // Minimal threshold to avoid misclicks
+            if (shootPower > 12) { 
                 gameState = 'shooting';
                 
                 let dirX = dx / dist;
                 let dirY = dy / dist;
 
                 // Striker launching physics vector logic
-                let forceConst = 0.165; // High responsiveness factor
+                let forceConst = 0.165; 
                 striker.vx = dirX * shootPower * forceConst;
                 striker.vy = dirY * shootPower * forceConst;
 
@@ -1428,7 +1583,6 @@
         window.addEventListener('touchend', handlePointerEnd);
 
         /*
-         * STREAMING_CHUNK: Programming the update loop graphics...
          * CORE ANIMATION & GAME UPDATE LOOP
          */
         function loop() {
@@ -1478,10 +1632,10 @@
                     ctx.setLineDash([8, 8]);
                     ctx.moveTo(striker.x, striker.y);
                     ctx.lineTo(targetAimX, targetAimY);
-                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.75)'; // High-visibility laser-red line
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)'; // High-visibility laser line
                     ctx.lineWidth = 3;
                     ctx.stroke();
-                    ctx.setLineDash([]); // Reset to solid line format
+                    ctx.setLineDash([]); // Reset
 
                     // Aim target point indicator ring
                     ctx.beginPath();
@@ -1505,7 +1659,7 @@
 
         // Load game elements on startup
         window.onload = function() {
-            startNewGame();
+            changeMode('2p');
             loop();
         };
 
