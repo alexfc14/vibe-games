@@ -69,6 +69,7 @@
         .hud-card:nth-child(3) { min-width: 150px; } /* Timer Card */
         .hud-card:nth-child(4) { min-width: 200px; } /* Track Selector Card */
         .hud-card:nth-child(5) { min-width: 150px; } /* Game Mode Card */
+        .hud-card:nth-child(6) { min-width: 160px; } /* Grip Card */
 
         .hud-card span, #time-ui {
             font-variant-numeric: tabular-nums; /* Monospaced digital clock layout */
@@ -298,6 +299,7 @@
             .hud-card:nth-child(3) { min-width: 90px; }
             .hud-card:nth-child(4) { min-width: 130px; }
             .hud-card:nth-child(5) { min-width: 110px; }
+            .hud-card:nth-child(6) { min-width: 110px; }
             .hud-label {
                 font-size: 8px;
             }
@@ -344,6 +346,15 @@
         <div class="hud-card" style="pointer-events: auto; cursor: pointer; border-color: #39ff14; box-shadow: 0 0 15px rgba(57, 255, 20, 0.5);" onclick="toggleGameMode()">
             <div class="hud-label" style="color: #39ff14;">Mode (Click)</div>
             <div id="mode-ui" style="color: #fff; text-transform: uppercase;">VS AI</div>
+        </div>
+        <!-- Dynamic Grip Limit Adjuster Card -->
+        <div id="grip-card" class="hud-card" style="pointer-events: auto; border-color: #ffaa00; box-shadow: 0 0 15px rgba(255, 170, 0, 0.5); display: none;">
+            <div class="hud-label" style="color: #ffaa00;">Grip Limit (Type/Click)</div>
+            <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 18px;">
+                <span style="cursor: pointer; color: #ffaa00; font-size: 24px; padding: 0 8px; background: rgba(255,255,255,0.1); border-radius: 4px;" onclick="adjustGrip(-0.5)">-</span>
+                <input type="number" id="grip-ui-val" value="3.0" step="0.1" min="0.1" max="999.0" onkeydown="event.stopPropagation()" onkeyup="event.stopPropagation()" oninput="manualGripChange(this.value)" style="background: rgba(0,0,0,0.6); color: #fff; border: 1px solid #ffaa00; border-radius: 4px; width: 70px; text-align: center; font-family: inherit; font-size: 18px; font-weight: bold; outline: none; pointer-events: auto;">
+                <span style="cursor: pointer; color: #ffaa00; font-size: 24px; padding: 0 8px; background: rgba(255,255,255,0.1); border-radius: 4px;" onclick="adjustGrip(0.5)">+</span>
+            </div>
         </div>
     </div>
 
@@ -414,6 +425,10 @@ let steerDuration = 0; // Tracks hold time of steering for subtle tap control
 
 // Game Mode Selection Variable
 let gameMode = 'VS_AI'; // 'SOLO', 'VS_AI', or 'SCALEXTRIC'
+
+// SHARED SLOT CAR PHYSICS DEFINITIONS
+let gripLimit = 3.0; // Dynamic, user-adjustable grip threshold
+const curvatureScale = 5.0; // The optimized, smoothed curvature coefficient
 
 // Level Configurations
 let currentLevel = 1;
@@ -837,6 +852,19 @@ function startAudioEngine() {
         soundManager.ctx.resume();
     }
 }
+
+// Global Grip Threshold Adjustment Interface
+function adjustGrip(amount) {
+    gripLimit = Math.max(0.1, parseFloat((gripLimit + amount).toFixed(1)));
+    document.getElementById('grip-ui-val').value = gripLimit.toFixed(1);
+}
+
+function manualGripChange(val) {
+    let parsed = parseFloat(val);
+    if (!isNaN(parsed) && parsed >= 0.1) {
+        gripLimit = parsed;
+    }
+}
 </script>
 
 <script>
@@ -978,6 +1006,9 @@ function init() {
 
     // Sync HUD selection
     document.getElementById('mode-ui').innerText = gameMode === 'VS_AI' ? "VS AI" : "SOLO";
+
+    // Set initial display state of Grip Adjuster Card
+    document.getElementById('grip-card').style.display = (gameMode === 'SCALEXTRIC') ? 'flex' : 'none';
 
     // Start UI Countdown
     triggerCountdown();
@@ -1826,6 +1857,9 @@ function toggleGameMode() {
     
     document.getElementById('mode-ui').innerText = modeText;
 
+    // Toggle the display of the Grip Limit adjuster dynamically
+    document.getElementById('grip-card').style.display = (gameMode === 'SCALEXTRIC') ? 'flex' : 'none';
+
     // Redraw track slot lines dynamically based on mode!
     buildTrack();
     buildCars();
@@ -2110,6 +2144,13 @@ function handleVehiclesCollision() {
 function updateAiPhysics() {
     if (gameMode === 'SOLO') return;
 
+    // CRITICAL FIX: Ensure AI strictly halts and does not start early during the countdown frame states!
+    if (gameState === 'COUNTDOWN') {
+        aiCar.speed = 0;
+        aiCar.velocity.set(0, 0, 0);
+        return;
+    }
+
     // --- CASE A: SCALEXTRIC SLOT MODE FOR AI OPPONENT ---
     if (gameMode === 'SCALEXTRIC') {
         if (aiCar.isRolledOver) {
@@ -2137,17 +2178,19 @@ function updateAiPhysics() {
             return;
         }
 
-        // 1. Calculate Curvature Ahead for Speed Regulation
-        const futureSteps = 0.015;
+        // 1. Calculate Curvature Ahead for Speed Regulation (Smooth wide-step lookahead)
+        const futureSteps = 0.03; // Sample slightly further ahead to smooth out spline noise
         const currentT = trackCurve.getTangentAt(aiCar.slotProgress).normalize();
         const aheadT = trackCurve.getTangentAt((aiCar.slotProgress + futureSteps) % 1.0).normalize();
-        const curvature = currentT.angleTo(aheadT) * 60; // Scaling factor
+        const curvature = currentT.angleTo(aheadT) * curvatureScale; 
         
-        // 2. Drive speed heuristic targeting a safe force threshold (now highly forgiving G-force limits)
-        const safeSpeed = Math.sqrt(1.85 / (curvature * 0.05 + 0.01));
+        // 2. Drive speed heuristic targeting a safe force threshold dynamically locked to user's Grip Limit
+        // AI targets about 85% of the player's absolute physical deslot limit to keep the race clean and competitive
+        const safetyFactor = 0.85;
+        const safeSpeed = Math.sqrt((gripLimit * safetyFactor) / (Math.max(0.01, curvature)));
         
-        // Introduce human-like error fluctuations (occasional minor throttle delay)
-        const noise = Math.sin(performance.now() * 0.0035) * 0.35;
+        // Introduce human-like error fluctuations (occasional minor throttle adjustments on twists)
+        const noise = Math.sin(performance.now() * 0.0035) * 0.15;
         let aiTargetSpeed = Math.min(aiCar.maxSpeed, safeSpeed) + noise;
 
         // Check water deceleration
@@ -2192,7 +2235,9 @@ function updateAiPhysics() {
         aiCar.mesh.rotation.z = bankingAngle;
 
         // 5. Centrifugal slide visual offsets (yaw the body outward based on optimized G-force accumulation rate)
-        aiCar.centrifugalForce = (aiCar.speed * aiCar.speed) * curvature * 0.05; // 3x lower multiplier to prevent easy flips
+        const targetAiForce = (aiCar.speed * aiCar.speed) * curvature;
+        // Temporal low-pass filter to smooth out sudden spline calculations
+        aiCar.centrifugalForce = THREE.MathUtils.lerp(aiCar.centrifugalForce, targetAiForce, 0.1);
         
         const crossY = currentT.x * aheadT.z - currentT.z * aheadT.x;
         const slideDirection = Math.sign(crossY);
@@ -2202,8 +2247,8 @@ function updateAiPhysics() {
         // Rotate tires
         aiCar.wheels.forEach(w => { w.rotation.x += aiCar.speed * 0.28; });
 
-        // Trigger Rollover Crash if speed exceeds safe grip limits (increased threshold from 1.45 to 2.2)
-        if (aiCar.centrifugalForce > 2.2) {
+        // Trigger Rollover Crash if force exceeds the shared gripLimit
+        if (aiCar.centrifugalForce > gripLimit) {
             aiCar.isRolledOver = true;
             aiCar.rollOverTimer = 90; // 1.5 second recovery penalty
             
@@ -2243,12 +2288,6 @@ function updateAiPhysics() {
         }
     }
     aiCar.lastClosestIdx = closestIndex;
-
-    if (gameState === 'COUNTDOWN') {
-        aiCar.speed = 0;
-        aiCar.velocity.set(0,0,0);
-        return;
-    }
 
     const lookAheadPoints = 25; 
     const targetNodeIdx = (closestIndex + lookAheadPoints) % curvePointsCount;
@@ -2503,21 +2542,16 @@ function updatePhysics() {
         car.mesh.rotation.z = bankingAngle;
 
         // 4. Calculate Centrifugal Force on Curves
-        const futureSteps = 0.015;
+        const futureSteps = 0.03; // Sample slightly further ahead
         const tangentAhead = trackCurve.getTangentAt((car.slotProgress + futureSteps) % 1.0).normalize();
-        const curvature = tangent.angleTo(tangentAhead) * 5; // G-Force coefficient
+        const curvature = tangent.angleTo(tangentAhead) * curvatureScale;
         
-        // RE-BALANCED MULTIPLIER: Reduced from 0.15 to 0.05 (making it 3 times harder to deslot)
-        car.centrifugalForce = (car.speed * car.speed) * curvature * 0.05;
+        const rawPlayerForce = (car.speed * car.speed) * curvature;
+        // Temporal low-pass filter to prevent instant derailment on single-frame spline ripples
+        car.centrifugalForce = THREE.MathUtils.lerp(car.centrifugalForce, rawPlayerForce, 0.1);
 
-        // 5. Dynamic Tail Fishtailing: slide chassis outward visually under centrifugal force
-        const crossY = tangent.x * tangentAhead.z - tangent.z * tangentAhead.x;
-        const slideDirection = Math.sign(crossY); // -1 left turn, +1 right turn
-        const slideYaw = -slideDirection * Math.min(0.65, car.centrifugalForce * 0.28);
-        car.bodyMesh.rotation.y = THREE.MathUtils.lerp(car.bodyMesh.rotation.y, slideYaw, 0.1);
-
-        // Update neon G-Force limit bar (Re-scaled from 1.45 to 2.2 threshold)
-        const limitRatio = Math.min(1.0, car.centrifugalForce / 2.2);
+        // Update neon G-Force limit bar (Re-scaled relative to active custom gripLimit)
+        const limitRatio = Math.min(1.0, car.centrifugalForce / gripLimit);
         const fill = document.getElementById('slot-meter-fill');
         fill.style.width = `${limitRatio * 100}%`;
         if (limitRatio > 0.85) {
@@ -2544,10 +2578,10 @@ function updatePhysics() {
 
         // Sound Engine update
         soundManager.updateEngine(car.speed, maxAllowedSpeed, true);
-        soundManager.updateDrift(car.centrifugalForce > 0.9, Math.abs(car.speed), inWater);
+        soundManager.updateDrift(car.centrifugalForce > (gripLimit * 0.4), Math.abs(car.speed), inWater);
 
-        // 6. Trigger Deslotting / Rollover if force exceeds grip limits (increased threshold from 1.45 to 2.2)
-        if (car.centrifugalForce > 2.2) {
+        // 6. Trigger Deslotting / Rollover if force exceeds active gripLimit
+        if (car.centrifugalForce > gripLimit) {
             car.isRolledOver = true;
             car.rollOverTimer = 90; // 1.5 second penalty
             
@@ -2595,7 +2629,7 @@ function updatePhysics() {
 
 
     // ==========================================
-    // --- MODE 2: SANDBOX DRIVING (UNTOUCHED) ---
+    // --- MODE 2: SANDBOX DRIVING ---
     // ==========================================
     document.getElementById('slot-meter-container').style.display = 'none';
 
@@ -2699,7 +2733,7 @@ function updatePhysics() {
         }
     }
 
-    // Absolute ground level clamp to make sure player never sinks below the road (Screenshot 2026-06-05 at 17.25.25.png)
+    // Absolute ground level clamp to make sure player never sinks below the road
     if (car.position.y < targetY) car.position.y = targetY;
 
     // 5. BOUNDARY COLLISIONS
