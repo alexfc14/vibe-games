@@ -64,10 +64,11 @@
             flex-shrink: 0;
         }
         /* Explicit widths lock the layout in place, preventing variable numbers from causing shifts */
-        .hud-card:nth-child(1) { min-width: 115px; } /* Speed Card */
-        .hud-card:nth-child(2) { min-width: 85px; }  /* Lap Card */
-        .hud-card:nth-child(3) { min-width: 160px; } /* Timer Card */
-        .hud-card:nth-child(4) { min-width: 230px; } /* Track Selector Card */
+        .hud-card:nth-child(1) { min-width: 110px; } /* Speed Card */
+        .hud-card:nth-child(2) { min-width: 80px; }  /* Lap Card */
+        .hud-card:nth-child(3) { min-width: 150px; } /* Timer Card */
+        .hud-card:nth-child(4) { min-width: 200px; } /* Track Selector Card */
+        .hud-card:nth-child(5) { min-width: 150px; } /* Game Mode Card */
 
         .hud-card span, #time-ui {
             font-variant-numeric: tabular-nums; /* Monospaced digital clock layout */
@@ -103,6 +104,41 @@
             width: 100%;
             height: 100%;
             display: block;
+        }
+        /* Slot G-Force Meter HUD overlay */
+        #slot-meter-container {
+            display: none;
+            position: absolute;
+            bottom: 130px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 280px;
+            background: rgba(10, 10, 20, 0.9);
+            border: 2px solid #ff5500;
+            box-shadow: 0 0 15px rgba(255, 85, 0, 0.6);
+            border-radius: 10px;
+            padding: 10px 15px;
+            z-index: 15;
+            text-align: center;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+        #slot-meter-track {
+            width: 100%;
+            height: 16px;
+            background: #111;
+            border: 1px solid #444;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            margin-top: 4px;
+        }
+        #slot-meter-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #39ff14, #ffff00, #ff0000);
+            box-shadow: 0 0 8px currentColor;
+            transition: width 0.05s ease-out;
         }
         /* On-screen Countdown */
         #countdown-overlay {
@@ -255,14 +291,15 @@
             }
             .hud-card {
                 padding: 6px 10px;
-                font-size: 15px;
+                font-size: 14px;
             }
-            .hud-card:nth-child(1) { min-width: 75px; }
-            .hud-card:nth-child(2) { min-width: 55px; }
-            .hud-card:nth-child(3) { min-width: 110px; }
-            .hud-card:nth-child(4) { min-width: 165px; }
+            .hud-card:nth-child(1) { min-width: 65px; }
+            .hud-card:nth-child(2) { min-width: 45px; }
+            .hud-card:nth-child(3) { min-width: 90px; }
+            .hud-card:nth-child(4) { min-width: 130px; }
+            .hud-card:nth-child(5) { min-width: 110px; }
             .hud-label {
-                font-size: 9px;
+                font-size: 8px;
             }
             #audio-hint {
                 font-size: 10px;
@@ -302,6 +339,19 @@
         <div class="hud-card" style="pointer-events: auto; cursor: pointer; border-color: #00ffff; box-shadow: 0 0 15px rgba(0, 242, 255, 0.5);" onclick="toggleLevel()">
             <div class="hud-label" style="color: #00ffff;">Track (Click)</div>
             <div id="level-ui" style="color: #fff; text-transform: uppercase;">DESERT SPEEDWAY</div>
+        </div>
+        <!-- Live Game Mode (Solo/AI/Scalextric) Selector -->
+        <div class="hud-card" style="pointer-events: auto; cursor: pointer; border-color: #39ff14; box-shadow: 0 0 15px rgba(57, 255, 20, 0.5);" onclick="toggleGameMode()">
+            <div class="hud-label" style="color: #39ff14;">Mode (Click)</div>
+            <div id="mode-ui" style="color: #fff; text-transform: uppercase;">VS AI</div>
+        </div>
+    </div>
+
+    <!-- Live G-Force Meter (Specifically for Scalextric mode) -->
+    <div id="slot-meter-container">
+        <div class="hud-label" style="color: #ffaa00; font-size: 11px; font-weight: bold; letter-spacing: 1.5px;">G-FORCE / GRIP LIMIT</div>
+        <div id="slot-meter-track">
+            <div id="slot-meter-fill"></div>
         </div>
     </div>
 
@@ -350,6 +400,7 @@ const finalTimeSpan = document.getElementById('final-time');
 const minimapCanvas = document.getElementById('minimap');
 const minimapCtx = minimapCanvas.getContext('2d');
 const audioHint = document.getElementById('audio-hint');
+const modeUi = document.getElementById('mode-ui');
 
 let scene, camera, renderer;
 let gameState = 'COUNTDOWN'; // COUNTDOWN, RACING, FINISHED
@@ -361,7 +412,10 @@ let lastClosestIdx = -1; // -1 represents uninitialized startup state
 let checkpointPassed = false;
 let steerDuration = 0; // Tracks hold time of steering for subtle tap control
 
-// Level Configurations - Corrected level 2 with butter-smooth altitude gradients and non-crossing points
+// Game Mode Selection Variable
+let gameMode = 'VS_AI'; // 'SOLO', 'VS_AI', or 'SCALEXTRIC'
+
+// Level Configurations
 let currentLevel = 1;
 const levelConfigs = {
     1: {
@@ -446,7 +500,42 @@ const car = {
     bodyMesh: null, // Submesh holding car visual elements to apply roll & vibration easily
     wheels: [],
     verticalVelocity: 0, // Airborne state velocity
-    isGrounded: true
+    isGrounded: true,
+    
+    // Scalextric specific properties
+    slotProgress: 0,
+    centrifugalForce: 0,
+    isRolledOver: false,
+    rollOverTimer: 0,
+    crashVelocity: new THREE.Vector3()
+};
+
+// --- AI OPPONENT PHYSICS & METADATA ---
+const aiCar = {
+    position: new THREE.Vector3(0, 0.9, 0),
+    velocity: new THREE.Vector3(0, 0, 0),
+    heading: 0,
+    speed: 0,
+    maxSpeed: 4.1, // Slower than player (4.8) to make it challenge but fully beatable
+    accel: 0.08,
+    decel: 0.04,
+    friction: 0.98,
+    steerSpeed: 0.038,
+    width: 3.6,
+    length: 7.2,
+    mesh: null,
+    bodyMesh: null,
+    wheels: [],
+    verticalVelocity: 0,
+    isGrounded: true,
+    lastClosestIdx: -1,
+
+    // Scalextric specific properties
+    slotProgress: 0,
+    centrifugalForce: 0,
+    isRolledOver: false,
+    rollOverTimer: 0,
+    crashVelocity: new THREE.Vector3()
 };
 
 // --- PROCEDURAL GENERATION: CHANNELS & DESERT ASSETS ---
@@ -458,7 +547,7 @@ const wallLimit = (trackWidth / 2) - 1.8; // Distance from track center before h
 function getBankingAngle(u, level) {
     if (level !== 2) return 0;
     
-    // Bank the new left-hand corner (u = 0.04 to 0.22)
+    // Bank the left-hand corner (u = 0.04 to 0.22)
     if (u >= 0.04 && u <= 0.22) {
         let baseBank = -0.42; // Tilt inward towards the left corner sweep
         return baseBank * Math.sin((u - 0.04) / 0.18 * Math.PI);
@@ -483,6 +572,17 @@ function getMinDistanceToTrack(pos) {
         if (d < minDist) minDist = d;
     }
     return minDist;
+}
+
+// Helper function to determine exact 3D slot coordinate positions
+function getSlotPosition(u, laneOffset) {
+    const pt = trackCurve.getPointAt(u);
+    const tangent = trackCurve.getTangentAt(u).normalize();
+    const rightVec = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+    const bankingAngle = getBankingAngle(u, currentLevel);
+    const bankedRightVec = rightVec.clone().applyAxisAngle(tangent, bankingAngle);
+    
+    return pt.clone().addScaledVector(bankedRightVec, laneOffset).add(new THREE.Vector3(0, 0.9, 0));
 }
 
 // --- SYNTHESIZED WEB AUDIO ENGINE CLASS (No external MP3 required) ---
@@ -609,7 +709,7 @@ class GameSoundEngine {
             this.driftFilter.Q.setValueAtTime(1.5, this.ctx.currentTime); // Muffled, wider band Q
             this.driftGain.gain.setTargetAtTime(0.09, this.ctx.currentTime, 0.05);
         } else if (isDrifting && speed > 1.8) {
-            // Dynamic sharp screeching sound
+            // Dynamic sharp sharp screeching sound
             const squealFreq = 580 + Math.sin(Date.now() * 0.12) * 140 + speed * 45;
             this.driftOsc.frequency.setTargetAtTime(squealFreq, this.ctx.currentTime, 0.05);
             this.driftFilter.frequency.setTargetAtTime(squealFreq * 1.15, this.ctx.currentTime, 0.05);
@@ -737,8 +837,9 @@ function startAudioEngine() {
         soundManager.ctx.resume();
     }
 }
+</script>
 
-
+<script>
 // --- PARTICLE SYSTEM POOL (For Drifting Smoke & Wall Sparks & Water Splashes) ---
 const particles = [];
 const maxParticles = 120;
@@ -814,10 +915,10 @@ function init() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     // Lighting (Harsh sunset style)
-    const ambientLight = new THREE.AmbientLight(0x443355, 1.2);
+    const ambientLight = new THREE.AmbientLight(0x554466, 1.4); // Brighter, more vibrant ambient light
     scene.add(ambientLight);
 
-    const sunLight = new THREE.DirectionalLight(0xffddaa, 1.4);
+    const sunLight = new THREE.DirectionalLight(0xffddaa, 1.6);
     sunLight.position.set(400, 300, -200);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 2048;
@@ -855,8 +956,8 @@ function init() {
     // Scatter Desert Scenery (Dunes & Cacti) - Protected against track overlap
     scatterEnvironment();
 
-    // Instantiate Custom Toy Car
-    buildToyCar();
+    // Instantiate Custom Toy Cars (Tiger Shark and Skelesaurus)
+    buildCars();
 
     // Setup starting camera position directly behind vehicle on startup
     const startTangent = trackCurve.getTangentAt(0).normalize();
@@ -875,10 +976,15 @@ function init() {
     // Window Resizing Setup
     window.addEventListener('resize', onWindowResize);
 
+    // Sync HUD selection
+    document.getElementById('mode-ui').innerText = gameMode === 'VS_AI' ? "VS AI" : "SOLO";
+
     // Start UI Countdown
     triggerCountdown();
 }
+</script>
 
+<script>
 // --- PROCEDURAL STABLE RIBBON METHOD FOR DETAILED TWIST-FREE TRACK ---
 function buildTrack() {
     if (trackGroup) scene.remove(trackGroup);
@@ -1013,6 +1119,37 @@ function buildTrack() {
     centerLine = new THREE.Line(centerLineGeo, centerLineMat);
     centerLine.computeLineDistances();
     trackGroup.add(centerLine);
+
+    // Procedural Scalextric Slots (Metallic steel rails drawn directly onto the road surface)
+    if (gameMode === 'SCALEXTRIC') {
+        const leftRailPoints = [];
+        const rightRailPoints = [];
+        const centerPoints = trackCurve.getSpacedPoints(500);
+        for (let i = 0; i < centerPoints.length; i++) {
+            const pt = centerPoints[i];
+            const u = i / centerPoints.length;
+            const tangent = trackCurve.getTangentAt(u).normalize();
+            const rightVec = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+            const bankingAngle = getBankingAngle(u, currentLevel);
+            const bankedRightVec = rightVec.clone().applyAxisAngle(tangent, bankingAngle);
+            const bankedUpNormal = new THREE.Vector3().crossVectors(bankedRightVec, tangent).normalize();
+
+            // Offset laterally to represent physical left and right slot lanes (-2.2 and +2.2)
+            const pL = pt.clone().addScaledVector(bankedRightVec, -2.2).addScaledVector(bankedUpNormal, 0.12);
+            const pR = pt.clone().addScaledVector(bankedRightVec, 2.2).addScaledVector(bankedUpNormal, 0.12);
+            leftRailPoints.push(pL);
+            rightRailPoints.push(pR);
+        }
+
+        const leftRailGeo = new THREE.BufferGeometry().setFromPoints(leftRailPoints);
+        const rightRailGeo = new THREE.BufferGeometry().setFromPoints(rightRailPoints);
+        const railMat = new THREE.LineBasicMaterial({ color: 0x555555, linewidth: 3 });
+        
+        const leftRailLine = new THREE.Line(leftRailGeo, railMat);
+        const rightRailLine = new THREE.Line(rightRailGeo, railMat);
+        trackGroup.add(leftRailLine);
+        trackGroup.add(rightRailLine);
+    }
 }
 
 // --- CHECKERED START/FINISH ARCH ---
@@ -1081,8 +1218,7 @@ function buildOasisLakes() {
     waterGroup = new THREE.Group();
     scene.add(waterGroup);
 
-    // Dynamic, shimmering, semi-transparent blue water meshes for submerged track sections
-    // This turns sections sunk in sand (from Screenshot 2026-06-04 at 01.45.14.png) into a gorgeous lake obstacle!
+    // Dynamic, shimmering, semi-transparent blue water meshes for submerged track sections (Screenshot 2026-06-04 at 01.45.14.png)
     const waterMat = new THREE.MeshStandardMaterial({
         color: 0x0088ff,
         roughness: 0.05,
@@ -1097,21 +1233,21 @@ function buildOasisLakes() {
         const lakeGeo1 = new THREE.RingGeometry(0, 480, 32);
         const lake1 = new THREE.Mesh(lakeGeo1, waterMat);
         lake1.rotation.x = -Math.PI / 2;
-        lake1.position.set(120, 0.12, -40); // Lowered visual level from 0.45 to 0.12
+        lake1.position.set(120, 0.12, -40); // Lowered visual level to avoid drowning loop
         waterGroup.add(lake1);
 
         // Secondary small water pocket on the finish loop corridor
         const lakeGeo2 = new THREE.RingGeometry(0, 220, 32);
         const lake2 = new THREE.Mesh(lakeGeo2, waterMat);
         lake2.rotation.x = -Math.PI / 2;
-        lake2.position.set(-80, 0.12, -280); // Lowered visual level from 0.45 to 0.12
+        lake2.position.set(-80, 0.12, -280); 
         waterGroup.add(lake2);
     } else {
         // Minor decorative oasis for Level 1 to keep visual thematic styling matching perfectly
         const lakeGeo1 = new THREE.RingGeometry(0, 250, 24);
         const lake1 = new THREE.Mesh(lakeGeo1, waterMat);
         lake1.rotation.x = -Math.PI / 2;
-        lake1.position.set(-300, 0.12, -350); // Lowered visual level from 0.45 to 0.12
+        lake1.position.set(-300, 0.12, -350); 
         waterGroup.add(lake1);
     }
 }
@@ -1205,69 +1341,243 @@ function scatterEnvironment() {
         }
     }
 }
+</script>
 
-// --- TOY CAR CONSTRUCTION ---
-function buildToyCar() {
+<script>
+// --- TIGER SHARK CUSTOM CHASSIS MODEL (Brighter, Highly Colorful, Non-Metallic) ---
+function buildTigerSharkChassis() {
+    const tsGroup = new THREE.Group();
+    
+    // Standard materials optimized to catch ambient & direct light without environment map clipping
+    const orangeMat = new THREE.MeshStandardMaterial({ color: 0xff5500, roughness: 0.4, metalness: 0.1 }); // Rich popping Orange
+    const blueMat = new THREE.MeshStandardMaterial({ color: 0x00aaff, roughness: 0.4, metalness: 0.1 });   // Bright Electric Blue
+    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0.0 });  // Teeth & eye whites
+    const redMat = new THREE.MeshStandardMaterial({ color: 0xff1100, roughness: 0.5, metalness: 0.0 });    // Mouth background
+    const blackMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.1 });  // Windshield & pupils
+
+    // Shark cabin
+    const bodyGeo = new THREE.BoxGeometry(3.3, 1.2, 5.5);
+    const bodyMain = new THREE.Mesh(bodyGeo, orangeMat);
+    bodyMain.position.set(0, 1.1, -0.6);
+    bodyMain.castShadow = true;
+    tsGroup.add(bodyMain);
+
+    // Shark Slope nose hood
+    const noseGeo = new THREE.BoxGeometry(3.3, 0.6, 2.2);
+    const nose = new THREE.Mesh(noseGeo, orangeMat);
+    nose.position.set(0, 0.8, 2.65);
+    nose.castShadow = true;
+    tsGroup.add(nose);
+
+    // Shark Glass Cabin (Eyes look out the side)
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.9, 3.0), blackMat);
+    cabin.position.set(0, 1.9, -1.0);
+    tsGroup.add(cabin);
+
+    // 1. Blue Shark Side Stripes (Distinct plates wrapping around side panels to ensure high visibility)
+    for (let i = 0; i < 4; i++) {
+        // Left side stripes
+        const leftStripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 0.35), blueMat);
+        leftStripe.position.set(-1.66, 1.1, -2.2 + i * 1.1);
+        leftStripe.rotation.z = 0.45; // Slanted tiger stripe
+        leftStripe.rotation.y = 0.1;
+        tsGroup.add(leftStripe);
+
+        // Right side stripes
+        const rightStripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 0.35), blueMat);
+        rightStripe.position.set(1.66, 1.1, -2.2 + i * 1.1);
+        rightStripe.rotation.z = -0.45;
+        rightStripe.rotation.y = -0.1;
+        tsGroup.add(rightStripe);
+    }
+
+    // 2. Large Dorsal Shark Fin (Centered on the roof)
+    const finShape = new THREE.Shape();
+    finShape.moveTo(0, 0);
+    finShape.lineTo(0, 2.2);
+    finShape.quadraticCurveTo(-0.5, 1.2, -1.8, 0);
+    finShape.lineTo(0, 0);
+
+    const extrudeSettings = { depth: 0.35, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.1, bevelThickness: 0.1 };
+    const finGeo = new THREE.ExtrudeGeometry(finShape, extrudeSettings);
+    finGeo.center();
+    const finMesh = new THREE.Mesh(finGeo, orangeMat);
+    finMesh.rotation.y = Math.PI / 2; // Orient forward
+    finMesh.position.set(0, 2.8, -1.0);
+    finMesh.castShadow = true;
+    tsGroup.add(finMesh);
+
+    // 3. Shark Eyes on sides of cabin (Slightly larger and fully colored to make them clear)
+    const eyeWhiteGeo = new THREE.SphereGeometry(0.38, 8, 8);
+    const eyePupilGeo = new THREE.SphereGeometry(0.20, 8, 8);
+
+    const eyeL = new THREE.Mesh(eyeWhiteGeo, whiteMat);
+    eyeL.position.set(-1.3, 1.45, 1.2);
+    const pupilL = new THREE.Mesh(eyePupilGeo, blackMat);
+    pupilL.position.set(-1.52, 1.45, 1.35);
+    tsGroup.add(eyeL);
+    tsGroup.add(pupilL);
+
+    const eyeR = new THREE.Mesh(eyeWhiteGeo, whiteMat);
+    eyeR.position.set(1.3, 1.45, 1.2);
+    const pupilR = new THREE.Mesh(eyePupilGeo, blackMat);
+    pupilR.position.set(1.52, 1.45, 1.35);
+    tsGroup.add(eyeR);
+    tsGroup.add(pupilR);
+
+    // 4. Toothy Shark Mouth on the front bumper
+    const mouthBase = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.45, 0.2), redMat);
+    mouthBase.position.set(0, 0.55, 3.72);
+    tsGroup.add(mouthBase);
+
+    // Individual teeth mapping (Sharp cones pointing up and down)
+    const toothGeo = new THREE.ConeGeometry(0.18, 0.35, 4);
+    toothGeo.rotateX(Math.PI); // Point down for upper teeth
+
+    for (let x = -5; x <= 5; x++) {
+        if (x === 0) continue;
+        const tooth = new THREE.Mesh(toothGeo, whiteMat);
+        tooth.position.set(x * 0.26, 0.62, 3.78);
+        tsGroup.add(tooth);
+    }
+    
+    // Lower teeth pointing upwards
+    const bottomToothGeo = new THREE.ConeGeometry(0.15, 0.3, 4);
+    for (let x = -4; x <= 4; x++) {
+        if (x === 0) continue;
+        const tooth = new THREE.Mesh(bottomToothGeo, whiteMat);
+        tooth.position.set(x * 0.3, 0.42, 3.78);
+        tsGroup.add(tooth);
+    }
+
+    return tsGroup;
+}
+
+// --- SKELESAURUS CUSTOM AI CHASSIS MODEL ---
+function buildSkelesaurusChassis() {
+    const ssGroup = new THREE.Group();
+
+    const purpleMat = new THREE.MeshStandardMaterial({ color: 0x6a0dad, roughness: 0.4, metalness: 0.1 }); // Brighter purple body
+    // Glow-in-the-dark radioactive skeletal green
+    const boneMat = new THREE.MeshStandardMaterial({ 
+        color: 0x39ff14, 
+        roughness: 0.5, 
+        metalness: 0.0,
+        emissive: 0x22aa05,
+        emissiveIntensity: 0.65
+    }); 
+    const redEyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Glowing red skeletal eyes
+
+    // Base purple cabin
+    const baseChassis = new THREE.Mesh(new THREE.BoxGeometry(3.3, 1.1, 5.5), purpleMat);
+    baseChassis.position.set(0, 1.0, -0.6);
+    baseChassis.castShadow = true;
+    ssGroup.add(baseChassis);
+
+    // Slope nose
+    const noseGeo = new THREE.BoxGeometry(3.3, 0.5, 2.2);
+    const nose = new THREE.Mesh(noseGeo, purpleMat);
+    nose.position.set(0, 0.7, 2.65);
+    ssGroup.add(nose);
+
+    // 1. Ribcage spine assembly (Green cylinders wrapping around the purple body)
+    const spineColumn = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 5.8, 8), boneMat);
+    spineColumn.rotation.x = Math.PI / 2;
+    spineColumn.position.set(0, 1.8, -0.6);
+    ssGroup.add(spineColumn);
+
+    const ribGeo = new THREE.TorusGeometry(1.8, 0.15, 6, 12, Math.PI); // Half arc ribs
+    for (let i = 0; i < 5; i++) {
+        const rib = new THREE.Mesh(ribGeo, boneMat);
+        rib.rotation.y = Math.PI / 2;
+        rib.rotation.z = Math.PI; // Invert arc down
+        rib.position.set(0, 1.2, -3.0 + i * 1.3);
+        ssGroup.add(rib);
+    }
+
+    // 2. Dragon Skull (Bone skull structure mounted on the hood)
+    const skullGroup = new THREE.Group();
+    const mainSkull = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.0, 2.5), boneMat);
+    mainSkull.position.set(0, 1.1, 2.5);
+    skullGroup.add(mainSkull);
+
+    // Angled jaws
+    const upperJaw = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.5, 1.5), boneMat);
+    upperJaw.position.set(0, 0.85, 3.8);
+    skullGroup.add(upperJaw);
+
+    // Red Glowing Eyes
+    const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.25, 6, 6), redEyeMat);
+    leftEye.position.set(-0.85, 1.1, 3.2);
+    const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.25, 6, 6), redEyeMat);
+    rightEye.position.set(0.85, 1.1, 3.2);
+    skullGroup.add(leftEye);
+    skullGroup.add(rightEye);
+
+    // Dragon Horns
+    const hornGeo = new THREE.ConeGeometry(0.25, 1.6, 6);
+    hornGeo.rotateX(-0.5); // Tilt horns backward
+
+    const hornL = new THREE.Mesh(hornGeo, boneMat);
+    hornL.position.set(-0.85, 1.9, 1.8);
+    const hornR = new THREE.Mesh(hornGeo, boneMat);
+    hornR.position.set(0.85, 1.9, 1.8);
+    skullGroup.add(hornL);
+    skullGroup.add(hornR);
+
+    ssGroup.add(skullGroup);
+
+    // 3. Spiked segment dragon tail on the rear bumper
+    const tailGroup = new THREE.Group();
+    const tailSegCount = 5;
+    for (let i = 0; i < tailSegCount; i++) {
+        const size = 0.9 - i * 0.15;
+        const seg = new THREE.Mesh(new THREE.SphereGeometry(size, 8, 8), boneMat);
+        
+        // Curve tail gradually upwards and backwards
+        const sZ = -3.8 - i * 1.0;
+        const sY = 0.8 + Math.sin(i * 0.6) * 1.2;
+        seg.position.set(0, sY, sZ);
+        tailGroup.add(seg);
+
+        // Spine tail horn
+        const tailSpike = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.8, 5), boneMat);
+        tailSpike.position.set(0, sY + size + 0.3, sZ);
+        tailGroup.add(tailSpike);
+    }
+    ssGroup.add(tailGroup);
+
+    return ssGroup;
+}
+
+// --- MASTER CAR ASSEMBLY ---
+function buildCars() {
+    // 1. Build Player's Tiger Shark
     if (car.mesh) scene.remove(car.mesh);
 
     car.mesh = new THREE.Group();
-    car.mesh.rotation.reorder('YXZ'); // Ensure clean yaw-pitch-roll calculations on steep loops/hills
-    car.bodyMesh = new THREE.Group(); // Holds chassis to tilt/vibrate without losing global track matrix
+    car.mesh.rotation.reorder('YXZ');
+    car.bodyMesh = new THREE.Group();
     car.mesh.add(car.bodyMesh);
 
-    // Material Styling
-    const bodyMat = new THREE.MeshStandardMaterial({
-        color: 0x0099ff, // Electric metallic cyan
-        metalness: 0.9,
-        roughness: 0.1,
-    });
-    const orangeAccent = new THREE.MeshStandardMaterial({ color: 0xff3300, roughness: 0.4 });
-    const glassMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.1 });
-    const tireMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.8 });
-    const rimMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.9, roughness: 0.1 });
+    // Lower base frame
+    const baseplateMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.8 });
+    const baseplate = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.6, 7.2), baseplateMat);
+    baseplate.position.y = 0.5;
+    car.bodyMesh.add(baseplate);
 
-    // 1. Lower Chassis baseplate
-    const chassis = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.6, 7.2), tireMat);
-    chassis.position.y = 0.5;
-    car.bodyMesh.add(chassis);
+    // Add Tiger Shark custom panels
+    const tsChassis = buildTigerSharkChassis();
+    car.bodyMesh.add(tsChassis);
 
-    // 2. Main sleek wedge cabin
-    const bodyMain = new THREE.Mesh(new THREE.BoxGeometry(3.3, 1.2, 5.5), bodyMat);
-    bodyMain.position.set(0, 1.1, -0.6);
-    bodyMain.castShadow = true;
-    car.bodyMesh.add(bodyMain);
-
-    // 3. Slope nose hood
-    const noseGeo = new THREE.BoxGeometry(3.3, 0.6, 2.2);
-    const nose = new THREE.Mesh(noseGeo, bodyMat);
-    nose.position.set(0, 0.8, 2.65);
-    nose.castShadow = true;
-    car.bodyMesh.add(nose);
-
-    // 4. Shiny Windshield / Glass Cabin
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.9, 3.0), glassMat);
-    cabin.position.set(0, 1.9, -1.0);
-    car.bodyMesh.add(cabin);
-
-    // 5. Classic Hot Wheels Orange spoiler wing
-    const wingLeft = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.6, 0.8), orangeAccent);
-    wingLeft.position.set(-1.5, 1.6, -3.5);
-    car.bodyMesh.add(wingLeft);
-
-    const wingRight = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.6, 0.8), orangeAccent);
-    wingRight.position.set(1.5, 1.6, -3.5);
-    car.bodyMesh.add(wingRight);
-
-    const wingFlap = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.25, 1.6), orangeAccent);
-    wingFlap.position.set(0, 2.4, -3.5);
-    car.bodyMesh.add(wingFlap);
-
-    // 6. Cylinder Wheels (4 items)
+    // Wheels setup (Custom orange rims with black knobby tires)
     const wheelGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.7, 12);
     wheelGeo.rotateZ(Math.PI / 2);
+    const tireMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0xff4c00, metalness: 0.1, roughness: 0.4 }); // Matched bright orange
 
     car.wheels = [];
-    const createWheel = (x, y, z) => {
+    const createPlayerWheel = (x, y, z) => {
         const wGroup = new THREE.Group();
         const tire = new THREE.Mesh(wheelGeo, tireMat);
         tire.castShadow = true;
@@ -1283,34 +1593,81 @@ function buildToyCar() {
         car.wheels.push(wGroup);
     };
 
-    createWheel(-1.9, 0.8, 2.0);
-    createWheel(1.9, 0.8, 2.0);
-    createWheel(-1.9, 0.8, -2.0);
-    createWheel(1.9, 0.8, -2.0);
+    createPlayerWheel(-1.9, 0.8, 2.0);
+    createPlayerWheel(1.9, 0.8, 2.0);
+    createPlayerWheel(-1.9, 0.8, -2.0);
+    createPlayerWheel(1.9, 0.8, -2.0);
 
-    // Headlights
-    const lightMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-    const headlightL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), lightMat);
-    headlightL.position.set(-1.1, 0.85, 3.76);
-    car.bodyMesh.add(headlightL);
-
-    const headlightR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), lightMat);
-    headlightR.position.set(1.1, 0.85, 3.76);
-    car.bodyMesh.add(headlightR);
-
-    // Place car at start point
     const startPoint = trackCurve.getPointAt(0);
-    car.position.copy(startPoint).add(new THREE.Vector3(0, 0.9, 0));
+    // Align starting positioning slightly left to avoid exact collision spawning
+    const startOffset = gameMode === 'SCALEXTRIC' ? -2.2 : -4.0;
+    car.position.copy(startPoint).add(new THREE.Vector3(startOffset, 0.9, 0));
     car.mesh.position.copy(car.position);
 
-    // Align car to starting direction of circuit
     const tangent = trackCurve.getTangentAt(0).normalize();
     car.heading = Math.atan2(tangent.x, tangent.z);
     car.mesh.rotation.y = car.heading;
 
     scene.add(car.mesh);
-}
 
+
+    // 2. Build Opponent AI's Skelesaurus
+    if (aiCar.mesh) scene.remove(aiCar.mesh);
+
+    aiCar.mesh = new THREE.Group();
+    aiCar.mesh.rotation.reorder('YXZ');
+    aiCar.bodyMesh = new THREE.Group();
+    aiCar.mesh.add(aiCar.bodyMesh);
+
+    // Lower base frame
+    const aiBaseplate = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.6, 7.2), baseplateMat);
+    aiBaseplate.position.y = 0.5;
+    aiCar.bodyMesh.add(aiBaseplate);
+
+    // Add Skelesaurus skeletal panels
+    const ssChassis = buildSkelesaurusChassis();
+    aiCar.bodyMesh.add(ssChassis);
+
+    // AI Wheels setup (Lime-green rims with knobby black tires)
+    const aiRimMat = new THREE.MeshStandardMaterial({ color: 0x39ff14, metalness: 0.1, roughness: 0.4 });
+
+    aiCar.wheels = [];
+    const createAiWheel = (x, y, z) => {
+        const wGroup = new THREE.Group();
+        const tire = new THREE.Mesh(wheelGeo, tireMat);
+        tire.castShadow = true;
+        wGroup.add(tire);
+
+        const rimGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.75, 10);
+        rimGeo.rotateZ(Math.PI / 2);
+        const rim = new THREE.Mesh(rimGeo, aiRimMat);
+        wGroup.add(rim);
+
+        wGroup.position.set(x, y, z);
+        aiCar.mesh.add(wGroup);
+        aiCar.wheels.push(wGroup);
+    };
+
+    createAiWheel(-1.9, 0.8, 2.0);
+    createAiWheel(1.9, 0.8, 2.0);
+    createAiWheel(-1.9, 0.8, -2.0);
+    createAiWheel(1.9, 0.8, -2.0);
+
+    // Place AI slightly right of start point
+    const aiStartOffset = gameMode === 'SCALEXTRIC' ? 2.2 : 4.0;
+    aiCar.position.copy(startPoint).add(new THREE.Vector3(aiStartOffset, 0.9, 0));
+    aiCar.mesh.position.copy(aiCar.position);
+    aiCar.heading = car.heading;
+    aiCar.mesh.rotation.y = aiCar.heading;
+
+    // AI only gets appended to scene based on game mode state
+    if (gameMode === 'VS_AI' || gameMode === 'SCALEXTRIC') {
+        scene.add(aiCar.mesh);
+    }
+}
+</script>
+
+<script>
 // --- MINIMAP STATIC CALCULATIONS ---
 function initMinimapBounds() {
     sampledCurvePoints.forEach(pt => {
@@ -1398,9 +1755,28 @@ function drawMinimap() {
         minimapCtx.fill();
         minimapCtx.stroke();
     }
+
+    // 4. Draw AI Opponent beacon if enabled
+    if ((gameMode === 'VS_AI' || gameMode === 'SCALEXTRIC') && aiCar.mesh) {
+        const ax = mapX(aiCar.position.x);
+        const ay = mapY(aiCar.position.z);
+
+        minimapCtx.fillStyle = 'rgba(57, 255, 20, 0.3)';
+        minimapCtx.beginPath();
+        minimapCtx.arc(ax, ay, 7.0, 0, Math.PI * 2);
+        minimapCtx.fill();
+
+        minimapCtx.fillStyle = '#39ff14'; // Acid neon green dot
+        minimapCtx.strokeStyle = '#000';
+        minimapCtx.lineWidth = 1.2;
+        minimapCtx.beginPath();
+        minimapCtx.arc(ax, ay, 3.5, 0, Math.PI * 2);
+        minimapCtx.fill();
+        minimapCtx.stroke();
+    }
 }
 
-// --- HUD LEVEL SWAPPING INTERFACE ---
+// --- HUD SETTING SWAPPERS ---
 function toggleLevel() {
     startAudioEngine();
     const targetLvl = currentLevel === 1 ? 2 : 1;
@@ -1423,7 +1799,7 @@ function loadLevel(levelNum) {
     buildFinishLineArch();
     buildOasisLakes();
     scatterEnvironment();
-    buildToyCar();
+    buildCars();
     
     // Synchronize HUD updates
     document.getElementById('level-ui').innerText = levelConfigs[currentLevel].name;
@@ -1432,6 +1808,39 @@ function loadLevel(levelNum) {
     resetRace();
 }
 
+function toggleGameMode() {
+    startAudioEngine();
+    
+    // Loop through Game Modes: Solo -> Vs AI -> Scalextric -> Solo
+    if (gameMode === 'SOLO') {
+        gameMode = 'VS_AI';
+    } else if (gameMode === 'VS_AI') {
+        gameMode = 'SCALEXTRIC';
+    } else {
+        gameMode = 'SOLO';
+    }
+    
+    let modeText = "SOLO";
+    if (gameMode === 'VS_AI') modeText = "VS AI";
+    if (gameMode === 'SCALEXTRIC') modeText = "SCALEXTRIC";
+    
+    document.getElementById('mode-ui').innerText = modeText;
+
+    // Redraw track slot lines dynamically based on mode!
+    buildTrack();
+    buildCars();
+
+    if (gameMode === 'VS_AI' || gameMode === 'SCALEXTRIC') {
+        scene.add(aiCar.mesh);
+    } else {
+        scene.remove(aiCar.mesh);
+    }
+
+    resetRace();
+}
+</script>
+
+<script>
 // --- HANDLERS FOR DEVICE CONTROLS ---
 function setupInputs() {
     window.addEventListener('keydown', (e) => {
@@ -1464,9 +1873,9 @@ function setupInputs() {
             keys[actionKey] = false;
         };
 
-        element.addEventListener('touchstart', startAction);
-        element.addEventListener('touchend', endAction);
-        element.addEventListener('touchcancel', endAction);
+        element.addEventListener('touchstart', startAction, {passive: false});
+        element.addEventListener('touchend', endAction, {passive: false});
+        element.addEventListener('touchcancel', endAction, {passive: false});
 
         element.addEventListener('mousedown', startAction);
         element.addEventListener('mouseup', endAction);
@@ -1517,7 +1926,10 @@ function triggerCountdown() {
 
 function resetRace() {
     const startPoint = trackCurve.getPointAt(0);
-    car.position.copy(startPoint).add(new THREE.Vector3(0, 0.9, 0));
+    
+    // Position players based on slot mode or standard mode
+    const startOffset = gameMode === 'SCALEXTRIC' ? -2.2 : -4.0;
+    car.position.copy(startPoint).add(new THREE.Vector3(startOffset, 0.9, 0));
     car.mesh.position.copy(car.position);
     car.velocity.set(0, 0, 0);
     car.speed = 0;
@@ -1525,10 +1937,36 @@ function resetRace() {
     car.isGrounded = true;
     steerDuration = 0;
     
+    // Reset slot settings
+    car.slotProgress = 0;
+    car.centrifugalForce = 0;
+    car.isRolledOver = false;
+    car.rollOverTimer = 0;
+    
     const startTangent = trackCurve.getTangentAt(0).normalize();
     car.heading = Math.atan2(startTangent.x, startTangent.z);
     car.mesh.rotation.set(0, car.heading, 0);
-    car.bodyMesh.rotation.z = 0;
+    car.bodyMesh.rotation.set(0,0,0);
+
+    // Reset AI position
+    const aiStartOffset = gameMode === 'SCALEXTRIC' ? 2.2 : 4.0;
+    aiCar.position.copy(startPoint).add(new THREE.Vector3(aiStartOffset, 0.9, 0));
+    if (aiCar.mesh) {
+        aiCar.mesh.position.copy(aiCar.position);
+        aiCar.mesh.rotation.set(0, car.heading, 0);
+        aiCar.bodyMesh.rotation.set(0,0,0);
+    }
+    aiCar.velocity.set(0, 0, 0);
+    aiCar.speed = 0;
+    aiCar.verticalVelocity = 0;
+    aiCar.isGrounded = true;
+    aiCar.lastClosestIdx = -1;
+
+    // Reset AI slot settings
+    aiCar.slotProgress = 0;
+    aiCar.centrifugalForce = 0;
+    aiCar.isRolledOver = false;
+    aiCar.rollOverTimer = 0;
 
     lap = 1;
     lastClosestIdx = -1; // Force full scan on reset
@@ -1560,7 +1998,9 @@ function updateTimer() {
     timeUi.innerText = `${mins}:${secs}.${ms}`;
     return `${mins}:${secs}.${ms}`;
 }
+</script>
 
+<script>
 // --- CLAMP FUNCTION TO PREVENT CAMERA WALL CLIPPING ---
 function clampCameraToTrack(pos, maxLateral) {
     let minDist = Infinity;
@@ -1583,7 +2023,6 @@ function clampCameraToTrack(pos, maxLateral) {
     const parameter = closestIdx / curvePointsCount;
     const tangent = trackCurve.getTangentAt(parameter).normalize();
     
-    // Perpendicular horizontal normal
     const right = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
     
     // Incorporate local level banking rotation into camera boundary tracking checks
@@ -1601,15 +2040,344 @@ function clampCameraToTrack(pos, maxLateral) {
     }
 }
 
-// --- GAME LOGIC LOOP ---
+// --- CAR-TO-CAR COLLISION RESOLUTION (Sandbox / Vs AI Modes Only) ---
+function handleVehiclesCollision() {
+    if (gameMode !== 'VS_AI') return;
+
+    // 2D flat collision check (X-Z distance)
+    const dx = car.position.x - aiCar.position.x;
+    const dz = car.position.z - aiCar.position.z;
+    const dist2D = Math.sqrt(dx * dx + dz * dz);
+    const colDistLimit = 5.2; // Maximum envelope overlap radius (length / width bounds)
+
+    if (dist2D < colDistLimit && Math.abs(car.position.y - aiCar.position.y) < 3.0) {
+        const normalX = dx / dist2D;
+        const normalZ = dz / dist2D;
+
+        // Push vehicles apart to avoid clipping overlaps
+        const pushFactor = (colDistLimit - dist2D) * 0.52;
+        car.position.x += normalX * pushFactor;
+        car.position.z += normalZ * pushFactor;
+
+        aiCar.position.x -= normalX * pushFactor;
+        aiCar.position.z -= normalZ * pushFactor;
+
+        // Reflect velocities along the collision vector (Impulse elastic bounce)
+        const relVelX = car.velocity.x - aiCar.velocity.x;
+        const relVelZ = car.velocity.z - aiCar.velocity.z;
+
+        const normalDotVel = relVelX * normalX + relVelZ * normalZ;
+
+        if (normalDotVel < 0) { 
+            const bounceRestitution = 1.35; 
+            const impulseStrength = -normalDotVel * bounceRestitution;
+
+            car.velocity.x += normalX * impulseStrength * 0.5;
+            car.velocity.z += normalZ * impulseStrength * 0.5;
+
+            aiCar.velocity.x -= normalX * impulseStrength * 0.5;
+            aiCar.velocity.z -= normalZ * impulseStrength * 0.5;
+
+            car.speed *= 0.85;
+            aiCar.speed *= 0.85;
+        }
+
+        soundManager.playBump(0.85);
+
+        const midX = (car.position.x + aiCar.position.x) * 0.5;
+        const midY = (car.position.y + aiCar.position.y) * 0.5;
+        const midZ = (car.position.z + aiCar.position.z) * 0.5;
+
+        for (let i = 0; i < 6; i++) {
+            spawnParticle(
+                midX + (Math.random() - 0.5) * 1.5,
+                midY + 0.5,
+                midZ + (Math.random() - 0.5) * 1.5,
+                (Math.random() - 0.5) * 0.5,
+                0.15 + Math.random() * 0.35,
+                (Math.random() - 0.5) * 0.5,
+                0xffff00, 
+                'spark',
+                12 + Math.floor(Math.random() * 8)
+            );
+        }
+    }
+}
+</script>
+
+<script>
+// --- AI VEHICLE LOGIC ENGINE (SANDBOX & SCALEXTRIC COMPATIBLE) ---
+function updateAiPhysics() {
+    if (gameMode === 'SOLO') return;
+
+    // --- CASE A: SCALEXTRIC SLOT MODE FOR AI OPPONENT ---
+    if (gameMode === 'SCALEXTRIC') {
+        if (aiCar.isRolledOver) {
+            // Apply crash tumbling physics
+            aiCar.crashVelocity.y -= 0.025; // gravity pull
+            aiCar.mesh.position.add(aiCar.crashVelocity);
+            
+            // Tumble rot
+            aiCar.mesh.rotation.x += 0.25;
+            aiCar.mesh.rotation.y += 0.15;
+            aiCar.mesh.rotation.z += 0.3;
+
+            // Spawn sparks & smoke
+            if (Math.random() < 0.4) {
+                spawnParticle(aiCar.mesh.position.x, aiCar.mesh.position.y, aiCar.mesh.position.z, (Math.random() - 0.5)*0.5, 0.1, (Math.random() - 0.5)*0.5, 0xffaa00, 'smoke', 15);
+            }
+
+            aiCar.rollOverTimer--;
+            if (aiCar.rollOverTimer <= 0) {
+                // Restore AI car back into guide slot
+                aiCar.isRolledOver = false;
+                aiCar.speed = 0;
+                aiCar.velocity.set(0,0,0);
+            }
+            return;
+        }
+
+        // 1. Calculate Curvature Ahead for Speed Regulation
+        const futureSteps = 0.015;
+        const currentT = trackCurve.getTangentAt(aiCar.slotProgress).normalize();
+        const aheadT = trackCurve.getTangentAt((aiCar.slotProgress + futureSteps) % 1.0).normalize();
+        const curvature = currentT.angleTo(aheadT) * 60; // Scaling factor
+        
+        // 2. Drive speed heuristic targeting a safe force threshold (now highly forgiving G-force limits)
+        const safeSpeed = Math.sqrt(1.85 / (curvature * 0.05 + 0.01));
+        
+        // Introduce human-like error fluctuations (occasional minor throttle delay)
+        const noise = Math.sin(performance.now() * 0.0035) * 0.35;
+        let aiTargetSpeed = Math.min(aiCar.maxSpeed, safeSpeed) + noise;
+
+        // Check water deceleration
+        let inWater = false;
+        if (currentLevel === 2) {
+            const distToLake1 = aiCar.position.distanceTo(new THREE.Vector3(120, aiCar.position.y, -40));
+            const distToLake2 = aiCar.position.distanceTo(new THREE.Vector3(-80, aiCar.position.y, -280));
+            if ((distToLake1 < 480 || distToLake2 < 220) && aiCar.position.y < 2.5) {
+                inWater = true;
+            }
+        }
+        if (inWater) aiTargetSpeed *= 0.55;
+
+        // Accelerate or decelerate to match target speed
+        if (aiCar.speed < aiTargetSpeed) {
+            aiCar.speed += aiCar.accel * 0.75;
+        } else {
+            aiCar.speed -= aiCar.decel;
+        }
+        aiCar.speed = Math.max(0, Math.min(aiCar.maxSpeed, aiCar.speed));
+
+        // 3. Increment slot progress
+        aiCar.slotProgress += (aiCar.speed * 0.0003);
+        if (aiCar.slotProgress >= 1.0) aiCar.slotProgress -= 1.0;
+
+        // 4. Update coordinates snapping onto slot line
+        const currSlotPos = getSlotPosition(aiCar.slotProgress, 2.2); // Right slot rail
+        const aheadSlotPos = getSlotPosition((aiCar.slotProgress + 0.005) % 1.0, 2.2);
+        
+        aiCar.position.copy(currSlotPos);
+        aiCar.mesh.position.copy(aiCar.position);
+        
+        aiCar.heading = Math.atan2(aheadSlotPos.x - currSlotPos.x, aheadSlotPos.z - currSlotPos.z);
+        aiCar.mesh.rotation.y = aiCar.heading;
+
+        // Align pitch
+        const tangent = trackCurve.getTangentAt(aiCar.slotProgress).normalize();
+        aiCar.mesh.rotation.x = Math.asin(tangent.y);
+
+        // Apply visual banking roll
+        const bankingAngle = getBankingAngle(aiCar.slotProgress, currentLevel);
+        aiCar.mesh.rotation.z = bankingAngle;
+
+        // 5. Centrifugal slide visual offsets (yaw the body outward based on optimized G-force accumulation rate)
+        aiCar.centrifugalForce = (aiCar.speed * aiCar.speed) * curvature * 0.05; // 3x lower multiplier to prevent easy flips
+        
+        const crossY = currentT.x * aheadT.z - currentT.z * aheadT.x;
+        const slideDirection = Math.sign(crossY);
+        const slideYaw = -slideDirection * Math.min(0.65, aiCar.centrifugalForce * 0.28);
+        aiCar.bodyMesh.rotation.y = THREE.MathUtils.lerp(aiCar.bodyMesh.rotation.y, slideYaw, 0.1);
+
+        // Rotate tires
+        aiCar.wheels.forEach(w => { w.rotation.x += aiCar.speed * 0.28; });
+
+        // Trigger Rollover Crash if speed exceeds safe grip limits (increased threshold from 1.45 to 2.2)
+        if (aiCar.centrifugalForce > 2.2) {
+            aiCar.isRolledOver = true;
+            aiCar.rollOverTimer = 90; // 1.5 second recovery penalty
+            
+            // Direct catapult vector outward matching tangent momentum
+            aiCar.crashVelocity.set(
+                Math.sin(aiCar.heading) * aiCar.speed * 0.45,
+                0.35 + Math.random() * 0.25,
+                Math.cos(aiCar.heading) * aiCar.speed * 0.45
+            );
+            aiCar.speed = 0;
+            soundManager.playBump(1.0);
+        }
+        return;
+    }
+
+
+    // --- CASE B: SANDBOX VS AI MODE ---
+    let minDist = Infinity;
+    let closestIndex = 0;
+
+    let startSearch, endSearch;
+    if (aiCar.lastClosestIdx === -1) {
+        startSearch = 0;
+        endSearch = curvePointsCount - 1;
+    } else {
+        const searchRange = 50;
+        startSearch = aiCar.lastClosestIdx - searchRange;
+        endSearch = aiCar.lastClosestIdx + searchRange;
+    }
+
+    for (let i = startSearch; i <= endSearch; i++) {
+        const idx = (i + curvePointsCount) % curvePointsCount;
+        const d = aiCar.position.distanceTo(sampledCurvePoints[idx]);
+        if (d < minDist) {
+            minDist = d;
+            closestIndex = idx;
+        }
+    }
+    aiCar.lastClosestIdx = closestIndex;
+
+    if (gameState === 'COUNTDOWN') {
+        aiCar.speed = 0;
+        aiCar.velocity.set(0,0,0);
+        return;
+    }
+
+    const lookAheadPoints = 25; 
+    const targetNodeIdx = (closestIndex + lookAheadPoints) % curvePointsCount;
+    const targetPoint = sampledCurvePoints[targetNodeIdx];
+
+    const angleToTarget = Math.atan2(targetPoint.x - aiCar.position.x, targetPoint.z - aiCar.position.z);
+    let angleDifference = angleToTarget - aiCar.heading;
+
+    while (angleDifference < -Math.PI) angleDifference += Math.PI * 2;
+    while (angleDifference > Math.PI) angleDifference -= Math.PI * 2;
+
+    const steer = Math.max(-aiCar.steerSpeed, Math.min(aiCar.steerSpeed, angleDifference));
+    aiCar.heading += steer * (0.55 + (Math.abs(aiCar.speed) / aiCar.maxSpeed) * 0.45);
+
+    const turnSeverity = Math.abs(angleDifference);
+    let targetSpeed = aiCar.maxSpeed;
+    if (turnSeverity > 0.15) {
+        targetSpeed = aiCar.maxSpeed * (1.0 - Math.min(turnSeverity * 0.7, 0.55));
+    }
+
+    let aiInWater = false;
+    if (currentLevel === 2) {
+        const distToLake1 = aiCar.position.distanceTo(new THREE.Vector3(120, aiCar.position.y, -40));
+        const distToLake2 = aiCar.position.distanceTo(new THREE.Vector3(-80, aiCar.position.y, -280));
+        if ((distToLake1 < 480 || distToLake2 < 220) && aiCar.position.y < 2.5) {
+            aiInWater = true;
+        }
+    }
+
+    if (aiInWater) targetSpeed *= 0.5;
+
+    if (aiCar.speed < targetSpeed) {
+        aiCar.speed += aiCar.accel;
+    } else {
+        aiCar.speed -= aiCar.decel;
+    }
+    aiCar.speed *= aiCar.friction;
+
+    const headingVector = new THREE.Vector3(Math.sin(aiCar.heading), 0, Math.cos(aiCar.heading));
+    let driftFactor = aiInWater ? 0.04 : 0.14; 
+    aiCar.velocity.lerp(headingVector.clone().multiplyScalar(aiCar.speed), driftFactor);
+
+    aiCar.position.x += aiCar.velocity.x;
+    aiCar.position.z += aiCar.velocity.z;
+
+    const ptOnSpline = sampledCurvePoints[closestIndex];
+    const trackHeight = ptOnSpline.y;
+
+    const parameter = closestIndex / curvePointsCount;
+    const tangent = trackCurve.getTangentAt(parameter).normalize();
+    const right = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+    const bankingAngle = getBankingAngle(parameter, currentLevel);
+    const bankedRight = right.clone().applyAxisAngle(tangent, bankingAngle);
+
+    const vecToAi = new THREE.Vector3().subVectors(aiCar.position, ptOnSpline);
+    const lateralDistance = vecToAi.dot(bankedRight);
+
+    const targetY = trackHeight + 0.9 + bankedRight.y * lateralDistance;
+
+    if (aiCar.isGrounded) {
+        const trackDrop = targetY - aiCar.position.y;
+        if (trackDrop < -3.5 && Math.abs(aiCar.speed) > 2.5) {
+            aiCar.isGrounded = false;
+            aiCar.verticalVelocity = Math.max(0.5, aiCar.speed * tangent.y * 1.5);
+        } else {
+            aiCar.position.y = targetY;
+            aiCar.verticalVelocity = 0;
+        }
+    } else {
+        aiCar.verticalVelocity -= 0.07;
+        aiCar.position.y += aiCar.verticalVelocity;
+        if (aiCar.position.y <= targetY) {
+            aiCar.position.y = targetY;
+            aiCar.verticalVelocity = 0;
+            aiCar.isGrounded = true;
+        }
+    }
+
+    if (aiCar.position.y < targetY) aiCar.position.y = targetY;
+
+    if (Math.abs(lateralDistance) > wallLimit) {
+        const boundarySign = Math.sign(lateralDistance);
+        const penetration = Math.abs(lateralDistance) - wallLimit;
+        aiCar.position.addScaledVector(bankedRight, -boundarySign * penetration);
+
+        const velocityProjectedOnNormal = aiCar.velocity.dot(bankedRight);
+        if (velocityProjectedOnNormal * boundarySign > 0) {
+            aiCar.velocity.addScaledVector(bankedRight, -velocityProjectedOnNormal * 1.45);
+            aiCar.speed *= 0.8;
+        }
+    }
+
+    aiCar.mesh.position.copy(aiCar.position);
+
+    let targetPitch = 0;
+    if (aiCar.isGrounded) {
+        const forward = new THREE.Vector3(Math.sin(aiCar.heading), 0, Math.cos(aiCar.heading)).normalize();
+        const directionScale = tangent.dot(forward) > 0 ? 1 : -1;
+        targetPitch = Math.asin(tangent.y) * directionScale;
+    }
+    aiCar.mesh.rotation.x = THREE.MathUtils.lerp(aiCar.mesh.rotation.x, targetPitch, 0.15);
+    aiCar.mesh.rotation.y = aiCar.heading;
+    aiCar.mesh.rotation.z = THREE.MathUtils.lerp(aiCar.mesh.rotation.z, bankingAngle, 0.15);
+
+    const targetTilt = steer * (aiCar.speed / aiCar.maxSpeed) * 0.12;
+    aiCar.bodyMesh.rotation.z = THREE.MathUtils.lerp(aiCar.bodyMesh.rotation.z, targetTilt, 0.1);
+
+    const wheelRotScale = aiCar.speed * 0.28;
+    aiCar.wheels.forEach(w => { w.rotation.x += wheelRotScale; });
+
+    if (aiInWater && Math.random() < 0.4 && Math.abs(aiCar.speed) > 0.5) {
+        const leftRearWorld = new THREE.Vector3(-1.9, 0.4, -2.0).applyMatrix4(aiCar.mesh.matrixWorld);
+        const rightRearWorld = new THREE.Vector3(1.9, 0.4, -2.0).applyMatrix4(aiCar.mesh.matrixWorld);
+
+        spawnParticle(leftRearWorld.x, leftRearWorld.y, leftRearWorld.z, (Math.random() - 0.5)*0.2, 0.15 + Math.random()*0.1, (Math.random() - 0.5)*0.2, 0x33b8ff, 'splash', 15);
+        spawnParticle(rightRearWorld.x, rightRearWorld.y, rightRearWorld.z, (Math.random() - 0.5)*0.2, 0.15 + Math.random()*0.1, (Math.random() - 0.5)*0.2, 0x33b8ff, 'splash', 15);
+    }
+}
+</script>
+
+<script>
+// --- MAIN PHYSICS & RACING CALCULATIONS ---
 function updatePhysics() {
-    // Perform lookup scan even during countdown to keep camera positioning and index setup ready
     let minDist = Infinity;
     let closestIndex = 0;
 
     let startSearch, endSearch;
     if (lastClosestIdx === -1) {
-        // Full scan on startup
         startSearch = 0;
         endSearch = curvePointsCount - 1;
     } else {
@@ -1629,15 +2397,24 @@ function updatePhysics() {
 
     if (gameState === 'COUNTDOWN') {
         lastClosestIdx = closestIndex;
-        // Keep Audio idle humming
         soundManager.updateEngine(0, car.maxSpeed, true);
+        
+        // Ensure AI runs tracking even during countdown
+        updateAiPhysics();
         return;
     }
 
-    // Interactive Oasis check: Are we submerged in a water obstacle? (Track is at 0.1, car is at 1.0)
-    const inWater = (car.position.y < 1.15); // Decreased check threshold from 1.35 to 1.15
+    // Oasis water hazard coordinate boundary tracking
+    let inWater = false;
+    if (currentLevel === 2) {
+        const distToLake1 = car.position.distanceTo(new THREE.Vector3(120, car.position.y, -40));
+        const distToLake2 = car.position.distanceTo(new THREE.Vector3(-80, car.position.y, -280));
+        if ((distToLake1 < 480 || distToLake2 < 220) && car.position.y < 2.5) {
+            inWater = true;
+        }
+    }
 
-    // Dynamic water drag / hydroplane steering variables
+    // Dynamic water drag variables
     let maxAllowedSpeed = car.maxSpeed;
     let driftFactor = 0.16; // Normal road grip traction
     let tireParticleColor = 0xeeeeee; // Normal gray sand dust
@@ -1645,31 +2422,198 @@ function updatePhysics() {
 
     if (inWater) {
         maxAllowedSpeed = 2.4; // Soft drag resistance slows the vehicle down
-        driftFactor = 0.035;   // Slippery hydroplaning! Decreased traction makes it slide beautifully
+        driftFactor = 0.035;   // Slippery hydroplaning! 
         tireParticleColor = 0x33b8ff; // Bright blue water splashes!
         tireParticleType = 'splash';
     }
+
+
+    // ==========================================
+    // --- MODE 1: SCALEXTRIC SLOT CAR PHYSICS ---
+    // ==========================================
+    if (gameMode === 'SCALEXTRIC') {
+        const meterContainer = document.getElementById('slot-meter-container');
+        meterContainer.style.display = 'block';
+
+        if (car.isRolledOver) {
+            // Decelerate and tumble through the air
+            car.crashVelocity.y -= 0.025; // Gravity pull
+            car.mesh.position.add(car.crashVelocity);
+
+            // Spin chassis wildly
+            car.mesh.rotation.x += 0.35;
+            car.mesh.rotation.y += 0.2;
+            car.mesh.rotation.z += 0.45;
+
+            // Spawn smoke/spark debris
+            if (Math.random() < 0.45) {
+                spawnParticle(car.mesh.position.x, car.mesh.position.y, car.mesh.position.z, (Math.random() - 0.5)*0.5, 0.15, (Math.random() - 0.5)*0.5, 0xffaa00, 'smoke', 20);
+            }
+
+            // Sync G-force bar empty during rollover
+            document.getElementById('slot-meter-fill').style.width = `0%`;
+
+            car.rollOverTimer--;
+            if (car.rollOverTimer <= 0) {
+                // Recover car back onto the rail slot
+                car.isRolledOver = false;
+                car.speed = 0;
+                car.velocity.set(0,0,0);
+            }
+
+            // AI still runs alongside
+            updateAiPhysics();
+            return;
+        }
+
+        // 1. Throttle Input Acceleration (Only Arrow Up or W drives the car)
+        const gasPressed = (keys.ArrowUp || keys.w || keys.W);
+        if (gasPressed && gameState !== 'FINISHED') {
+            car.speed += car.accel * 0.85;
+        } else {
+            car.speed *= car.friction;
+        }
+
+        // Active braking if pressing Arrow Down
+        if ((keys.ArrowDown || keys.s || keys.S) && car.speed > 0) {
+            car.speed -= car.accel * 1.6;
+        }
+
+        car.speed = Math.max(0, Math.min(maxAllowedSpeed, car.speed));
+
+        // 2. Increment spline slot progress
+        car.slotProgress += (car.speed * 0.0003);
+        if (car.slotProgress >= 1.0) car.slotProgress -= 1.0;
+
+        // 3. Update coordinates snapping directly onto center left lane rail
+        const currSlotPos = getSlotPosition(car.slotProgress, -2.2); // Left lane offset (-2.2)
+        const aheadSlotPos = getSlotPosition((car.slotProgress + 0.005) % 1.0, -2.2);
+        
+        car.position.copy(currSlotPos);
+        car.mesh.position.copy(car.position);
+
+        car.heading = Math.atan2(aheadSlotPos.x - currSlotPos.x, aheadSlotPos.z - currSlotPos.z);
+        car.mesh.rotation.y = car.heading;
+
+        // Snaps directly to banked terrain profile
+        const tangent = trackCurve.getTangentAt(car.slotProgress).normalize();
+        car.mesh.rotation.x = Math.asin(tangent.y);
+
+        const bankingAngle = getBankingAngle(car.slotProgress, currentLevel);
+        car.mesh.rotation.z = bankingAngle;
+
+        // 4. Calculate Centrifugal Force on Curves
+        const futureSteps = 0.015;
+        const tangentAhead = trackCurve.getTangentAt((car.slotProgress + futureSteps) % 1.0).normalize();
+        const curvature = tangent.angleTo(tangentAhead) * 5; // G-Force coefficient
+        
+        // RE-BALANCED MULTIPLIER: Reduced from 0.15 to 0.05 (making it 3 times harder to deslot)
+        car.centrifugalForce = (car.speed * car.speed) * curvature * 0.05;
+
+        // 5. Dynamic Tail Fishtailing: slide chassis outward visually under centrifugal force
+        const crossY = tangent.x * tangentAhead.z - tangent.z * tangentAhead.x;
+        const slideDirection = Math.sign(crossY); // -1 left turn, +1 right turn
+        const slideYaw = -slideDirection * Math.min(0.65, car.centrifugalForce * 0.28);
+        car.bodyMesh.rotation.y = THREE.MathUtils.lerp(car.bodyMesh.rotation.y, slideYaw, 0.1);
+
+        // Update neon G-Force limit bar (Re-scaled from 1.45 to 2.2 threshold)
+        const limitRatio = Math.min(1.0, car.centrifugalForce / 2.2);
+        const fill = document.getElementById('slot-meter-fill');
+        fill.style.width = `${limitRatio * 100}%`;
+        if (limitRatio > 0.85) {
+            fill.style.background = '#ff1100'; // Critical Red
+            fill.style.color = '#ff1100';
+        } else if (limitRatio > 0.6) {
+            fill.style.background = '#ffff00'; // Warning Yellow
+            fill.style.color = '#ffff00';
+        } else {
+            fill.style.background = '#39ff14'; // Safe Green
+            fill.style.color = '#39ff14';
+        }
+
+        // Spin wheels
+        car.wheels.forEach(w => { w.rotation.x += car.speed * 0.28; });
+
+        // Spawn tires water splash / friction smoke
+        if (Math.random() < (inWater ? 0.75 : 0.3)) {
+            const leftRearWorld = new THREE.Vector3(-1.9, 0.4, -2.0).applyMatrix4(car.mesh.matrixWorld);
+            const rightRearWorld = new THREE.Vector3(1.9, 0.4, -2.0).applyMatrix4(car.mesh.matrixWorld);
+            spawnParticle(leftRearWorld.x, leftRearWorld.y, leftRearWorld.z, (Math.random() - 0.5)*0.2, 0.12, (Math.random() - 0.5)*0.2, tireParticleColor, tireParticleType, 20);
+            spawnParticle(rightRearWorld.x, rightRearWorld.y, rightRearWorld.z, (Math.random() - 0.5)*0.2, 0.12, (Math.random() - 0.5)*0.2, tireParticleColor, tireParticleType, 20);
+        }
+
+        // Sound Engine update
+        soundManager.updateEngine(car.speed, maxAllowedSpeed, true);
+        soundManager.updateDrift(car.centrifugalForce > 0.9, Math.abs(car.speed), inWater);
+
+        // 6. Trigger Deslotting / Rollover if force exceeds grip limits (increased threshold from 1.45 to 2.2)
+        if (car.centrifugalForce > 2.2) {
+            car.isRolledOver = true;
+            car.rollOverTimer = 90; // 1.5 second penalty
+            
+            // Slide car off guide rail tangent direction
+            car.crashVelocity.set(
+                Math.sin(car.heading) * car.speed * 0.45,
+                0.35 + Math.random() * 0.25,
+                Math.cos(car.heading) * car.speed * 0.45
+            );
+            car.speed = 0;
+            soundManager.playBump(1.0);
+        }
+
+        // Sync AI Opponent physics in Scalextric
+        updateAiPhysics();
+
+        // Lap progression trigger
+        const midPointIndex = Math.floor(curvePointsCount * 0.5);
+        const lapThresholdIndex = Math.floor(curvePointsCount * 0.9);
+        const startWindowIndex = Math.floor(curvePointsCount * 0.1);
+
+        if (closestIndex > midPointIndex - 40 && closestIndex < midPointIndex + 40) {
+            checkpointPassed = true;
+        }
+        if (closestIndex < startWindowIndex && lastClosestIdx > lapThresholdIndex) {
+            if (checkpointPassed) {
+                lap++;
+                checkpointPassed = false;
+                if (lap <= 3) {
+                    lapUi.innerText = lap;
+                    soundManager.playLapChime();
+                } else {
+                    gameState = 'FINISHED';
+                    const finalTimeStr = updateTimer();
+                    finalTimeSpan.innerText = finalTimeStr;
+                    finishPanel.style.display = 'block';
+                    soundManager.updateEngine(0, maxAllowedSpeed, true);
+                }
+            }
+        }
+        lastClosestIdx = closestIndex;
+        speedUi.innerText = Math.round(Math.abs(car.speed) * 38);
+        return;
+    }
+
+
+    // ==========================================
+    // --- MODE 2: SANDBOX DRIVING (UNTOUCHED) ---
+    // ==========================================
+    document.getElementById('slot-meter-container').style.display = 'none';
 
     // 1. PROGRESSIVE SENSITIVITY STEERING LOGIC
     let steerValue = 0;
     const steeringPressed = (keys.ArrowLeft || keys.a || keys.A || keys.ArrowRight || keys.d || keys.D);
     
     if (steeringPressed) {
-        // Increase hold timer gradually (Takes about 20 frames / 0.3s to reach maximum intensity)
         steerDuration = Math.min(1.0, steerDuration + 0.05);
     } else {
-        // Instantly reset steering accumulator on release
         steerDuration = 0.0;
     }
 
-    // Apply progressive non-linear response curve
-    // Extremely subtle on short taps (starting at 25% sensitivity) and ramps up to 100% on holds
     const progressiveMultiplier = 0.25 + 0.75 * Math.pow(steerDuration, 2.0);
 
     if (keys.ArrowLeft || keys.a || keys.A) steerValue = car.steerSpeed * progressiveMultiplier;
     if (keys.ArrowRight || keys.d || keys.D) steerValue = -car.steerSpeed * progressiveMultiplier;
 
-    // Apply steering relative to current speed direction
     if (Math.abs(car.speed) > 0.1) {
         const headingModifier = car.speed > 0 ? 1 : -1;
         const speedScale = Math.min(Math.abs(car.speed) / maxAllowedSpeed, 1.0);
@@ -1686,23 +2630,20 @@ function updatePhysics() {
         if (Math.abs(car.speed) < 0.02) car.speed = 0;
     }
 
-    // Clamp speed limits dynamically accounting for water drag
     car.speed = Math.max(car.maxSpeedReverse, Math.min(maxAllowedSpeed, car.speed));
 
-    // 3. FREE 2D COORDINATE MOVEMENT
+    // 3. HORIZONTAL DRIFT AND VELOCITY CALCS
     const headingVector = new THREE.Vector3(Math.sin(car.heading), 0, Math.cos(car.heading));
     
     const isDrifting = Math.abs(steerValue) > 0.01 && Math.abs(car.speed) > maxAllowedSpeed * 0.45;
     const appliedDriftFactor = (isDrifting && !inWater) ? 0.065 : driftFactor;
 
-    // Apply steering direction interpolation
     car.velocity.lerp(headingVector.clone().multiplyScalar(car.speed), appliedDriftFactor);
 
-    // Translate global horizontal position
     car.position.x += car.velocity.x;
     car.position.z += car.velocity.z;
 
-    // 3D HEIGHT, AIRTIME & BANKING TILT SYSTEM
+    // 4. VERTICAL SUSPENSION SNAP WITH CORRECT BANKING VERTICAL SHIFTS
     const ptOnSpline = sampledCurvePoints[closestIndex];
     const trackHeight = ptOnSpline.y;
 
@@ -1711,36 +2652,29 @@ function updatePhysics() {
     const right = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
     
     const bankingAngle = getBankingAngle(parameter, currentLevel);
-    // Project local banking normals for precise car vertical snapping
     const bankedRight = right.clone().applyAxisAngle(tangent, bankingAngle);
 
-    // Lateral distance calculation from center-line, taking height vectors into account
     const vecToCar = new THREE.Vector3().subVectors(car.position, ptOnSpline);
     const lateralDistance = vecToCar.dot(bankedRight);
 
-    // Height offset generated by lateral placement on tilted bank slopes
-    const bankingHeightOffset = lateralDistance * -Math.sin(bankingAngle);
-    let targetY = trackHeight + 0.9 + bankingHeightOffset;
+    // EXACT HIGH-ALTITUDE COORDINATE OFFSET (Ensures car is always locked to banked profile)
+    const targetY = trackHeight + 0.9 + bankedRight.y * lateralDistance;
 
     if (car.isGrounded) {
-        const heightDifference = targetY - car.position.y;
+        const trackDrop = targetY - car.position.y;
         
-        // If track drops quickly under high-speed, initiate flight state
-        // Increased threshold to 2.5 to avoid false bumps triggering floating airtime
-        if (heightDifference < -2.5 && Math.abs(car.speed) > 2.0) {
+        // Launch into airborne state if track drops suddenly underneath us (steep cliffs / launches)
+        if (trackDrop < -3.5 && Math.abs(car.speed) > 2.5) {
             car.isGrounded = false;
-            // Retain upward vertical lift based on forward ramp velocity and orientation tilt
-            car.verticalVelocity = Math.max(0, car.speed * Math.sin(car.mesh.rotation.x));
+            // Upward vertical velocity is based on the track's launch ramp inclination
+            car.verticalVelocity = Math.max(0.5, car.speed * tangent.y * 1.5);
         } else {
-            // Normal track rolling constraint - ACTIVE SUSPENSION LERP
-            // Lerping the vertical position (0.32 factor) acts as a beautiful spring absorber
-            // which filters out all mathematical coordinate micro-bumps, making the track feel buttery smooth!
-            car.position.y = THREE.MathUtils.lerp(car.position.y, targetY, 0.32);
+            // Snaps directly to targetY to prevent lag-induced floating or sinking into dunes
+            car.position.y = targetY;
             car.verticalVelocity = 0;
         }
     } else {
-        // In-air vertical update (Gravity acceleration)
-        car.verticalVelocity -= 0.08; 
+        car.verticalVelocity -= 0.07; // Satisfying gravity coefficient
         car.position.y += car.verticalVelocity;
 
         // Collision landing detection on the spline surface
@@ -1749,10 +2683,8 @@ function updatePhysics() {
             car.verticalVelocity = 0;
             car.isGrounded = true;
 
-            // Trigger landing thud sound effect
             soundManager.playBump(0.65);
 
-            // Spawn landing dust / splash particles
             for (let i = 0; i < 8; i++) {
                 spawnParticle(
                     car.position.x + (Math.random() - 0.5) * 3,
@@ -1767,25 +2699,24 @@ function updatePhysics() {
         }
     }
 
-    // 4. BOUNDARY COLLISIONS (Solid Wall Limit Clamping on Banked curves)
+    // Absolute ground level clamp to make sure player never sinks below the road (Screenshot 2026-06-05 at 17.25.25.png)
+    if (car.position.y < targetY) car.position.y = targetY;
+
+    // 5. BOUNDARY COLLISIONS
     if (Math.abs(lateralDistance) > wallLimit) {
         const boundarySign = Math.sign(lateralDistance);
         const penetration = Math.abs(lateralDistance) - wallLimit;
 
-        // Softly clamp car back inside the boundaries along the perpendicular normal vector of banked surface
         car.position.addScaledVector(bankedRight, -boundarySign * penetration);
 
-        // TRUE ELASTIC BOUNCE PHYSICS: Reflect velocity along the wall normal
         const velocityProjectedOnNormal = car.velocity.dot(bankedRight);
         if (velocityProjectedOnNormal * boundarySign > 0) {
             car.velocity.addScaledVector(bankedRight, -velocityProjectedOnNormal * 1.45);
-            car.speed *= 0.82; // Slight slide friction speed reduction
+            car.speed *= 0.82; 
         }
 
-        // Trigger heavy collision crash sound effect
         soundManager.playBump(1.0);
 
-        // Produce high action metal spark particles
         const collisionLoc = ptOnSpline.clone()
             .addScaledVector(bankedRight, boundarySign * (wallLimit + 0.5))
             .add(new THREE.Vector3(0, 0.8, 0));
@@ -1805,43 +2736,44 @@ function updatePhysics() {
         }
     }
 
-    // Apply position to the global car mesh
+    // Run AI Opponent navigation cycles
+    updateAiPhysics();
+
+    // Check rigid body collision reactions between Tiger Shark and Skelesaurus
+    handleVehiclesCollision();
+
+    // Apply translation to player model
     car.mesh.position.copy(car.position);
 
-    // Calculate pitching rotation to align with current uphill/downhill spline tangents
+    // Pitch & Yaw calculations
     let targetPitch = 0;
     if (car.isGrounded) {
         const forward = new THREE.Vector3(Math.sin(car.heading), 0, Math.cos(car.heading)).normalize();
         const directionScale = tangent.dot(forward) > 0 ? 1 : -1;
         targetPitch = Math.asin(tangent.y) * directionScale;
     } else {
-        // Airborne pitch: slowly dip nose downward based on flight gravity curve
         targetPitch = car.verticalVelocity * 0.25;
     }
     car.mesh.rotation.x = THREE.MathUtils.lerp(car.mesh.rotation.x, targetPitch, 0.15);
     car.mesh.rotation.y = car.heading;
-
-    // Apply 3D banked curve roll frames smoothly to standard car mesh matrix
     car.mesh.rotation.z = THREE.MathUtils.lerp(car.mesh.rotation.z, bankingAngle, 0.15);
 
-    // Apply centrifugal body roll tilt to bodyMesh (aesthetic chassis physics)
+    // Apply body sway based on steering
     let turnAmount = 0;
     if (keys.ArrowLeft || keys.a || keys.A) turnAmount = 1;
     if (keys.ArrowRight || keys.d || keys.D) turnAmount = -1;
     const targetTilt = turnAmount * (car.speed / maxAllowedSpeed) * 0.12;
     car.bodyMesh.rotation.z = THREE.MathUtils.lerp(car.bodyMesh.rotation.z, targetTilt, 0.1);
 
-    // Micro vibration speed-dependent suspension hover effect
+    // Hover suspension vibration details
     const vibration = Math.sin(performance.now() * 0.06) * 0.025 * (car.speed / maxAllowedSpeed);
     car.bodyMesh.position.y = vibration;
 
-    // Rotate tires to simulate roll speed
+    // Spin wheels
     const wheelRotScale = car.speed * 0.28;
-    car.wheels.forEach(w => {
-        w.rotation.x += wheelRotScale;
-    });
+    car.wheels.forEach(w => { w.rotation.x += wheelRotScale; });
 
-    // 5. DRIFT / WATER SPLASH EMISSION
+    // Spawn Player tires drift smoke / water splash
     if ((isDrifting || inWater) && Math.random() < (inWater ? 0.75 : 0.45)) {
         const leftRearWorld = new THREE.Vector3(-1.9, 0.4, -2.0).applyMatrix4(car.mesh.matrixWorld);
         const rightRearWorld = new THREE.Vector3(1.9, 0.4, -2.0).applyMatrix4(car.mesh.matrixWorld);
@@ -1858,11 +2790,10 @@ function updatePhysics() {
         );
     }
 
-    // Update dynamic synthesizer nodes with current state ( screeches or splashing )
     soundManager.updateEngine(car.speed, maxAllowedSpeed, car.isGrounded);
     soundManager.updateDrift(isDrifting, Math.abs(car.speed), inWater);
 
-    // 6. DYNAMIC LAP CHECKPOINTS (Robust percent-based mapping framework)
+    // LAP CYCLE TRIGGERS
     const midPointIndex = Math.floor(curvePointsCount * 0.5);
     const lapThresholdIndex = Math.floor(curvePointsCount * 0.9);
     const startWindowIndex = Math.floor(curvePointsCount * 0.1);
@@ -1871,7 +2802,6 @@ function updatePhysics() {
         checkpointPassed = true;
     }
 
-    // Dynamic lap crossing index wrap-around detection
     if (closestIndex < startWindowIndex && lastClosestIdx > lapThresholdIndex) {
         if (checkpointPassed) {
             lap++;
@@ -1879,29 +2809,25 @@ function updatePhysics() {
             
             if (lap <= 3) {
                 lapUi.innerText = lap;
-                soundManager.playLapChime(); // Celebratory lap-complete audio chime!
+                soundManager.playLapChime();
             } else {
                 gameState = 'FINISHED';
                 const finalTimeStr = updateTimer();
                 finalTimeSpan.innerText = finalTimeStr;
                 finishPanel.style.display = 'block';
-                // Stop engine idle humming upon completion
                 soundManager.updateEngine(0, maxAllowedSpeed, true);
             }
         }
     }
 
     lastClosestIdx = closestIndex;
-
-    // Speed display mapping
     speedUi.innerText = Math.round(Math.abs(car.speed) * 38);
 }
 
-// --- DYNAMIC COORDINATE-LOCKED CAMERA TRACKING ENGINE ---
+// --- DYNAMIC CAMERA CONTROLLER ---
 function updateCamera() {
     if (!car.mesh) return;
 
-    // Ideal position is behind and above the car matching rotation yaw
     const backOffset = new THREE.Vector3(
         -Math.sin(car.heading),
         0,
@@ -1909,23 +2835,20 @@ function updateCamera() {
     ).normalize();
 
     const cameraTargetPos = car.position.clone()
-        .addScaledVector(backOffset, 16.5) // Distance behind car
-        .add(new THREE.Vector3(0, 6.8, 0)); // Height above car
+        .addScaledVector(backOffset, 16.5) 
+        .add(new THREE.Vector3(0, 6.8, 0)); 
 
-    // Smooth camera lag interpolation for enhanced velocity sensation
     camera.position.lerp(cameraTargetPos, 0.08);
 
-    // Keep camera smoothly bounded inside blue walls (wallLimit - 5.0 cushion)
     clampCameraToTrack(camera.position, wallLimit - 5.0);
 
-    // Look slightly in front of the vehicle
     const trackingLookPoint = car.position.clone().add(
         new THREE.Vector3(Math.sin(car.heading) * 4, 1.2, Math.cos(car.heading) * 4)
     );
     camera.lookAt(trackingLookPoint);
 }
 
-// --- RENDER GAME TICK LOOP ---
+// --- RENDER GAME LOOP TICK ---
 function animate() {
     requestAnimationFrame(animate);
 
@@ -1933,7 +2856,7 @@ function animate() {
     updateParticles();
     updateCamera();
     updateTimer();
-    drawMinimap(); // Redraw our glowing miniature circuit map every frame
+    drawMinimap(); 
 
     renderer.render(scene, camera);
 }
