@@ -64,12 +64,13 @@
             flex-shrink: 0;
         }
         /* Explicit widths lock the layout in place, preventing variable numbers from causing shifts */
-        .hud-card:nth-child(1) { min-width: 110px; } /* Speed Card */
-        .hud-card:nth-child(2) { min-width: 80px; }  /* Lap Card */
-        .hud-card:nth-child(3) { min-width: 150px; } /* Timer Card */
-        .hud-card:nth-child(4) { min-width: 200px; } /* Track Selector Card */
-        .hud-card:nth-child(5) { min-width: 150px; } /* Game Mode Card */
-        .hud-card:nth-child(6) { min-width: 160px; } /* Grip Card */
+        .hud-card:nth-child(1) { min-width: 80px; }  /* POS Card */
+        .hud-card:nth-child(2) { min-width: 110px; } /* Speed Card */
+        .hud-card:nth-child(3) { min-width: 80px; }  /* Lap Card */
+        .hud-card:nth-child(4) { min-width: 150px; } /* Timer Card */
+        .hud-card:nth-child(5) { min-width: 200px; } /* Track Selector Card */
+        .hud-card:nth-child(6) { min-width: 150px; } /* Game Mode Card */
+        .hud-card:nth-child(7) { min-width: 180px; } /* Grip Card */
 
         .hud-card span, #time-ui {
             font-variant-numeric: tabular-nums; /* Monospaced digital clock layout */
@@ -294,12 +295,13 @@
                 padding: 6px 10px;
                 font-size: 14px;
             }
-            .hud-card:nth-child(1) { min-width: 65px; }
-            .hud-card:nth-child(2) { min-width: 45px; }
-            .hud-card:nth-child(3) { min-width: 90px; }
-            .hud-card:nth-child(4) { min-width: 130px; }
-            .hud-card:nth-child(5) { min-width: 110px; }
+            .hud-card:nth-child(1) { min-width: 50px; }
+            .hud-card:nth-child(2) { min-width: 65px; }
+            .hud-card:nth-child(3) { min-width: 45px; }
+            .hud-card:nth-child(4) { min-width: 90px; }
+            .hud-card:nth-child(5) { min-width: 130px; }
             .hud-card:nth-child(6) { min-width: 110px; }
+            .hud-card:nth-child(7) { min-width: 110px; }
             .hud-label {
                 font-size: 8px;
             }
@@ -325,6 +327,10 @@
     
     <!-- Top HUD info -->
     <div id="hud">
+        <div class="hud-card" style="border-color: #00ff6a; box-shadow: 0 0 15px rgba(0, 255, 106, 0.45);">
+            <div class="hud-label" style="color: #00ff6a;">POS</div>
+            <div><span id="pos-ui">1st</span></div>
+        </div>
         <div class="hud-card">
             <div class="hud-label">Speed</div>
             <div><span id="speed-ui">0</span> <span style="font-size:13px">MPH</span></div>
@@ -345,15 +351,15 @@
         <!-- Live Game Mode (Solo/AI/Scalextric) Selector -->
         <div class="hud-card" style="pointer-events: auto; cursor: pointer; border-color: #39ff14; box-shadow: 0 0 15px rgba(57, 255, 20, 0.5);" onclick="toggleGameMode()">
             <div class="hud-label" style="color: #39ff14;">Mode (Click)</div>
-            <div id="mode-ui" style="color: #fff; text-transform: uppercase;">VS AI</div>
+            <div id="mode-ui" style="color: #fff; text-transform: uppercase;">SCALEXTRIC</div>
         </div>
         <!-- Dynamic Grip Limit Adjuster Card -->
         <div id="grip-card" class="hud-card" style="pointer-events: auto; border-color: #ffaa00; box-shadow: 0 0 15px rgba(255, 170, 0, 0.5); display: none;">
-            <div class="hud-label" style="color: #ffaa00;">Grip Limit (Type/Click)</div>
+            <div class="hud-label" style="color: #ffaa00;">Grip Level (Click +/-)</div>
             <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 18px;">
-                <span style="cursor: pointer; color: #ffaa00; font-size: 24px; padding: 0 8px; background: rgba(255,255,255,0.1); border-radius: 4px;" onclick="adjustGrip(-0.5)">-</span>
-                <input type="number" id="grip-ui-val" value="3.0" step="0.1" min="0.1" max="999.0" onkeydown="event.stopPropagation()" onkeyup="event.stopPropagation()" oninput="manualGripChange(this.value)" style="background: rgba(0,0,0,0.6); color: #fff; border: 1px solid #ffaa00; border-radius: 4px; width: 70px; text-align: center; font-family: inherit; font-size: 18px; font-weight: bold; outline: none; pointer-events: auto;">
-                <span style="cursor: pointer; color: #ffaa00; font-size: 24px; padding: 0 8px; background: rgba(255,255,255,0.1); border-radius: 4px;" onclick="adjustGrip(0.5)">+</span>
+                <span style="cursor: pointer; color: #ffaa00; font-size: 24px; padding: 0 8px; background: rgba(255,255,255,0.1); border-radius: 4px;" onclick="adjustGripLevel(-1)">-</span>
+                <span id="grip-ui-val" style="color: #fff; min-width: 48px; display: inline-block;">3 (85)</span>
+                <span style="cursor: pointer; color: #ffaa00; font-size: 24px; padding: 0 8px; background: rgba(255,255,255,0.1); border-radius: 4px;" onclick="adjustGripLevel(1)">+</span>
             </div>
         </div>
     </div>
@@ -379,7 +385,8 @@
 
     <!-- Finish overlay -->
     <div id="finish-panel">
-        <h1>Race Complete!</h1>
+        <h1 id="finish-title">Race Complete!</h1>
+        <p>Your Final Place: <span id="final-place" class="time-highlight" style="color: #00ff6a;">1st Place</span></p>
         <p>Your Final Time: <span id="final-time" class="time-highlight">00:00.00</span></p>
         <button class="restart-btn" onclick="startAudioEngine(); resetRace()">Race Again</button>
     </div>
@@ -405,8 +412,11 @@ const canvas = document.getElementById('gameCanvas');
 const speedUi = document.getElementById('speed-ui');
 const lapUi = document.getElementById('lap-ui');
 const timeUi = document.getElementById('time-ui');
+const posUi = document.getElementById('pos-ui');
 const countdownOverlay = document.getElementById('countdown-overlay');
 const finishPanel = document.getElementById('finish-panel');
+const finishTitle = document.getElementById('finish-title');
+const finalPlaceSpan = document.getElementById('final-place');
 const finalTimeSpan = document.getElementById('final-time');
 const minimapCanvas = document.getElementById('minimap');
 const minimapCtx = minimapCanvas.getContext('2d');
@@ -422,12 +432,21 @@ let lap = 1;
 let lastClosestIdx = -1; // -1 represents uninitialized startup state
 let checkpointPassed = false;
 let steerDuration = 0; // Tracks hold time of steering for subtle tap control
+let lastRacePos = 1; // Tracks last position to trigger overtake cheers
 
-// Game Mode Selection Variable
-let gameMode = 'VS_AI'; // 'SOLO', 'VS_AI', or 'SCALEXTRIC'
+// Game Mode Selection Variable - Defaulting to SCALEXTRIC
+let gameMode = 'SCALEXTRIC'; 
 
 // SHARED SLOT CAR PHYSICS DEFINITIONS
-let gripLimit = 3.0; // Dynamic, user-adjustable grip threshold
+let gripLevel = 3; // level 1-5
+const gripMap = {
+    1: 75.0,
+    2: 80.0,
+    3: 85.0,
+    4: 90.0,
+    5: 95.0
+};
+let gripLimit = gripMap[gripLevel];
 const curvatureScale = 5.0; // The optimized, smoothed curvature coefficient
 
 // Level Configurations
@@ -513,6 +532,7 @@ const car = {
     length: 7.2,
     mesh: null,
     bodyMesh: null, // Submesh holding car visual elements to apply roll & vibration easily
+    tailMesh: null, // Custom wagging tail submesh
     wheels: [],
     verticalVelocity: 0, // Airborne state velocity
     isGrounded: true,
@@ -550,13 +570,17 @@ const aiCar = {
     centrifugalForce: 0,
     isRolledOver: false,
     rollOverTimer: 0,
-    crashVelocity: new THREE.Vector3()
+    crashVelocity: new THREE.Vector3(),
+    lap: 1,
+    checkpointPassed: false
 };
 
 // --- PROCEDURAL GENERATION: CHANNELS & DESERT ASSETS ---
 let trackGroup;
 const trackWidth = 65; // Increased width for better high speed handling & drifting
 const wallLimit = (trackWidth / 2) - 1.8; // Distance from track center before hitting outer wall flange (30.7 units)
+
+// --- STREAMING_CHUNK: Declaring Helper Functions... ---
 
 // Helper function to calculate banking tilt angle at any percentage `u` along the spline
 function getBankingAngle(u, level) {
@@ -599,6 +623,8 @@ function getSlotPosition(u, laneOffset) {
     
     return pt.clone().addScaledVector(bankedRightVec, laneOffset).add(new THREE.Vector3(0, 0.9, 0));
 }
+
+// --- STREAMING_CHUNK: Synthesized Audio System... ---
 
 // --- SYNTHESIZED WEB AUDIO ENGINE CLASS (No external MP3 required) ---
 class GameSoundEngine {
@@ -841,6 +867,51 @@ class GameSoundEngine {
             triggerTone(1046.50, 0.24, 0.5);    // C6
         } catch (e) {}
     }
+
+    playCheer() {
+        if (!this.initialized || !this.ctx) return;
+        if (this.ctx.state === 'suspended') return;
+        try {
+            const now = this.ctx.currentTime;
+            // Uplifting chord arpeggio cascade to celebrate overtake
+            const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C5, E5, G5, C6, E6
+            notes.forEach((freq, i) => {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + i * 0.06);
+                gain.gain.setValueAtTime(0, now + i * 0.06);
+                gain.gain.linearRampToValueAtTime(0.08, now + i * 0.06 + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.005, now + i * 0.06 + 0.4);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now + i * 0.06);
+                osc.stop(now + i * 0.06 + 0.45);
+            });
+        } catch (e) {}
+    }
+
+    playLastLapDing() {
+        if (!this.initialized || !this.ctx) return;
+        if (this.ctx.state === 'suspended') return;
+        try {
+            const now = this.ctx.currentTime;
+            const dings = [880, 880, 1200]; // Bright bell chime notes
+            dings.forEach((freq, i) => {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + i * 0.15);
+                gain.gain.setValueAtTime(0, now + i * 0.15);
+                gain.gain.linearRampToValueAtTime(0.12, now + i * 0.15 + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.005, now + i * 0.15 + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now + i * 0.15);
+                osc.stop(now + i * 0.15 + 0.35);
+            });
+        } catch (e) {}
+    }
 }
 
 const soundManager = new GameSoundEngine();
@@ -853,17 +924,11 @@ function startAudioEngine() {
     }
 }
 
-// Global Grip Threshold Adjustment Interface
-function adjustGrip(amount) {
-    gripLimit = Math.max(0.1, parseFloat((gripLimit + amount).toFixed(1)));
-    document.getElementById('grip-ui-val').value = gripLimit.toFixed(1);
-}
-
-function manualGripChange(val) {
-    let parsed = parseFloat(val);
-    if (!isNaN(parsed) && parsed >= 0.1) {
-        gripLimit = parsed;
-    }
+// Parameterized Grip Level Adjuster (levels 1-5 mapping to 75-95)
+function adjustGripLevel(amount) {
+    gripLevel = Math.max(1, Math.min(5, gripLevel + amount));
+    gripLimit = gripMap[gripLevel];
+    document.getElementById('grip-ui-val').innerText = `${gripLevel} (${gripLimit})`;
 }
 </script>
 
@@ -925,6 +990,8 @@ function updateParticles() {
     }
 }
 
+// --- STREAMING_CHUNK: Initializing 3D Scene and Lights... ---
+
 // --- INIT GRAPHICS & GAME SCENE ---
 function init() {
     // Scene creation
@@ -972,6 +1039,9 @@ function init() {
     ground.receiveShadow = true;
     scene.add(ground);
 
+    // Default mode is SCALEXTRIC
+    gameMode = 'SCALEXTRIC';
+
     // Build the 3D continuous ribbon track with beautiful blue walls
     buildTrack();
 
@@ -1004,8 +1074,17 @@ function init() {
     // Window Resizing Setup
     window.addEventListener('resize', onWindowResize);
 
+    // Initializing grip values based on starting track
+    if (currentLevel === 1) {
+        gripLevel = 3; // 85 limit
+    } else {
+        gripLevel = 5; // 95 limit
+    }
+    adjustGripLevel(0); // Set defaults onto UI
+
     // Sync HUD selection
-    document.getElementById('mode-ui').innerText = gameMode === 'VS_AI' ? "VS AI" : "SOLO";
+    document.getElementById('mode-ui').innerText = "SCALEXTRIC";
+    updateMobileControlsDisplay();
 
     // Set initial display state of Grip Adjuster Card
     document.getElementById('grip-card').style.display = (gameMode === 'SCALEXTRIC') ? 'flex' : 'none';
@@ -1183,6 +1262,8 @@ function buildTrack() {
     }
 }
 
+// --- STREAMING_CHUNK: Building Arch and Oasis Elements... ---
+
 // --- CHECKERED START/FINISH ARCH ---
 function buildFinishLineArch() {
     if (finishLineArch) scene.remove(finishLineArch);
@@ -1283,6 +1364,8 @@ function buildOasisLakes() {
     }
 }
 
+// --- STREAMING_CHUNK: Scattering Environmental Scenery... ---
+
 // --- SCATTER ENVIRONMENT (CACTI & DUNES) ---
 function scatterEnvironment() {
     // Clear out preexisting scene elements when changing levels
@@ -1379,64 +1462,89 @@ function scatterEnvironment() {
 function buildTigerSharkChassis() {
     const tsGroup = new THREE.Group();
     
-    // Standard materials optimized to catch ambient & direct light without environment map clipping
-    const orangeMat = new THREE.MeshStandardMaterial({ color: 0xff5500, roughness: 0.4, metalness: 0.1 }); // Rich popping Orange
-    const blueMat = new THREE.MeshStandardMaterial({ color: 0x00aaff, roughness: 0.4, metalness: 0.1 });   // Bright Electric Blue
+    // Updated Tiger Shark styling: Shark blue base shell with orange highlights
+    const sharkBlueMat = new THREE.MeshStandardMaterial({ color: 0x0066aa, roughness: 0.35, metalness: 0.1 }); 
+    const orangeMat = new THREE.MeshStandardMaterial({ color: 0xff5500, roughness: 0.4, metalness: 0.1 }); // Popping Orange stripes
     const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0.0 });  // Teeth & eye whites
     const redMat = new THREE.MeshStandardMaterial({ color: 0xff1100, roughness: 0.5, metalness: 0.0 });    // Mouth background
     const blackMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.1 });  // Windshield & pupils
 
     // Shark cabin
     const bodyGeo = new THREE.BoxGeometry(3.3, 1.2, 5.5);
-    const bodyMain = new THREE.Mesh(bodyGeo, orangeMat);
+    const bodyMain = new THREE.Mesh(bodyGeo, sharkBlueMat);
     bodyMain.position.set(0, 1.1, -0.6);
     bodyMain.castShadow = true;
     tsGroup.add(bodyMain);
 
     // Shark Slope nose hood
     const noseGeo = new THREE.BoxGeometry(3.3, 0.6, 2.2);
-    const nose = new THREE.Mesh(noseGeo, orangeMat);
+    const nose = new THREE.Mesh(noseGeo, sharkBlueMat);
     nose.position.set(0, 0.8, 2.65);
     nose.castShadow = true;
     tsGroup.add(nose);
 
-    // Shark Glass Cabin (Eyes look out the side)
+    // Shark Glass Cabin
     const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.9, 3.0), blackMat);
     cabin.position.set(0, 1.9, -1.0);
     tsGroup.add(cabin);
 
-    // 1. Blue Shark Side Stripes (Distinct plates wrapping around side panels to ensure high visibility)
+    // 1. Orange Shark Side Stripes (Distinct wrapping plates for high visibility)
     for (let i = 0; i < 4; i++) {
         // Left side stripes
-        const leftStripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 0.35), blueMat);
+        const leftStripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 0.35), orangeMat);
         leftStripe.position.set(-1.66, 1.1, -2.2 + i * 1.1);
         leftStripe.rotation.z = 0.45; // Slanted tiger stripe
         leftStripe.rotation.y = 0.1;
         tsGroup.add(leftStripe);
 
         // Right side stripes
-        const rightStripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 0.35), blueMat);
+        const rightStripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 0.35), orangeMat);
         rightStripe.position.set(1.66, 1.1, -2.2 + i * 1.1);
         rightStripe.rotation.z = -0.45;
         rightStripe.rotation.y = -0.1;
         tsGroup.add(rightStripe);
     }
 
-    // 2. Large Dorsal Shark Fin (Centered on the roof)
+    // 2. Custom Rounded Dorsal Shark Fin (Centered on the roof)
     const finShape = new THREE.Shape();
     finShape.moveTo(0, 0);
-    finShape.lineTo(0, 2.2);
-    finShape.quadraticCurveTo(-0.5, 1.2, -1.8, 0);
+    finShape.quadraticCurveTo(-0.8, 1.8, -1.8, 1.8); // Rounded apex
+    finShape.quadraticCurveTo(-1.8, 0.5, -2.2, 0);
     finShape.lineTo(0, 0);
 
     const extrudeSettings = { depth: 0.35, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.1, bevelThickness: 0.1 };
     const finGeo = new THREE.ExtrudeGeometry(finShape, extrudeSettings);
     finGeo.center();
-    const finMesh = new THREE.Mesh(finGeo, orangeMat);
+    const finMesh = new THREE.Mesh(finGeo, sharkBlueMat);
     finMesh.rotation.y = Math.PI / 2; // Orient forward
     finMesh.position.set(0, 2.8, -1.0);
     finMesh.castShadow = true;
     tsGroup.add(finMesh);
+
+    // 2.5 Flapping caudal tail segment assembly
+    const tailGroup = new THREE.Group();
+    const stemGeo = new THREE.BoxGeometry(0.6, 0.8, 1.8);
+    const stem = new THREE.Mesh(stemGeo, sharkBlueMat);
+    stem.position.set(0, 0, -0.9);
+    tailGroup.add(stem);
+
+    // Large caudal fin (vertical)
+    const caudalFinShape = new THREE.Shape();
+    caudalFinShape.moveTo(0, 0);
+    caudalFinShape.quadraticCurveTo(0.6, 1.2, 1.2, 1.5);
+    caudalFinShape.quadraticCurveTo(0.5, 0.0, 1.2, -1.5);
+    caudalFinShape.quadraticCurveTo(0.6, -1.2, 0, 0);
+    const finExtrude = new THREE.ExtrudeGeometry(caudalFinShape, { depth: 0.15, bevelEnabled: true, bevelSegments: 1, bevelSize: 0.04, bevelThickness: 0.04 });
+    finExtrude.center();
+    const finCaudal = new THREE.Mesh(finExtrude, orangeMat);
+    finCaudal.rotation.y = Math.PI / 2;
+    finCaudal.position.set(0, 0, -1.8);
+    tailGroup.add(finCaudal);
+
+    // Attach tail to rear of Tiger Shark
+    tailGroup.position.set(0, 1.0, -3.25);
+    tsGroup.add(tailGroup);
+    car.tailMesh = tailGroup; // Keep global reference for runtime water updates
 
     // 3. Shark Eyes on sides of cabin (Slightly larger and fully colored to make them clear)
     const eyeWhiteGeo = new THREE.SphereGeometry(0.38, 8, 8);
@@ -1483,7 +1591,9 @@ function buildTigerSharkChassis() {
 
     return tsGroup;
 }
+</script>
 
+<script>
 // --- SKELESAURUS CUSTOM AI CHASSIS MODEL ---
 function buildSkelesaurusChassis() {
     const ssGroup = new THREE.Group();
@@ -1580,6 +1690,8 @@ function buildSkelesaurusChassis() {
 
     return ssGroup;
 }
+
+// --- STREAMING_CHUNK: Combining Car assemblies... ---
 
 // --- MASTER CAR ASSEMBLY ---
 function buildCars() {
@@ -1807,7 +1919,7 @@ function drawMinimap() {
     }
 }
 
-// --- HUD SETTING SWAPPERS ---
+// --- HUD LEVEL SWAPPING INTERFACE ---
 function toggleLevel() {
     startAudioEngine();
     const targetLvl = currentLevel === 1 ? 2 : 1;
@@ -1832,11 +1944,30 @@ function loadLevel(levelNum) {
     scatterEnvironment();
     buildCars();
     
+    // Dynamic default grip selector mapping (Track 1 = Level 3, Track 2 = Level 5)
+    if (currentLevel === 1) {
+        gripLevel = 3; // 85
+    } else {
+        gripLevel = 5; // 95
+    }
+    adjustGripLevel(0); // Synchronize onto selector
+
     // Synchronize HUD updates
     document.getElementById('level-ui').innerText = levelConfigs[currentLevel].name;
     
-    // Begin countdown for newly chosen arena
+    // Restart countdown on track swap to avoid feeling rushed
     resetRace();
+}
+
+function updateMobileControlsDisplay() {
+    const isScalextric = (gameMode === 'SCALEXTRIC');
+    const btnLeft = document.getElementById('btn-left');
+    const btnRight = document.getElementById('btn-right');
+    const btnReverse = document.getElementById('btn-reverse');
+    
+    if (btnLeft) btnLeft.style.display = isScalextric ? 'none' : 'flex';
+    if (btnRight) btnRight.style.display = isScalextric ? 'none' : 'flex';
+    if (btnReverse) btnReverse.style.display = isScalextric ? 'none' : 'flex';
 }
 
 function toggleGameMode() {
@@ -1856,6 +1987,7 @@ function toggleGameMode() {
     if (gameMode === 'SCALEXTRIC') modeText = "SCALEXTRIC";
     
     document.getElementById('mode-ui').innerText = modeText;
+    updateMobileControlsDisplay();
 
     // Toggle the display of the Grip Limit adjuster dynamically
     document.getElementById('grip-card').style.display = (gameMode === 'SCALEXTRIC') ? 'flex' : 'none';
@@ -1870,6 +2002,7 @@ function toggleGameMode() {
         scene.remove(aiCar.mesh);
     }
 
+    // Restart countdown on mode swap to avoid feeling rushed
     resetRace();
 }
 </script>
@@ -2001,16 +2134,20 @@ function resetRace() {
     aiCar.centrifugalForce = 0;
     aiCar.isRolledOver = false;
     aiCar.rollOverTimer = 0;
+    aiCar.lap = 1;
+    aiCar.checkpointPassed = false;
 
     lap = 1;
     lastClosestIdx = -1; // Force full scan on reset
     checkpointPassed = false;
     totalElapsed = 0;
+    lastRacePos = 1;
 
     // Reset HUD views
     lapUi.innerText = "1";
     speedUi.innerText = "0";
     timeUi.innerText = "00:00.00";
+    posUi.innerText = "1st";
     finishPanel.style.display = "none";
 
     // Setup starting camera position directly behind vehicle on startup
@@ -2234,13 +2371,14 @@ function updateAiPhysics() {
         const bankingAngle = getBankingAngle(aiCar.slotProgress, currentLevel);
         aiCar.mesh.rotation.z = bankingAngle;
 
-        // 5. Centrifugal slide visual offsets (yaw the body outward based on optimized G-force accumulation rate)
+        // 5. Centrifugal slide visual offsets (yaw the body outward based on G-force)
         const targetAiForce = (aiCar.speed * aiCar.speed) * curvature;
         // Temporal low-pass filter to smooth out sudden spline calculations
         aiCar.centrifugalForce = THREE.MathUtils.lerp(aiCar.centrifugalForce, targetAiForce, 0.1);
         
         const crossY = currentT.x * aheadT.z - currentT.z * aheadT.x;
         const slideDirection = Math.sign(crossY);
+        // Cool centrifugal slide swing in curves
         const slideYaw = -slideDirection * Math.min(0.65, aiCar.centrifugalForce * 0.28);
         aiCar.bodyMesh.rotation.y = THREE.MathUtils.lerp(aiCar.bodyMesh.rotation.y, slideYaw, 0.1);
 
@@ -2453,6 +2591,17 @@ function updatePhysics() {
         }
     }
 
+    // Flapping tail animation when in water
+    if (car.tailMesh) {
+        if (inWater) {
+            // Rapid flapping in water
+            car.tailMesh.rotation.y = Math.sin(performance.now() * 0.03) * 0.5;
+        } else {
+            // Gentle sway proportional to vehicle speed on land
+            car.tailMesh.rotation.y = Math.sin(performance.now() * 0.005) * 0.1 * Math.abs(car.speed);
+        }
+    }
+
     // Dynamic water drag variables
     let maxAllowedSpeed = car.maxSpeed;
     let driftFactor = 0.16; // Normal road grip traction
@@ -2550,6 +2699,12 @@ function updatePhysics() {
         // Temporal low-pass filter to prevent instant derailment on single-frame spline ripples
         car.centrifugalForce = THREE.MathUtils.lerp(car.centrifugalForce, rawPlayerForce, 0.1);
 
+        // 5. Dynamic Tail Fishtailing: slide chassis outward visually under centrifugal force
+        const crossY = tangent.x * tangentAhead.z - tangent.z * tangentAhead.x;
+        const slideDirection = Math.sign(crossY); // -1 left turn, +1 right turn
+        const slideYaw = -slideDirection * Math.min(0.65, car.centrifugalForce * 0.28);
+        car.bodyMesh.rotation.y = THREE.MathUtils.lerp(car.bodyMesh.rotation.y, slideYaw, 0.1);
+
         // Update neon G-Force limit bar (Re-scaled relative to active custom gripLimit)
         const limitRatio = Math.min(1.0, car.centrifugalForce / gripLimit);
         const fill = document.getElementById('slot-meter-fill');
@@ -2613,15 +2768,38 @@ function updatePhysics() {
                 if (lap <= 3) {
                     lapUi.innerText = lap;
                     soundManager.playLapChime();
+                    // Play Triple Ding alert sequence on start of final lap
+                    if (lap === 3) {
+                        soundManager.playLastLapDing();
+                    }
                 } else {
                     gameState = 'FINISHED';
                     const finalTimeStr = updateTimer();
                     finalTimeSpan.innerText = finalTimeStr;
+                    
+                    // Display winning position in Finished Screen
+                    const winPosText = (posUi.innerText === '1st') ? "1st Place (Victory!)" : "2nd Place";
+                    finalPlaceSpan.innerText = winPosText;
+                    
                     finishPanel.style.display = 'block';
                     soundManager.updateEngine(0, maxAllowedSpeed, true);
                 }
             }
         }
+
+        // Update Position tracking POS HUD panel (Scalextric mode)
+        const playerProg = lap * 1000 + car.slotProgress * 1000;
+        const aiProg = aiCar.lap * 1000 + aiCar.slotProgress * 1000;
+        const currentPos = (playerProg >= aiProg) ? 1 : 2;
+        
+        posUi.innerText = (currentPos === 1) ? "1st" : "2nd";
+        
+        // Trigger Cheering Synths on Overtake!
+        if (lastRacePos === 2 && currentPos === 1 && gameState === 'RACING') {
+            soundManager.playCheer();
+        }
+        lastRacePos = currentPos;
+
         lastClosestIdx = closestIndex;
         speedUi.innerText = Math.round(Math.abs(car.speed) * 38);
         return;
@@ -2799,6 +2977,10 @@ function updatePhysics() {
     const targetTilt = turnAmount * (car.speed / maxAllowedSpeed) * 0.12;
     car.bodyMesh.rotation.z = THREE.MathUtils.lerp(car.bodyMesh.rotation.z, targetTilt, 0.1);
 
+    // Dynamic curve sideways swing (yaw fishtailing) on sandbox drift curves
+    const driftYaw = -turnAmount * Math.min(0.55, Math.abs(car.speed) * 0.12);
+    car.bodyMesh.rotation.y = THREE.MathUtils.lerp(car.bodyMesh.rotation.y, driftYaw, 0.1);
+
     // Hover suspension vibration details
     const vibration = Math.sin(performance.now() * 0.06) * 0.025 * (car.speed / maxAllowedSpeed);
     car.bodyMesh.position.y = vibration;
@@ -2844,19 +3026,40 @@ function updatePhysics() {
             if (lap <= 3) {
                 lapUi.innerText = lap;
                 soundManager.playLapChime();
+                if (lap === 3) {
+                    soundManager.playLastLapDing();
+                }
             } else {
                 gameState = 'FINISHED';
                 const finalTimeStr = updateTimer();
                 finalTimeSpan.innerText = finalTimeStr;
+
+                const winPosText = (posUi.innerText === '1st') ? "1st Place (Victory!)" : "2nd Place";
+                finalPlaceSpan.innerText = winPosText;
+
                 finishPanel.style.display = 'block';
                 soundManager.updateEngine(0, maxAllowedSpeed, true);
             }
         }
     }
 
+    // Update Position tracking POS HUD panel (Sandbox mode)
+    const playerProg = lap * 1000 + closestIndex;
+    const aiProg = (gameMode === 'SOLO') ? 0 : (aiCar.lap * 1000 + aiCar.lastClosestIdx);
+    const currentPos = (playerProg >= aiProg) ? 1 : 2;
+    
+    posUi.innerText = (currentPos === 1) ? "1st" : "2nd";
+    
+    if (lastRacePos === 2 && currentPos === 1 && gameState === 'RACING') {
+        soundManager.playCheer();
+    }
+    lastRacePos = currentPos;
+
     lastClosestIdx = closestIndex;
     speedUi.innerText = Math.round(Math.abs(car.speed) * 38);
 }
+
+// --- STREAMING_CHUNK: Updating Camera positioning and Animation Tick... ---
 
 // --- DYNAMIC CAMERA CONTROLLER ---
 function updateCamera() {
@@ -2901,6 +3104,3 @@ window.onload = function() {
     animate();
 };
 </script>
-
-</body>
-</html>
