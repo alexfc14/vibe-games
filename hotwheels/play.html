@@ -317,7 +317,6 @@
             }
         }
     </style>
-    <!-- Three.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
@@ -325,7 +324,6 @@
 <div id="game-container">
     <canvas id="gameCanvas"></canvas>
     
-    <!-- Top HUD info -->
     <div id="hud">
         <div class="hud-card" style="border-color: #ff5500; box-shadow: 0 0 15px rgba(255, 85, 0, 0.45);">
             <div class="hud-label" style="color: #ff5500;">POS</div>
@@ -343,17 +341,14 @@
             <div class="hud-label">Time</div>
             <div id="time-ui">00:00.00</div>
         </div>
-        <!-- Live Track Swapping HUD toggle -->
         <div class="hud-card" style="pointer-events: auto; cursor: pointer; border-color: #00ffff; box-shadow: 0 0 15px rgba(0, 242, 255, 0.5);" onclick="toggleLevel()">
             <div class="hud-label" style="color: #00ffff;">Track (Click)</div>
             <div id="level-ui" style="color: #fff; text-transform: uppercase;">DESERT SPEEDWAY</div>
         </div>
-        <!-- Live Game Mode (Solo/AI/Scalextric) Selector -->
         <div class="hud-card" style="pointer-events: auto; cursor: pointer; border-color: #39ff14; box-shadow: 0 0 15px rgba(57, 255, 20, 0.5);" onclick="toggleGameMode()">
             <div class="hud-label" style="color: #39ff14;">Mode (Click)</div>
             <div id="mode-ui" style="color: #fff; text-transform: uppercase;">SCALEXTRIC</div>
         </div>
-        <!-- Dynamic Grip Limit Adjuster Card -->
         <div id="grip-card" class="hud-card" style="pointer-events: auto; border-color: #39ff14; box-shadow: 0 0 15px rgba(57, 255, 20, 0.5); display: none;">
             <div class="hud-label" style="color: #39ff14;">Grip</div>
             <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 18px;">
@@ -364,7 +359,6 @@
         </div>
     </div>
 
-    <!-- Live G-Force Meter (Specifically for Scalextric mode) -->
     <div id="slot-meter-container">
         <div class="hud-label" style="color: #ffaa00; font-size: 11px; font-weight: bold; letter-spacing: 1.5px;">G-FORCE / GRIP LIMIT</div>
         <div id="slot-meter-track">
@@ -372,18 +366,14 @@
         </div>
     </div>
 
-    <!-- Live Track Minimap overlay -->
     <div id="minimap-container">
         <canvas id="minimap" width="130" height="130"></canvas>
     </div>
 
-    <!-- Dynamic Audio system unlock notice -->
     <div id="audio-hint">Press any control to start Sound Engine</div>
 
-    <!-- Countdown overlay -->
     <div id="countdown-overlay">READY</div>
 
-    <!-- Finish overlay -->
     <div id="finish-panel">
         <h1 id="finish-title">Race Complete!</h1>
         <p>Your Final Place: <span id="final-place" class="time-highlight" style="color: #00ff6a;">1st Place</span></p>
@@ -391,14 +381,11 @@
         <button class="restart-btn" onclick="startAudioEngine(); resetRace()">Race Again</button>
     </div>
 
-    <!-- Mobile Screen Overlays -->
     <div id="mobile-controls">
-        <!-- Steering on Left -->
         <div class="control-group">
             <div class="btn btn-cyan" id="btn-left">←</div>
             <div class="btn btn-cyan" id="btn-right">→</div>
         </div>
-        <!-- Drive Controls on Right -->
         <div class="control-group">
             <div class="btn btn-orange" id="btn-reverse">↓</div>
             <div class="btn btn-orange" id="btn-gas">↑</div>
@@ -2164,6 +2151,10 @@ function resetRace() {
     aiCar.verticalVelocity = 0;
     aiCar.isGrounded = true;
     aiCar.lastClosestIdx = -1;
+    
+    // FIX: ADDED AI LAP AND CHECKPOINT RESETS
+    aiCar.lap = 1;                   
+    aiCar.checkpointPassed = false;  
 
     // Reset AI slot settings
     aiCar.slotProgress = 0;
