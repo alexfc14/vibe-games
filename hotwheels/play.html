@@ -70,7 +70,7 @@
         .hud-card:nth-child(4) { min-width: 150px; } /* Timer Card */
         .hud-card:nth-child(5) { min-width: 200px; } /* Track Selector Card */
         .hud-card:nth-child(6) { min-width: 150px; } /* Game Mode Card */
-        .hud-card:nth-child(7) { min-width: 180px; } /* Grip Card */
+        .hud-card:nth-child(7) { min-width: 110px; } /* Grip Card (Compact!) */
 
         .hud-card span, #time-ui {
             font-variant-numeric: tabular-nums; /* Monospaced digital clock layout */
@@ -327,8 +327,8 @@
     
     <!-- Top HUD info -->
     <div id="hud">
-        <div class="hud-card" style="border-color: #00ff6a; box-shadow: 0 0 15px rgba(0, 255, 106, 0.45);">
-            <div class="hud-label" style="color: #00ff6a;">POS</div>
+        <div class="hud-card" style="border-color: #ff5500; box-shadow: 0 0 15px rgba(255, 85, 0, 0.45);">
+            <div class="hud-label" style="color: #ff5500;">POS</div>
             <div><span id="pos-ui">1st</span></div>
         </div>
         <div class="hud-card">
@@ -354,12 +354,12 @@
             <div id="mode-ui" style="color: #fff; text-transform: uppercase;">SCALEXTRIC</div>
         </div>
         <!-- Dynamic Grip Limit Adjuster Card -->
-        <div id="grip-card" class="hud-card" style="pointer-events: auto; border-color: #ffaa00; box-shadow: 0 0 15px rgba(255, 170, 0, 0.5); display: none;">
-            <div class="hud-label" style="color: #ffaa00;">Grip Level (Click +/-)</div>
+        <div id="grip-card" class="hud-card" style="pointer-events: auto; border-color: #39ff14; box-shadow: 0 0 15px rgba(57, 255, 20, 0.5); display: none;">
+            <div class="hud-label" style="color: #39ff14;">Grip</div>
             <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 18px;">
-                <span style="cursor: pointer; color: #ffaa00; font-size: 24px; padding: 0 8px; background: rgba(255,255,255,0.1); border-radius: 4px;" onclick="adjustGripLevel(-1)">-</span>
-                <span id="grip-ui-val" style="color: #fff; min-width: 48px; display: inline-block;">3 (85)</span>
-                <span style="cursor: pointer; color: #ffaa00; font-size: 24px; padding: 0 8px; background: rgba(255,255,255,0.1); border-radius: 4px;" onclick="adjustGripLevel(1)">+</span>
+                <span style="cursor: pointer; color: #39ff14; font-size: 24px; padding: 0 8px; background: rgba(255,255,255,0.1); border-radius: 4px;" onclick="adjustGripLevel(-1)">-</span>
+                <span id="grip-ui-val" style="color: #fff; min-width: 25px; display: inline-block;">3</span>
+                <span style="cursor: pointer; color: #39ff14; font-size: 24px; padding: 0 8px; background: rgba(255,255,255,0.1); border-radius: 4px;" onclick="adjustGripLevel(1)">+</span>
             </div>
         </div>
     </div>
@@ -407,7 +407,6 @@
 </div>
 
 <script>
-// --- CORE CONSTANTS & SETTING UP THREE.JS SCENE ---
 const canvas = document.getElementById('gameCanvas');
 const speedUi = document.getElementById('speed-ui');
 const lapUi = document.getElementById('lap-ui');
@@ -564,23 +563,21 @@ const aiCar = {
     verticalVelocity: 0,
     isGrounded: true,
     lastClosestIdx: -1,
+    lap: 1,
+    checkpointPassed: false,
 
     // Scalextric specific properties
     slotProgress: 0,
     centrifugalForce: 0,
     isRolledOver: false,
     rollOverTimer: 0,
-    crashVelocity: new THREE.Vector3(),
-    lap: 1,
-    checkpointPassed: false
+    crashVelocity: new THREE.Vector3()
 };
 
 // --- PROCEDURAL GENERATION: CHANNELS & DESERT ASSETS ---
 let trackGroup;
 const trackWidth = 65; // Increased width for better high speed handling & drifting
 const wallLimit = (trackWidth / 2) - 1.8; // Distance from track center before hitting outer wall flange (30.7 units)
-
-// --- STREAMING_CHUNK: Declaring Helper Functions... ---
 
 // Helper function to calculate banking tilt angle at any percentage `u` along the spline
 function getBankingAngle(u, level) {
@@ -623,9 +620,9 @@ function getSlotPosition(u, laneOffset) {
     
     return pt.clone().addScaledVector(bankedRightVec, laneOffset).add(new THREE.Vector3(0, 0.9, 0));
 }
+</script>
 
-// --- STREAMING_CHUNK: Synthesized Audio System... ---
-
+<script>
 // --- SYNTHESIZED WEB AUDIO ENGINE CLASS (No external MP3 required) ---
 class GameSoundEngine {
     constructor() {
@@ -928,7 +925,7 @@ function startAudioEngine() {
 function adjustGripLevel(amount) {
     gripLevel = Math.max(1, Math.min(5, gripLevel + amount));
     gripLimit = gripMap[gripLevel];
-    document.getElementById('grip-ui-val').innerText = `${gripLevel} (${gripLimit})`;
+    document.getElementById('grip-ui-val').innerText = gripLevel;
 }
 </script>
 
@@ -989,9 +986,9 @@ function updateParticles() {
         }
     }
 }
+</script>
 
-// --- STREAMING_CHUNK: Initializing 3D Scene and Lights... ---
-
+<script>
 // --- INIT GRAPHICS & GAME SCENE ---
 function init() {
     // Scene creation
@@ -1092,9 +1089,7 @@ function init() {
     // Start UI Countdown
     triggerCountdown();
 }
-</script>
 
-<script>
 // --- PROCEDURAL STABLE RIBBON METHOD FOR DETAILED TWIST-FREE TRACK ---
 function buildTrack() {
     if (trackGroup) scene.remove(trackGroup);
@@ -1262,8 +1257,6 @@ function buildTrack() {
     }
 }
 
-// --- STREAMING_CHUNK: Building Arch and Oasis Elements... ---
-
 // --- CHECKERED START/FINISH ARCH ---
 function buildFinishLineArch() {
     if (finishLineArch) scene.remove(finishLineArch);
@@ -1364,8 +1357,6 @@ function buildOasisLakes() {
     }
 }
 
-// --- STREAMING_CHUNK: Scattering Environmental Scenery... ---
-
 // --- SCATTER ENVIRONMENT (CACTI & DUNES) ---
 function scatterEnvironment() {
     // Clear out preexisting scene elements when changing levels
@@ -1458,42 +1449,85 @@ function scatterEnvironment() {
 </script>
 
 <script>
-// --- TIGER SHARK CUSTOM CHASSIS MODEL (Brighter, Highly Colorful, Non-Metallic) ---
+// --- TIGER SHARK CUSTOM CHASSIS MODEL (Vibrant Light Sky Blue with Orange Tiger Stripes, Tapered Snout, & Aerodynamic Fin) ---
 function buildTigerSharkChassis() {
     const tsGroup = new THREE.Group();
     
-    // Updated Tiger Shark styling: Shark blue base shell with orange highlights
-    const sharkBlueMat = new THREE.MeshStandardMaterial({ color: 0x0066aa, roughness: 0.35, metalness: 0.1 }); 
+    // Vibrant light sky blue color matching the real truck (from image_393728.png)
+    const sharkBlueMat = new THREE.MeshStandardMaterial({ color: 0x0099ff, roughness: 0.35, metalness: 0.1 }); 
     const orangeMat = new THREE.MeshStandardMaterial({ color: 0xff5500, roughness: 0.4, metalness: 0.1 }); // Popping Orange stripes
     const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0.0 });  // Teeth & eye whites
     const redMat = new THREE.MeshStandardMaterial({ color: 0xff1100, roughness: 0.5, metalness: 0.0 });    // Mouth background
     const blackMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.1 });  // Windshield & pupils
 
-    // Shark cabin
+    // Streamlined shark cabin (Slightly tapered rearwards for an organic muscle look)
     const bodyGeo = new THREE.BoxGeometry(3.3, 1.2, 5.5);
+    const bodyPos = bodyGeo.attributes.position;
+    for (let i = 0; i < bodyPos.count; i++) {
+        const z = bodyPos.getZ(i); // +z is front, -z is back
+        const x = bodyPos.getX(i);
+        const y = bodyPos.getY(i);
+        
+        if (z < 0) { // Tapering rearward X & Y
+            const taper = 1.0 + (z / 5.5) * 0.55; 
+            bodyPos.setX(i, x * taper);
+            bodyPos.setY(i, y * taper);
+        }
+    }
+    bodyPos.needsUpdate = true;
+    bodyGeo.computeVertexNormals();
+
     const bodyMain = new THREE.Mesh(bodyGeo, sharkBlueMat);
     bodyMain.position.set(0, 1.1, -0.6);
     bodyMain.castShadow = true;
     tsGroup.add(bodyMain);
 
-    // Shark Slope nose hood
-    const noseGeo = new THREE.BoxGeometry(3.3, 0.6, 2.2);
+    // Highly stylized tapered snout tip (Nose narrows aggressively at the front like image_393728.png)
+    const noseGeo = new THREE.BoxGeometry(3.3, 0.8, 2.2);
+    const nosePos = noseGeo.attributes.position;
+    for (let i = 0; i < nosePos.count; i++) {
+        const z = nosePos.getZ(i);
+        const x = nosePos.getX(i);
+        const y = nosePos.getY(i);
+        if (z > 0) { // Nose tip narrows and slopes down
+            nosePos.setX(i, x * 0.42); 
+            nosePos.setY(i, y * 0.70); 
+        }
+    }
+    nosePos.needsUpdate = true;
+    noseGeo.computeVertexNormals();
+
     const nose = new THREE.Mesh(noseGeo, sharkBlueMat);
     nose.position.set(0, 0.8, 2.65);
     nose.castShadow = true;
     tsGroup.add(nose);
 
-    // Shark Glass Cabin
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.9, 3.0), blackMat);
+    // Streamlined Glass Cabin (Tapered fastback rear)
+    const cabinGeo = new THREE.BoxGeometry(2.5, 0.9, 3.0);
+    const cabinPos = cabinGeo.attributes.position;
+    for (let i = 0; i < cabinPos.count; i++) {
+        const z = cabinPos.getZ(i);
+        const x = cabinPos.getX(i);
+        const y = cabinPos.getY(i);
+        if (z < 0) { // Slanted cabin fastback
+            const taper = 1.0 + (z / 3.0) * 0.55;
+            cabinPos.setX(i, x * taper);
+            cabinPos.setY(i, y * taper);
+        }
+    }
+    cabinPos.needsUpdate = true;
+    cabinGeo.computeVertexNormals();
+
+    const cabin = new THREE.Mesh(cabinGeo, blackMat);
     cabin.position.set(0, 1.9, -1.0);
     tsGroup.add(cabin);
 
-    // 1. Orange Shark Side Stripes (Distinct wrapping plates for high visibility)
+    // 1. Orange Shark Side Stripes (Slanted tiger markings wrapping sides)
     for (let i = 0; i < 4; i++) {
         // Left side stripes
         const leftStripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 0.35), orangeMat);
         leftStripe.position.set(-1.66, 1.1, -2.2 + i * 1.1);
-        leftStripe.rotation.z = 0.45; // Slanted tiger stripe
+        leftStripe.rotation.z = 0.45; 
         leftStripe.rotation.y = 0.1;
         tsGroup.add(leftStripe);
 
@@ -1505,29 +1539,33 @@ function buildTigerSharkChassis() {
         tsGroup.add(rightStripe);
     }
 
-    // 2. Custom Rounded Dorsal Shark Fin (Centered on the roof)
+    // 2. Aerodynamic Dorsal Shark Fin (Curved front edge facing +Z, trailing back edge sloping backwards & concave)
     const finShape = new THREE.Shape();
-    finShape.moveTo(0, 0);
-    finShape.quadraticCurveTo(-0.8, 1.8, -1.8, 1.8); // Rounded apex
-    finShape.quadraticCurveTo(-1.8, 0.5, -2.2, 0);
-    finShape.lineTo(0, 0);
+    finShape.moveTo(1.2, 0); // Front base
+    finShape.quadraticCurveTo(0.8, 1.2, -0.2, 1.35); // aerodynamic front slanting up to apex (shallower!)
+    finShape.quadraticCurveTo(-0.4, 0.4, -1.4, 0); // Trailing edge swoops inward (concave) down to base
+    finShape.lineTo(1.2, 0);
 
     const extrudeSettings = { depth: 0.35, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.1, bevelThickness: 0.1 };
     const finGeo = new THREE.ExtrudeGeometry(finShape, extrudeSettings);
     finGeo.center();
     const finMesh = new THREE.Mesh(finGeo, sharkBlueMat);
     finMesh.rotation.y = Math.PI / 2; // Orient forward
-    finMesh.position.set(0, 2.8, -1.0);
+    finMesh.position.set(0, 2.6, -1.0);
     finMesh.castShadow = true;
     tsGroup.add(finMesh);
 
-    // 2.5 Flapping caudal tail segment assembly
+    // 3. Highly stylized muscular caudal segment tail (Procedural vertebrae sway muscles)
     const tailGroup = new THREE.Group();
-    const stemGeo = new THREE.BoxGeometry(0.6, 0.8, 1.8);
-    const stem = new THREE.Mesh(stemGeo, sharkBlueMat);
-    stem.position.set(0, 0, -0.9);
-    tailGroup.add(stem);
-
+    for (let i = 0; i < 3; i++) {
+        const segScale = 1.0 - i * 0.22;
+        const segGeo = new THREE.SphereGeometry(0.55 * segScale, 8, 8);
+        segGeo.scale(1.0, 1.25, 1.6); // Sleek muscular profile
+        const seg = new THREE.Mesh(segGeo, sharkBlueMat);
+        seg.position.set(0, 0, -i * 0.9);
+        tailGroup.add(seg);
+    }
+    
     // Large caudal fin (vertical)
     const caudalFinShape = new THREE.Shape();
     caudalFinShape.moveTo(0, 0);
@@ -1538,7 +1576,7 @@ function buildTigerSharkChassis() {
     finExtrude.center();
     const finCaudal = new THREE.Mesh(finExtrude, orangeMat);
     finCaudal.rotation.y = Math.PI / 2;
-    finCaudal.position.set(0, 0, -1.8);
+    finCaudal.position.set(0, 0, -2.6);
     tailGroup.add(finCaudal);
 
     // Attach tail to rear of Tiger Shark
@@ -1546,31 +1584,31 @@ function buildTigerSharkChassis() {
     tsGroup.add(tailGroup);
     car.tailMesh = tailGroup; // Keep global reference for runtime water updates
 
-    // 3. Shark Eyes on sides of cabin (Slightly larger and fully colored to make them clear)
-    const eyeWhiteGeo = new THREE.SphereGeometry(0.38, 8, 8);
-    const eyePupilGeo = new THREE.SphereGeometry(0.20, 8, 8);
+    // 4. Predator Eyes on sides of cabin (Sleeker, smaller mean eyes)
+    const eyeWhiteGeo = new THREE.SphereGeometry(0.24, 8, 8);
+    const eyePupilGeo = new THREE.SphereGeometry(0.12, 8, 8);
 
     const eyeL = new THREE.Mesh(eyeWhiteGeo, whiteMat);
     eyeL.position.set(-1.3, 1.45, 1.2);
     const pupilL = new THREE.Mesh(eyePupilGeo, blackMat);
-    pupilL.position.set(-1.52, 1.45, 1.35);
+    pupilL.position.set(-1.5, 1.45, 1.3);
     tsGroup.add(eyeL);
     tsGroup.add(pupilL);
 
     const eyeR = new THREE.Mesh(eyeWhiteGeo, whiteMat);
     eyeR.position.set(1.3, 1.45, 1.2);
     const pupilR = new THREE.Mesh(eyePupilGeo, blackMat);
-    pupilR.position.set(1.52, 1.45, 1.35);
+    pupilR.position.set(1.5, 1.45, 1.3);
     tsGroup.add(eyeR);
     tsGroup.add(pupilR);
 
-    // 4. Toothy Shark Mouth on the front bumper
+    // 5. Toothy Shark Mouth on the front bumper (Menacingly larger teeth!)
     const mouthBase = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.45, 0.2), redMat);
     mouthBase.position.set(0, 0.55, 3.72);
     tsGroup.add(mouthBase);
 
-    // Individual teeth mapping (Sharp cones pointing up and down)
-    const toothGeo = new THREE.ConeGeometry(0.18, 0.35, 4);
+    // Individual teeth mapping (Sharp cones pointing down)
+    const toothGeo = new THREE.ConeGeometry(0.25, 0.45, 4);
     toothGeo.rotateX(Math.PI); // Point down for upper teeth
 
     for (let x = -5; x <= 5; x++) {
@@ -1581,7 +1619,7 @@ function buildTigerSharkChassis() {
     }
     
     // Lower teeth pointing upwards
-    const bottomToothGeo = new THREE.ConeGeometry(0.15, 0.3, 4);
+    const bottomToothGeo = new THREE.ConeGeometry(0.20, 0.38, 4);
     for (let x = -4; x <= 4; x++) {
         if (x === 0) continue;
         const tooth = new THREE.Mesh(bottomToothGeo, whiteMat);
@@ -1591,9 +1629,7 @@ function buildTigerSharkChassis() {
 
     return tsGroup;
 }
-</script>
 
-<script>
 // --- SKELESAURUS CUSTOM AI CHASSIS MODEL ---
 function buildSkelesaurusChassis() {
     const ssGroup = new THREE.Group();
@@ -1690,8 +1726,6 @@ function buildSkelesaurusChassis() {
 
     return ssGroup;
 }
-
-// --- STREAMING_CHUNK: Combining Car assemblies... ---
 
 // --- MASTER CAR ASSEMBLY ---
 function buildCars() {
@@ -1806,6 +1840,8 @@ function buildCars() {
     // AI only gets appended to scene based on game mode state
     if (gameMode === 'VS_AI' || gameMode === 'SCALEXTRIC') {
         scene.add(aiCar.mesh);
+    } else {
+        scene.remove(aiCar.mesh);
     }
 }
 </script>
@@ -1950,7 +1986,7 @@ function loadLevel(levelNum) {
     } else {
         gripLevel = 5; // 95
     }
-    adjustGripLevel(0); // Synchronize onto selector
+    adjustGripLevel(0); // Set defaults onto UI
 
     // Synchronize HUD updates
     document.getElementById('level-ui').innerText = levelConfigs[currentLevel].name;
@@ -2134,8 +2170,6 @@ function resetRace() {
     aiCar.centrifugalForce = 0;
     aiCar.isRolledOver = false;
     aiCar.rollOverTimer = 0;
-    aiCar.lap = 1;
-    aiCar.checkpointPassed = false;
 
     lap = 1;
     lastClosestIdx = -1; // Force full scan on reset
@@ -2349,9 +2383,18 @@ function updateAiPhysics() {
         }
         aiCar.speed = Math.max(0, Math.min(aiCar.maxSpeed, aiCar.speed));
 
-        // 3. Increment slot progress
+        // 3. Increment slot progress with checkpoint checks
+        if (aiCar.slotProgress > 0.45 && aiCar.slotProgress < 0.55) {
+            aiCar.checkpointPassed = true;
+        }
         aiCar.slotProgress += (aiCar.speed * 0.0003);
-        if (aiCar.slotProgress >= 1.0) aiCar.slotProgress -= 1.0;
+        if (aiCar.slotProgress >= 1.0) {
+            aiCar.slotProgress -= 1.0;
+            if (aiCar.checkpointPassed) {
+                aiCar.lap++;
+                aiCar.checkpointPassed = false;
+            }
+        }
 
         // 4. Update coordinates snapping onto slot line
         const currSlotPos = getSlotPosition(aiCar.slotProgress, 2.2); // Right slot rail
@@ -2548,7 +2591,6 @@ function updateAiPhysics() {
 </script>
 
 <script>
-// --- MAIN PHYSICS & RACING CALCULATIONS ---
 function updatePhysics() {
     let minDist = Infinity;
     let closestIndex = 0;
@@ -2563,12 +2605,17 @@ function updatePhysics() {
         endSearch = lastClosestIdx + searchRange;
     }
 
-    for (let i = startSearch; i <= endSearch; i++) {
-        const idx = (i + curvePointsCount) % curvePointsCount;
-        const d = car.position.distanceTo(sampledCurvePoints[idx]);
-        if (d < minDist) {
-            minDist = d;
-            closestIndex = idx;
+    // Only update closestIndex based on real position if not rolled over! (Protects against crash projection snap errors)
+    if (gameMode === 'SCALEXTRIC' && car.isRolledOver) {
+        closestIndex = lastClosestIdx; 
+    } else {
+        for (let i = startSearch; i <= endSearch; i++) {
+            const idx = (i + curvePointsCount) % curvePointsCount;
+            const d = car.position.distanceTo(sampledCurvePoints[idx]);
+            if (d < minDist) {
+                minDist = d;
+                closestIndex = idx;
+            }
         }
     }
 
@@ -2591,13 +2638,13 @@ function updatePhysics() {
         }
     }
 
-    // Flapping tail animation when in water
+    // Flapping tail muscle animation when in contact with water (Vibe details)
     if (car.tailMesh) {
         if (inWater) {
-            // Rapid flapping in water
+            // Rapid energetic flapping in water
             car.tailMesh.rotation.y = Math.sin(performance.now() * 0.03) * 0.5;
         } else {
-            // Gentle sway proportional to vehicle speed on land
+            // Gentle muscular wag proportional to rolling velocity on land
             car.tailMesh.rotation.y = Math.sin(performance.now() * 0.005) * 0.1 * Math.abs(car.speed);
         }
     }
@@ -2633,11 +2680,6 @@ function updatePhysics() {
             car.mesh.rotation.y += 0.2;
             car.mesh.rotation.z += 0.45;
 
-            // Spawn smoke/spark debris
-            if (Math.random() < 0.45) {
-                spawnParticle(car.mesh.position.x, car.mesh.position.y, car.mesh.position.z, (Math.random() - 0.5)*0.5, 0.15, (Math.random() - 0.5)*0.5, 0xffaa00, 'smoke', 20);
-            }
-
             // Sync G-force bar empty during rollover
             document.getElementById('slot-meter-fill').style.width = `0%`;
 
@@ -2669,9 +2711,44 @@ function updatePhysics() {
 
         car.speed = Math.max(0, Math.min(maxAllowedSpeed, car.speed));
 
-        // 2. Increment spline slot progress
+        // 2. Increment spline slot progress with continuous checkpoint tracking
+        if (car.slotProgress > 0.45 && car.slotProgress < 0.55) {
+            checkpointPassed = true;
+        }
         car.slotProgress += (car.speed * 0.0003);
-        if (car.slotProgress >= 1.0) car.slotProgress -= 1.0;
+        if (car.slotProgress >= 1.0) {
+            car.slotProgress -= 1.0;
+            if (checkpointPassed) {
+                lap++;
+                checkpointPassed = false;
+                if (lap <= 3) {
+                    lapUi.innerText = lap;
+                    soundManager.playLapChime();
+                    // Play Triple Ding alert sequence on start of final lap (Lap 3)
+                    if (lap === 3) {
+                        soundManager.playLastLapDing();
+                    }
+                } else {
+                    gameState = 'FINISHED';
+                    const finalTimeStr = updateTimer();
+                    finalTimeSpan.innerText = finalTimeStr;
+                    
+                    // Display actual captured finishing position in Finish Screen
+                    const currentPosVal = posUi.innerText; // "1st" or "2nd"
+                    finalPlaceSpan.innerText = currentPosVal + " Place";
+                    if (currentPosVal === '1st') {
+                        finalPlaceSpan.style.color = '#00ff6a';
+                        finishTitle.innerText = "Victory!";
+                    } else {
+                        finalPlaceSpan.style.color = '#ff4c00';
+                        finishTitle.innerText = "Race Complete!";
+                    }
+                    
+                    finishPanel.style.display = 'block';
+                    soundManager.updateEngine(0, maxAllowedSpeed, true);
+                }
+            }
+        }
 
         // 3. Update coordinates snapping directly onto center left lane rail
         const currSlotPos = getSlotPosition(car.slotProgress, -2.2); // Left lane offset (-2.2)
@@ -2752,40 +2829,6 @@ function updatePhysics() {
 
         // Sync AI Opponent physics in Scalextric
         updateAiPhysics();
-
-        // Lap progression trigger
-        const midPointIndex = Math.floor(curvePointsCount * 0.5);
-        const lapThresholdIndex = Math.floor(curvePointsCount * 0.9);
-        const startWindowIndex = Math.floor(curvePointsCount * 0.1);
-
-        if (closestIndex > midPointIndex - 40 && closestIndex < midPointIndex + 40) {
-            checkpointPassed = true;
-        }
-        if (closestIndex < startWindowIndex && lastClosestIdx > lapThresholdIndex) {
-            if (checkpointPassed) {
-                lap++;
-                checkpointPassed = false;
-                if (lap <= 3) {
-                    lapUi.innerText = lap;
-                    soundManager.playLapChime();
-                    // Play Triple Ding alert sequence on start of final lap
-                    if (lap === 3) {
-                        soundManager.playLastLapDing();
-                    }
-                } else {
-                    gameState = 'FINISHED';
-                    const finalTimeStr = updateTimer();
-                    finalTimeSpan.innerText = finalTimeStr;
-                    
-                    // Display winning position in Finished Screen
-                    const winPosText = (posUi.innerText === '1st') ? "1st Place (Victory!)" : "2nd Place";
-                    finalPlaceSpan.innerText = winPosText;
-                    
-                    finishPanel.style.display = 'block';
-                    soundManager.updateEngine(0, maxAllowedSpeed, true);
-                }
-            }
-        }
 
         // Update Position tracking POS HUD panel (Scalextric mode)
         const playerProg = lap * 1000 + car.slotProgress * 1000;
@@ -2970,7 +3013,7 @@ function updatePhysics() {
     car.mesh.rotation.y = car.heading;
     car.mesh.rotation.z = THREE.MathUtils.lerp(car.mesh.rotation.z, bankingAngle, 0.15);
 
-    // Apply body sway based on steering
+    // Apply body sway based on steering (Dynamic visual body roll)
     let turnAmount = 0;
     if (keys.ArrowLeft || keys.a || keys.A) turnAmount = 1;
     if (keys.ArrowRight || keys.d || keys.D) turnAmount = -1;
@@ -3034,8 +3077,16 @@ function updatePhysics() {
                 const finalTimeStr = updateTimer();
                 finalTimeSpan.innerText = finalTimeStr;
 
-                const winPosText = (posUi.innerText === '1st') ? "1st Place (Victory!)" : "2nd Place";
-                finalPlaceSpan.innerText = winPosText;
+                // Correctly display captured finish position
+                const currentPosVal = posUi.innerText; // "1st" or "2nd"
+                finalPlaceSpan.innerText = currentPosVal + " Place";
+                if (currentPosVal === '1st') {
+                    finalPlaceSpan.style.color = '#00ff6a';
+                    finishTitle.innerText = "Victory!";
+                } else {
+                    finalPlaceSpan.style.color = '#ff4c00';
+                    finishTitle.innerText = "Race Complete!";
+                }
 
                 finishPanel.style.display = 'block';
                 soundManager.updateEngine(0, maxAllowedSpeed, true);
@@ -3058,8 +3109,6 @@ function updatePhysics() {
     lastClosestIdx = closestIndex;
     speedUi.innerText = Math.round(Math.abs(car.speed) * 38);
 }
-
-// --- STREAMING_CHUNK: Updating Camera positioning and Animation Tick... ---
 
 // --- DYNAMIC CAMERA CONTROLLER ---
 function updateCamera() {
@@ -3104,3 +3153,6 @@ window.onload = function() {
     animate();
 };
 </script>
+
+</body>
+</html>
