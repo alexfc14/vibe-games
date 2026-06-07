@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hot Wheels: Desert Speedway 3D</title>
+    <title>Hot Wheels: Desert & Suzuka Speedway 3D</title>
     <style>
         * {
             box-sizing: border-box;
@@ -16,7 +16,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #df9f53;
+            background-color: #2e6f33;
             font-family: 'Impact', 'Segoe UI', sans-serif;
         }
         #game-container {
@@ -538,7 +538,7 @@ const minimapCanvas = document.getElementById('minimap');
 const minimapCtx = minimapCanvas.getContext('2d');
 const audioHint = document.getElementById('audio-hint');
 
-let scene, camera, renderer;
+let scene, camera, renderer, ground;
 let gameState = 'COUNTDOWN';
 let countdownVal = 3;
 let timerStart = 0;
@@ -556,6 +556,25 @@ let speedGovernorEnabled = true;
 let gripLevel = 3;
 let gripLimit = 70.0 + gripLevel * 5.0; 
 const curvatureScale = 5.0;
+
+// Setup customized Red/White striped curb texture for Suzuka wall limit
+const curbCanvas = document.createElement('canvas');
+curbCanvas.width = 64;
+curbCanvas.height = 16;
+const curbCtx = curbCanvas.getContext('2d');
+curbCtx.fillStyle = '#ffffff';
+curbCtx.fillRect(0, 0, 64, 16);
+curbCtx.fillStyle = '#ff1100';
+curbCtx.fillRect(0, 0, 32, 16); // alternating half red, half white
+const curbTexture = new THREE.CanvasTexture(curbCanvas);
+curbTexture.wrapS = THREE.RepeatWrapping;
+curbTexture.wrapT = THREE.RepeatWrapping;
+curbTexture.repeat.set(100, 1);
+
+// Global references for animated Suzuka Ferris Wheel
+let ferrisWheelGroup = null;
+let ferrisWheelRotatingPart = null;
+let ferrisWheelCabins = [];
 
 let currentLevel = 1;
 const levelConfigs = {
@@ -634,6 +653,50 @@ const levelConfigs = {
             new THREE.Vector3(40, 0.1, 330),      // Anthony Noghes turn 19
             new THREE.Vector3(20, 0.1, 370)       // Aligning onto Albert 1er straight
         ]
+    },
+    4: {
+        name: "SUZUKA CIRCUIT",
+        points: [
+            new THREE.Vector3(-550, 0.1, -250),   // Start of Pit Straight
+            new THREE.Vector3(-550, 0.1, -50),    // Mid Pit Straight
+            new THREE.Vector3(-550, 0.1, 150),    // End of Pit Straight
+            new THREE.Vector3(-510, 0.1, 300),    // Turn 1 entry (Gently sweeping)
+            new THREE.Vector3(-380, 2.0, 360),    // Turn 2 apex
+            new THREE.Vector3(-260, 6.0, 280),    // S-curve 1 (Left)
+            new THREE.Vector3(-210, 10.0, 180),   // S-curve 2 (Right)
+            new THREE.Vector3(-140, 14.0, 120),   // S-curve 3 (Left)
+            new THREE.Vector3(-160, 18.0, 20),    // S-curve 4 (Right)
+            new THREE.Vector3(-220, 22.0, -60),   // Dunlop Entry
+            new THREE.Vector3(-300, 26.0, -120),  // Dunlop Apex (sweeping left)
+            new THREE.Vector3(-380, 28.0, -100),  // Dunlop Crest (peak height)
+            new THREE.Vector3(-380, 22.0, -10),   // Degner 1
+            new THREE.Vector3(-310, 16.0, 40),    // Degner 2
+            new THREE.Vector3(-210, 8.0, 20),     // Underpass descent approach
+            new THREE.Vector3(-110, 0.1, -10),    // Entering underpass slot
+            new THREE.Vector3(0, 0.1, -40),       // UNDERPASS CROSSORVER DECK (Y=0.1)
+            new THREE.Vector3(110, 0.1, -70),     // Underpass exit
+            new THREE.Vector3(210, 2.0, -50),     // Climbing out of valley
+            new THREE.Vector3(280, 0.1, 20),      // Hairpin entry
+            new THREE.Vector3(310, 0.1, 90),      // Hairpin apex (slow 180 left)
+            new THREE.Vector3(250, 4.0, 150),     // Hairpin exit
+            new THREE.Vector3(190, 8.0, 210),     // 200R entry
+            new THREE.Vector3(230, 12.0, 300),    // 200R sweeping right
+            new THREE.Vector3(320, 15.0, 360),    // Spoon entry
+            new THREE.Vector3(440, 16.0, 350),    // Spoon Apex 1 (Turn 13)
+            new THREE.Vector3(490, 15.0, 250),    // Spoon sweep
+            new THREE.Vector3(440, 14.0, 150),    // Spoon Apex 2 (Turn 14)
+            new THREE.Vector3(330, 12.0, 90),     // Spoon exit, back straight climb
+            new THREE.Vector3(210, 13.5, 40),     // Back straight middle
+            new THREE.Vector3(110, 15.0, 0),      // Overpass approach straight
+            new THREE.Vector3(0, 15.0, -40),      // OVERPASS BRIDGE CROSSING (Y=15.0)
+            new THREE.Vector3(-110, 15.0, -80),   // Overpass exit straight
+            new THREE.Vector3(-210, 8.0, -120),   // Descent to 130R
+            new THREE.Vector3(-320, 3.0, -180),   // 130R high-speed left apex
+            new THREE.Vector3(-400, 1.0, -210),   // Braking for Chicane
+            new THREE.Vector3(-450, 0.1, -220),   // Chicane right flick
+            new THREE.Vector3(-470, 0.1, -200),   // Chicane left flick
+            new THREE.Vector3(-510, 0.1, -220)    // Gentle Turn 18 sweeper blending back onto Straight
+        ]
     }
 };
 
@@ -645,6 +708,7 @@ let minimapBounds = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -In
 let environmentObjects = [];
 let finishLineArch = null;
 let waterGroup = null;
+let centerLine = null;
 
 const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, w: false, s: false, a: false, d: false, r: false, R: false };
 
@@ -727,7 +791,7 @@ function getBankingAngle(u, level) {
             return baseBank * Math.sin((u - 0.45) / 0.27 * Math.PI);
         }
     }
-    // Realistic banking offsets for Monaco to make the hairpin and curves feel premium
+    // Realistic banking offsets for Monaco
     if (level === 3) {
         if (u >= 0.06 && u <= 0.12) {
             return -0.15 * Math.sin((u - 0.06) / 0.06 * Math.PI);
@@ -737,6 +801,29 @@ function getBankingAngle(u, level) {
         }
         if (u >= 0.72 && u <= 0.85) {
             return 0.18 * Math.sin((u - 0.72) / 0.13 * Math.PI);
+        }
+    }
+    // Premium banking angle adjustments for iconic Suzuka Turns
+    if (level === 4) {
+        // Turn 1 & 2 sweep (u around 0.08 to 0.14)
+        if (u >= 0.08 && u <= 0.14) {
+            return -0.12 * Math.sin((u - 0.08) / 0.06 * Math.PI);
+        }
+        // Dunlop sweep (u around 0.24 to 0.32)
+        if (u >= 0.24 && u <= 0.32) {
+            return -0.15 * Math.sin((u - 0.24) / 0.08 * Math.PI);
+        }
+        // Degner fast banking (u around 0.33 to 0.38)
+        if (u >= 0.33 && u <= 0.38) {
+            return 0.18 * Math.sin((u - 0.33) / 0.05 * Math.PI);
+        }
+        // Spoon corner (u around 0.65 to 0.74)
+        if (u >= 0.65 && u <= 0.74) {
+            return -0.16 * Math.sin((u - 0.65) / 0.09 * Math.PI);
+        }
+        // 130R high-speed sweeper (u around 0.82 to 0.88)
+        if (u >= 0.82 && u <= 0.88) {
+            return -0.20 * Math.sin((u - 0.82) / 0.06 * Math.PI);
         }
     }
     return 0;
@@ -1078,6 +1165,7 @@ const particles = [];
 const maxParticles = 120;
 let particleGeometry;
 
+// Object pooling pattern for particles
 function initParticles() {
     particleGeometry = new THREE.BoxGeometry(0.35, 0.35, 0.35);
     for (let i = 0; i < maxParticles; i++) {
@@ -1137,19 +1225,26 @@ function setAtmosphereForLevel(levelNum) {
         const monacoSky = new THREE.Color(0xaedcfc);
         scene.background = monacoSky;
         scene.fog = new THREE.FogExp2(0xaedcfc, 0.001);
+        if (ground) ground.material.color.setHex(0x607d8b); // grey city asphalt
+    } else if (levelNum === 4) {
+        // Suzuka atmosphere: Bright clear racing sky with lush deep green grass
+        const suzukaSky = new THREE.Color(0x9ec0e6);
+        scene.background = suzukaSky;
+        scene.fog = new THREE.FogExp2(0x9ec0e6, 0.0008);
+        if (ground) ground.material.color.setHex(0x2e6f33); // lush vibrant green turf
     } else {
         // Desert atmosphere: Warm orange dusty sands
         const desertSky = new THREE.Color(0xdf9f53);
         scene.background = desertSky;
         scene.fog = new THREE.FogExp2(0xdf9f53, 0.0012);
+        if (ground) ground.material.color.setHex(0xdf9f53); // orange desert sand
     }
 }
 
 function init() {
     scene = new THREE.Scene();
-    setAtmosphereForLevel(currentLevel);
 
-    camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.5, 2000);
+    camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.5, 2500);
     
     renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -1166,20 +1261,26 @@ function init() {
     sunLight.shadow.mapSize.width = 2048;
     sunLight.shadow.mapSize.height = 2048;
     sunLight.shadow.camera.near = 0.5;
-    sunLight.shadow.camera.far = 2500;
-    const side = 1200;
+    sunLight.shadow.camera.far = 3000;
+    const side = 1500;
     sunLight.shadow.camera.left = -side;
     sunLight.shadow.camera.right = side;
     sunLight.shadow.camera.top = side;
     sunLight.shadow.camera.bottom = -side;
     scene.add(sunLight);
 
-    const groundGeo = new THREE.PlaneGeometry(5000, 5000);
+    // Elevated ground definition to eliminate co-planar Z-fighting artifacts
+    const groundGeo = new THREE.PlaneGeometry(6000, 6000);
     const groundMat = new THREE.MeshStandardMaterial({ color: 0xdf9f53, roughness: 0.9, metalness: 0.0 });
-    const ground = new THREE.Mesh(groundGeo, groundMat);
+    
+    // Assigned to the global 'ground' reference so level colors update correctly!
+    ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -2.0; // Sits safely 2 meters below the track plane
     ground.receiveShadow = true;
     scene.add(ground);
+
+    setAtmosphereForLevel(currentLevel);
 
     gameMode = 'SCALEXTRIC';
 
@@ -1203,6 +1304,8 @@ function init() {
         gripLevel = 3; 
     } else if (currentLevel === 2) { 
         gripLevel = 5; 
+    } else if (currentLevel === 4) {
+        gripLevel = 4; // specialized default grip setting for technical Suzuka slotcar
     } else {
         gripLevel = 3; 
     }
@@ -1232,7 +1335,6 @@ function buildTrack() {
     const leftWallIndices = [];
     const rightWallPos = [];
     const rightWallIndices = [];
-    const wallHeight = 4.0;
 
     for (let i = 0; i <= segmentsCount; i++) {
         const idx = i % segmentsCount;
@@ -1253,11 +1355,36 @@ function buildTrack() {
         roadPos.push(leftPt.x, leftPt.y, leftPt.z);
         roadPos.push(rightPt.x, rightPt.y, rightPt.z);
 
+        // Dynamically compute wall heights for Suzuka merging region
+        let currentLeftWallH = 4.0;
+        let currentRightWallH = 4.0;
+        
+        if (currentLevel === 4) {
+            // Taper left wall (inner barrier at final sweeper merging back into main straight)
+            if (u >= 0.90) {
+                const t = (u - 0.90) / 0.10; // 0 at 0.90, 1 at 1.0
+                currentLeftWallH = 4.0 * (1.0 - t);
+            } else if (u <= 0.10) {
+                const t = u / 0.10; // 0 at 0.0, 1 at 0.10
+                currentLeftWallH = 4.0 * t;
+            }
+            
+            // Taper right wall (inner barrier at the start of pit straight next to merging lane)
+            if (u <= 0.12) {
+                const t = u / 0.12; // 0 at 0.0, 1 at 0.12
+                currentRightWallH = 4.0 * t;
+            }
+        }
+        
+        // Prevent complete vertex overlap by keeping a tiny visual curb height
+        currentLeftWallH = Math.max(0.05, currentLeftWallH);
+        currentRightWallH = Math.max(0.05, currentRightWallH);
+
         leftWallPos.push(leftPt.x, leftPt.y, leftPt.z);
-        leftWallPos.push(leftPt.x + bankedUp.x * wallHeight, leftPt.y + bankedUp.y * wallHeight, leftPt.z + bankedUp.z * wallHeight);
+        leftWallPos.push(leftPt.x + bankedUp.x * currentLeftWallH, leftPt.y + bankedUp.y * currentLeftWallH, leftPt.z + bankedUp.z * currentLeftWallH);
 
         rightWallPos.push(rightPt.x, rightPt.y, rightPt.z);
-        rightWallPos.push(rightPt.x + bankedUp.x * wallHeight, rightPt.y + bankedUp.y * wallHeight, rightPt.z + bankedUp.z * wallHeight);
+        rightWallPos.push(rightPt.x + bankedUp.x * currentRightWallH, rightPt.y + bankedUp.y * currentRightWallH, rightPt.z + bankedUp.z * currentRightWallH);
 
         if (i < segmentsCount) {
             const r0 = 2 * i;
@@ -1285,11 +1412,18 @@ function buildTrack() {
     roadMesh.receiveShadow = true;
     trackGroup.add(roadMesh);
 
+    // Track barrier materials: customized Red & White striped curbs for GP track limits on Suzuka
+    let wallMat;
+    if (currentLevel === 4) {
+        wallMat = new THREE.MeshStandardMaterial({ map: curbTexture, roughness: 0.5, metalness: 0.1, side: THREE.DoubleSide });
+    } else {
+        wallMat = new THREE.MeshStandardMaterial({ color: 0x0044ff, roughness: 0.4, metalness: 0.2, side: THREE.DoubleSide });
+    }
+
     const leftWallGeo = new THREE.BufferGeometry();
     leftWallGeo.setAttribute('position', new THREE.Float32BufferAttribute(leftWallPos, 3));
     leftWallGeo.setIndex(leftWallIndices);
     leftWallGeo.computeVertexNormals();
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x0044ff, roughness: 0.4, metalness: 0.2, side: THREE.DoubleSide });
     const leftWallMesh = new THREE.Mesh(leftWallGeo, wallMat);
     leftWallMesh.castShadow = true;
     trackGroup.add(leftWallMesh);
@@ -1441,6 +1575,79 @@ function buildTrack() {
             trackGroup.add(tunnelLight);
         }
     }
+
+    // Suzuka Level 4: Beautiful, non-blocking Procedural Overpass Crossover bridge
+    if (currentLevel === 4) {
+        buildSuzukaBridge();
+    }
+}
+
+// Procedural bridge deck and supporting pillars to avoid any road blocks or touching segments
+function buildSuzukaBridge() {
+    const bridgeConcreteMat = new THREE.MeshStandardMaterial({ color: 0x7a7a7e, roughness: 0.7, metalness: 0.1 });
+    const uOverpass = 31 / 39; // Spline progress around overpass apex point (0, 15, -40)
+    
+    const centerPoint = trackCurve.getPointAt(uOverpass); // (0, 15, -40)
+    const overpassTangent = trackCurve.getTangentAt(uOverpass).normalize();
+    
+    // 1. Procedural Bridge Deck Support directly beneath the road
+    const bridgeLengthPoints = 25;
+    for (let i = -bridgeLengthPoints; i <= bridgeLengthPoints; i++) {
+        const uStep = uOverpass + (i * 0.0015);
+        const segmentPt = trackCurve.getPointAt(uStep % 1.0);
+        const segmentTangent = trackCurve.getTangentAt(uStep % 1.0).normalize();
+        const segmentRight = new THREE.Vector3(-segmentTangent.z, 0, segmentTangent.x).normalize();
+        
+        const bankingAngle = getBankingAngle(uStep % 1.0, 4);
+        const bankedRightVec = segmentRight.clone().applyAxisAngle(segmentTangent, bankingAngle);
+        const bankedUpNormal = new THREE.Vector3().crossVectors(bankedRightVec, segmentTangent).normalize();
+        
+        const slabGeo = new THREE.BoxGeometry(trackWidth + 2.0, 2.0, 5.0);
+        const slabMesh = new THREE.Mesh(slabGeo, bridgeConcreteMat);
+        
+        // Position exactly underneath the track
+        const slabPos = segmentPt.clone().addScaledVector(bankedUpNormal, -1.0);
+        slabMesh.position.copy(slabPos);
+        
+        // Align slab rotation with road physics banking & curves
+        const rotationMatrix = new THREE.Matrix4();
+        const upVec = bankedUpNormal.clone();
+        const forwardVec = segmentTangent.clone();
+        const rightVec = new THREE.Vector3().crossVectors(upVec, forwardVec).normalize();
+        rotationMatrix.makeBasis(rightVec, upVec, forwardVec);
+        slabMesh.rotation.setFromRotationMatrix(rotationMatrix);
+        
+        slabMesh.receiveShadow = true;
+        slabMesh.castShadow = true;
+        trackGroup.add(slabMesh);
+    }
+    
+    // 2. Pillars dropped at completely safe, clear lateral offsets from both paths!
+    // Reduced height of columns & support brackets so they sit perfectly underneath the bridge deck slab (Y=13.0 max)
+    const pillarRadius = 4.5;
+    const pillarHeight = 11.4; // Anchors into ground at Y=-2.0, top at Y=9.4
+    const pillarGeo = new THREE.CylinderGeometry(pillarRadius, pillarRadius * 1.2, pillarHeight, 12);
+    
+    const pillarOffsets = [-65.0, 65.0];
+    pillarOffsets.forEach(offset => {
+        const pillarMesh = new THREE.Mesh(pillarGeo, bridgeConcreteMat);
+        const pillarPos = centerPoint.clone().addScaledVector(overpassTangent, offset);
+        pillarMesh.position.copy(pillarPos);
+        pillarMesh.position.y = (pillarHeight / 2) - 2.0; 
+        pillarMesh.castShadow = true;
+        pillarMesh.receiveShadow = true;
+        trackGroup.add(pillarMesh);
+        
+        // Architectural support bracket on top of each pillar
+        const bracketHeight = 3.6; // Center at Y=11.2, top reaches Y=13.0 exactly supporting bottom of slab
+        const bracketGeo = new THREE.BoxGeometry(12.0, bracketHeight, 12.0);
+        const bracketMesh = new THREE.Mesh(bracketGeo, bridgeConcreteMat);
+        bracketMesh.position.copy(pillarPos);
+        bracketMesh.position.y = -2.0 + pillarHeight + (bracketHeight / 2);
+        bracketMesh.rotation.y = Math.atan2(overpassTangent.x, overpassTangent.z);
+        bracketMesh.castShadow = true;
+        trackGroup.add(bracketMesh);
+    });
 }
 
 function buildFinishLineArch() {
@@ -1571,6 +1778,19 @@ function buildOasisLakes() {
             
             waterGroup.add(yachtGroup);
         });
+    } else if (currentLevel === 4) {
+        // Suzuka Scenic reflection ponds in center loop fields
+        const pondGeo1 = new THREE.RingGeometry(0, 90, 16);
+        const pond1 = new THREE.Mesh(pondGeo1, waterMat);
+        pond1.rotation.x = -Math.PI / 2;
+        pond1.position.set(-180, 0.12, 160);
+        waterGroup.add(pond1);
+
+        const pondGeo2 = new THREE.RingGeometry(0, 70, 16);
+        const pond2 = new THREE.Mesh(pondGeo2, waterMat);
+        pond2.rotation.x = -Math.PI / 2;
+        pond2.position.set(120, 0.12, 140);
+        waterGroup.add(pond2);
     } else {
         const lakeGeo1 = new THREE.RingGeometry(0, 250, 24);
         const lake1 = new THREE.Mesh(lakeGeo1, waterMat);
@@ -1583,6 +1803,11 @@ function buildOasisLakes() {
 function scatterEnvironment() {
     environmentObjects.forEach(obj => scene.remove(obj));
     environmentObjects = [];
+    
+    // Reset Ferris Wheel pointers
+    ferrisWheelGroup = null;
+    ferrisWheelRotatingPart = null;
+    ferrisWheelCabins = [];
 
     if (currentLevel === 3) {
         // Monaco City Street Scenery: Penthouses, hotel towers, and Mediterranean palms
@@ -1681,6 +1906,60 @@ function scatterEnvironment() {
         return;
     }
 
+    // Suzuka Level 4 Scenic: Pines, Giant animated Ferris Wheel, Grandstands, Japanese Cedar Hills
+    if (currentLevel === 4) {
+        // Procedural Japanese Pine Trees
+        function buildPineTreeMesh() {
+            const tree = new THREE.Group();
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a3d28, roughness: 0.95 });
+            const foliageMat = new THREE.MeshStandardMaterial({ color: 0x1c4424, roughness: 0.8 });
+            
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.2, 10, 8), trunkMat);
+            trunk.position.y = 5;
+            trunk.castShadow = true;
+            tree.add(trunk);
+            
+            for (let l = 0; l < 4; l++) {
+                const levelGeo = new THREE.ConeGeometry(8 - l * 1.5, 7, 8);
+                const level = new THREE.Mesh(levelGeo, foliageMat);
+                level.position.y = 10 + l * 4;
+                level.castShadow = true;
+                level.receiveShadow = true;
+                tree.add(level);
+            }
+            return tree;
+        }
+
+        const cachedPine = buildPineTreeMesh();
+        for (let i = 0; i < 220; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 80 + Math.random() * 800;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const tempPos = new THREE.Vector3(x, 0, z);
+            const dist = getMinDistanceToTrack(tempPos);
+            
+            // Avoid placing tree directly on pavement or ponds
+            const isNearStart = tempPos.distanceTo(new THREE.Vector3(-630, 0, -50)) < 150;
+            const isNearWheel = tempPos.distanceTo(new THREE.Vector3(-320, 0, -340)) < 100;
+            if (dist > (trackWidth / 2 + 10) && dist < 700 && !isNearStart && !isNearWheel) {
+                const pineInstance = cachedPine.clone();
+                pineInstance.position.set(x, 0, z);
+                const scale = 0.65 + Math.random() * 0.85;
+                pineInstance.scale.set(scale, scale, scale);
+                scene.add(pineInstance);
+                environmentObjects.push(pineInstance);
+            }
+        }
+
+        // Build the Pitlane Grandstands
+        buildSuzukaGrandstand();
+
+        // Build the legendary rotating Suzuka Ferris Wheel
+        buildSuzukaFerrisWheel();
+        return;
+    }
+
     const duneGeo = new THREE.SphereGeometry(100, 10, 10);
     duneGeo.scale(2.2, 0.4, 1.1);
     const duneMat = new THREE.MeshStandardMaterial({ color: 0xce8334, roughness: 1.0, flatShading: true });
@@ -1753,6 +2032,136 @@ function scatterEnvironment() {
             environmentObjects.push(cactusInstance);
         }
     }
+}
+
+function buildSuzukaGrandstand() {
+    const grandstandGroup = new THREE.Group();
+    grandstandGroup.position.set(-630, 0, -50);
+    
+    const structureMat = new THREE.MeshStandardMaterial({ color: 0x909095, roughness: 0.6 });
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.4 });
+    const seatMat = new THREE.MeshStandardMaterial({ color: 0x0055ff, roughness: 0.7 }); // Blue seats
+    
+    const stepsCount = 10;
+    for (let s = 0; s < stepsCount; s++) {
+        const stepW = 3;
+        const stepH = 1.8;
+        const stepGeo = new THREE.BoxGeometry(stepW, stepH * (s + 1), 220);
+        const step = new THREE.Mesh(stepGeo, structureMat);
+        step.position.set(s * stepW, (stepH * (s + 1)) / 2, 0);
+        step.castShadow = true;
+        step.receiveShadow = true;
+        grandstandGroup.add(step);
+        
+        // Rows of colored stadium seats
+        const seatGeo = new THREE.BoxGeometry(1.5, 0.8, 216);
+        const seats = new THREE.Mesh(seatGeo, seatMat);
+        seats.position.set(s * stepW, stepH * (s + 1) + 0.4, 0);
+        grandstandGroup.add(seats);
+    }
+    
+    // Slender roof support columns
+    const pillarGeo = new THREE.CylinderGeometry(0.5, 0.5, 30, 6);
+    for (let p = -4; p <= 4; p++) {
+        const pillar = new THREE.Mesh(pillarGeo, structureMat);
+        pillar.position.set(-1.5, 15, p * 25);
+        grandstandGroup.add(pillar);
+    }
+    
+    // Modern cantilevered awning roof
+    const roofGeo = new THREE.BoxGeometry(45, 1.2, 230);
+    const roof = new THREE.Mesh(roofGeo, roofMat);
+    roof.position.set(12, 30, 0);
+    roof.rotation.z = 0.08; 
+    grandstandGroup.add(roof);
+    
+    scene.add(grandstandGroup);
+    environmentObjects.push(grandstandGroup);
+}
+
+function buildSuzukaFerrisWheel() {
+    ferrisWheelGroup = new THREE.Group();
+    ferrisWheelGroup.position.set(-320, 0, -340); // perfectly visible in front-right of starting line
+    
+    const legMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.5 });
+    const legGeo = new THREE.CylinderGeometry(0.8, 1.2, 85, 8);
+    
+    // Four-post support tower
+    const leg1 = new THREE.Mesh(legGeo, legMat);
+    leg1.position.set(-8, 42, 0);
+    leg1.rotation.z = 0.15;
+    ferrisWheelGroup.add(leg1);
+    
+    const leg2 = new THREE.Mesh(legGeo, legMat);
+    leg2.position.set(8, 42, 0);
+    leg2.rotation.z = -0.15;
+    ferrisWheelGroup.add(leg2);
+
+    const leg3 = new THREE.Mesh(legGeo, legMat);
+    leg3.position.set(0, 42, -8);
+    leg3.rotation.x = 0.15;
+    ferrisWheelGroup.add(leg3);
+
+    const leg4 = new THREE.Mesh(legGeo, legMat);
+    leg4.position.set(0, 42, 8);
+    leg4.rotation.x = -0.15;
+    ferrisWheelGroup.add(leg4);
+    
+    // Rotating Wheel Assembly
+    ferrisWheelRotatingPart = new THREE.Group();
+    ferrisWheelRotatingPart.position.set(0, 80, 0);
+    
+    const hubGeo = new THREE.CylinderGeometry(4, 4, 6, 12);
+    hubGeo.rotateX(Math.PI / 2);
+    const hub = new THREE.Mesh(hubGeo, legMat);
+    ferrisWheelRotatingPart.add(hub);
+    
+    const ringMat = new THREE.MeshStandardMaterial({ color: 0xff3300, roughness: 0.4 });
+    const ringGeo = new THREE.TorusGeometry(40, 0.5, 8, 36);
+    
+    const ring1 = new THREE.Mesh(ringGeo, ringMat);
+    ring1.position.z = -1.5;
+    ferrisWheelRotatingPart.add(ring1);
+    
+    const ring2 = new THREE.Mesh(ringGeo, ringMat);
+    ring2.position.z = 1.5;
+    ferrisWheelRotatingPart.add(ring2);
+    
+    // Wheel Spokes
+    const spokeGeo = new THREE.CylinderGeometry(0.25, 0.25, 80, 6);
+    const spokeCount = 12;
+    for (let s = 0; s < spokeCount; s++) {
+        const spoke = new THREE.Mesh(spokeGeo, legMat);
+        spoke.rotation.z = (s / spokeCount) * Math.PI;
+        ferrisWheelRotatingPart.add(spoke);
+    }
+    
+    // Hanging Passenger Cabins
+    ferrisWheelCabins = [];
+    const cabinGeo = new THREE.BoxGeometry(3.5, 4.5, 3);
+    const cabinMat = new THREE.MeshStandardMaterial({ color: 0xffff00, roughness: 0.4 });
+    const hangerGeo = new THREE.CylinderGeometry(0.15, 0.15, 3, 6);
+    
+    for (let c = 0; c < spokeCount * 2; c++) {
+        const angle = (c / (spokeCount * 2)) * Math.PI * 2;
+        const cabinAnchor = new THREE.Group();
+        cabinAnchor.position.set(Math.cos(angle) * 40, Math.sin(angle) * 40, 0);
+        
+        const cabinBox = new THREE.Mesh(cabinGeo, cabinMat);
+        cabinBox.position.y = -2; // Hang centered below pivot joint
+        cabinAnchor.add(cabinBox);
+        
+        const hanger = new THREE.Mesh(hangerGeo, legMat);
+        hanger.position.y = -0.5;
+        cabinAnchor.add(hanger);
+        
+        ferrisWheelRotatingPart.add(cabinAnchor);
+        ferrisWheelCabins.push(cabinAnchor); // stored to compensate for rotation in loop
+    }
+    
+    ferrisWheelGroup.add(ferrisWheelRotatingPart);
+    scene.add(ferrisWheelGroup);
+    environmentObjects.push(ferrisWheelGroup);
 }
 </script>
 
@@ -2187,7 +2596,7 @@ function drawMinimap() {
 function toggleLevel() {
     startAudioEngine();
     let targetLvl = currentLevel + 1;
-    if (targetLvl > 3) targetLvl = 1;
+    if (targetLvl > 4) targetLvl = 1; // updated to wrap cleanly at 4 tracks now
     loadLevel(targetLvl);
 }
 
@@ -2210,6 +2619,8 @@ function loadLevel(levelNum) {
         gripLevel = 3; 
     } else if (currentLevel === 2) { 
         gripLevel = 5; 
+    } else if (currentLevel === 4) {
+        gripLevel = 4; // tuned slot car cornering friction setup for Suzuka
     } else {
         gripLevel = 3; 
     }
@@ -3149,17 +3560,32 @@ function updateCamera() {
     const cameraTargetPos = car.position.clone().addScaledVector(backOffset, 16.5).add(new THREE.Vector3(0, 6.8, 0)); 
     camera.position.lerp(cameraTargetPos, 0.08);
     clampCameraToTrack(camera.position, wallLimit - 5.0);
-    const trackingLookPoint = car.position.clone().add(new THREE.Vector3(Math.sin(car.heading) * 4, 1.2, Math.cos(car.heading) * 4));
+    const trackingLookPoint = car.position.clone().add(new THREE.Vector3(Math.sin(car.heading) * 4.0, 0, Math.cos(car.heading) * 4.0));
     camera.lookAt(trackingLookPoint);
 }
 
 function animate() {
     requestAnimationFrame(animate);
-    updatePhysics();
+
+    // Update Ferris Wheel rotation in Suzuka
+    if (currentLevel === 4 && ferrisWheelRotatingPart) {
+        ferrisWheelRotatingPart.rotation.z += 0.002;
+        // Keep passenger cabins hanging vertically (parallel to ground Y-axis)
+        const rotZ = ferrisWheelRotatingPart.rotation.z;
+        ferrisWheelCabins.forEach(cabin => {
+            cabin.rotation.z = -rotZ;
+        });
+    }
+
+    if (gameState === 'RACING' || gameState === 'FINISHED' || gameState === 'COUNTDOWN') {
+        updatePhysics();
+    }
+    
     updateParticles();
-    updateCamera();
     updateTimer();
-    drawMinimap(); 
+    updateCamera();
+    drawMinimap();
+
     renderer.render(scene, camera);
 }
 
@@ -3168,6 +3594,5 @@ window.onload = function() {
     animate();
 };
 </script>
-
 </body>
 </html>
