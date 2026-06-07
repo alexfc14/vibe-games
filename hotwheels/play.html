@@ -32,7 +32,6 @@
             width: 100%;
             height: 100%;
         }
-        /* Top HUD elements with absolute positioning, wrap-safety and layout shift protection */
         #hud {
             position: absolute;
             top: 20px;
@@ -42,7 +41,7 @@
             gap: 12px;
             pointer-events: none;
             z-index: 10;
-            max-width: calc(100% - 200px); /* Leave plenty of space for the minimap on the right */
+            max-width: calc(100% - 220px);
         }
         .hud-card {
             background: rgba(0, 0, 0, 0.75);
@@ -63,17 +62,10 @@
             align-items: center;
             flex-shrink: 0;
         }
-        /* Explicit widths lock the layout in place, preventing variable numbers from causing shifts */
-        .hud-card:nth-child(1) { min-width: 80px; }  /* POS Card */
-        .hud-card:nth-child(2) { min-width: 110px; } /* Speed Card */
-        .hud-card:nth-child(3) { min-width: 80px; }  /* Lap Card */
-        .hud-card:nth-child(4) { min-width: 150px; } /* Timer Card */
-        .hud-card:nth-child(5) { min-width: 200px; } /* Track Selector Card */
-        .hud-card:nth-child(6) { min-width: 150px; } /* Game Mode Card */
-        .hud-card:nth-child(7) { min-width: 110px; } /* Grip Card (Compact!) */
+        .hud-card.interactive { pointer-events: auto; cursor: pointer; }
 
-        .hud-card span, #time-ui {
-            font-variant-numeric: tabular-nums; /* Monospaced digital clock layout */
+        .hud-card span, #time-ui, #lap-time-ui {
+            font-variant-numeric: tabular-nums;
         }
         .hud-label {
             font-size: 11px;
@@ -81,7 +73,6 @@
             color: #ffaa00;
             margin-bottom: 2px;
         }
-        /* Minimap Overlay styling - Placed directly in the top right corner */
         #minimap-container {
             position: absolute;
             top: 20px;
@@ -107,7 +98,6 @@
             height: 100%;
             display: block;
         }
-        /* Slot G-Force Meter HUD overlay */
         #slot-meter-container {
             display: none;
             position: absolute;
@@ -142,7 +132,6 @@
             box-shadow: 0 0 8px currentColor;
             transition: width 0.05s ease-out;
         }
-        /* On-screen Countdown */
         #countdown-overlay {
             position: absolute;
             top: 50%;
@@ -156,7 +145,6 @@
             pointer-events: none;
             transition: transform 0.2s ease-out;
         }
-        /* Race Finished Panel */
         #finish-panel {
             display: none;
             position: absolute;
@@ -167,34 +155,38 @@
             border: 4px solid #00ffff;
             box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
             border-radius: 16px;
-            padding: 40px;
+            padding: 30px 40px;
             text-align: center;
             color: #fff;
             z-index: 30;
+            width: 380px;
         }
         #finish-panel h1 {
-            font-size: 48px;
+            font-size: 44px;
             color: #00ffff;
             text-transform: uppercase;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
         }
         #finish-panel p {
-            font-size: 24px;
-            margin-bottom: 15px;
+            font-size: 20px;
+            margin-bottom: 8px;
             font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .time-highlight {
             color: #ffaa00;
             font-weight: bold;
-            font-size: 32px;
+            font-size: 24px;
         }
         .restart-btn {
             background: linear-gradient(180deg, #ff5500, #ff2200);
             border: 2px solid #fff;
             border-radius: 8px;
             color: #fff;
-            padding: 12px 30px;
+            padding: 10px 30px;
             font-size: 24px;
             font-weight: bold;
             font-family: 'Impact', sans-serif;
@@ -203,11 +195,91 @@
             transition: transform 0.1s;
             text-transform: uppercase;
             margin-top: 15px;
+            width: 100%;
         }
         .restart-btn:active {
             transform: scale(0.95);
         }
-        /* Audio Unlocking Prompt Hint */
+        
+        #settings-modal {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 15, 30, 0.95);
+            border: 3px solid #ffaa00;
+            box-shadow: 0 0 25px rgba(255, 170, 0, 0.6);
+            border-radius: 16px;
+            padding: 30px;
+            width: 340px;
+            z-index: 40;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        #settings-modal h2 {
+            font-family: 'Impact', sans-serif;
+            font-size: 32px;
+            color: #ffaa00;
+            text-align: center;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .settings-btn {
+            background: #222;
+            border: 2px solid #ff5500;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-family: 'Impact', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            text-transform: uppercase;
+            min-width: 110px;
+            text-align: center;
+        }
+        .settings-btn:active { transform: scale(0.95); }
+        .grip-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .grip-slider-btn {
+            background: #ff5500;
+            border: none;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .close-settings-btn {
+            width: 100%;
+            background: linear-gradient(180deg, #555, #222);
+            border: 1px solid #aaa;
+            color: white;
+            padding: 10px;
+            font-family: 'Impact', sans-serif;
+            font-size: 18px;
+            border-radius: 8px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
         #audio-hint {
             position: absolute;
             bottom: 20px;
@@ -224,7 +296,6 @@
             letter-spacing: 1px;
             text-transform: uppercase;
         }
-        /* Mobile Controls */
         #mobile-controls {
             position: absolute;
             bottom: 30px;
@@ -239,6 +310,13 @@
         .control-group {
             display: flex;
             gap: 20px;
+            pointer-events: auto;
+        }
+        .right-controls-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 35px;
             pointer-events: auto;
         }
         .btn {
@@ -267,16 +345,20 @@
             border-color: #00e5ff;
             text-shadow: 0 0 8px #00e5ff;
         }
+        .btn-yellow {
+            border-color: #ffbb00;
+            text-shadow: 0 0 8px #ffbb00;
+            font-size: 14px;
+            font-family: 'Impact', sans-serif;
+            text-transform: uppercase;
+        }
         .btn:active {
             background: rgba(255, 85, 0, 0.6);
             transform: scale(0.9);
         }
         
-        /* Responsive adjustments for mid & small devices */
         @media (max-width: 1024px) {
-            #hud {
-                max-width: calc(100% - 180px);
-            }
+            #hud { max-width: calc(100% - 180px); }
         }
         @media (max-width: 768px) {
             #minimap-container {
@@ -295,22 +377,22 @@
                 padding: 6px 10px;
                 font-size: 14px;
             }
-            .hud-card:nth-child(1) { min-width: 50px; }
-            .hud-card:nth-child(2) { min-width: 65px; }
-            .hud-card:nth-child(3) { min-width: 45px; }
-            .hud-card:nth-child(4) { min-width: 90px; }
-            .hud-card:nth-child(5) { min-width: 130px; }
-            .hud-card:nth-child(6) { min-width: 110px; }
-            .hud-card:nth-child(7) { min-width: 110px; }
-            .hud-label {
-                font-size: 8px;
-            }
             #audio-hint {
                 font-size: 10px;
-                bottom: 120px;
+                bottom: 150px;
             }
+            #mobile-controls {
+                padding: 0 20px;
+                bottom: 20px;
+            }
+            .btn {
+                width: 65px;
+                height: 65px;
+                font-size: 28px;
+            }
+            .btn-yellow { font-size: 11px; }
+            .right-controls-stack { gap: 20px; }
         }
-        /* Responsiveness: Hide Mobile Controls on Desktop if hovering pointer exists */
         @media (hover: hover) and (pointer: fine) {
             #mobile-controls {
                 display: none;
@@ -325,42 +407,75 @@
     <canvas id="gameCanvas"></canvas>
     
     <div id="hud">
-        <div class="hud-card" style="border-color: #ff5500; box-shadow: 0 0 15px rgba(255, 85, 0, 0.45);">
+        <div class="hud-card" style="border-color: #ff5500; box-shadow: 0 0 15px rgba(255, 85, 0, 0.45); min-width: 80px;">
             <div class="hud-label" style="color: #ff5500;">POS</div>
             <div><span id="pos-ui">1st</span></div>
         </div>
-        <div class="hud-card">
+        <div class="hud-card" style="min-width: 110px;">
             <div class="hud-label">Speed</div>
             <div><span id="speed-ui">0</span> <span style="font-size:13px">MPH</span></div>
         </div>
-        <div class="hud-card">
+        <div class="hud-card" style="min-width: 80px;">
             <div class="hud-label">Lap</div>
             <div><span id="lap-ui">1</span>/3</div>
         </div>
-        <div class="hud-card">
+        <div class="hud-card" style="min-width: 130px;">
             <div class="hud-label">Time</div>
             <div id="time-ui">00:00.00</div>
         </div>
-        <div class="hud-card" style="pointer-events: auto; cursor: pointer; border-color: #00ffff; box-shadow: 0 0 15px rgba(0, 242, 255, 0.5);" onclick="toggleLevel()">
+        <div class="hud-card" style="min-width: 130px;">
+            <div class="hud-label">Lap Time</div>
+            <div id="lap-time-ui">00:00.00</div>
+        </div>
+        <div class="hud-card interactive" style="border-color: #00ffff; box-shadow: 0 0 15px rgba(0, 242, 255, 0.5); min-width: 180px;" onclick="toggleLevel()">
             <div class="hud-label" style="color: #00ffff;">Track (Click)</div>
             <div id="level-ui" style="color: #fff; text-transform: uppercase;">DESERT SPEEDWAY</div>
         </div>
-        <div class="hud-card" style="pointer-events: auto; cursor: pointer; border-color: #39ff14; box-shadow: 0 0 15px rgba(57, 255, 20, 0.5);" onclick="toggleGameMode()">
-            <div class="hud-label" style="color: #39ff14;">Mode (Click)</div>
-            <div id="mode-ui" style="color: #fff; text-transform: uppercase;">SCALEXTRIC</div>
+        <!-- Stylized settings gear icon in HUD -->
+        <div class="hud-card interactive" style="border-color: #ffaa00; box-shadow: 0 0 15px rgba(255, 170, 0, 0.5); min-width: 60px; padding: 6px 14px;" onclick="openSettingsMenu()">
+            <div class="hud-label" style="color: #ffaa00;">SETUP</div>
+            <div style="color: #fff; display: flex; align-items: center; justify-content: center; padding-top: 2px;">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width: 22px; height: 22px;">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </div>
         </div>
-        <div id="grip-card" class="hud-card" style="pointer-events: auto; border-color: #39ff14; box-shadow: 0 0 15px rgba(57, 255, 20, 0.5); display: none;">
-            <div class="hud-label" style="color: #39ff14;">Grip</div>
-            <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 18px;">
-                <span style="cursor: pointer; color: #39ff14; font-size: 24px; padding: 0 8px; background: rgba(255,255,255,0.1); border-radius: 4px;" onclick="adjustGripLevel(-1)">-</span>
-                <span id="grip-ui-val" style="color: #fff; min-width: 25px; display: inline-block;">3</span>
-                <span style="cursor: pointer; color: #39ff14; font-size: 24px; padding: 0 8px; background: rgba(255,255,255,0.1); border-radius: 4px;" onclick="adjustGripLevel(1)">+</span>
+        <!-- Stylized RESTART icon card in HUD (Visible on Desktop + Mobile) -->
+        <div class="hud-card interactive" style="border-color: #ff3300; box-shadow: 0 0 15px rgba(255, 51, 0, 0.5); min-width: 60px; padding: 6px 14px;" onclick="startAudioEngine(); resetRace()">
+            <div class="hud-label" style="color: #ff3300;">RESTART</div>
+            <div style="color: #fff; display: flex; align-items: center; justify-content: center; padding-top: 2.5px;">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width: 22px; height: 22px;">
+                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
             </div>
         </div>
     </div>
 
+    <!-- Simplified Settings Dashboard Panel -->
+    <div id="settings-modal">
+        <h2>settings</h2>
+        <div class="settings-row">
+            <span>MODE:</span>
+            <button id="mode-setting-btn" class="settings-btn" onclick="toggleGameMode()">SCALEXTRIC</button>
+        </div>
+        <div class="settings-row" id="grip-setting-row">
+            <span>GRIP:</span>
+            <div class="grip-slider-container">
+                <button class="grip-slider-btn" onclick="adjustGripLevel(-1)">-</button>
+                <span id="grip-modal-val" style="min-width: 20px; text-align: center; font-weight: bold; font-size: 18px;">3</span>
+                <button class="grip-slider-btn" onclick="adjustGripLevel(1)">+</button>
+            </div>
+        </div>
+        <div class="settings-row">
+            <span>SPEED LIMIT:</span>
+            <button id="governor-setting-btn" class="settings-btn" onclick="toggleSpeedGovernor()">ENABLED</button>
+        </div>
+        <button class="close-settings-btn" onclick="closeSettingsMenu()">APPLY</button>
+    </div>
+
     <div id="slot-meter-container">
-        <div class="hud-label" style="color: #ffaa00; font-size: 11px; font-weight: bold; letter-spacing: 1.5px;">G-FORCE / GRIP LIMIT</div>
+        <div class="hud-label" style="color: #ffaa00; font-size: 11px; font-weight: bold; letter-spacing: 1.5px;">G-FORCE</div>
         <div id="slot-meter-track">
             <div id="slot-meter-fill"></div>
         </div>
@@ -374,11 +489,22 @@
 
     <div id="countdown-overlay">READY</div>
 
+    <!-- Complete Finish Screen Panel with Dynamic Statistics -->
     <div id="finish-panel">
         <h1 id="finish-title">Race Complete!</h1>
-        <p>Your Final Place: <span id="final-place" class="time-highlight" style="color: #00ff6a;">1st Place</span></p>
-        <p>Your Final Time: <span id="final-time" class="time-highlight">00:00.00</span></p>
-        <button class="restart-btn" onclick="startAudioEngine(); resetRace()">Race Again</button>
+        <p>Position: <span id="final-place" class="time-highlight" style="color: #00ff6a;">1st Place</span></p>
+        <p>Time: <span id="final-time" class="time-highlight">00:00.00</span></p>
+        
+        <div style="background: rgba(0,0,0,0.5); border: 1px solid #00ffff; border-radius: 8px; padding: 15px; margin: 15px 0; font-family: 'Segoe UI', sans-serif; text-align: left; font-size: 15px; line-height: 1.6;">
+            <div style="color: #00ffff; font-family: 'Impact', sans-serif; font-size: 18px; text-transform: uppercase; border-bottom: 1px solid rgba(0, 255, 255, 0.3); padding-bottom: 4px; margin-bottom: 8px; letter-spacing: 1px;">Statistics</div>
+            <p style="font-size: 15px; margin: 0 0 4px 0;">Fastest Lap: <span id="stat-fastest-lap" style="color: #ffaa00; font-weight: bold; font-variant-numeric: tabular-nums;">--:--.--</span></p>
+            <p style="font-size: 15px; margin: 0 0 4px 0;">Max Speed: <span id="stat-max-speed" style="color: #ffaa00; font-weight: bold;">0</span> <span style="font-size: 11px; color: #aaa;">MPH</span></p>
+            <p style="font-size: 15px; margin: 0 0 4px 0;">Average Speed: <span id="stat-avg-speed" style="color: #ffaa00; font-weight: bold;">0</span> <span style="font-size: 11px; color: #aaa;">MPH</span></p>
+            <p style="font-size: 15px; margin: 0 0 4px 0;">Average G-Force: <span id="stat-avg-g" style="color: #ffaa00; font-weight: bold;">0.00</span> <span style="font-size: 11px; color: #aaa;">G</span></p>
+            <p style="font-size: 15px; margin: 0; border-top: 1px solid rgba(0, 255, 255, 0.15); padding-top: 4px;">Personal Best: <span id="stat-pb" style="color: #00ff6a; font-weight: bold; font-variant-numeric: tabular-nums;">--:--.--</span></p>
+        </div>
+
+        <button class="restart-btn" onclick="startAudioEngine(); resetRace()">Race</button>
     </div>
 
     <div id="mobile-controls">
@@ -386,9 +512,13 @@
             <div class="btn btn-cyan" id="btn-left">←</div>
             <div class="btn btn-cyan" id="btn-right">→</div>
         </div>
-        <div class="control-group">
-            <div class="btn btn-orange" id="btn-reverse">↓</div>
-            <div class="btn btn-orange" id="btn-gas">↑</div>
+        
+        <div class="right-controls-stack">
+            <div class="btn btn-yellow" id="btn-mobile-restart" onclick="resetRace()">Restart</div>
+            <div class="control-group">
+                <div class="btn btn-orange" id="btn-reverse">↓</div>
+                <div class="btn btn-orange" id="btn-gas">↑</div>
+            </div>
         </div>
     </div>
 </div>
@@ -407,108 +537,95 @@ const finalTimeSpan = document.getElementById('final-time');
 const minimapCanvas = document.getElementById('minimap');
 const minimapCtx = minimapCanvas.getContext('2d');
 const audioHint = document.getElementById('audio-hint');
-const modeUi = document.getElementById('mode-ui');
 
 let scene, camera, renderer;
-let gameState = 'COUNTDOWN'; // COUNTDOWN, RACING, FINISHED
+let gameState = 'COUNTDOWN';
 let countdownVal = 3;
 let timerStart = 0;
 let totalElapsed = 0;
 let lap = 1;
-let lastClosestIdx = -1; // -1 represents uninitialized startup state
+let lastClosestIdx = -1;
 let checkpointPassed = false;
-let steerDuration = 0; // Tracks hold time of steering for subtle tap control
-let lastRacePos = 1; // Tracks last position to trigger overtake cheers
+let steerDuration = 0;
+let lastRacePos = 1;
 
-// Game Mode Selection Variable - Defaulting to SCALEXTRIC
 let gameMode = 'SCALEXTRIC'; 
+let speedGovernorEnabled = true; 
 
-// SHARED SLOT CAR PHYSICS DEFINITIONS
-let gripLevel = 3; // level 1-5
-const gripMap = {
-    1: 75.0,
-    2: 80.0,
-    3: 85.0,
-    4: 90.0,
-    5: 95.0
-};
-let gripLimit = gripMap[gripLevel];
-const curvatureScale = 5.0; // The optimized, smoothed curvature coefficient
+// Dynamic Grip logic supporting increments of 5 beyond 5
+let gripLevel = 3;
+let gripLimit = 70.0 + gripLevel * 5.0; // Dynamic grip limits mapping: level 1=75, 5=95, 10=120, 15=145 etc.
+const curvatureScale = 5.0;
 
-// Level Configurations
 let currentLevel = 1;
 const levelConfigs = {
     1: {
         name: "DESERT SPEEDWAY",
         points: [
-            new THREE.Vector3(0, 0.1, 0),             // Start/Finish Line (Flat)
-            new THREE.Vector3(200, 15, 60),           // Ascending sweep
-            new THREE.Vector3(450, 45, 120),          // High altitude climb peak
-            new THREE.Vector3(700, 60, -50),          // Tallest hilltop corner
-            new THREE.Vector3(800, 40, -250),         // Swooping coastal descent
-            new THREE.Vector3(600, 15, -450),         // Running down canyon
-            new THREE.Vector3(350, 5, -550),          // Floor of the canyon
-            new THREE.Vector3(100, 30, -500),         // Steep ascent uphill toward launch ramp
-            new THREE.Vector3(-150, 50, -580),        // RAMP Takeoff peak (Upwards launch kick!)
-            new THREE.Vector3(-350, 18, -480),        // Deep landing slope (Huge air gap!)
-            new THREE.Vector3(-550, 5, -350),         // Valley straightaway
-            new THREE.Vector3(-700, 25, -100),        // Winding mountain ascent
-            new THREE.Vector3(-600, 45, 180),         // Elevated ridge sweep
-            new THREE.Vector3(-400, 20, 280),         // Crest descent turn
-            new THREE.Vector3(-200, 5, 120),          // Leveling out onto speedway plains
-            new THREE.Vector3(-100, 0.1, -20)         // Back home
+            new THREE.Vector3(0, 0.1, 0),
+            new THREE.Vector3(200, 15, 60),
+            new THREE.Vector3(450, 45, 120),
+            new THREE.Vector3(700, 60, -50),
+            new THREE.Vector3(800, 40, -250),
+            new THREE.Vector3(600, 15, -450),
+            new THREE.Vector3(350, 5, -550),
+            new THREE.Vector3(100, 30, -500),
+            new THREE.Vector3(-150, 50, -580),
+            new THREE.Vector3(-350, 18, -480),
+            new THREE.Vector3(-550, 5, -350),
+            new THREE.Vector3(-700, 25, -100),
+            new THREE.Vector3(-600, 45, 180),
+            new THREE.Vector3(-400, 20, 280),
+            new THREE.Vector3(-200, 5, 120),
+            new THREE.Vector3(-100, 0.1, -20)
         ]
     },
     2: {
         name: "SPIRAL ASCENSION",
         points: [
-            new THREE.Vector3(-200, 0.1, -200),        // 0: Start/Finish (Flat runway start)
-            new THREE.Vector3(-200, 0.1, -150),        // 1: Straight approach before loop entry
-            new THREE.Vector3(-250, 12.0, -100),       // 2: Entering left loop, climbing & banking
-            new THREE.Vector3(-350, 26.0, -50),        // 3: High apex of the left corner sweep
-            new THREE.Vector3(-400, 38.0, 50),         // 4: Sweeping forward/left
-            new THREE.Vector3(-350, 50.0, 150),        // 5: Sweeping back right, climbing high
-            new THREE.Vector3(-200, 62.0, 250),        // 6: Merging back cleanly into the main ascent ramp
-            new THREE.Vector3(-200, 75.0, 400),        // 7: Continuing steady ascent
-            new THREE.Vector3(-160, 80.0, 520),        // 8: Peak elevation crest
-            new THREE.Vector3(0, 80.0, 580),           // 9: Clean sweeping turn
-            new THREE.Vector3(180, 65.0, 500),         // 10: Transition into descent
-            new THREE.Vector3(340, 50.0, 320),         // 11: Descending outer spiral
-            new THREE.Vector3(340, 35.0, 100),         // 12: Smooth descent glide
-            new THREE.Vector3(180, 22.0, -80),         // 13: Descent loop corner
-            new THREE.Vector3(10, 12.0, -30),          // 14: Smooth lower sweep
-            new THREE.Vector3(-80, 5.0, 100),          // 15: Smooth landing slide
-            new THREE.Vector3(40, 1.0, 220),           // 16: Transition into lake basin
-            new THREE.Vector3(180, 0.1, 150),          // 17: Ground level lake entrance
-            new THREE.Vector3(220, 0.1, -120),         // 18: Ground level lake exit
-            new THREE.Vector3(40, 0.1, -300),          // 19: Ground level loop return
-            new THREE.Vector3(-120, 0.1, -300)         // 20: Aligning run back to start point
+            new THREE.Vector3(-200, 0.1, -200),
+            new THREE.Vector3(-200, 0.1, -150),
+            new THREE.Vector3(-250, 12.0, -100),
+            new THREE.Vector3(-350, 26.0, -50),
+            new THREE.Vector3(-400, 38.0, 50),
+            new THREE.Vector3(-350, 50.0, 150),
+            new THREE.Vector3(-200, 62.0, 250),
+            new THREE.Vector3(-200, 75.0, 400),
+            new THREE.Vector3(-160, 80.0, 520),
+            new THREE.Vector3(0, 80.0, 580),
+            new THREE.Vector3(180, 65.0, 500),
+            new THREE.Vector3(340, 50.0, 320),
+            new THREE.Vector3(340, 35.0, 100),
+            new THREE.Vector3(180, 22.0, -80),
+            new THREE.Vector3(10, 12.0, -30),
+            new THREE.Vector3(-80, 5.0, 100),
+            new THREE.Vector3(40, 1.0, 220),
+            new THREE.Vector3(180, 0.1, 150),
+            new THREE.Vector3(220, 0.1, -120),
+            new THREE.Vector3(40, 0.1, -300),
+            new THREE.Vector3(-120, 0.1, -300)
         ]
     }
 };
 
 let trackCurve = new THREE.CatmullRomCurve3(levelConfigs[currentLevel].points, true);
-const curvePointsCount = 750; // High count for smoother coordinate mapping on a long track
+const curvePointsCount = 750;
 let sampledCurvePoints = trackCurve.getSpacedPoints(curvePointsCount);
 
-// Minimap Bounds tracker
 let minimapBounds = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
-
-// Environment holding array (so they can be cleared/removed dynamically on level swap)
 let environmentObjects = [];
 let finishLineArch = null;
-let waterGroup = null; // Container for dynamic oasis lakes
+let waterGroup = null;
 
-// Keyboard state tracker
-const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, w: false, s: false, a: false, d: false };
+const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, w: false, s: false, a: false, d: false, r: false, R: false };
 
-// --- CAR PHYSICS & METADATA ---
 const car = {
     position: new THREE.Vector3(0, 0.9, 0),
     velocity: new THREE.Vector3(0, 0, 0),
-    heading: 0, // Rotation around Y axis (Radians)
+    heading: 0,
     speed: 0,
-    maxSpeed: 4.8, 
+    maxSpeedGovernor: 4.8, 
+    maxSpeedUncapped: 8.5, 
     maxSpeedReverse: -1.6,
     accel: 0.10,
     decel: 0.04,
@@ -517,13 +634,12 @@ const car = {
     width: 3.6,
     length: 7.2,
     mesh: null,
-    bodyMesh: null, // Submesh holding car visual elements to apply roll & vibration easily
-    tailMesh: null, // Custom wagging tail submesh
+    bodyMesh: null,
+    tailMesh: null,
     wheels: [],
-    verticalVelocity: 0, // Airborne state velocity
+    verticalVelocity: 0,
     isGrounded: true,
     
-    // Scalextric specific properties
     slotProgress: 0,
     centrifugalForce: 0,
     isRolledOver: false,
@@ -531,13 +647,13 @@ const car = {
     crashVelocity: new THREE.Vector3()
 };
 
-// --- AI OPPONENT PHYSICS & METADATA ---
 const aiCar = {
     position: new THREE.Vector3(0, 0.9, 0),
     velocity: new THREE.Vector3(0, 0, 0),
     heading: 0,
     speed: 0,
-    maxSpeed: 4.1, // Slower than player (4.8) to make it challenge but fully beatable
+    maxSpeedGovernor: 4.2,
+    maxSpeedUncapped: 7.6,
     accel: 0.08,
     decel: 0.04,
     friction: 0.98,
@@ -553,7 +669,6 @@ const aiCar = {
     lap: 1,
     checkpointPassed: false,
 
-    // Scalextric specific properties
     slotProgress: 0,
     centrifugalForce: 0,
     isRolledOver: false,
@@ -561,34 +676,34 @@ const aiCar = {
     crashVelocity: new THREE.Vector3()
 };
 
-// --- PROCEDURAL GENERATION: CHANNELS & DESERT ASSETS ---
-let trackGroup;
-const trackWidth = 65; // Increased width for better high speed handling & drifting
-const wallLimit = (trackWidth / 2) - 1.8; // Distance from track center before hitting outer wall flange (30.7 units)
+// Statistics collection variables
+let raceSpeeds = [];
+let raceGForces = [];
+let lapTimes = [];
+let currentLapStartTime = 0;
+let aiFinished = false;
+let aiFinalTime = 0;
 
-// Helper function to calculate banking tilt angle at any percentage `u` along the spline
+let trackGroup;
+const trackWidth = 65;
+const wallLimit = (trackWidth / 2) - 1.8;
+
 function getBankingAngle(u, level) {
     if (level !== 2) return 0;
-    
-    // Bank the left-hand corner (u = 0.04 to 0.22)
     if (u >= 0.04 && u <= 0.22) {
-        let baseBank = -0.42; // Tilt inward towards the left corner sweep
+        let baseBank = -0.42;
         return baseBank * Math.sin((u - 0.04) / 0.18 * Math.PI);
     }
-    
-    // Bank the descending outer spiral (u = 0.45 to 0.72)
     if (u >= 0.45 && u <= 0.72) {
-        let baseBank = 0.45; // Tilt inward towards the right spiral center
+        let baseBank = 0.45;
         return baseBank * Math.sin((u - 0.45) / 0.27 * Math.PI);
     }
     return 0;
 }
 
-// Helper function to find minimum distance from any position to the track spline
 function getMinDistanceToTrack(pos) {
     let minDist = Infinity;
     for (let i = 0; i < curvePointsCount; i += 3) {
-        // Calculate strictly flat 2D distance on X-Z plane to prevent elevation distortions
         const dx = pos.x - sampledCurvePoints[i].x;
         const dz = pos.z - sampledCurvePoints[i].z;
         const d = Math.sqrt(dx * dx + dz * dz);
@@ -597,7 +712,6 @@ function getMinDistanceToTrack(pos) {
     return minDist;
 }
 
-// Helper function to determine exact 3D slot coordinate positions
 function getSlotPosition(u, laneOffset) {
     const pt = trackCurve.getPointAt(u);
     const tangent = trackCurve.getTangentAt(u).normalize();
@@ -610,12 +724,12 @@ function getSlotPosition(u, laneOffset) {
 </script>
 
 <script>
-// --- SYNTHESIZED WEB AUDIO ENGINE CLASS (No external MP3 required) ---
 class GameSoundEngine {
     constructor() {
         this.ctx = null;
         this.engineOsc = null;
         this.engineSub = null;
+        this.engineSaw2 = null; 
         this.engineGain = null;
         this.engineFilter = null;
         
@@ -633,9 +747,7 @@ class GameSoundEngine {
             if (!AudioContextClass) return;
             this.ctx = new AudioContextClass();
             
-            // Build the Synthesized Engine notes
             this.setupEngineSound();
-            // Build the Synthesized Drifting slide noise
             this.setupDriftSound();
             
             this.initialized = true;
@@ -646,35 +758,38 @@ class GameSoundEngine {
     }
 
     setupEngineSound() {
-        // Aggressive sawtooth growl
         this.engineOsc = this.ctx.createOscillator();
         this.engineOsc.type = 'sawtooth';
-        this.engineOsc.frequency.setValueAtTime(45, this.ctx.currentTime);
+        this.engineOsc.frequency.setValueAtTime(35, this.ctx.currentTime);
 
-        // Sub-harmonic triangle note to add beefy bass rumble
+        this.engineSaw2 = this.ctx.createOscillator();
+        this.engineSaw2.type = 'sawtooth';
+        this.engineSaw2.frequency.setValueAtTime(35.7, this.ctx.currentTime); 
+
         this.engineSub = this.ctx.createOscillator();
-        this.engineSub.type = 'triangle';
-        this.engineSub.frequency.setValueAtTime(22.5, this.ctx.currentTime);
+        this.engineSub.type = 'square'; 
+        this.engineSub.frequency.setValueAtTime(17.5, this.ctx.currentTime);
 
-        // Low-pass filter to block harsh treble squeals on low idle speeds
         this.engineFilter = this.ctx.createBiquadFilter();
         this.engineFilter.type = 'lowpass';
-        this.engineFilter.frequency.setValueAtTime(200, this.ctx.currentTime);
+        this.engineFilter.frequency.setValueAtTime(250, this.ctx.currentTime);
+        this.engineFilter.Q.setValueAtTime(3.0, this.ctx.currentTime);
 
         this.engineGain = this.ctx.createGain();
-        this.engineGain.gain.setValueAtTime(0.0, this.ctx.currentTime); // Silent initially
+        this.engineGain.gain.setValueAtTime(0.0, this.ctx.currentTime);
 
         this.engineOsc.connect(this.engineFilter);
+        this.engineSaw2.connect(this.engineFilter);
         this.engineSub.connect(this.engineFilter);
         this.engineFilter.connect(this.engineGain);
         this.engineGain.connect(this.ctx.destination);
 
         this.engineOsc.start();
+        this.engineSaw2.start();
         this.engineSub.start();
     }
 
     setupDriftSound() {
-        // Harsh tires slide screech sound
         this.driftOsc = this.ctx.createOscillator();
         this.driftOsc.type = 'triangle';
         this.driftOsc.frequency.setValueAtTime(750, this.ctx.currentTime);
@@ -685,7 +800,7 @@ class GameSoundEngine {
         this.driftFilter.Q.setValueAtTime(4.0, this.ctx.currentTime);
 
         this.driftGain = this.ctx.createGain();
-        this.driftGain.gain.setValueAtTime(0.0, this.ctx.currentTime); // Silent initially
+        this.driftGain.gain.setValueAtTime(0.0, this.ctx.currentTime);
 
         this.driftOsc.connect(this.driftFilter);
         this.driftFilter.connect(this.driftGain);
@@ -699,27 +814,23 @@ class GameSoundEngine {
         if (this.ctx.state === 'suspended') return;
 
         const speedRatio = Math.max(0, Math.min(1.0, Math.abs(speed) / maxSpeed));
+        let baseFreq = 32 + speedRatio * 180;
         
-        // Base growl frequencies
-        let baseFreq = 42 + speedRatio * 150;
-        
-        // Simulating erratic engine sound floating when airborne
         if (!isGrounded) {
-            baseFreq = 165 + Math.sin(Date.now() * 0.08) * 30; // RPM peaks and bounces out of touch bounds!
+            baseFreq = 185 + Math.sin(Date.now() * 0.09) * 35;
         }
 
-        this.engineOsc.frequency.setTargetAtTime(baseFreq, this.ctx.currentTime, 0.08);
-        this.engineSub.frequency.setTargetAtTime(baseFreq * 0.5, this.ctx.currentTime, 0.08);
+        this.engineOsc.frequency.setTargetAtTime(baseFreq, this.ctx.currentTime, 0.06);
+        this.engineSaw2.frequency.setTargetAtTime(baseFreq * 1.02 + 0.5, this.ctx.currentTime, 0.06);
+        this.engineSub.frequency.setTargetAtTime(baseFreq * 0.5, this.ctx.currentTime, 0.06);
 
-        // Brighten low-pass cutoff as car speeds up, giving real "exhaust open" simulation
-        const filterCutoff = 160 + speedRatio * 500;
-        this.engineFilter.frequency.setTargetAtTime(filterCutoff, this.ctx.currentTime, 0.08);
+        const filterCutoff = 220 + speedRatio * 750;
+        this.engineFilter.frequency.setTargetAtTime(filterCutoff, this.ctx.currentTime, 0.07);
 
-        // Adjust overall gain levels
-        let volume = 0.04 + speedRatio * 0.14;
-        if (!isGrounded) volume *= 0.65; // Soften when high in air
+        let volume = 0.06 + speedRatio * 0.22;
+        if (!isGrounded) volume *= 0.65;
 
-        this.engineGain.gain.setTargetAtTime(volume, this.ctx.currentTime, 0.06);
+        this.engineGain.gain.setTargetAtTime(volume, this.ctx.currentTime, 0.05);
     }
 
     updateDrift(isDrifting, speed, inWater = false) {
@@ -727,21 +838,18 @@ class GameSoundEngine {
         if (this.ctx.state === 'suspended') return;
 
         if (inWater && speed > 0.4) {
-            // Synthesize churning, bubbly water splashes instead of tire screeches
-            const waterFreq = 220 + Math.sin(Date.now() * 0.22) * 90 + speed * 25;
+            const waterFreq = 200 + Math.sin(Date.now() * 0.22) * 90 + speed * 25;
             this.driftOsc.frequency.setTargetAtTime(waterFreq, this.ctx.currentTime, 0.05);
             this.driftFilter.frequency.setTargetAtTime(waterFreq * 1.6, this.ctx.currentTime, 0.05);
-            this.driftFilter.Q.setValueAtTime(1.5, this.ctx.currentTime); // Muffled, wider band Q
-            this.driftGain.gain.setTargetAtTime(0.09, this.ctx.currentTime, 0.05);
+            this.driftFilter.Q.setValueAtTime(1.5, this.ctx.currentTime);
+            this.driftGain.gain.setTargetAtTime(0.12, this.ctx.currentTime, 0.05);
         } else if (isDrifting && speed > 1.8) {
-            // Dynamic sharp sharp screeching sound
-            const squealFreq = 580 + Math.sin(Date.now() * 0.12) * 140 + speed * 45;
+            const squealFreq = 540 + Math.sin(Date.now() * 0.12) * 140 + speed * 45;
             this.driftOsc.frequency.setTargetAtTime(squealFreq, this.ctx.currentTime, 0.05);
             this.driftFilter.frequency.setTargetAtTime(squealFreq * 1.15, this.ctx.currentTime, 0.05);
-            this.driftFilter.Q.setValueAtTime(4.0, this.ctx.currentTime); // High pitch focus Q
-            this.driftGain.gain.setTargetAtTime(0.04, this.ctx.currentTime, 0.05);
+            this.driftFilter.Q.setValueAtTime(4.0, this.ctx.currentTime);
+            this.driftGain.gain.setTargetAtTime(0.05, this.ctx.currentTime, 0.05);
         } else {
-            // Squeal / splash fade away instantly
             this.driftGain.gain.setTargetAtTime(0.0, this.ctx.currentTime, 0.12);
         }
     }
@@ -749,106 +857,78 @@ class GameSoundEngine {
     playBump(intensity = 1.0) {
         if (!this.initialized || !this.ctx) return;
         if (this.ctx.state === 'suspended') return;
-
         try {
-            // 1. Thump Impact Sound
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
-
             osc.type = 'triangle';
-            osc.frequency.setValueAtTime(120, this.ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(15, this.ctx.currentTime + 0.3);
-
-            gain.gain.setValueAtTime(0.45 * intensity, this.ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
-
+            osc.frequency.setValueAtTime(110, this.ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 0.35);
+            gain.gain.setValueAtTime(0.5 * intensity, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
             osc.connect(gain);
             gain.connect(this.ctx.destination);
             osc.start();
-            osc.stop(this.ctx.currentTime + 0.35);
+            osc.stop(this.ctx.currentTime + 0.4);
 
-            // 2. High Spark Friction crackle
             const bufferSize = this.ctx.sampleRate * 0.2;
             const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
             const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = Math.random() * 2 - 1;
-            }
-            
+            for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
             const noise = this.ctx.createBufferSource();
             noise.buffer = buffer;
-
             const noiseFilter = this.ctx.createBiquadFilter();
             noiseFilter.type = 'bandpass';
-            noiseFilter.frequency.setValueAtTime(1400, this.ctx.currentTime);
-
+            noiseFilter.frequency.setValueAtTime(1300, this.ctx.currentTime);
             const noiseGain = this.ctx.createGain();
-            noiseGain.gain.setValueAtTime(0.12 * intensity, this.ctx.currentTime);
-            noiseGain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.18);
-
+            noiseGain.gain.setValueAtTime(0.15 * intensity, this.ctx.currentTime);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
             noise.connect(noiseFilter);
             noiseFilter.connect(noiseGain);
             noiseGain.connect(this.ctx.destination);
-
             noise.start();
-            noise.stop(this.ctx.currentTime + 0.2);
-        } catch (e) {
-            console.warn(e);
-        }
+            noise.stop(this.ctx.currentTime + 0.22);
+        } catch (e) {}
     }
 
     playBeep(isHigh = false) {
         if (!this.initialized || !this.ctx) return;
         if (this.ctx.state === 'suspended') return;
-
         try {
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
-
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(isHigh ? 920 : 460, this.ctx.currentTime);
-
-            gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + (isHigh ? 0.45 : 0.2));
-
+            osc.frequency.setValueAtTime(isHigh ? 880 : 440, this.ctx.currentTime);
+            gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + (isHigh ? 0.5 : 0.25));
             osc.connect(gain);
             gain.connect(this.ctx.destination);
-
             osc.start();
-            osc.stop(this.ctx.currentTime + (isHigh ? 0.5 : 0.25));
+            osc.stop(this.ctx.currentTime + (isHigh ? 0.55 : 0.3));
         } catch (e) {}
     }
 
     playLapChime() {
         if (!this.initialized || !this.ctx) return;
         if (this.ctx.state === 'suspended') return;
-
         try {
             const now = this.ctx.currentTime;
-            
             const triggerTone = (freq, delay, length) => {
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-                
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(freq, now + delay);
-                
                 gain.gain.setValueAtTime(0.0, now + delay);
                 gain.gain.linearRampToValueAtTime(0.15, now + delay + 0.04);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + delay + length);
-                
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
-                
                 osc.start(now + delay);
                 osc.stop(now + delay + length + 0.05);
             };
-
-            // Uplifting arcade dual chime sweep (C5 -> E5 -> G5 -> C6)
-            triggerTone(523.25, 0.0, 0.3);      // C5
-            triggerTone(659.25, 0.08, 0.3);     // E5
-            triggerTone(783.99, 0.16, 0.3);     // G5
-            triggerTone(1046.50, 0.24, 0.5);    // C6
+            triggerTone(523.25, 0.0, 0.3);
+            triggerTone(659.25, 0.08, 0.3);
+            triggerTone(783.99, 0.16, 0.3);
+            triggerTone(1046.50, 0.24, 0.5);
         } catch (e) {}
     }
 
@@ -857,8 +937,7 @@ class GameSoundEngine {
         if (this.ctx.state === 'suspended') return;
         try {
             const now = this.ctx.currentTime;
-            // Uplifting chord arpeggio cascade to celebrate overtake
-            const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C5, E5, G5, C6, E6
+            const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
             notes.forEach((freq, i) => {
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
@@ -880,7 +959,7 @@ class GameSoundEngine {
         if (this.ctx.state === 'suspended') return;
         try {
             const now = this.ctx.currentTime;
-            const dings = [880, 880, 1200]; // Bright bell chime notes
+            const dings = [880, 880, 1200];
             dings.forEach((freq, i) => {
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
@@ -900,7 +979,6 @@ class GameSoundEngine {
 
 const soundManager = new GameSoundEngine();
 
-// Quick interface to trigger audio initialization safe-unlocks
 function startAudioEngine() {
     soundManager.init();
     if (soundManager.ctx && soundManager.ctx.state === 'suspended') {
@@ -908,16 +986,58 @@ function startAudioEngine() {
     }
 }
 
-// Parameterized Grip Level Adjuster (levels 1-5 mapping to 75-95)
+// Unlimited Grip level slider: Above level 5, increments step by 5 up to max 25 in No Speed Limit
 function adjustGripLevel(amount) {
-    gripLevel = Math.max(1, Math.min(5, gripLevel + amount));
-    gripLimit = gripMap[gripLevel];
-    document.getElementById('grip-ui-val').innerText = gripLevel;
+    const maxLimit = speedGovernorEnabled ? 5 : 25;
+    let current = gripLevel;
+    if (amount > 0) {
+        if (current < 5) {
+            current += 1;
+        } else {
+            current += 5;
+        }
+    } else if (amount < 0) {
+        if (current <= 5) {
+            current = Math.max(1, current - 1);
+        } else {
+            current -= 5;
+        }
+    }
+    // If amount is 0, we simply preserve 'current' as gripLevel without decrementing
+    gripLevel = Math.min(maxLimit, current);
+    gripLimit = 70.0 + gripLevel * 5.0; // Dynamic formula mapping
+    document.getElementById('grip-modal-val').innerText = gripLevel;
+}
+
+function openSettingsMenu() {
+    startAudioEngine();
+    document.getElementById('settings-modal').style.display = 'block';
+}
+
+// Applying settings will now trigger a clean restart of the race to instantly apply rules
+function closeSettingsMenu() {
+    document.getElementById('settings-modal').style.display = 'none';
+    resetRace();
+}
+
+function toggleSpeedGovernor() {
+    speedGovernorEnabled = !speedGovernorEnabled;
+    document.getElementById('governor-setting-btn').innerText = speedGovernorEnabled ? "ENABLED" : "DISABLED";
+    
+    if (!speedGovernorEnabled) {
+        // Toggled OFF (No Speed Limit Mode) -> sets default grip to 15
+        gripLevel = 15;
+    } else if (speedGovernorEnabled && gripLevel > 5) {
+        // Auto-clamp active grip down to 5 if speed limits are re-enabled
+        gripLevel = 5;
+    }
+    
+    gripLimit = 70.0 + gripLevel * 5.0;
+    document.getElementById('grip-modal-val').innerText = gripLevel;
 }
 </script>
 
 <script>
-// --- PARTICLE SYSTEM POOL (For Drifting Smoke & Wall Sparks & Water Splashes) ---
 const particles = [];
 const maxParticles = 120;
 let particleGeometry;
@@ -960,13 +1080,11 @@ function updateParticles() {
             const ratio = p.life / p.maxLife;
             p.mesh.material.opacity = ratio;
             p.mesh.scale.set(ratio, ratio, ratio);
-            
             if (p.type === 'smoke') {
                 p.velocity.y += 0.01;
             } else if (p.type === 'spark' || p.type === 'splash') {
-                p.velocity.y -= 0.015; // Gravity pulls splash drops down
+                p.velocity.y -= 0.015;
             }
-
             if (p.life <= 0) {
                 p.mesh.material.opacity = 0;
             }
@@ -976,25 +1094,20 @@ function updateParticles() {
 </script>
 
 <script>
-// --- INIT GRAPHICS & GAME SCENE ---
 function init() {
-    // Scene creation
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xdf9f53); // Warm Sand
-    scene.fog = new THREE.FogExp2(0xdf9f53, 0.0012); // Slightly lowered fog so sprawling hills look gorgeous
+    scene.background = new THREE.Color(0xdf9f53);
+    scene.fog = new THREE.FogExp2(0xdf9f53, 0.0012);
 
-    // Camera setup
     camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.5, 2000);
     
-    // Renderer
     renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    // Lighting (Harsh sunset style)
-    const ambientLight = new THREE.AmbientLight(0x554466, 1.4); // Brighter, more vibrant ambient light
+    const ambientLight = new THREE.AmbientLight(0x554466, 1.4);
     scene.add(ambientLight);
 
     const sunLight = new THREE.DirectionalLight(0xffddaa, 1.6);
@@ -1004,86 +1117,58 @@ function init() {
     sunLight.shadow.mapSize.height = 2048;
     sunLight.shadow.camera.near = 0.5;
     sunLight.shadow.camera.far = 2500;
-    const side = 1200; // Enlarge bounds to match longer map
+    const side = 1200;
     sunLight.shadow.camera.left = -side;
     sunLight.shadow.camera.right = side;
     sunLight.shadow.camera.top = side;
     sunLight.shadow.camera.bottom = -side;
     scene.add(sunLight);
 
-    // Ground Plane (Desert Sand)
     const groundGeo = new THREE.PlaneGeometry(5000, 5000);
-    const groundMat = new THREE.MeshStandardMaterial({
-        color: 0xdf9f53,
-        roughness: 0.9,
-        metalness: 0.0
-    });
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0xdf9f53, roughness: 0.9, metalness: 0.0 });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // Default mode is SCALEXTRIC
     gameMode = 'SCALEXTRIC';
 
-    // Build the 3D continuous ribbon track with beautiful blue walls
     buildTrack();
-
-    // Create Checkered Arch at Start-Finish line
     buildFinishLineArch();
-
-    // Render dynamic blue Oasis lakes (Water obstacles!) centered in the valley basin
     buildOasisLakes();
-
-    // Scatter Desert Scenery (Dunes & Cacti) - Protected against track overlap
     scatterEnvironment();
-
-    // Instantiate Custom Toy Cars (Tiger Shark and Skelesaurus)
     buildCars();
 
-    // Setup starting camera position directly behind vehicle on startup
     const startTangent = trackCurve.getTangentAt(0).normalize();
     camera.position.copy(car.position).addScaledVector(startTangent, -16.5).add(new THREE.Vector3(0, 6.8, 0));
     camera.lookAt(car.position);
 
-    // Track Bounding Limits for 2D Minimap System
     initMinimapBounds();
-
-    // Initialize Particle engine pool
     initParticles();
-
-    // Input Listeners Setup
     setupInputs();
 
-    // Window Resizing Setup
     window.addEventListener('resize', onWindowResize);
 
-    // Initializing grip values based on starting track
-    if (currentLevel === 1) {
-        gripLevel = 3; // 85 limit
-    } else {
-        gripLevel = 5; // 95 limit
-    }
-    adjustGripLevel(0); // Set defaults onto UI
+    if (currentLevel === 1) { gripLevel = 3; } else { gripLevel = 5; }
+    // Clean call ensures default grips (3 or 5) don't get decremented on load
+    adjustGripLevel(0);
 
-    // Sync HUD selection
-    document.getElementById('mode-ui').innerText = "SCALEXTRIC";
+    document.getElementById('mode-setting-btn').innerText = "SCALEXTRIC";
+    document.getElementById('governor-setting-btn').innerText = "ENABLED"; 
     updateMobileControlsDisplay();
 
-    // Set initial display state of Grip Adjuster Card
-    document.getElementById('grip-card').style.display = (gameMode === 'SCALEXTRIC') ? 'flex' : 'none';
+    document.getElementById('slot-meter-container').style.display = (gameMode === 'SCALEXTRIC') ? 'block' : 'none';
+    document.getElementById('grip-setting-row').style.display = (gameMode === 'SCALEXTRIC') ? 'flex' : 'none';
 
-    // Start UI Countdown
     triggerCountdown();
 }
 
-// --- PROCEDURAL STABLE RIBBON METHOD FOR DETAILED TWIST-FREE TRACK ---
 function buildTrack() {
     if (trackGroup) scene.remove(trackGroup);
     trackGroup = new THREE.Group();
     scene.add(trackGroup);
 
-    const segmentsCount = 400; // More segments to render the vertical curves beautifully
+    const segmentsCount = 400;
     const pts = trackCurve.getSpacedPoints(segmentsCount);
 
     const roadPos = [];
@@ -1092,42 +1177,32 @@ function buildTrack() {
     const leftWallIndices = [];
     const rightWallPos = [];
     const rightWallIndices = [];
-
     const wallHeight = 4.0;
 
     for (let i = 0; i <= segmentsCount; i++) {
         const idx = i % segmentsCount;
         const idxNext = (i + 1) % segmentsCount;
-        
         const p = pts[idx];
         const pNext = pts[idxNext];
-        
         const dir = new THREE.Vector3().subVectors(pNext, p).normalize();
         const right = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
 
-        // Incorporate banking angles into Level 2 curves
         const u = idx / segmentsCount;
         const bankingAngle = getBankingAngle(u, currentLevel);
         const bankedRight = right.clone().applyAxisAngle(dir, bankingAngle);
-
-        // Calculate perpendicular normal pointing straight "up" from banked plane
         const bankedUp = new THREE.Vector3().crossVectors(bankedRight, dir).normalize();
 
-        // Elevate edges along banked normal
         const leftPt = p.clone().addScaledVector(bankedRight, -trackWidth / 2);
         const rightPt = p.clone().addScaledVector(bankedRight, trackWidth / 2);
 
-        // Road Vertices (fully mapping elevation coordinates)
-        roadPos.push(leftPt.x, leftPt.y, leftPt.z);   // 2 * i
-        roadPos.push(rightPt.x, rightPt.y, rightPt.z); // 2 * i + 1
+        roadPos.push(leftPt.x, leftPt.y, leftPt.z);
+        roadPos.push(rightPt.x, rightPt.y, rightPt.z);
 
-        // Left Wall Vertices (drawn relative to banked coordinate frame)
-        leftWallPos.push(leftPt.x, leftPt.y, leftPt.z);              // 2 * i
-        leftWallPos.push(leftPt.x + bankedUp.x * wallHeight, leftPt.y + bankedUp.y * wallHeight, leftPt.z + bankedUp.z * wallHeight);  // 2 * i + 1
+        leftWallPos.push(leftPt.x, leftPt.y, leftPt.z);
+        leftWallPos.push(leftPt.x + bankedUp.x * wallHeight, leftPt.y + bankedUp.y * wallHeight, leftPt.z + bankedUp.z * wallHeight);
 
-        // Right Wall Vertices (drawn relative to banked coordinate frame)
-        rightWallPos.push(rightPt.x, rightPt.y, rightPt.z);             // 2 * i
-        rightWallPos.push(rightPt.x + bankedUp.x * wallHeight, rightPt.y + bankedUp.y * wallHeight, rightPt.z + bankedUp.z * wallHeight); // 2 * i + 1
+        rightWallPos.push(rightPt.x, rightPt.y, rightPt.z);
+        rightWallPos.push(rightPt.x + bankedUp.x * wallHeight, rightPt.y + bankedUp.y * wallHeight, rightPt.z + bankedUp.z * wallHeight);
 
         if (i < segmentsCount) {
             const r0 = 2 * i;
@@ -1135,51 +1210,35 @@ function buildTrack() {
             const r2 = 2 * (i + 1);
             const r3 = 2 * (i + 1) + 1;
 
-            // Road indices
             roadIndices.push(r0, r2, r1);
             roadIndices.push(r1, r2, r3);
 
-            // Left wall indices (facing inward)
             leftWallIndices.push(r0, r1, r2);
             leftWallIndices.push(r1, r3, r2);
 
-            // Right wall indices (facing inward)
             rightWallIndices.push(r0, r2, r1);
             rightWallIndices.push(r1, r2, r3);
         }
     }
 
-    // Road Mesh
     const roadGeo = new THREE.BufferGeometry();
     roadGeo.setAttribute('position', new THREE.Float32BufferAttribute(roadPos, 3));
     roadGeo.setIndex(roadIndices);
     roadGeo.computeVertexNormals();
-    const roadMat = new THREE.MeshStandardMaterial({
-        color: 0xff4c00, // Classic Hot Wheels Orange
-        roughness: 0.3,
-        metalness: 0.1,
-        side: THREE.DoubleSide
-    });
+    const roadMat = new THREE.MeshStandardMaterial({ color: 0xff4c00, roughness: 0.3, metalness: 0.1, side: THREE.DoubleSide });
     const roadMesh = new THREE.Mesh(roadGeo, roadMat);
     roadMesh.receiveShadow = true;
     trackGroup.add(roadMesh);
 
-    // Left Wall Mesh (Hot Wheels Royal Blue)
     const leftWallGeo = new THREE.BufferGeometry();
     leftWallGeo.setAttribute('position', new THREE.Float32BufferAttribute(leftWallPos, 3));
     leftWallGeo.setIndex(leftWallIndices);
     leftWallGeo.computeVertexNormals();
-    const wallMat = new THREE.MeshStandardMaterial({
-        color: 0x0044ff, 
-        roughness: 0.4,
-        metalness: 0.2,
-        side: THREE.DoubleSide
-    });
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x0044ff, roughness: 0.4, metalness: 0.2, side: THREE.DoubleSide });
     const leftWallMesh = new THREE.Mesh(leftWallGeo, wallMat);
     leftWallMesh.castShadow = true;
     trackGroup.add(leftWallMesh);
 
-    // Right Wall Mesh (Hot Wheels Royal Blue)
     const rightWallGeo = new THREE.BufferGeometry();
     rightWallGeo.setAttribute('position', new THREE.Float32BufferAttribute(rightWallPos, 3));
     rightWallGeo.setIndex(rightWallIndices);
@@ -1188,31 +1247,23 @@ function buildTrack() {
     rightWallMesh.castShadow = true;
     trackGroup.add(rightWallMesh);
 
-    // Dashed Center Line (Cyan center lane elevated along banked up normals)
     const centerLinePoints = trackCurve.getSpacedPoints(500);
     for (let i = 0; i < centerLinePoints.length; i++) {
         const pt = centerLinePoints[i];
         const u = i / centerLinePoints.length;
-        
         const tangent = trackCurve.getTangentAt(u).normalize();
         const rightVec = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
         const bankingAngle = getBankingAngle(u, currentLevel);
         const bankedRightVec = rightVec.clone().applyAxisAngle(tangent, bankingAngle);
         const bankedUpNormal = new THREE.Vector3().crossVectors(bankedRightVec, tangent).normalize();
-
-        pt.addScaledVector(bankedUpNormal, 0.15); // Float slightly above track to avoid z-fighting
+        pt.addScaledVector(bankedUpNormal, 0.15);
     }
     const centerLineGeo = new THREE.BufferGeometry().setFromPoints(centerLinePoints);
-    const centerLineMat = new THREE.LineDashedMaterial({
-        color: 0x00ffff,
-        dashSize: 4,
-        gapSize: 2
-    });
+    const centerLineMat = new THREE.LineDashedMaterial({ color: 0x00ffff, dashSize: 4, gapSize: 2 });
     centerLine = new THREE.Line(centerLineGeo, centerLineMat);
     centerLine.computeLineDistances();
     trackGroup.add(centerLine);
 
-    // Procedural Scalextric Slots (Metallic steel rails drawn directly onto the road surface)
     if (gameMode === 'SCALEXTRIC') {
         const leftRailPoints = [];
         const rightRailPoints = [];
@@ -1226,17 +1277,14 @@ function buildTrack() {
             const bankedRightVec = rightVec.clone().applyAxisAngle(tangent, bankingAngle);
             const bankedUpNormal = new THREE.Vector3().crossVectors(bankedRightVec, tangent).normalize();
 
-            // Offset laterally to represent physical left and right slot lanes (-2.2 and +2.2)
             const pL = pt.clone().addScaledVector(bankedRightVec, -2.2).addScaledVector(bankedUpNormal, 0.12);
             const pR = pt.clone().addScaledVector(bankedRightVec, 2.2).addScaledVector(bankedUpNormal, 0.12);
             leftRailPoints.push(pL);
             rightRailPoints.push(pR);
         }
-
         const leftRailGeo = new THREE.BufferGeometry().setFromPoints(leftRailPoints);
         const rightRailGeo = new THREE.BufferGeometry().setFromPoints(rightRailPoints);
         const railMat = new THREE.LineBasicMaterial({ color: 0x555555, linewidth: 3 });
-        
         const leftRailLine = new THREE.Line(leftRailGeo, railMat);
         const rightRailLine = new THREE.Line(rightRailGeo, railMat);
         trackGroup.add(leftRailLine);
@@ -1244,14 +1292,11 @@ function buildTrack() {
     }
 }
 
-// --- CHECKERED START/FINISH ARCH ---
 function buildFinishLineArch() {
     if (finishLineArch) scene.remove(finishLineArch);
-
     const archGroup = new THREE.Group();
     const pillarMat = new THREE.MeshStandardMaterial({ color: 0xff2200, roughness: 0.3 });
     
-    // Custom checkerboard texture
     const size = 128;
     const canvasTex = document.createElement('canvas');
     canvasTex.width = size;
@@ -1263,20 +1308,16 @@ function buildFinishLineArch() {
     const cell = size / 4;
     for (let x = 0; x < 4; x++) {
         for (let y = 0; y < 4; y++) {
-            if ((x + y) % 2 === 0) {
-                ctxTex.fillRect(x * cell, y * cell, cell, cell);
-            }
+            if ((x + y) % 2 === 0) { ctxTex.fillRect(x * cell, y * cell, cell, cell); }
         }
     }
     const checkerTexture = new THREE.CanvasTexture(canvasTex);
     checkerTexture.wrapS = THREE.RepeatWrapping;
     checkerTexture.wrapT = THREE.RepeatWrapping;
     checkerTexture.repeat.set(8, 1);
-    
     const checkerMat = new THREE.MeshStandardMaterial({ map: checkerTexture, roughness: 0.4 });
 
-    // Arch pillars (Placed safely outside the wider track edge)
-    const pillarLateralOffset = (trackWidth / 2) + 3.0; // Automatically adjusts to width (35.5 units)
+    const pillarLateralOffset = (trackWidth / 2) + 3.0;
     const leftPillar = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 30, 10), pillarMat);
     leftPillar.position.set(-pillarLateralOffset, 15, 0);
     archGroup.add(leftPillar);
@@ -1285,17 +1326,13 @@ function buildFinishLineArch() {
     rightPillar.position.set(pillarLateralOffset, 15, 0);
     archGroup.add(rightPillar);
 
-    // Cross beam
-    const beamLength = (pillarLateralOffset * 2) + 2.0; // Scaled automatically (73 units)
+    const beamLength = (pillarLateralOffset * 2) + 2.0;
     const crossBar = new THREE.Mesh(new THREE.BoxGeometry(beamLength, 4.5, 5), checkerMat);
     crossBar.position.set(0, 30, 0);
     archGroup.add(crossBar);
 
-    // Place exactly at starting point (u=0)
     const startPos = trackCurve.getPointAt(0);
     archGroup.position.copy(startPos);
-    
-    // Rotate to match track direction
     const tangent = trackCurve.getTangentAt(0).normalize();
     const angle = Math.atan2(tangent.x, tangent.z);
     archGroup.rotation.y = angle;
@@ -1304,38 +1341,25 @@ function buildFinishLineArch() {
     scene.add(finishLineArch);
 }
 
-// --- PROCEDURAL GENERATION OF OASIS WATER LAKES ---
 function buildOasisLakes() {
     if (waterGroup) scene.remove(waterGroup);
     waterGroup = new THREE.Group();
     scene.add(waterGroup);
 
-    // Dynamic, shimmering, semi-transparent blue water meshes for submerged track sections (Screenshot 2026-06-04 at 01.45.14.png)
-    const waterMat = new THREE.MeshStandardMaterial({
-        color: 0x0088ff,
-        roughness: 0.05,
-        metalness: 0.2,
-        transparent: true,
-        opacity: 0.72,
-        depthWrite: false
-    });
-
+    const waterMat = new THREE.MeshStandardMaterial({ color: 0x0088ff, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.72, depthWrite: false });
     if (currentLevel === 2) {
-        // Main valley lake covering the central bottom coordinates
         const lakeGeo1 = new THREE.RingGeometry(0, 480, 32);
         const lake1 = new THREE.Mesh(lakeGeo1, waterMat);
         lake1.rotation.x = -Math.PI / 2;
-        lake1.position.set(120, 0.12, -40); // Lowered visual level to avoid drowning loop
+        lake1.position.set(120, 0.12, -40);
         waterGroup.add(lake1);
 
-        // Secondary small water pocket on the finish loop corridor
         const lakeGeo2 = new THREE.RingGeometry(0, 220, 32);
         const lake2 = new THREE.Mesh(lakeGeo2, waterMat);
         lake2.rotation.x = -Math.PI / 2;
         lake2.position.set(-80, 0.12, -280); 
         waterGroup.add(lake2);
     } else {
-        // Minor decorative oasis for Level 1 to keep visual thematic styling matching perfectly
         const lakeGeo1 = new THREE.RingGeometry(0, 250, 24);
         const lake1 = new THREE.Mesh(lakeGeo1, waterMat);
         lake1.rotation.x = -Math.PI / 2;
@@ -1344,20 +1368,13 @@ function buildOasisLakes() {
     }
 }
 
-// --- SCATTER ENVIRONMENT (CACTI & DUNES) ---
 function scatterEnvironment() {
-    // Clear out preexisting scene elements when changing levels
     environmentObjects.forEach(obj => scene.remove(obj));
     environmentObjects = [];
 
-    // 1. Far Dunes / Mountains (Strictly isolated from track speedway corridor)
     const duneGeo = new THREE.SphereGeometry(100, 10, 10);
     duneGeo.scale(2.2, 0.4, 1.1);
-    const duneMat = new THREE.MeshStandardMaterial({
-        color: 0xce8334, 
-        roughness: 1.0,
-        flatShading: true
-    });
+    const duneMat = new THREE.MeshStandardMaterial({ color: 0xce8334, roughness: 1.0, flatShading: true });
 
     for (let i = 0; i < 75; i++) {
         const angle = Math.random() * Math.PI * 2;
@@ -1366,7 +1383,6 @@ function scatterEnvironment() {
         const z = Math.sin(angle) * radius;
         const tempPos = new THREE.Vector3(x, 0, z);
 
-        // Keep dunes completely clear of the track corridor (at least 280 units away horizontally)
         if (getMinDistanceToTrack(tempPos) > 280) {
             const dune = new THREE.Mesh(duneGeo, duneMat);
             dune.position.set(x, -5, z);
@@ -1376,7 +1392,6 @@ function scatterEnvironment() {
         }
     }
 
-    // 2. Custom 3D Desert Cacti
     function buildCactusMesh() {
         const cactus = new THREE.Group();
         const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3d662f, roughness: 0.95 });
@@ -1413,16 +1428,13 @@ function scatterEnvironment() {
 
     const cachedCactusGeometry = buildCactusMesh();
 
-    // Scatter cacti alongside the track as beautiful off-road decorations
     for (let i = 0; i < 250; i++) {
         const angle = Math.random() * Math.PI * 2;
         const radius = 100 + Math.random() * 1100;
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
         const tempPos = new THREE.Vector3(x, 0, z);
-
         const dist = getMinDistanceToTrack(tempPos);
-        // Clean off-road clearance
         if (dist > (trackWidth / 2 + 10) && dist < 1000) {
             const cactusInstance = cachedCactusGeometry.clone();
             cactusInstance.position.set(x, 0, z);
@@ -1436,26 +1448,21 @@ function scatterEnvironment() {
 </script>
 
 <script>
-// --- TIGER SHARK CUSTOM CHASSIS MODEL (Vibrant Light Sky Blue with Orange Tiger Stripes, Tapered Snout, & Aerodynamic Fin) ---
 function buildTigerSharkChassis() {
     const tsGroup = new THREE.Group();
-    
-    // Vibrant light sky blue color matching the real truck (from image_393728.png)
     const sharkBlueMat = new THREE.MeshStandardMaterial({ color: 0x0099ff, roughness: 0.35, metalness: 0.1 }); 
-    const orangeMat = new THREE.MeshStandardMaterial({ color: 0xff5500, roughness: 0.4, metalness: 0.1 }); // Popping Orange stripes
-    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0.0 });  // Teeth & eye whites
-    const redMat = new THREE.MeshStandardMaterial({ color: 0xff1100, roughness: 0.5, metalness: 0.0 });    // Mouth background
-    const blackMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.1 });  // Windshield & pupils
+    const orangeMat = new THREE.MeshStandardMaterial({ color: 0xff5500, roughness: 0.4, metalness: 0.1 }); 
+    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0.0 });  
+    const redMat = new THREE.MeshStandardMaterial({ color: 0xff1100, roughness: 0.5, metalness: 0.0 });    
+    const blackMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.1 });  
 
-    // Streamlined shark cabin (Slightly tapered rearwards for an organic muscle look)
     const bodyGeo = new THREE.BoxGeometry(3.3, 1.2, 5.5);
     const bodyPos = bodyGeo.attributes.position;
     for (let i = 0; i < bodyPos.count; i++) {
-        const z = bodyPos.getZ(i); // +z is front, -z is back
+        const z = bodyPos.getZ(i);
         const x = bodyPos.getX(i);
         const y = bodyPos.getY(i);
-        
-        if (z < 0) { // Tapering rearward X & Y
+        if (z < 0) {
             const taper = 1.0 + (z / 5.5) * 0.55; 
             bodyPos.setX(i, x * taper);
             bodyPos.setY(i, y * taper);
@@ -1469,14 +1476,13 @@ function buildTigerSharkChassis() {
     bodyMain.castShadow = true;
     tsGroup.add(bodyMain);
 
-    // Highly stylized tapered snout tip (Nose narrows aggressively at the front like image_393728.png)
     const noseGeo = new THREE.BoxGeometry(3.3, 0.8, 2.2);
     const nosePos = noseGeo.attributes.position;
     for (let i = 0; i < nosePos.count; i++) {
         const z = nosePos.getZ(i);
         const x = nosePos.getX(i);
         const y = nosePos.getY(i);
-        if (z > 0) { // Nose tip narrows and slopes down
+        if (z > 0) {
             nosePos.setX(i, x * 0.42); 
             nosePos.setY(i, y * 0.70); 
         }
@@ -1489,14 +1495,13 @@ function buildTigerSharkChassis() {
     nose.castShadow = true;
     tsGroup.add(nose);
 
-    // Streamlined Glass Cabin (Tapered fastback rear)
     const cabinGeo = new THREE.BoxGeometry(2.5, 0.9, 3.0);
     const cabinPos = cabinGeo.attributes.position;
     for (let i = 0; i < cabinPos.count; i++) {
         const z = cabinPos.getZ(i);
         const x = cabinPos.getX(i);
         const y = cabinPos.getY(i);
-        if (z < 0) { // Slanted cabin fastback
+        if (z < 0) {
             const taper = 1.0 + (z / 3.0) * 0.55;
             cabinPos.setX(i, x * taper);
             cabinPos.setY(i, y * taper);
@@ -1509,16 +1514,13 @@ function buildTigerSharkChassis() {
     cabin.position.set(0, 1.9, -1.0);
     tsGroup.add(cabin);
 
-    // 1. Orange Shark Side Stripes (Slanted tiger markings wrapping sides)
     for (let i = 0; i < 4; i++) {
-        // Left side stripes
         const leftStripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 0.35), orangeMat);
         leftStripe.position.set(-1.66, 1.1, -2.2 + i * 1.1);
         leftStripe.rotation.z = 0.45; 
         leftStripe.rotation.y = 0.1;
         tsGroup.add(leftStripe);
 
-        // Right side stripes
         const rightStripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 0.35), orangeMat);
         rightStripe.position.set(1.66, 1.1, -2.2 + i * 1.1);
         rightStripe.rotation.z = -0.45;
@@ -1526,34 +1528,31 @@ function buildTigerSharkChassis() {
         tsGroup.add(rightStripe);
     }
 
-    // 2. Aerodynamic Dorsal Shark Fin (Curved front edge facing +Z, trailing back edge sloping backwards & concave)
     const finShape = new THREE.Shape();
-    finShape.moveTo(1.2, 0); // Front base
-    finShape.quadraticCurveTo(0.8, 1.2, -0.2, 1.35); // aerodynamic front slanting up to apex (shallower!)
-    finShape.quadraticCurveTo(-0.4, 0.4, -1.4, 0); // Trailing edge swoops inward (concave) down to base
+    finShape.moveTo(1.2, 0);
+    finShape.quadraticCurveTo(0.8, 1.2, -0.2, 1.35);
+    finShape.quadraticCurveTo(-0.4, 0.4, -1.4, 0);
     finShape.lineTo(1.2, 0);
 
     const extrudeSettings = { depth: 0.35, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.1, bevelThickness: 0.1 };
     const finGeo = new THREE.ExtrudeGeometry(finShape, extrudeSettings);
     finGeo.center();
     const finMesh = new THREE.Mesh(finGeo, sharkBlueMat);
-    finMesh.rotation.y = Math.PI / 2; // Orient forward
+    finMesh.rotation.y = Math.PI / 2;
     finMesh.position.set(0, 2.6, -1.0);
     finMesh.castShadow = true;
     tsGroup.add(finMesh);
 
-    // 3. Highly stylized muscular caudal segment tail (Procedural vertebrae sway muscles)
     const tailGroup = new THREE.Group();
     for (let i = 0; i < 3; i++) {
         const segScale = 1.0 - i * 0.22;
         const segGeo = new THREE.SphereGeometry(0.55 * segScale, 8, 8);
-        segGeo.scale(1.0, 1.25, 1.6); // Sleek muscular profile
+        segGeo.scale(1.0, 1.25, 1.6);
         const seg = new THREE.Mesh(segGeo, sharkBlueMat);
         seg.position.set(0, 0, -i * 0.9);
         tailGroup.add(seg);
     }
     
-    // Large caudal fin (vertical)
     const caudalFinShape = new THREE.Shape();
     caudalFinShape.moveTo(0, 0);
     caudalFinShape.quadraticCurveTo(0.6, 1.2, 1.2, 1.5);
@@ -1566,12 +1565,10 @@ function buildTigerSharkChassis() {
     finCaudal.position.set(0, 0, -2.6);
     tailGroup.add(finCaudal);
 
-    // Attach tail to rear of Tiger Shark
     tailGroup.position.set(0, 1.0, -3.25);
     tsGroup.add(tailGroup);
-    car.tailMesh = tailGroup; // Keep global reference for runtime water updates
+    car.tailMesh = tailGroup;
 
-    // 4. Predator Eyes on sides of cabin (Sleeker, smaller mean eyes)
     const eyeWhiteGeo = new THREE.SphereGeometry(0.24, 8, 8);
     const eyePupilGeo = new THREE.SphereGeometry(0.12, 8, 8);
 
@@ -1589,14 +1586,12 @@ function buildTigerSharkChassis() {
     tsGroup.add(eyeR);
     tsGroup.add(pupilR);
 
-    // 5. Toothy Shark Mouth on the front bumper (Menacingly larger teeth!)
     const mouthBase = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.45, 0.2), redMat);
     mouthBase.position.set(0, 0.55, 3.72);
     tsGroup.add(mouthBase);
 
-    // Individual teeth mapping (Sharp cones pointing down)
     const toothGeo = new THREE.ConeGeometry(0.25, 0.45, 4);
-    toothGeo.rotateX(Math.PI); // Point down for upper teeth
+    toothGeo.rotateX(Math.PI);
 
     for (let x = -5; x <= 5; x++) {
         if (x === 0) continue;
@@ -1605,7 +1600,6 @@ function buildTigerSharkChassis() {
         tsGroup.add(tooth);
     }
     
-    // Lower teeth pointing upwards
     const bottomToothGeo = new THREE.ConeGeometry(0.20, 0.38, 4);
     for (let x = -4; x <= 4; x++) {
         if (x === 0) continue;
@@ -1613,64 +1607,48 @@ function buildTigerSharkChassis() {
         tooth.position.set(x * 0.3, 0.42, 3.78);
         tsGroup.add(tooth);
     }
-
     return tsGroup;
 }
 
-// --- SKELESAURUS CUSTOM AI CHASSIS MODEL ---
 function buildSkelesaurusChassis() {
     const ssGroup = new THREE.Group();
+    const purpleMat = new THREE.MeshStandardMaterial({ color: 0x6a0dad, roughness: 0.4, metalness: 0.1 }); 
+    const boneMat = new THREE.MeshStandardMaterial({ color: 0x39ff14, roughness: 0.5, metalness: 0.0, emissive: 0x22aa05, emissiveIntensity: 0.65 }); 
+    const redEyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 }); 
 
-    const purpleMat = new THREE.MeshStandardMaterial({ color: 0x6a0dad, roughness: 0.4, metalness: 0.1 }); // Brighter purple body
-    // Glow-in-the-dark radioactive skeletal green
-    const boneMat = new THREE.MeshStandardMaterial({ 
-        color: 0x39ff14, 
-        roughness: 0.5, 
-        metalness: 0.0,
-        emissive: 0x22aa05,
-        emissiveIntensity: 0.65
-    }); 
-    const redEyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Glowing red skeletal eyes
-
-    // Base purple cabin
     const baseChassis = new THREE.Mesh(new THREE.BoxGeometry(3.3, 1.1, 5.5), purpleMat);
     baseChassis.position.set(0, 1.0, -0.6);
     baseChassis.castShadow = true;
     ssGroup.add(baseChassis);
 
-    // Slope nose
     const noseGeo = new THREE.BoxGeometry(3.3, 0.5, 2.2);
     const nose = new THREE.Mesh(noseGeo, purpleMat);
     nose.position.set(0, 0.7, 2.65);
     ssGroup.add(nose);
 
-    // 1. Ribcage spine assembly (Green cylinders wrapping around the purple body)
     const spineColumn = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 5.8, 8), boneMat);
     spineColumn.rotation.x = Math.PI / 2;
     spineColumn.position.set(0, 1.8, -0.6);
     ssGroup.add(spineColumn);
 
-    const ribGeo = new THREE.TorusGeometry(1.8, 0.15, 6, 12, Math.PI); // Half arc ribs
+    const ribGeo = new THREE.TorusGeometry(1.8, 0.15, 6, 12, Math.PI);
     for (let i = 0; i < 5; i++) {
         const rib = new THREE.Mesh(ribGeo, boneMat);
         rib.rotation.y = Math.PI / 2;
-        rib.rotation.z = Math.PI; // Invert arc down
+        rib.rotation.z = Math.PI; 
         rib.position.set(0, 1.2, -3.0 + i * 1.3);
         ssGroup.add(rib);
     }
 
-    // 2. Dragon Skull (Bone skull structure mounted on the hood)
     const skullGroup = new THREE.Group();
     const mainSkull = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.0, 2.5), boneMat);
     mainSkull.position.set(0, 1.1, 2.5);
     skullGroup.add(mainSkull);
 
-    // Angled jaws
     const upperJaw = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.5, 1.5), boneMat);
     upperJaw.position.set(0, 0.85, 3.8);
     skullGroup.add(upperJaw);
 
-    // Red Glowing Eyes
     const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.25, 6, 6), redEyeMat);
     leftEye.position.set(-0.85, 1.1, 3.2);
     const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.25, 6, 6), redEyeMat);
@@ -1678,9 +1656,8 @@ function buildSkelesaurusChassis() {
     skullGroup.add(leftEye);
     skullGroup.add(rightEye);
 
-    // Dragon Horns
     const hornGeo = new THREE.ConeGeometry(0.25, 1.6, 6);
-    hornGeo.rotateX(-0.5); // Tilt horns backward
+    hornGeo.rotateX(-0.5);
 
     const hornL = new THREE.Mesh(hornGeo, boneMat);
     hornL.position.set(-0.85, 1.9, 1.8);
@@ -1691,20 +1668,16 @@ function buildSkelesaurusChassis() {
 
     ssGroup.add(skullGroup);
 
-    // 3. Spiked segment dragon tail on the rear bumper
     const tailGroup = new THREE.Group();
     const tailSegCount = 5;
     for (let i = 0; i < tailSegCount; i++) {
         const size = 0.9 - i * 0.15;
         const seg = new THREE.Mesh(new THREE.SphereGeometry(size, 8, 8), boneMat);
-        
-        // Curve tail gradually upwards and backwards
         const sZ = -3.8 - i * 1.0;
         const sY = 0.8 + Math.sin(i * 0.6) * 1.2;
         seg.position.set(0, sY, sZ);
         tailGroup.add(seg);
 
-        // Spine tail horn
         const tailSpike = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.8, 5), boneMat);
         tailSpike.position.set(0, sY + size + 0.3, sZ);
         tailGroup.add(tailSpike);
@@ -1714,31 +1687,25 @@ function buildSkelesaurusChassis() {
     return ssGroup;
 }
 
-// --- MASTER CAR ASSEMBLY ---
 function buildCars() {
-    // 1. Build Player's Tiger Shark
     if (car.mesh) scene.remove(car.mesh);
-
     car.mesh = new THREE.Group();
     car.mesh.rotation.reorder('YXZ');
     car.bodyMesh = new THREE.Group();
     car.mesh.add(car.bodyMesh);
 
-    // Lower base frame
     const baseplateMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.8 });
     const baseplate = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.6, 7.2), baseplateMat);
     baseplate.position.y = 0.5;
     car.bodyMesh.add(baseplate);
 
-    // Add Tiger Shark custom panels
     const tsChassis = buildTigerSharkChassis();
     car.bodyMesh.add(tsChassis);
 
-    // Wheels setup (Custom orange rims with black knobby tires)
     const wheelGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.7, 12);
     wheelGeo.rotateZ(Math.PI / 2);
     const tireMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
-    const rimMat = new THREE.MeshStandardMaterial({ color: 0xff4c00, metalness: 0.1, roughness: 0.4 }); // Matched bright orange
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0xff4c00, metalness: 0.1, roughness: 0.4 });
 
     car.wheels = [];
     const createPlayerWheel = (x, y, z) => {
@@ -1746,12 +1713,10 @@ function buildCars() {
         const tire = new THREE.Mesh(wheelGeo, tireMat);
         tire.castShadow = true;
         wGroup.add(tire);
-
         const rimGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.75, 10);
         rimGeo.rotateZ(Math.PI / 2);
         const rim = new THREE.Mesh(rimGeo, rimMat);
         wGroup.add(rim);
-
         wGroup.position.set(x, y, z);
         car.mesh.add(wGroup); 
         car.wheels.push(wGroup);
@@ -1763,7 +1728,6 @@ function buildCars() {
     createPlayerWheel(1.9, 0.8, -2.0);
 
     const startPoint = trackCurve.getPointAt(0);
-    // Align starting positioning slightly left to avoid exact collision spawning
     const startOffset = gameMode === 'SCALEXTRIC' ? -2.2 : -4.0;
     car.position.copy(startPoint).add(new THREE.Vector3(startOffset, 0.9, 0));
     car.mesh.position.copy(car.position);
@@ -1771,42 +1735,32 @@ function buildCars() {
     const tangent = trackCurve.getTangentAt(0).normalize();
     car.heading = Math.atan2(tangent.x, tangent.z);
     car.mesh.rotation.y = car.heading;
-
     scene.add(car.mesh);
 
-
-    // 2. Build Opponent AI's Skelesaurus
     if (aiCar.mesh) scene.remove(aiCar.mesh);
-
     aiCar.mesh = new THREE.Group();
     aiCar.mesh.rotation.reorder('YXZ');
     aiCar.bodyMesh = new THREE.Group();
     aiCar.mesh.add(aiCar.bodyMesh);
 
-    // Lower base frame
     const aiBaseplate = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.6, 7.2), baseplateMat);
     aiBaseplate.position.y = 0.5;
     aiCar.bodyMesh.add(aiBaseplate);
 
-    // Add Skelesaurus skeletal panels
     const ssChassis = buildSkelesaurusChassis();
     aiCar.bodyMesh.add(ssChassis);
 
-    // AI Wheels setup (Lime-green rims with knobby black tires)
     const aiRimMat = new THREE.MeshStandardMaterial({ color: 0x39ff14, metalness: 0.1, roughness: 0.4 });
-
     aiCar.wheels = [];
     const createAiWheel = (x, y, z) => {
         const wGroup = new THREE.Group();
         const tire = new THREE.Mesh(wheelGeo, tireMat);
         tire.castShadow = true;
         wGroup.add(tire);
-
         const rimGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.75, 10);
         rimGeo.rotateZ(Math.PI / 2);
         const rim = new THREE.Mesh(rimGeo, aiRimMat);
         wGroup.add(rim);
-
         wGroup.position.set(x, y, z);
         aiCar.mesh.add(wGroup);
         aiCar.wheels.push(wGroup);
@@ -1817,14 +1771,12 @@ function buildCars() {
     createAiWheel(-1.9, 0.8, -2.0);
     createAiWheel(1.9, 0.8, -2.0);
 
-    // Place AI slightly right of start point
     const aiStartOffset = gameMode === 'SCALEXTRIC' ? 2.2 : 4.0;
     aiCar.position.copy(startPoint).add(new THREE.Vector3(aiStartOffset, 0.9, 0));
     aiCar.mesh.position.copy(aiCar.position);
     aiCar.heading = car.heading;
     aiCar.mesh.rotation.y = aiCar.heading;
 
-    // AI only gets appended to scene based on game mode state
     if (gameMode === 'VS_AI' || gameMode === 'SCALEXTRIC') {
         scene.add(aiCar.mesh);
     } else {
@@ -1834,7 +1786,6 @@ function buildCars() {
 </script>
 
 <script>
-// --- MINIMAP STATIC CALCULATIONS ---
 function initMinimapBounds() {
     sampledCurvePoints.forEach(pt => {
         if (pt.x < minimapBounds.minX) minimapBounds.minX = pt.x;
@@ -1844,27 +1795,19 @@ function initMinimapBounds() {
     });
 }
 
-// Draw live miniature tracking canvas
 function drawMinimap() {
     if (minimapBounds.minX === Infinity) return;
-    
     minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
-    
     const w = minimapCanvas.width;
     const h = minimapCanvas.height;
-    const pad = 12; // margins inside 2D box
-    
+    const pad = 12;
     const trackW = minimapBounds.maxX - minimapBounds.minX;
     const trackH = minimapBounds.maxZ - minimapBounds.minZ;
-    
-    // Scale preserving aspect ratios perfectly
     const scale = Math.min((w - pad * 2) / trackW, (h - pad * 2) / trackH);
-    
     const mapX = (x) => pad + (x - minimapBounds.minX) * scale;
     const mapY = (z) => pad + (z - minimapBounds.minZ) * scale;
     
-    // 1. Draw glowing background track path
-    minimapCtx.strokeStyle = 'rgba(255, 76, 0, 0.35)'; // Classic Orange track glow
+    minimapCtx.strokeStyle = 'rgba(255, 76, 0, 0.35)';
     minimapCtx.lineWidth = 6;
     minimapCtx.lineCap = 'round';
     minimapCtx.lineJoin = 'round';
@@ -1876,7 +1819,6 @@ function drawMinimap() {
     minimapCtx.closePath();
     minimapCtx.stroke();
     
-    // Inner cyan neon guide lines
     minimapCtx.strokeStyle = '#00f2ff';
     minimapCtx.lineWidth = 1.5;
     minimapCtx.beginPath();
@@ -1887,11 +1829,9 @@ function drawMinimap() {
     minimapCtx.closePath();
     minimapCtx.stroke();
     
-    // 2. Draw Start/Finish line checkered notch
     const startPt = sampledCurvePoints[0];
     const startX = mapX(startPt.x);
     const startY = mapY(startPt.z);
-    
     minimapCtx.fillStyle = '#ffffff';
     minimapCtx.beginPath();
     minimapCtx.arc(startX, startY, 4.5, 0, Math.PI * 2);
@@ -1900,21 +1840,17 @@ function drawMinimap() {
     minimapCtx.lineWidth = 1.2;
     minimapCtx.stroke();
     
-    // 3. Draw Player Glowing Beacon dot
     if (car.mesh) {
         const px = mapX(car.position.x);
         const py = mapY(car.position.z);
-        
-        // Pulsing circular ring
         const pulseSize = 5.5 + Math.sin(Date.now() * 0.015) * 1.8;
         minimapCtx.fillStyle = 'rgba(0, 240, 255, 0.38)';
         minimapCtx.beginPath();
         minimapCtx.arc(px, py, pulseSize + 3, 0, Math.PI * 2);
         minimapCtx.fill();
         
-        // White core with neon border
         minimapCtx.fillStyle = '#ffffff';
-        minimapCtx.strokeStyle = '#ff3c00'; // Hot red pointer border
+        minimapCtx.strokeStyle = '#ff3c00'; 
         minimapCtx.lineWidth = 2.0;
         minimapCtx.beginPath();
         minimapCtx.arc(px, py, 4.0, 0, Math.PI * 2);
@@ -1922,17 +1858,14 @@ function drawMinimap() {
         minimapCtx.stroke();
     }
 
-    // 4. Draw AI Opponent beacon if enabled
     if ((gameMode === 'VS_AI' || gameMode === 'SCALEXTRIC') && aiCar.mesh) {
         const ax = mapX(aiCar.position.x);
         const ay = mapY(aiCar.position.z);
-
         minimapCtx.fillStyle = 'rgba(57, 255, 20, 0.3)';
         minimapCtx.beginPath();
         minimapCtx.arc(ax, ay, 7.0, 0, Math.PI * 2);
         minimapCtx.fill();
-
-        minimapCtx.fillStyle = '#39ff14'; // Acid neon green dot
+        minimapCtx.fillStyle = '#39ff14'; 
         minimapCtx.strokeStyle = '#000';
         minimapCtx.lineWidth = 1.2;
         minimapCtx.beginPath();
@@ -1942,7 +1875,6 @@ function drawMinimap() {
     }
 }
 
-// --- HUD LEVEL SWAPPING INTERFACE ---
 function toggleLevel() {
     startAudioEngine();
     const targetLvl = currentLevel === 1 ? 2 : 1;
@@ -1951,34 +1883,20 @@ function toggleLevel() {
 
 function loadLevel(levelNum) {
     currentLevel = levelNum;
-    
-    // Reconfigure Splines
     trackCurve = new THREE.CatmullRomCurve3(levelConfigs[currentLevel].points, true);
     sampledCurvePoints = trackCurve.getSpacedPoints(curvePointsCount);
-    
-    // Re-calculate visual boundaries
     minimapBounds = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
     initMinimapBounds();
     
-    // Rebuild track mesh elements, scenery, water, and vehicle placements
     buildTrack();
     buildFinishLineArch();
     buildOasisLakes();
     scatterEnvironment();
     buildCars();
     
-    // Dynamic default grip selector mapping (Track 1 = Level 3, Track 2 = Level 5)
-    if (currentLevel === 1) {
-        gripLevel = 3; // 85
-    } else {
-        gripLevel = 5; // 95
-    }
-    adjustGripLevel(0); // Set defaults onto UI
-
-    // Synchronize HUD updates
+    if (currentLevel === 1) { gripLevel = 3; } else { gripLevel = 5; }
+    adjustGripLevel(0);
     document.getElementById('level-ui').innerText = levelConfigs[currentLevel].name;
-    
-    // Restart countdown on track swap to avoid feeling rushed
     resetRace();
 }
 
@@ -1995,8 +1913,6 @@ function updateMobileControlsDisplay() {
 
 function toggleGameMode() {
     startAudioEngine();
-    
-    // Loop through Game Modes: Solo -> Vs AI -> Scalextric -> Solo
     if (gameMode === 'SOLO') {
         gameMode = 'VS_AI';
     } else if (gameMode === 'VS_AI') {
@@ -2009,13 +1925,12 @@ function toggleGameMode() {
     if (gameMode === 'VS_AI') modeText = "VS AI";
     if (gameMode === 'SCALEXTRIC') modeText = "SCALEXTRIC";
     
-    document.getElementById('mode-ui').innerText = modeText;
+    document.getElementById('mode-setting-btn').innerText = modeText;
     updateMobileControlsDisplay();
 
-    // Toggle the display of the Grip Limit adjuster dynamically
-    document.getElementById('grip-card').style.display = (gameMode === 'SCALEXTRIC') ? 'flex' : 'none';
+    document.getElementById('slot-meter-container').style.display = (gameMode === 'SCALEXTRIC') ? 'block' : 'none';
+    document.getElementById('grip-setting-row').style.display = (gameMode === 'SCALEXTRIC') ? 'flex' : 'none';
 
-    // Redraw track slot lines dynamically based on mode!
     buildTrack();
     buildCars();
 
@@ -2024,21 +1939,19 @@ function toggleGameMode() {
     } else {
         scene.remove(aiCar.mesh);
     }
-
-    // Restart countdown on mode swap to avoid feeling rushed
     resetRace();
 }
 </script>
 
 <script>
-// --- HANDLERS FOR DEVICE CONTROLS ---
 function setupInputs() {
     window.addEventListener('keydown', (e) => {
-        startAudioEngine(); // Unlock audio context safely
+        startAudioEngine(); 
         if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.ArrowUp = true;
         if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.ArrowDown = true;
         if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.ArrowLeft = true;
         if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.ArrowRight = true;
+        if (e.key === 'r' || e.key === 'R') { resetRace(); }
     });
 
     window.addEventListener('keyup', (e) => {
@@ -2048,25 +1961,15 @@ function setupInputs() {
         if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.ArrowRight = false;
     });
 
-    // Touch setup helper for mobile UI buttons
     function bindMobileTouch(elemId, actionKey) {
         const element = document.getElementById(elemId);
         if (!element) return;
-        
-        const startAction = (e) => {
-            e.preventDefault();
-            startAudioEngine(); // Unlock context safely
-            keys[actionKey] = true;
-        };
-        const endAction = (e) => {
-            e.preventDefault();
-            keys[actionKey] = false;
-        };
+        const startAction = (e) => { e.preventDefault(); startAudioEngine(); keys[actionKey] = true; };
+        const endAction = (e) => { e.preventDefault(); keys[actionKey] = false; };
 
         element.addEventListener('touchstart', startAction, {passive: false});
         element.addEventListener('touchend', endAction, {passive: false});
         element.addEventListener('touchcancel', endAction, {passive: false});
-
         element.addEventListener('mousedown', startAction);
         element.addEventListener('mouseup', endAction);
         element.addEventListener('mouseleave', endAction);
@@ -2084,7 +1987,6 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// --- GAME STATE TIMERS ---
 function triggerCountdown() {
     countdownOverlay.style.display = 'block';
     countdownVal = 3;
@@ -2094,30 +1996,107 @@ function triggerCountdown() {
         if (countdownVal > 0) {
             countdownOverlay.innerText = countdownVal;
             countdownOverlay.style.transform = 'translate(-50%, -50%) scale(1.4)';
-            soundManager.playBeep(false); // Quick tick chime
-            setTimeout(() => {
-                countdownOverlay.style.transform = 'translate(-50%, -50%) scale(1.0)';
-            }, 200);
+            soundManager.playBeep(false); 
+            setTimeout(() => { countdownOverlay.style.transform = 'translate(-50%, -50%) scale(1.0)'; }, 200);
             countdownVal--;
         } else if (countdownVal === 0) {
             countdownOverlay.innerText = "GO!";
             countdownOverlay.style.color = '#00ffff';
             countdownOverlay.style.transform = 'translate(-50%, -50%) scale(1.6)';
-            soundManager.playBeep(true); // Aggressive start chime
+            soundManager.playBeep(true); 
             gameState = 'RACING';
             timerStart = performance.now();
+            currentLapStartTime = timerStart;
             countdownVal--;
         } else {
             countdownOverlay.style.display = 'none';
             clearInterval(interval);
         }
-    }, 1000);
+    }, 1500); 
+}
+
+function handleRaceFinished() {
+    gameState = 'FINISHED';
+    const finalTimeStr = updateTimer();
+    finalTimeSpan.innerText = finalTimeStr;
+    
+    // Evaluate final standing based on whether the AI finished ahead of the player
+    const positionText = aiFinished ? "2nd Place" : "1st Place";
+    finalPlaceSpan.innerText = positionText;
+    
+    if (positionText === "1st Place") {
+        finalPlaceSpan.style.color = '#00ff6a';
+        finishTitle.innerText = "Victory!";
+    } else {
+        finalPlaceSpan.style.color = '#ff4c00';
+        finishTitle.innerText = "Race Complete!";
+    }
+
+    // Save and retrieve track personal record configurations (PR) via localStorage
+    const prStorageKey = `hotwheels_pr_track_${currentLevel}_mode_${gameMode}`;
+    let previousBest = localStorage.getItem(prStorageKey);
+    let isNewRecord = false;
+    
+    if (!previousBest || totalElapsed < parseFloat(previousBest)) {
+        localStorage.setItem(prStorageKey, totalElapsed.toString());
+        previousBest = totalElapsed.toString();
+        isNewRecord = true;
+    }
+    
+    // Format saved personal best time string
+    const pbFloatVal = parseFloat(previousBest);
+    const pbMins = Math.floor(pbFloatVal / 60000).toString().padStart(2, '0');
+    const pbSecs = Math.floor((pbFloatVal % 60000) / 1000).toString().padStart(2, '0');
+    const pbMs = Math.floor((pbFloatVal % 1000) / 10).toString().padStart(2, '0');
+    
+    document.getElementById('stat-pb').innerText = `${pbMins}:${pbSecs}.${pbMs}` + (isNewRecord ? " (NEW!)" : "");
+
+    // Compute fastest lap time
+    let fastestLapVal = Infinity;
+    for (let i = 0; i < lapTimes.length; i++) {
+        if (lapTimes[i] < fastestLapVal) fastestLapVal = lapTimes[i];
+    }
+    let fastestLapStr = "--:--.--";
+    if (fastestLapVal !== Infinity) {
+        const lMins = Math.floor(fastestLapVal / 60000).toString().padStart(2, '0');
+        const lSecs = Math.floor((fastestLapVal % 60000) / 1000).toString().padStart(2, '0');
+        const lMs = Math.floor((fastestLapVal % 1000) / 10).toString().padStart(2, '0');
+        fastestLapStr = `${lMins}:${lSecs}.${lMs}`;
+    }
+    document.getElementById('stat-fastest-lap').innerText = fastestLapStr;
+
+    // Compute max speed
+    let maxSpeedVal = 0;
+    for (let i = 0; i < raceSpeeds.length; i++) {
+        if (raceSpeeds[i] > maxSpeedVal) maxSpeedVal = raceSpeeds[i];
+    }
+    document.getElementById('stat-max-speed').innerText = Math.round(maxSpeedVal * 38);
+
+    // Compute average speed
+    let avgSpeedVal = 0;
+    if (raceSpeeds.length > 0) {
+        let sum = 0;
+        for (let i = 0; i < raceSpeeds.length; i++) sum += raceSpeeds[i];
+        avgSpeedVal = (sum / raceSpeeds.length) * 38;
+    }
+    document.getElementById('stat-avg-speed').innerText = Math.round(avgSpeedVal);
+
+    // Compute average G-Force represented as a safe percentage of the track gripLimit
+    let avgGVal = 0;
+    if (raceGForces.length > 0) {
+        let sum = 0;
+        for (let i = 0; i < raceGForces.length; i++) sum += raceGForces[i];
+        avgGVal = sum / raceGForces.length;
+    }
+    const gForcePercentage = Math.min(100, Math.round((avgGVal / gripLimit) * 100));
+    document.getElementById('stat-avg-g').innerText = `${gForcePercentage}%`;
+    
+    finishPanel.style.display = 'block';
+    soundManager.updateEngine(0, car.maxSpeedGovernor, true);
 }
 
 function resetRace() {
     const startPoint = trackCurve.getPointAt(0);
-    
-    // Position players based on slot mode or standard mode
     const startOffset = gameMode === 'SCALEXTRIC' ? -2.2 : -4.0;
     car.position.copy(startPoint).add(new THREE.Vector3(startOffset, 0.9, 0));
     car.mesh.position.copy(car.position);
@@ -2126,8 +2105,6 @@ function resetRace() {
     car.verticalVelocity = 0;
     car.isGrounded = true;
     steerDuration = 0;
-    
-    // Reset slot settings
     car.slotProgress = 0;
     car.centrifugalForce = 0;
     car.isRolledOver = false;
@@ -2138,7 +2115,6 @@ function resetRace() {
     car.mesh.rotation.set(0, car.heading, 0);
     car.bodyMesh.rotation.set(0,0,0);
 
-    // Reset AI position
     const aiStartOffset = gameMode === 'SCALEXTRIC' ? 2.2 : 4.0;
     aiCar.position.copy(startPoint).add(new THREE.Vector3(aiStartOffset, 0.9, 0));
     if (aiCar.mesh) {
@@ -2151,35 +2127,38 @@ function resetRace() {
     aiCar.verticalVelocity = 0;
     aiCar.isGrounded = true;
     aiCar.lastClosestIdx = -1;
-    
-    // FIX: ADDED AI LAP AND CHECKPOINT RESETS
     aiCar.lap = 1;                   
     aiCar.checkpointPassed = false;  
-
-    // Reset AI slot settings
     aiCar.slotProgress = 0;
     aiCar.centrifugalForce = 0;
     aiCar.isRolledOver = false;
     aiCar.rollOverTimer = 0;
 
     lap = 1;
-    lastClosestIdx = -1; // Force full scan on reset
+    lastClosestIdx = -1; 
     checkpointPassed = false;
     totalElapsed = 0;
     lastRacePos = 1;
 
-    // Reset HUD views
+    // Reset statistics buffers
+    raceSpeeds = [];
+    raceGForces = [];
+    lapTimes = [];
+    currentLapStartTime = 0;
+    aiFinished = false;
+    aiFinalTime = 0;
+
     lapUi.innerText = "1";
     speedUi.innerText = "0";
     timeUi.innerText = "00:00.00";
+    document.getElementById('lap-time-ui').innerText = "00:00.00";
     posUi.innerText = "1st";
     finishPanel.style.display = "none";
+    document.getElementById('settings-modal').style.display = 'none';
 
-    // Setup starting camera position directly behind vehicle on startup
     camera.position.copy(car.position).addScaledVector(startTangent, -16.5).add(new THREE.Vector3(0, 6.8, 0));
     camera.lookAt(car.position);
 
-    // Start Countdown sequence
     gameState = 'COUNTDOWN';
     triggerCountdown();
 }
@@ -2187,6 +2166,13 @@ function resetRace() {
 function updateTimer() {
     if (gameState === 'RACING') {
         totalElapsed = performance.now() - timerStart;
+        const lapElapsed = performance.now() - currentLapStartTime;
+        
+        // Format Live Lap Time UI Card
+        const lMins = Math.floor(lapElapsed / 60000).toString().padStart(2, '0');
+        const lSecs = Math.floor((lapElapsed % 60000) / 1000).toString().padStart(2, '0');
+        const lMs = Math.floor((lapElapsed % 1000) / 10).toString().padStart(2, '0');
+        document.getElementById('lap-time-ui').innerText = `${lMins}:${lSecs}.${lMs}`;
     }
     const mins = Math.floor(totalElapsed / 60000).toString().padStart(2, '0');
     const secs = Math.floor((totalElapsed % 60000) / 1000).toString().padStart(2, '0');
@@ -2197,11 +2183,9 @@ function updateTimer() {
 </script>
 
 <script>
-// --- CLAMP FUNCTION TO PREVENT CAMERA WALL CLIPPING ---
 function clampCameraToTrack(pos, maxLateral) {
     let minDist = Infinity;
     let closestIdx = lastClosestIdx === -1 ? 0 : lastClosestIdx;
-
     const searchRange = 60;
     const startSearch = closestIdx - searchRange;
     const endSearch = closestIdx + searchRange;
@@ -2209,26 +2193,21 @@ function clampCameraToTrack(pos, maxLateral) {
     for (let i = startSearch; i <= endSearch; i++) {
         const idx = (i + curvePointsCount) % curvePointsCount;
         const d = pos.distanceTo(sampledCurvePoints[idx]);
-        if (d < minDist) {
-            minDist = d;
-            closestIdx = idx;
+        if (d < minDist) { 
+            minDist = d; 
+            closestIdx = idx; 
         }
     }
 
     const ptOnSpline = sampledCurvePoints[closestIdx];
     const parameter = closestIdx / curvePointsCount;
     const tangent = trackCurve.getTangentAt(parameter).normalize();
-    
     const right = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
-    
-    // Incorporate local level banking rotation into camera boundary tracking checks
     const bankingAngle = getBankingAngle(parameter, currentLevel);
     const bankedRight = right.clone().applyAxisAngle(tangent, bankingAngle);
-    
     const vecToPos = new THREE.Vector3().subVectors(pos, ptOnSpline);
     const lateralDistance = vecToPos.dot(bankedRight);
 
-    // If camera sweeps past physical boundaries, softly slide it back inside
     if (Math.abs(lateralDistance) > maxLateral) {
         const boundarySign = Math.sign(lateralDistance);
         const penetration = Math.abs(lateralDistance) - maxLateral;
@@ -2236,103 +2215,80 @@ function clampCameraToTrack(pos, maxLateral) {
     }
 }
 
-// --- CAR-TO-CAR COLLISION RESOLUTION (Sandbox / Vs AI Modes Only) ---
 function handleVehiclesCollision() {
     if (gameMode !== 'VS_AI') return;
-
-    // 2D flat collision check (X-Z distance)
     const dx = car.position.x - aiCar.position.x;
     const dz = car.position.z - aiCar.position.z;
     const dist2D = Math.sqrt(dx * dx + dz * dz);
-    const colDistLimit = 5.2; // Maximum envelope overlap radius (length / width bounds)
+    const colDistLimit = 5.2;
 
     if (dist2D < colDistLimit && Math.abs(car.position.y - aiCar.position.y) < 3.0) {
         const normalX = dx / dist2D;
         const normalZ = dz / dist2D;
-
-        // Push vehicles apart to avoid clipping overlaps
         const pushFactor = (colDistLimit - dist2D) * 0.52;
         car.position.x += normalX * pushFactor;
         car.position.z += normalZ * pushFactor;
-
         aiCar.position.x -= normalX * pushFactor;
         aiCar.position.z -= normalZ * pushFactor;
 
-        // Reflect velocities along the collision vector (Impulse elastic bounce)
         const relVelX = car.velocity.x - aiCar.velocity.x;
         const relVelZ = car.velocity.z - aiCar.velocity.z;
-
         const normalDotVel = relVelX * normalX + relVelZ * normalZ;
 
         if (normalDotVel < 0) { 
             const bounceRestitution = 1.35; 
             const impulseStrength = -normalDotVel * bounceRestitution;
-
             car.velocity.x += normalX * impulseStrength * 0.5;
             car.velocity.z += normalZ * impulseStrength * 0.5;
-
             aiCar.velocity.x -= normalX * impulseStrength * 0.5;
             aiCar.velocity.z -= normalZ * impulseStrength * 0.5;
-
             car.speed *= 0.85;
             aiCar.speed *= 0.85;
         }
-
         soundManager.playBump(0.85);
 
         const midX = (car.position.x + aiCar.position.x) * 0.5;
         const midY = (car.position.y + aiCar.position.y) * 0.5;
         const midZ = (car.position.z + aiCar.position.z) * 0.5;
-
         for (let i = 0; i < 6; i++) {
-            spawnParticle(
-                midX + (Math.random() - 0.5) * 1.5,
-                midY + 0.5,
-                midZ + (Math.random() - 0.5) * 1.5,
-                (Math.random() - 0.5) * 0.5,
-                0.15 + Math.random() * 0.35,
-                (Math.random() - 0.5) * 0.5,
-                0xffff00, 
-                'spark',
-                12 + Math.floor(Math.random() * 8)
-            );
+            spawnParticle(midX + (Math.random() - 0.5) * 1.5, midY + 0.5, midZ + (Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 0.5, 0.15 + Math.random() * 0.35, (Math.random() - 0.5) * 0.5, 0xffff00, 'spark', 12 + Math.floor(Math.random() * 8));
         }
     }
 }
 </script>
 
 <script>
-// --- AI VEHICLE LOGIC ENGINE (SANDBOX & SCALEXTRIC COMPATIBLE) ---
 function updateAiPhysics() {
     if (gameMode === 'SOLO') return;
-
-    // CRITICAL FIX: Ensure AI strictly halts and does not start early during the countdown frame states!
     if (gameState === 'COUNTDOWN') {
         aiCar.speed = 0;
         aiCar.velocity.set(0, 0, 0);
         return;
     }
 
-    // --- CASE A: SCALEXTRIC SLOT MODE FOR AI OPPONENT ---
+    // Let the AI stop smoothly when it completes the race, allowing the player to continue
+    if (aiCar.lap > 3) {
+        if (!aiFinished) {
+            aiFinished = true;
+            aiFinalTime = performance.now() - timerStart;
+        }
+        aiCar.speed = THREE.MathUtils.lerp(aiCar.speed, 0, 0.05);
+    }
+
+    const currentAiMax = speedGovernorEnabled ? aiCar.maxSpeedGovernor : aiCar.maxSpeedUncapped;
+
     if (gameMode === 'SCALEXTRIC') {
         if (aiCar.isRolledOver) {
-            // Apply crash tumbling physics
-            aiCar.crashVelocity.y -= 0.025; // gravity pull
+            aiCar.crashVelocity.y -= 0.025;
             aiCar.mesh.position.add(aiCar.crashVelocity);
-            
-            // Tumble rot
             aiCar.mesh.rotation.x += 0.25;
             aiCar.mesh.rotation.y += 0.15;
             aiCar.mesh.rotation.z += 0.3;
-
-            // Spawn sparks & smoke
             if (Math.random() < 0.4) {
                 spawnParticle(aiCar.mesh.position.x, aiCar.mesh.position.y, aiCar.mesh.position.z, (Math.random() - 0.5)*0.5, 0.1, (Math.random() - 0.5)*0.5, 0xffaa00, 'smoke', 15);
             }
-
             aiCar.rollOverTimer--;
             if (aiCar.rollOverTimer <= 0) {
-                // Restore AI car back into guide slot
                 aiCar.isRolledOver = false;
                 aiCar.speed = 0;
                 aiCar.velocity.set(0,0,0);
@@ -2340,45 +2296,35 @@ function updateAiPhysics() {
             return;
         }
 
-        // 1. Calculate Curvature Ahead for Speed Regulation (Smooth wide-step lookahead)
-        const futureSteps = 0.03; // Sample slightly further ahead to smooth out spline noise
+        const futureSteps = 0.03;
         const currentT = trackCurve.getTangentAt(aiCar.slotProgress).normalize();
         const aheadT = trackCurve.getTangentAt((aiCar.slotProgress + futureSteps) % 1.0).normalize();
         const curvature = currentT.angleTo(aheadT) * curvatureScale; 
         
-        // 2. Drive speed heuristic targeting a safe force threshold dynamically locked to user's Grip Limit
-        // AI targets about 85% of the player's absolute physical deslot limit to keep the race clean and competitive
         const safetyFactor = 0.85;
         const safeSpeed = Math.sqrt((gripLimit * safetyFactor) / (Math.max(0.01, curvature)));
-        
-        // Introduce human-like error fluctuations (occasional minor throttle adjustments on twists)
         const noise = Math.sin(performance.now() * 0.0035) * 0.15;
-        let aiTargetSpeed = Math.min(aiCar.maxSpeed, safeSpeed) + noise;
+        let aiTargetSpeed = Math.min(currentAiMax, safeSpeed) + noise;
 
-        // Check water deceleration
         let inWater = false;
         if (currentLevel === 2) {
             const distToLake1 = aiCar.position.distanceTo(new THREE.Vector3(120, aiCar.position.y, -40));
             const distToLake2 = aiCar.position.distanceTo(new THREE.Vector3(-80, aiCar.position.y, -280));
-            if ((distToLake1 < 480 || distToLake2 < 220) && aiCar.position.y < 2.5) {
-                inWater = true;
-            }
+            if ((distToLake1 < 480 || distToLake2 < 220) && aiCar.position.y < 2.5) { inWater = true; }
         }
-        if (inWater) aiTargetSpeed *= 0.55;
+        
+        // No water speed capping for AI under No Speed Limit mode
+        if (inWater && speedGovernorEnabled) aiTargetSpeed *= 0.55;
 
-        // Accelerate or decelerate to match target speed
-        if (aiCar.speed < aiTargetSpeed) {
-            aiCar.speed += aiCar.accel * 0.75;
-        } else {
-            aiCar.speed -= aiCar.decel;
+        // Drive the slot car if not finished
+        if (aiCar.lap <= 3) {
+            if (aiCar.speed < aiTargetSpeed) { aiCar.speed += aiCar.accel * 0.75; } else { aiCar.speed -= aiCar.decel; }
         }
-        aiCar.speed = Math.max(0, Math.min(aiCar.maxSpeed, aiCar.speed));
+        aiCar.speed = Math.max(0, Math.min(currentAiMax, aiCar.speed));
 
-        // 3. Increment slot progress with checkpoint checks
-        if (aiCar.slotProgress > 0.45 && aiCar.slotProgress < 0.55) {
-            aiCar.checkpointPassed = true;
-        }
+        if (aiCar.slotProgress > 0.45 && aiCar.slotProgress < 0.55) { aiCar.checkpointPassed = true; }
         aiCar.slotProgress += (aiCar.speed * 0.0003);
+        
         if (aiCar.slotProgress >= 1.0) {
             aiCar.slotProgress -= 1.0;
             if (aiCar.checkpointPassed) {
@@ -2387,64 +2333,43 @@ function updateAiPhysics() {
             }
         }
 
-        // 4. Update coordinates snapping onto slot line
-        const currSlotPos = getSlotPosition(aiCar.slotProgress, 2.2); // Right slot rail
+        const currSlotPos = getSlotPosition(aiCar.slotProgress, 2.2);
         const aheadSlotPos = getSlotPosition((aiCar.slotProgress + 0.005) % 1.0, 2.2);
-        
         aiCar.position.copy(currSlotPos);
         aiCar.mesh.position.copy(aiCar.position);
-        
         aiCar.heading = Math.atan2(aheadSlotPos.x - currSlotPos.x, aheadSlotPos.z - currSlotPos.z);
         aiCar.mesh.rotation.y = aiCar.heading;
 
-        // Align pitch
         const tangent = trackCurve.getTangentAt(aiCar.slotProgress).normalize();
         aiCar.mesh.rotation.x = Math.asin(tangent.y);
-
-        // Apply visual banking roll
         const bankingAngle = getBankingAngle(aiCar.slotProgress, currentLevel);
         aiCar.mesh.rotation.z = bankingAngle;
 
-        // 5. Centrifugal slide visual offsets (yaw the body outward based on G-force)
         const targetAiForce = (aiCar.speed * aiCar.speed) * curvature;
-        // Temporal low-pass filter to smooth out sudden spline calculations
         aiCar.centrifugalForce = THREE.MathUtils.lerp(aiCar.centrifugalForce, targetAiForce, 0.1);
-        
         const crossY = currentT.x * aheadT.z - currentT.z * aheadT.x;
         const slideDirection = Math.sign(crossY);
-        // Cool centrifugal slide swing in curves
         const slideYaw = -slideDirection * Math.min(0.65, aiCar.centrifugalForce * 0.28);
         aiCar.bodyMesh.rotation.y = THREE.MathUtils.lerp(aiCar.bodyMesh.rotation.y, slideYaw, 0.1);
 
-        // Rotate tires
         aiCar.wheels.forEach(w => { w.rotation.x += aiCar.speed * 0.28; });
 
-        // Trigger Rollover Crash if force exceeds the shared gripLimit
         if (aiCar.centrifugalForce > gripLimit) {
             aiCar.isRolledOver = true;
-            aiCar.rollOverTimer = 90; // 1.5 second recovery penalty
-            
-            // Direct catapult vector outward matching tangent momentum
-            aiCar.crashVelocity.set(
-                Math.sin(aiCar.heading) * aiCar.speed * 0.45,
-                0.35 + Math.random() * 0.25,
-                Math.cos(aiCar.heading) * aiCar.speed * 0.45
-            );
+            aiCar.rollOverTimer = 90;
+            aiCar.crashVelocity.set(Math.sin(aiCar.heading) * aiCar.speed * 0.45, 0.35 + Math.random() * 0.25, Math.cos(aiCar.heading) * aiCar.speed * 0.45);
             aiCar.speed = 0;
             soundManager.playBump(1.0);
         }
         return;
     }
 
-
-    // --- CASE B: SANDBOX VS AI MODE ---
+    // Standard VS AI Sandbox Physics
     let minDist = Infinity;
     let closestIndex = 0;
-
     let startSearch, endSearch;
     if (aiCar.lastClosestIdx === -1) {
-        startSearch = 0;
-        endSearch = curvePointsCount - 1;
+        startSearch = 0; endSearch = curvePointsCount - 1;
     } else {
         const searchRange = 50;
         startSearch = aiCar.lastClosestIdx - searchRange;
@@ -2454,17 +2379,13 @@ function updateAiPhysics() {
     for (let i = startSearch; i <= endSearch; i++) {
         const idx = (i + curvePointsCount) % curvePointsCount;
         const d = aiCar.position.distanceTo(sampledCurvePoints[idx]);
-        if (d < minDist) {
-            minDist = d;
-            closestIndex = idx;
-        }
+        if (d < minDist) { minDist = d; closestIndex = idx; }
     }
     aiCar.lastClosestIdx = closestIndex;
 
     const lookAheadPoints = 25; 
     const targetNodeIdx = (closestIndex + lookAheadPoints) % curvePointsCount;
     const targetPoint = sampledCurvePoints[targetNodeIdx];
-
     const angleToTarget = Math.atan2(targetPoint.x - aiCar.position.x, targetPoint.z - aiCar.position.z);
     let angleDifference = angleToTarget - aiCar.heading;
 
@@ -2472,29 +2393,24 @@ function updateAiPhysics() {
     while (angleDifference > Math.PI) angleDifference -= Math.PI * 2;
 
     const steer = Math.max(-aiCar.steerSpeed, Math.min(aiCar.steerSpeed, angleDifference));
-    aiCar.heading += steer * (0.55 + (Math.abs(aiCar.speed) / aiCar.maxSpeed) * 0.45);
+    aiCar.heading += steer * (0.55 + (Math.abs(aiCar.speed) / currentAiMax) * 0.45);
 
     const turnSeverity = Math.abs(angleDifference);
-    let targetSpeed = aiCar.maxSpeed;
-    if (turnSeverity > 0.15) {
-        targetSpeed = aiCar.maxSpeed * (1.0 - Math.min(turnSeverity * 0.7, 0.55));
-    }
+    let targetSpeed = currentAiMax;
+    if (turnSeverity > 0.15) { targetSpeed = currentAiMax * (1.0 - Math.min(turnSeverity * 0.7, 0.55)); }
 
     let aiInWater = false;
     if (currentLevel === 2) {
         const distToLake1 = aiCar.position.distanceTo(new THREE.Vector3(120, aiCar.position.y, -40));
         const distToLake2 = aiCar.position.distanceTo(new THREE.Vector3(-80, aiCar.position.y, -280));
-        if ((distToLake1 < 480 || distToLake2 < 220) && aiCar.position.y < 2.5) {
-            aiInWater = true;
-        }
+        if ((distToLake1 < 480 || distToLake2 < 220) && aiCar.position.y < 2.5) { aiInWater = true; }
     }
+    
+    // No water speed capping for AI under No Speed Limit mode
+    if (aiInWater && speedGovernorEnabled) targetSpeed *= 0.5;
 
-    if (aiInWater) targetSpeed *= 0.5;
-
-    if (aiCar.speed < targetSpeed) {
-        aiCar.speed += aiCar.accel;
-    } else {
-        aiCar.speed -= aiCar.decel;
+    if (aiCar.lap <= 3) {
+        if (aiCar.speed < targetSpeed) { aiCar.speed += aiCar.accel; } else { aiCar.speed -= aiCar.decel; }
     }
     aiCar.speed *= aiCar.friction;
 
@@ -2507,17 +2423,13 @@ function updateAiPhysics() {
 
     const ptOnSpline = sampledCurvePoints[closestIndex];
     const trackHeight = ptOnSpline.y;
-
     const parameter = closestIndex / curvePointsCount;
     const tangent = trackCurve.getTangentAt(parameter).normalize();
     const right = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
-
     const bankingAngle = getBankingAngle(parameter, currentLevel);
     const bankedRight = right.clone().applyAxisAngle(tangent, bankingAngle);
-
     const vecToAi = new THREE.Vector3().subVectors(aiCar.position, ptOnSpline);
     const lateralDistance = vecToAi.dot(bankedRight);
-
     const targetY = trackHeight + 0.9 + bankedRight.y * lateralDistance;
 
     if (aiCar.isGrounded) {
@@ -2532,11 +2444,7 @@ function updateAiPhysics() {
     } else {
         aiCar.verticalVelocity -= 0.07;
         aiCar.position.y += aiCar.verticalVelocity;
-        if (aiCar.position.y <= targetY) {
-            aiCar.position.y = targetY;
-            aiCar.verticalVelocity = 0;
-            aiCar.isGrounded = true;
-        }
+        if (aiCar.position.y <= targetY) { aiCar.position.y = targetY; aiCar.verticalVelocity = 0; aiCar.isGrounded = true; }
     }
 
     if (aiCar.position.y < targetY) aiCar.position.y = targetY;
@@ -2545,7 +2453,6 @@ function updateAiPhysics() {
         const boundarySign = Math.sign(lateralDistance);
         const penetration = Math.abs(lateralDistance) - wallLimit;
         aiCar.position.addScaledVector(bankedRight, -boundarySign * penetration);
-
         const velocityProjectedOnNormal = aiCar.velocity.dot(bankedRight);
         if (velocityProjectedOnNormal * boundarySign > 0) {
             aiCar.velocity.addScaledVector(bankedRight, -velocityProjectedOnNormal * 1.45);
@@ -2554,7 +2461,6 @@ function updateAiPhysics() {
     }
 
     aiCar.mesh.position.copy(aiCar.position);
-
     let targetPitch = 0;
     if (aiCar.isGrounded) {
         const forward = new THREE.Vector3(Math.sin(aiCar.heading), 0, Math.cos(aiCar.heading)).normalize();
@@ -2565,18 +2471,25 @@ function updateAiPhysics() {
     aiCar.mesh.rotation.y = aiCar.heading;
     aiCar.mesh.rotation.z = THREE.MathUtils.lerp(aiCar.mesh.rotation.z, bankingAngle, 0.15);
 
-    const targetTilt = steer * (aiCar.speed / aiCar.maxSpeed) * 0.12;
+    const targetTilt = steer * (aiCar.speed / currentAiMax) * 0.12;
     aiCar.bodyMesh.rotation.z = THREE.MathUtils.lerp(aiCar.bodyMesh.rotation.z, targetTilt, 0.1);
-
-    const wheelRotScale = aiCar.speed * 0.28;
-    aiCar.wheels.forEach(w => { w.rotation.x += wheelRotScale; });
+    aiCar.wheels.forEach(w => { w.rotation.x += aiCar.speed * 0.28; });
 
     if (aiInWater && Math.random() < 0.4 && Math.abs(aiCar.speed) > 0.5) {
         const leftRearWorld = new THREE.Vector3(-1.9, 0.4, -2.0).applyMatrix4(aiCar.mesh.matrixWorld);
         const rightRearWorld = new THREE.Vector3(1.9, 0.4, -2.0).applyMatrix4(aiCar.mesh.matrixWorld);
-
         spawnParticle(leftRearWorld.x, leftRearWorld.y, leftRearWorld.z, (Math.random() - 0.5)*0.2, 0.15 + Math.random()*0.1, (Math.random() - 0.5)*0.2, 0x33b8ff, 'splash', 15);
         spawnParticle(rightRearWorld.x, rightRearWorld.y, rightRearWorld.z, (Math.random() - 0.5)*0.2, 0.15 + Math.random()*0.1, (Math.random() - 0.5)*0.2, 0x33b8ff, 'splash', 15);
+    }
+
+    const midPointIndex = Math.floor(curvePointsCount * 0.5);
+    const lapThresholdIndex = Math.floor(curvePointsCount * 0.9);
+    if (aiCar.lastClosestIdx > midPointIndex - 40 && aiCar.lastClosestIdx < midPointIndex + 40) { aiCar.checkpointPassed = true; }
+    if (closestIndex < Math.floor(curvePointsCount * 0.1) && aiCar.lastClosestIdx > lapThresholdIndex) {
+        if (aiCar.checkpointPassed) {
+            aiCar.lap++;
+            aiCar.checkpointPassed = false;
+        }
     }
 }
 </script>
@@ -2585,213 +2498,157 @@ function updateAiPhysics() {
 function updatePhysics() {
     let minDist = Infinity;
     let closestIndex = 0;
-
     let startSearch, endSearch;
     if (lastClosestIdx === -1) {
-        startSearch = 0;
-        endSearch = curvePointsCount - 1;
+        startSearch = 0; endSearch = curvePointsCount - 1;
     } else {
         const searchRange = 50;
         startSearch = lastClosestIdx - searchRange;
         endSearch = lastClosestIdx + searchRange;
     }
 
-    // Only update closestIndex based on real position if not rolled over! (Protects against crash projection snap errors)
     if (gameMode === 'SCALEXTRIC' && car.isRolledOver) {
         closestIndex = lastClosestIdx; 
     } else {
         for (let i = startSearch; i <= endSearch; i++) {
             const idx = (i + curvePointsCount) % curvePointsCount;
             const d = car.position.distanceTo(sampledCurvePoints[idx]);
-            if (d < minDist) {
-                minDist = d;
-                closestIndex = idx;
-            }
+            if (d < minDist) { minDist = d; closestIndex = idx; }
         }
     }
 
     if (gameState === 'COUNTDOWN') {
         lastClosestIdx = closestIndex;
-        soundManager.updateEngine(0, car.maxSpeed, true);
-        
-        // Ensure AI runs tracking even during countdown
+        soundManager.updateEngine(0, car.maxSpeedGovernor, true);
         updateAiPhysics();
         return;
     }
 
-    // Oasis water hazard coordinate boundary tracking
     let inWater = false;
     if (currentLevel === 2) {
         const distToLake1 = car.position.distanceTo(new THREE.Vector3(120, car.position.y, -40));
         const distToLake2 = car.position.distanceTo(new THREE.Vector3(-80, car.position.y, -280));
-        if ((distToLake1 < 480 || distToLake2 < 220) && car.position.y < 2.5) {
-            inWater = true;
-        }
+        if ((distToLake1 < 480 || distToLake2 < 220) && car.position.y < 2.5) { inWater = true; }
     }
 
-    // Flapping tail muscle animation when in contact with water (Vibe details)
     if (car.tailMesh) {
-        if (inWater) {
-            // Rapid energetic flapping in water
-            car.tailMesh.rotation.y = Math.sin(performance.now() * 0.03) * 0.5;
-        } else {
-            // Gentle muscular wag proportional to rolling velocity on land
-            car.tailMesh.rotation.y = Math.sin(performance.now() * 0.005) * 0.1 * Math.abs(car.speed);
-        }
+        if (inWater) { car.tailMesh.rotation.y = Math.sin(performance.now() * 0.03) * 0.5; } 
+        else { car.tailMesh.rotation.y = Math.sin(performance.now() * 0.005) * 0.1 * Math.abs(car.speed); }
     }
 
-    // Dynamic water drag variables
-    let maxAllowedSpeed = car.maxSpeed;
-    let driftFactor = 0.16; // Normal road grip traction
-    let tireParticleColor = 0xeeeeee; // Normal gray sand dust
+    let maxAllowedSpeed = speedGovernorEnabled ? car.maxSpeedGovernor : car.maxSpeedUncapped;
+    let driftFactor = 0.16; 
+    let tireParticleColor = 0xeeeeee; 
     let tireParticleType = 'smoke';
 
+    // Speed in water is NOT limited under No Speed Limit (Governor Disabled) mode!
     if (inWater) {
-        maxAllowedSpeed = 2.4; // Soft drag resistance slows the vehicle down
-        driftFactor = 0.035;   // Slippery hydroplaning! 
-        tireParticleColor = 0x33b8ff; // Bright blue water splashes!
+        if (speedGovernorEnabled) {
+            maxAllowedSpeed = 2.4; 
+        }
+        driftFactor = 0.035;   
+        tireParticleColor = 0x33b8ff; 
         tireParticleType = 'splash';
     }
 
+    // Track active speed & physical G forces for telemetry statistics
+    if (gameState === 'RACING') {
+        raceSpeeds.push(Math.abs(car.speed));
+        
+        let currentG = 0;
+        if (gameMode === 'SCALEXTRIC') {
+            currentG = car.centrifugalForce;
+        } else {
+            let turnScale = 0;
+            if (keys.ArrowLeft || keys.a || keys.A) turnScale = 1;
+            if (keys.ArrowRight || keys.d || keys.D) turnScale = -1;
+            currentG = Math.abs(turnScale) * Math.abs(car.speed) * 8.0;
+        }
+        raceGForces.push(currentG);
+    }
 
     // ==========================================
     // --- MODE 1: SCALEXTRIC SLOT CAR PHYSICS ---
     // ==========================================
     if (gameMode === 'SCALEXTRIC') {
-        const meterContainer = document.getElementById('slot-meter-container');
-        meterContainer.style.display = 'block';
-
         if (car.isRolledOver) {
-            // Decelerate and tumble through the air
-            car.crashVelocity.y -= 0.025; // Gravity pull
+            car.crashVelocity.y -= 0.025;
             car.mesh.position.add(car.crashVelocity);
-
-            // Spin chassis wildly
             car.mesh.rotation.x += 0.35;
             car.mesh.rotation.y += 0.2;
             car.mesh.rotation.z += 0.45;
-
-            // Sync G-force bar empty during rollover
             document.getElementById('slot-meter-fill').style.width = `0%`;
-
             car.rollOverTimer--;
             if (car.rollOverTimer <= 0) {
-                // Recover car back onto the rail slot
                 car.isRolledOver = false;
                 car.speed = 0;
                 car.velocity.set(0,0,0);
             }
-
-            // AI still runs alongside
             updateAiPhysics();
             return;
         }
 
-        // 1. Throttle Input Acceleration (Only Arrow Up or W drives the car)
         const gasPressed = (keys.ArrowUp || keys.w || keys.W);
-        if (gasPressed && gameState !== 'FINISHED') {
-            car.speed += car.accel * 0.85;
-        } else {
-            car.speed *= car.friction;
-        }
-
-        // Active braking if pressing Arrow Down
-        if ((keys.ArrowDown || keys.s || keys.S) && car.speed > 0) {
-            car.speed -= car.accel * 1.6;
-        }
-
+        if (gasPressed && gameState !== 'FINISHED') { car.speed += car.accel * 0.85; } else { car.speed *= car.friction; }
+        if ((keys.ArrowDown || keys.s || keys.S) && car.speed > 0) { car.speed -= car.accel * 1.6; }
         car.speed = Math.max(0, Math.min(maxAllowedSpeed, car.speed));
 
-        // 2. Increment spline slot progress with continuous checkpoint tracking
-        if (car.slotProgress > 0.45 && car.slotProgress < 0.55) {
-            checkpointPassed = true;
-        }
+        if (car.slotProgress > 0.45 && car.slotProgress < 0.55) { checkpointPassed = true; }
         car.slotProgress += (car.speed * 0.0003);
         if (car.slotProgress >= 1.0) {
             car.slotProgress -= 1.0;
             if (checkpointPassed) {
+                // Record completed Lap duration
+                const now = performance.now();
+                const finishedLapTime = now - currentLapStartTime;
+                lapTimes.push(finishedLapTime);
+                currentLapStartTime = now;
+
                 lap++;
                 checkpointPassed = false;
                 if (lap <= 3) {
                     lapUi.innerText = lap;
                     soundManager.playLapChime();
-                    // Play Triple Ding alert sequence on start of final lap (Lap 3)
-                    if (lap === 3) {
-                        soundManager.playLastLapDing();
-                    }
+                    if (lap === 3) { soundManager.playLastLapDing(); }
                 } else {
-                    gameState = 'FINISHED';
-                    const finalTimeStr = updateTimer();
-                    finalTimeSpan.innerText = finalTimeStr;
-                    
-                    // Display actual captured finishing position in Finish Screen
-                    const currentPosVal = posUi.innerText; // "1st" or "2nd"
-                    finalPlaceSpan.innerText = currentPosVal + " Place";
-                    if (currentPosVal === '1st') {
-                        finalPlaceSpan.style.color = '#00ff6a';
-                        finishTitle.innerText = "Victory!";
-                    } else {
-                        finalPlaceSpan.style.color = '#ff4c00';
-                        finishTitle.innerText = "Race Complete!";
-                    }
-                    
-                    finishPanel.style.display = 'block';
-                    soundManager.updateEngine(0, maxAllowedSpeed, true);
+                    handleRaceFinished(); 
+                    return;
                 }
             }
         }
 
-        // 3. Update coordinates snapping directly onto center left lane rail
-        const currSlotPos = getSlotPosition(car.slotProgress, -2.2); // Left lane offset (-2.2)
+        const currSlotPos = getSlotPosition(car.slotProgress, -2.2);
         const aheadSlotPos = getSlotPosition((car.slotProgress + 0.005) % 1.0, -2.2);
-        
         car.position.copy(currSlotPos);
         car.mesh.position.copy(car.position);
-
         car.heading = Math.atan2(aheadSlotPos.x - currSlotPos.x, aheadSlotPos.z - currSlotPos.z);
         car.mesh.rotation.y = car.heading;
 
-        // Snaps directly to banked terrain profile
         const tangent = trackCurve.getTangentAt(car.slotProgress).normalize();
         car.mesh.rotation.x = Math.asin(tangent.y);
-
         const bankingAngle = getBankingAngle(car.slotProgress, currentLevel);
         car.mesh.rotation.z = bankingAngle;
 
-        // 4. Calculate Centrifugal Force on Curves
-        const futureSteps = 0.03; // Sample slightly further ahead
+        const futureSteps = 0.03;
         const tangentAhead = trackCurve.getTangentAt((car.slotProgress + futureSteps) % 1.0).normalize();
         const curvature = tangent.angleTo(tangentAhead) * curvatureScale;
-        
         const rawPlayerForce = (car.speed * car.speed) * curvature;
-        // Temporal low-pass filter to prevent instant derailment on single-frame spline ripples
         car.centrifugalForce = THREE.MathUtils.lerp(car.centrifugalForce, rawPlayerForce, 0.1);
 
-        // 5. Dynamic Tail Fishtailing: slide chassis outward visually under centrifugal force
         const crossY = tangent.x * tangentAhead.z - tangent.z * tangentAhead.x;
-        const slideDirection = Math.sign(crossY); // -1 left turn, +1 right turn
+        const slideDirection = Math.sign(crossY);
         const slideYaw = -slideDirection * Math.min(0.65, car.centrifugalForce * 0.28);
         car.bodyMesh.rotation.y = THREE.MathUtils.lerp(car.bodyMesh.rotation.y, slideYaw, 0.1);
 
-        // Update neon G-Force limit bar (Re-scaled relative to active custom gripLimit)
         const limitRatio = Math.min(1.0, car.centrifugalForce / gripLimit);
         const fill = document.getElementById('slot-meter-fill');
         fill.style.width = `${limitRatio * 100}%`;
-        if (limitRatio > 0.85) {
-            fill.style.background = '#ff1100'; // Critical Red
-            fill.style.color = '#ff1100';
-        } else if (limitRatio > 0.6) {
-            fill.style.background = '#ffff00'; // Warning Yellow
-            fill.style.color = '#ffff00';
-        } else {
-            fill.style.background = '#39ff14'; // Safe Green
-            fill.style.color = '#39ff14';
-        }
+        if (limitRatio > 0.85) { fill.style.background = '#ff1100'; fill.style.color = '#ff1100'; } 
+        else if (limitRatio > 0.6) { fill.style.background = '#ffff00'; fill.style.color = '#ffff00'; } 
+        else { fill.style.background = '#39ff14'; fill.style.color = '#39ff14'; }
 
-        // Spin wheels
         car.wheels.forEach(w => { w.rotation.x += car.speed * 0.28; });
 
-        // Spawn tires water splash / friction smoke
         if (Math.random() < (inWater ? 0.75 : 0.3)) {
             const leftRearWorld = new THREE.Vector3(-1.9, 0.4, -2.0).applyMatrix4(car.mesh.matrixWorld);
             const rightRearWorld = new THREE.Vector3(1.9, 0.4, -2.0).applyMatrix4(car.mesh.matrixWorld);
@@ -2799,39 +2656,24 @@ function updatePhysics() {
             spawnParticle(rightRearWorld.x, rightRearWorld.y, rightRearWorld.z, (Math.random() - 0.5)*0.2, 0.12, (Math.random() - 0.5)*0.2, tireParticleColor, tireParticleType, 20);
         }
 
-        // Sound Engine update
         soundManager.updateEngine(car.speed, maxAllowedSpeed, true);
         soundManager.updateDrift(car.centrifugalForce > (gripLimit * 0.4), Math.abs(car.speed), inWater);
 
-        // 6. Trigger Deslotting / Rollover if force exceeds active gripLimit
         if (car.centrifugalForce > gripLimit) {
             car.isRolledOver = true;
-            car.rollOverTimer = 90; // 1.5 second penalty
-            
-            // Slide car off guide rail tangent direction
-            car.crashVelocity.set(
-                Math.sin(car.heading) * car.speed * 0.45,
-                0.35 + Math.random() * 0.25,
-                Math.cos(car.heading) * car.speed * 0.45
-            );
+            car.rollOverTimer = 90;
+            car.crashVelocity.set(Math.sin(car.heading) * car.speed * 0.45, 0.35 + Math.random() * 0.25, Math.cos(car.heading) * car.speed * 0.45);
             car.speed = 0;
             soundManager.playBump(1.0);
         }
 
-        // Sync AI Opponent physics in Scalextric
         updateAiPhysics();
 
-        // Update Position tracking POS HUD panel (Scalextric mode)
         const playerProg = lap * 1000 + car.slotProgress * 1000;
         const aiProg = aiCar.lap * 1000 + aiCar.slotProgress * 1000;
         const currentPos = (playerProg >= aiProg) ? 1 : 2;
-        
         posUi.innerText = (currentPos === 1) ? "1st" : "2nd";
-        
-        // Trigger Cheering Synths on Overtake!
-        if (lastRacePos === 2 && currentPos === 1 && gameState === 'RACING') {
-            soundManager.playCheer();
-        }
+        if (lastRacePos === 2 && currentPos === 1 && gameState === 'RACING') { soundManager.playCheer(); }
         lastRacePos = currentPos;
 
         lastClosestIdx = closestIndex;
@@ -2839,22 +2681,12 @@ function updatePhysics() {
         return;
     }
 
-
     // ==========================================
     // --- MODE 2: SANDBOX DRIVING ---
     // ==========================================
-    document.getElementById('slot-meter-container').style.display = 'none';
-
-    // 1. PROGRESSIVE SENSITIVITY STEERING LOGIC
     let steerValue = 0;
     const steeringPressed = (keys.ArrowLeft || keys.a || keys.A || keys.ArrowRight || keys.d || keys.D);
-    
-    if (steeringPressed) {
-        steerDuration = Math.min(1.0, steerDuration + 0.05);
-    } else {
-        steerDuration = 0.0;
-    }
-
+    if (steeringPressed) { steerDuration = Math.min(1.0, steerDuration + 0.05); } else { steerDuration = 0.0; }
     const progressiveMultiplier = 0.25 + 0.75 * Math.pow(steerDuration, 2.0);
 
     if (keys.ArrowLeft || keys.a || keys.A) steerValue = car.steerSpeed * progressiveMultiplier;
@@ -2866,132 +2698,77 @@ function updatePhysics() {
         car.heading += steerValue * headingModifier * (0.45 + speedScale * 0.55);
     }
 
-    // 2. ACCELERATION / DECELERATION
-    if ((keys.ArrowUp || keys.w || keys.W) && gameState !== 'FINISHED') {
-        car.speed += car.accel;
-    } else if ((keys.ArrowDown || keys.s || keys.S) && gameState !== 'FINISHED') {
-        car.speed -= car.accel;
-    } else {
+    if ((keys.ArrowUp || keys.w || keys.W) && gameState !== 'FINISHED') { car.speed += car.accel; } 
+    else if ((keys.ArrowDown || keys.s || keys.S) && gameState !== 'FINISHED') { car.speed -= car.accel; } 
+    else {
         car.speed *= car.friction;
         if (Math.abs(car.speed) < 0.02) car.speed = 0;
     }
-
     car.speed = Math.max(car.maxSpeedReverse, Math.min(maxAllowedSpeed, car.speed));
 
-    // 3. HORIZONTAL DRIFT AND VELOCITY CALCS
     const headingVector = new THREE.Vector3(Math.sin(car.heading), 0, Math.cos(car.heading));
-    
     const isDrifting = Math.abs(steerValue) > 0.01 && Math.abs(car.speed) > maxAllowedSpeed * 0.45;
     const appliedDriftFactor = (isDrifting && !inWater) ? 0.065 : driftFactor;
 
     car.velocity.lerp(headingVector.clone().multiplyScalar(car.speed), appliedDriftFactor);
-
     car.position.x += car.velocity.x;
     car.position.z += car.velocity.z;
 
-    // 4. VERTICAL SUSPENSION SNAP WITH CORRECT BANKING VERTICAL SHIFTS
     const ptOnSpline = sampledCurvePoints[closestIndex];
     const trackHeight = ptOnSpline.y;
-
     const parameter = closestIndex / curvePointsCount;
     const tangent = trackCurve.getTangentAt(parameter).normalize();
     const right = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
-    
     const bankingAngle = getBankingAngle(parameter, currentLevel);
     const bankedRight = right.clone().applyAxisAngle(tangent, bankingAngle);
-
     const vecToCar = new THREE.Vector3().subVectors(car.position, ptOnSpline);
     const lateralDistance = vecToCar.dot(bankedRight);
-
-    // EXACT HIGH-ALTITUDE COORDINATE OFFSET (Ensures car is always locked to banked profile)
     const targetY = trackHeight + 0.9 + bankedRight.y * lateralDistance;
 
     if (car.isGrounded) {
         const trackDrop = targetY - car.position.y;
-        
-        // Launch into airborne state if track drops suddenly underneath us (steep cliffs / launches)
         if (trackDrop < -3.5 && Math.abs(car.speed) > 2.5) {
             car.isGrounded = false;
-            // Upward vertical velocity is based on the track's launch ramp inclination
             car.verticalVelocity = Math.max(0.5, car.speed * tangent.y * 1.5);
         } else {
-            // Snaps directly to targetY to prevent lag-induced floating or sinking into dunes
             car.position.y = targetY;
             car.verticalVelocity = 0;
         }
     } else {
-        car.verticalVelocity -= 0.07; // Satisfying gravity coefficient
+        car.verticalVelocity -= 0.07;
         car.position.y += car.verticalVelocity;
-
-        // Collision landing detection on the spline surface
         if (car.position.y <= targetY) {
-            car.position.y = targetY;
-            car.verticalVelocity = 0;
-            car.isGrounded = true;
-
+            car.position.y = targetY; car.verticalVelocity = 0; car.isGrounded = true;
             soundManager.playBump(0.65);
-
             for (let i = 0; i < 8; i++) {
-                spawnParticle(
-                    car.position.x + (Math.random() - 0.5) * 3,
-                    car.position.y - 0.5,
-                    car.position.z + (Math.random() - 0.5) * 3,
-                    (Math.random() - 0.5) * 0.4,
-                    0.1 + Math.random() * 0.2,
-                    (Math.random() - 0.5) * 0.4,
-                    tireParticleColor, tireParticleType, 20
-                );
+                spawnParticle(car.position.x + (Math.random() - 0.5) * 3, car.position.y - 0.5, car.position.z + (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 0.4, 0.1 + Math.random() * 0.2, (Math.random() - 0.5) * 0.4, tireParticleColor, tireParticleType, 20);
             }
         }
     }
 
-    // Absolute ground level clamp to make sure player never sinks below the road
     if (car.position.y < targetY) car.position.y = targetY;
 
-    // 5. BOUNDARY COLLISIONS
     if (Math.abs(lateralDistance) > wallLimit) {
         const boundarySign = Math.sign(lateralDistance);
         const penetration = Math.abs(lateralDistance) - wallLimit;
-
         car.position.addScaledVector(bankedRight, -boundarySign * penetration);
-
         const velocityProjectedOnNormal = car.velocity.dot(bankedRight);
         if (velocityProjectedOnNormal * boundarySign > 0) {
             car.velocity.addScaledVector(bankedRight, -velocityProjectedOnNormal * 1.45);
             car.speed *= 0.82; 
         }
-
         soundManager.playBump(1.0);
 
-        const collisionLoc = ptOnSpline.clone()
-            .addScaledVector(bankedRight, boundarySign * (wallLimit + 0.5))
-            .add(new THREE.Vector3(0, 0.8, 0));
-
+        const collisionLoc = ptOnSpline.clone().addScaledVector(bankedRight, boundarySign * (wallLimit + 0.5)).add(new THREE.Vector3(0, 0.8, 0));
         for (let i = 0; i < 5; i++) {
-            spawnParticle(
-                collisionLoc.x + (Math.random() - 0.5) * 2,
-                collisionLoc.y + (Math.random() - 0.5) * 1.5,
-                collisionLoc.z + (Math.random() - 0.5) * 2,
-                (Math.random() - 0.5) * 0.8 - tangent.x * 0.25,
-                0.2 + Math.random() * 0.4,
-                (Math.random() - 0.5) * 0.8 - tangent.z * 0.25,
-                0xff6600, // Sparks
-                'spark',
-                15 + Math.floor(Math.random() * 10)
-            );
+            spawnParticle(collisionLoc.x + (Math.random() - 0.5) * 2, collisionLoc.y + (Math.random() - 0.5) * 1.5, collisionLoc.z + (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 0.8 - tangent.x * 0.25, 0.2 + Math.random() * 0.4, (Math.random() - 0.5) * 0.8 - tangent.z * 0.25, 0xff6600, 'spark', 15 + Math.floor(Math.random() * 10));
         }
     }
 
-    // Run AI Opponent navigation cycles
     updateAiPhysics();
-
-    // Check rigid body collision reactions between Tiger Shark and Skelesaurus
     handleVehiclesCollision();
 
-    // Apply translation to player model
     car.mesh.position.copy(car.position);
-
-    // Pitch & Yaw calculations
     let targetPitch = 0;
     if (car.isGrounded) {
         const forward = new THREE.Vector3(Math.sin(car.heading), 0, Math.cos(car.heading)).normalize();
@@ -3004,141 +2781,88 @@ function updatePhysics() {
     car.mesh.rotation.y = car.heading;
     car.mesh.rotation.z = THREE.MathUtils.lerp(car.mesh.rotation.z, bankingAngle, 0.15);
 
-    // Apply body sway based on steering (Dynamic visual body roll)
     let turnAmount = 0;
     if (keys.ArrowLeft || keys.a || keys.A) turnAmount = 1;
     if (keys.ArrowRight || keys.d || keys.D) turnAmount = -1;
     const targetTilt = turnAmount * (car.speed / maxAllowedSpeed) * 0.12;
     car.bodyMesh.rotation.z = THREE.MathUtils.lerp(car.bodyMesh.rotation.z, targetTilt, 0.1);
 
-    // Dynamic curve sideways swing (yaw fishtailing) on sandbox drift curves
     const driftYaw = -turnAmount * Math.min(0.55, Math.abs(car.speed) * 0.12);
     car.bodyMesh.rotation.y = THREE.MathUtils.lerp(car.bodyMesh.rotation.y, driftYaw, 0.1);
 
-    // Hover suspension vibration details
     const vibration = Math.sin(performance.now() * 0.06) * 0.025 * (car.speed / maxAllowedSpeed);
     car.bodyMesh.position.y = vibration;
 
-    // Spin wheels
     const wheelRotScale = car.speed * 0.28;
     car.wheels.forEach(w => { w.rotation.x += wheelRotScale; });
 
-    // Spawn Player tires drift smoke / water splash
     if ((isDrifting || inWater) && Math.random() < (inWater ? 0.75 : 0.45)) {
         const leftRearWorld = new THREE.Vector3(-1.9, 0.4, -2.0).applyMatrix4(car.mesh.matrixWorld);
         const rightRearWorld = new THREE.Vector3(1.9, 0.4, -2.0).applyMatrix4(car.mesh.matrixWorld);
-
-        spawnParticle(
-            leftRearWorld.x, leftRearWorld.y, leftRearWorld.z,
-            (Math.random() - 0.5) * 0.3, (inWater ? 0.15 : 0.05) + Math.random() * 0.12, (Math.random() - 0.5) * 0.3,
-            tireParticleColor, tireParticleType, 20
-        );
-        spawnParticle(
-            rightRearWorld.x, rightRearWorld.y, rightRearWorld.z,
-            (Math.random() - 0.5) * 0.3, (inWater ? 0.15 : 0.05) + Math.random() * 0.12, (Math.random() - 0.5) * 0.3,
-            tireParticleColor, tireParticleType, 20
-        );
+        spawnParticle(leftRearWorld.x, leftRearWorld.y, leftRearWorld.z, (Math.random() - 0.5) * 0.3, (inWater ? 0.15 : 0.05) + Math.random() * 0.12, (Math.random() - 0.5) * 0.3, tireParticleColor, tireParticleType, 20);
+        spawnParticle(rightRearWorld.x, rightRearWorld.y, rightRearWorld.z, (Math.random() - 0.5) * 0.3, (inWater ? 0.15 : 0.05) + Math.random() * 0.12, (Math.random() - 0.5) * 0.3, tireParticleColor, tireParticleType, 20);
     }
 
     soundManager.updateEngine(car.speed, maxAllowedSpeed, car.isGrounded);
     soundManager.updateDrift(isDrifting, Math.abs(car.speed), inWater);
 
-    // LAP CYCLE TRIGGERS
     const midPointIndex = Math.floor(curvePointsCount * 0.5);
     const lapThresholdIndex = Math.floor(curvePointsCount * 0.9);
     const startWindowIndex = Math.floor(curvePointsCount * 0.1);
 
-    if (closestIndex > midPointIndex - 40 && closestIndex < midPointIndex + 40) {
-        checkpointPassed = true;
-    }
+    if (closestIndex > midPointIndex - 40 && closestIndex < midPointIndex + 40) { checkpointPassed = true; }
 
     if (closestIndex < startWindowIndex && lastClosestIdx > lapThresholdIndex) {
         if (checkpointPassed) {
-            lap++;
-            checkpointPassed = false;
-            
+            // Record completed Lap duration
+            const now = performance.now();
+            const finishedLapTime = now - currentLapStartTime;
+            lapTimes.push(finishedLapTime);
+            currentLapStartTime = now;
+
+            lap++; checkpointPassed = false;
             if (lap <= 3) {
                 lapUi.innerText = lap;
                 soundManager.playLapChime();
-                if (lap === 3) {
-                    soundManager.playLastLapDing();
-                }
+                if (lap === 3) { soundManager.playLastLapDing(); }
             } else {
-                gameState = 'FINISHED';
-                const finalTimeStr = updateTimer();
-                finalTimeSpan.innerText = finalTimeStr;
-
-                // Correctly display captured finish position
-                const currentPosVal = posUi.innerText; // "1st" or "2nd"
-                finalPlaceSpan.innerText = currentPosVal + " Place";
-                if (currentPosVal === '1st') {
-                    finalPlaceSpan.style.color = '#00ff6a';
-                    finishTitle.innerText = "Victory!";
-                } else {
-                    finalPlaceSpan.style.color = '#ff4c00';
-                    finishTitle.innerText = "Race Complete!";
-                }
-
-                finishPanel.style.display = 'block';
-                soundManager.updateEngine(0, maxAllowedSpeed, true);
+                handleRaceFinished();
+                return;
             }
         }
     }
 
-    // Update Position tracking POS HUD panel (Sandbox mode)
     const playerProg = lap * 1000 + closestIndex;
     const aiProg = (gameMode === 'SOLO') ? 0 : (aiCar.lap * 1000 + aiCar.lastClosestIdx);
     const currentPos = (playerProg >= aiProg) ? 1 : 2;
-    
     posUi.innerText = (currentPos === 1) ? "1st" : "2nd";
-    
-    if (lastRacePos === 2 && currentPos === 1 && gameState === 'RACING') {
-        soundManager.playCheer();
-    }
+    if (lastRacePos === 2 && currentPos === 1 && gameState === 'RACING') { soundManager.playCheer(); }
     lastRacePos = currentPos;
 
     lastClosestIdx = closestIndex;
     speedUi.innerText = Math.round(Math.abs(car.speed) * 38);
 }
 
-// --- DYNAMIC CAMERA CONTROLLER ---
 function updateCamera() {
     if (!car.mesh) return;
-
-    const backOffset = new THREE.Vector3(
-        -Math.sin(car.heading),
-        0,
-        -Math.cos(car.heading)
-    ).normalize();
-
-    const cameraTargetPos = car.position.clone()
-        .addScaledVector(backOffset, 16.5) 
-        .add(new THREE.Vector3(0, 6.8, 0)); 
-
+    const backOffset = new THREE.Vector3(-Math.sin(car.heading), 0, -Math.cos(car.heading)).normalize();
+    const cameraTargetPos = car.position.clone().addScaledVector(backOffset, 16.5).add(new THREE.Vector3(0, 6.8, 0)); 
     camera.position.lerp(cameraTargetPos, 0.08);
-
     clampCameraToTrack(camera.position, wallLimit - 5.0);
-
-    const trackingLookPoint = car.position.clone().add(
-        new THREE.Vector3(Math.sin(car.heading) * 4, 1.2, Math.cos(car.heading) * 4)
-    );
+    const trackingLookPoint = car.position.clone().add(new THREE.Vector3(Math.sin(car.heading) * 4, 1.2, Math.cos(car.heading) * 4));
     camera.lookAt(trackingLookPoint);
 }
 
-// --- RENDER GAME LOOP TICK ---
 function animate() {
     requestAnimationFrame(animate);
-
     updatePhysics();
     updateParticles();
     updateCamera();
     updateTimer();
     drawMinimap(); 
-
     renderer.render(scene, camera);
 }
 
-// Ensure load triggers properly on entry point
 window.onload = function() {
     init();
     animate();
