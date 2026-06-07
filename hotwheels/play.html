@@ -554,7 +554,7 @@ let speedGovernorEnabled = true;
 
 // Dynamic Grip logic supporting increments of 5 beyond 5
 let gripLevel = 3;
-let gripLimit = 70.0 + gripLevel * 5.0; // Dynamic grip limits mapping: level 1=75, 5=95, 10=120, 15=145 etc.
+let gripLimit = 70.0 + gripLevel * 5.0; 
 const curvatureScale = 5.0;
 
 let currentLevel = 1;
@@ -604,6 +604,35 @@ const levelConfigs = {
             new THREE.Vector3(220, 0.1, -120),
             new THREE.Vector3(40, 0.1, -300),
             new THREE.Vector3(-120, 0.1, -300)
+        ]
+    },
+    3: {
+        name: "MONACO GRAND PRIX",
+        points: [
+            new THREE.Vector3(0, 0.1, 400),       // Start/Finish straight (sea level harbor Albert 1er)
+            new THREE.Vector3(-150, 0.1, 400),    // Sainte Devote approach
+            new THREE.Vector3(-250, 0.1, 360),    // Turn 1: Sainte Devote (Right-hander)
+            new THREE.Vector3(-270, 18.0, 240),   // Beau Rivage (Climbing uphill)
+            new THREE.Vector3(-210, 32.0, 120),   // Massenet (Left sweep)
+            new THREE.Vector3(-110, 35.0, 40),    // Casino Square (Crest elevation peak)
+            new THREE.Vector3(-40, 28.0, -10),    // Mirabeau Haute descent entry
+            new THREE.Vector3(40, 18.0, -50),     // Approach to Hairpin
+            new THREE.Vector3(80, 12.0, -90),     // Grand Hotel Hairpin (Start of turn)
+            new THREE.Vector3(50, 10.0, -120),    // Tightest apex of Grand Hotel Hairpin! (Turns 6/7)
+            new THREE.Vector3(10, 8.0, -100),     // Hairpin exit descent
+            new THREE.Vector3(-20, 5.0, -160),    // Mirabeau Bas
+            new THREE.Vector3(30, 1.0, -220),     // Portier (Turn 8, entering seafront)
+            new THREE.Vector3(150, 1.0, -230),    // Entering the famous Monaco Tunnel
+            new THREE.Vector3(300, 1.0, -180),    // Curved interior of the Tunnel (curving right)
+            new THREE.Vector3(410, 1.0, -80),     // Exiting the tunnel into bright sunlight
+            new THREE.Vector3(380, 0.1, 40),      // Nouvelle Chicane approach
+            new THREE.Vector3(320, 0.1, 60),      // Nouvelle Chicane left-right flick
+            new THREE.Vector3(260, 0.1, 120),     // Tabac (Turn 12 left-hander along the marina)
+            new THREE.Vector3(180, 0.1, 180),     // Louis Chiron / Piscine (Swimming Pool entry chicane)
+            new THREE.Vector3(130, 0.1, 230),     // Swimming pool exit chicane
+            new THREE.Vector3(90, 0.1, 310),      // Rascasse entry hairpin right-hander
+            new THREE.Vector3(40, 0.1, 330),      // Anthony Noghes turn 19
+            new THREE.Vector3(20, 0.1, 370)       // Aligning onto Albert 1er straight
         ]
     }
 };
@@ -676,7 +705,6 @@ const aiCar = {
     crashVelocity: new THREE.Vector3()
 };
 
-// Statistics collection variables
 let raceSpeeds = [];
 let raceGForces = [];
 let lapTimes = [];
@@ -689,14 +717,27 @@ const trackWidth = 65;
 const wallLimit = (trackWidth / 2) - 1.8;
 
 function getBankingAngle(u, level) {
-    if (level !== 2) return 0;
-    if (u >= 0.04 && u <= 0.22) {
-        let baseBank = -0.42;
-        return baseBank * Math.sin((u - 0.04) / 0.18 * Math.PI);
+    if (level === 2) {
+        if (u >= 0.04 && u <= 0.22) {
+            let baseBank = -0.42;
+            return baseBank * Math.sin((u - 0.04) / 0.18 * Math.PI);
+        }
+        if (u >= 0.45 && u <= 0.72) {
+            let baseBank = 0.45;
+            return baseBank * Math.sin((u - 0.45) / 0.27 * Math.PI);
+        }
     }
-    if (u >= 0.45 && u <= 0.72) {
-        let baseBank = 0.45;
-        return baseBank * Math.sin((u - 0.45) / 0.27 * Math.PI);
+    // Realistic banking offsets for Monaco to make the hairpin and curves feel premium
+    if (level === 3) {
+        if (u >= 0.06 && u <= 0.12) {
+            return -0.15 * Math.sin((u - 0.06) / 0.06 * Math.PI);
+        }
+        if (u >= 0.32 && u <= 0.42) {
+            return -0.22 * Math.sin((u - 0.32) / 0.10 * Math.PI);
+        }
+        if (u >= 0.72 && u <= 0.85) {
+            return 0.18 * Math.sin((u - 0.72) / 0.13 * Math.PI);
+        }
     }
     return 0;
 }
@@ -986,7 +1027,6 @@ function startAudioEngine() {
     }
 }
 
-// Unlimited Grip level slider: Above level 5, increments step by 5 up to max 25 in No Speed Limit
 function adjustGripLevel(amount) {
     const maxLimit = speedGovernorEnabled ? 5 : 25;
     let current = gripLevel;
@@ -1003,9 +1043,8 @@ function adjustGripLevel(amount) {
             current -= 5;
         }
     }
-    // If amount is 0, we simply preserve 'current' as gripLevel without decrementing
     gripLevel = Math.min(maxLimit, current);
-    gripLimit = 70.0 + gripLevel * 5.0; // Dynamic formula mapping
+    gripLimit = 70.0 + gripLevel * 5.0; 
     document.getElementById('grip-modal-val').innerText = gripLevel;
 }
 
@@ -1014,7 +1053,6 @@ function openSettingsMenu() {
     document.getElementById('settings-modal').style.display = 'block';
 }
 
-// Applying settings will now trigger a clean restart of the race to instantly apply rules
 function closeSettingsMenu() {
     document.getElementById('settings-modal').style.display = 'none';
     resetRace();
@@ -1025,10 +1063,8 @@ function toggleSpeedGovernor() {
     document.getElementById('governor-setting-btn').innerText = speedGovernorEnabled ? "ENABLED" : "DISABLED";
     
     if (!speedGovernorEnabled) {
-        // Toggled OFF (No Speed Limit Mode) -> sets default grip to 15
         gripLevel = 15;
     } else if (speedGovernorEnabled && gripLevel > 5) {
-        // Auto-clamp active grip down to 5 if speed limits are re-enabled
         gripLevel = 5;
     }
     
@@ -1094,10 +1130,24 @@ function updateParticles() {
 </script>
 
 <script>
+function setAtmosphereForLevel(levelNum) {
+    if (!scene) return;
+    if (levelNum === 3) {
+        // Monaco atmosphere: Sea-breeze light blue sky and foggy coastal horizon
+        const monacoSky = new THREE.Color(0xaedcfc);
+        scene.background = monacoSky;
+        scene.fog = new THREE.FogExp2(0xaedcfc, 0.001);
+    } else {
+        // Desert atmosphere: Warm orange dusty sands
+        const desertSky = new THREE.Color(0xdf9f53);
+        scene.background = desertSky;
+        scene.fog = new THREE.FogExp2(0xdf9f53, 0.0012);
+    }
+}
+
 function init() {
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xdf9f53);
-    scene.fog = new THREE.FogExp2(0xdf9f53, 0.0012);
+    setAtmosphereForLevel(currentLevel);
 
     camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.5, 2000);
     
@@ -1149,8 +1199,13 @@ function init() {
 
     window.addEventListener('resize', onWindowResize);
 
-    if (currentLevel === 1) { gripLevel = 3; } else { gripLevel = 5; }
-    // Clean call ensures default grips (3 or 5) don't get decremented on load
+    if (currentLevel === 1) { 
+        gripLevel = 3; 
+    } else if (currentLevel === 2) { 
+        gripLevel = 5; 
+    } else {
+        gripLevel = 3; 
+    }
     adjustGripLevel(0);
 
     document.getElementById('mode-setting-btn').innerText = "SCALEXTRIC";
@@ -1290,6 +1345,102 @@ function buildTrack() {
         trackGroup.add(leftRailLine);
         trackGroup.add(rightRailLine);
     }
+
+    // Monaco Level 3: Procedural Tunnel Canopy with embedded PointLights
+    if (currentLevel === 3) {
+        const tunnelSegments = [];
+        const tunnelIndices = [];
+        const uStart = 0.52;
+        const uEnd = 0.68;
+        const idxStart = Math.floor(segmentsCount * uStart);
+        const idxEnd = Math.floor(segmentsCount * uEnd);
+        
+        let tVertCount = 0;
+        const tunnelCeilingHeight = 12.0;
+        
+        for (let i = idxStart; i <= idxEnd; i++) {
+            const idx = i % segmentsCount;
+            const p = pts[idx];
+            const pNext = pts[(i + 1) % segmentsCount];
+            const dir = new THREE.Vector3().subVectors(pNext, p).normalize();
+            const right = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
+            
+            const u = idx / segmentsCount;
+            const bankingAngle = getBankingAngle(u, currentLevel);
+            const bankedRight = right.clone().applyAxisAngle(dir, bankingAngle);
+            const bankedUp = new THREE.Vector3().crossVectors(bankedRight, dir).normalize();
+            
+            const archSteps = 8;
+            for (let step = 0; step <= archSteps; step++) {
+                const ratio = step / archSteps;
+                const angle = ratio * Math.PI;
+                const lateralOffset = (ratio - 0.5) * trackWidth;
+                const verticalOffset = Math.sin(angle) * (trackWidth * 0.4) + 1.0;
+                
+                const archPt = p.clone()
+                    .addScaledVector(bankedRight, lateralOffset)
+                    .addScaledVector(bankedUp, Math.min(tunnelCeilingHeight, verticalOffset));
+                
+                tunnelSegments.push(archPt.x, archPt.y, archPt.z);
+            }
+            
+            if (i < idxEnd) {
+                for (let step = 0; step < archSteps; step++) {
+                    const r0 = tVertCount + step;
+                    const r1 = tVertCount + step + 1;
+                    const r2 = tVertCount + (archSteps + 1) + step;
+                    const r3 = tVertCount + (archSteps + 1) + step + 1;
+                    
+                    tunnelIndices.push(r0, r2, r1);
+                    tunnelIndices.push(r1, r2, r3);
+                }
+            }
+            tVertCount += archSteps + 1;
+        }
+        
+        const tunnelGeo = new THREE.BufferGeometry();
+        tunnelGeo.setAttribute('position', new THREE.Float32BufferAttribute(tunnelSegments, 3));
+        tunnelGeo.setIndex(tunnelIndices);
+        tunnelGeo.computeVertexNormals();
+        
+        const tunnelMat = new THREE.MeshStandardMaterial({
+            color: 0x2a2a2d,
+            roughness: 0.8,
+            metalness: 0.1,
+            side: THREE.DoubleSide
+        });
+        const tunnelMesh = new THREE.Mesh(tunnelGeo, tunnelMat);
+        tunnelMesh.castShadow = true;
+        tunnelMesh.receiveShadow = true;
+        trackGroup.add(tunnelMesh);
+
+        // Warm yellow lighting hanging inside the tunnel interior
+        for (let i = idxStart + 2; i < idxEnd; i += 12) {
+            const idx = i % segmentsCount;
+            const p = pts[idx];
+            const u = idx / segmentsCount;
+            
+            const tangent = trackCurve.getTangentAt(u).normalize();
+            const rightVec = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+            const bankingAngle = getBankingAngle(u, currentLevel);
+            const bankedRightVec = rightVec.clone().applyAxisAngle(tangent, bankingAngle);
+            const bankedUpNormal = new THREE.Vector3().crossVectors(bankedRightVec, tangent).normalize();
+            
+            const lightPos = p.clone().addScaledVector(bankedUpNormal, 11.5);
+            
+            const bulbMesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(1.2, 1.2, 0.4, 8),
+                new THREE.MeshBasicMaterial({ color: 0xffaa00 })
+            );
+            bulbMesh.position.copy(lightPos);
+            bulbMesh.lookAt(lightPos.clone().add(tangent));
+            trackGroup.add(bulbMesh);
+            
+            const tunnelLight = new THREE.PointLight(0xffcc44, 1.8, 80);
+            tunnelLight.position.copy(lightPos).addScaledVector(bankedUpNormal, -1.0);
+            trackGroup.add(tunnelLight);
+        }
+    }
 }
 
 function buildFinishLineArch() {
@@ -1347,6 +1498,7 @@ function buildOasisLakes() {
     scene.add(waterGroup);
 
     const waterMat = new THREE.MeshStandardMaterial({ color: 0x0088ff, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.72, depthWrite: false });
+    
     if (currentLevel === 2) {
         const lakeGeo1 = new THREE.RingGeometry(0, 480, 32);
         const lake1 = new THREE.Mesh(lakeGeo1, waterMat);
@@ -1359,6 +1511,66 @@ function buildOasisLakes() {
         lake2.rotation.x = -Math.PI / 2;
         lake2.position.set(-80, 0.12, -280); 
         waterGroup.add(lake2);
+    } else if (currentLevel === 3) {
+        // Monaco Harbor Marina Bay
+        const harborGeo = new THREE.PlaneGeometry(800, 800);
+        const harbor = new THREE.Mesh(harborGeo, waterMat);
+        harbor.rotation.x = -Math.PI / 2;
+        harbor.position.set(220, 0.12, 100); 
+        waterGroup.add(harbor);
+        
+        // Populate Marina harbor with 3D Yachts
+        const yachtPositions = [
+            new THREE.Vector3(260, 0.2, -50),
+            new THREE.Vector3(340, 0.2, 10),
+            new THREE.Vector3(220, 0.2, 80),
+            new THREE.Vector3(200, 0.2, -120),
+            new THREE.Vector3(120, 0.2, 120)
+        ];
+        
+        const hullMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
+        const deckMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
+        const sailMat = new THREE.MeshBasicMaterial({ color: 0xf5f5f5, side: THREE.DoubleSide });
+        
+        yachtPositions.forEach((pos, idx) => {
+            const yachtGroup = new THREE.Group();
+            yachtGroup.position.copy(pos);
+            yachtGroup.rotation.y = Math.random() * Math.PI * 2;
+            
+            const hull = new THREE.Mesh(new THREE.BoxGeometry(10, 3, 22), hullMat);
+            const hullPos = hull.geometry.attributes.position;
+            for(let k=0; k<hullPos.count; k++) {
+                const zVal = hullPos.getZ(k);
+                if (zVal > 0) {
+                    hullPos.setX(k, hullPos.getX(k) * 0.4);
+                }
+            }
+            hullPos.needsUpdate = true;
+            hull.geometry.computeVertexNormals();
+            hull.position.y = 1.5;
+            yachtGroup.add(hull);
+            
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(7, 2.5, 11), deckMat);
+            cabin.position.set(0, 4.0, -2);
+            yachtGroup.add(cabin);
+            
+            const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 18, 8), deckMat);
+            mast.position.set(0, 10.5, 2);
+            yachtGroup.add(mast);
+            
+            const sailShape = new THREE.Shape();
+            sailShape.moveTo(0, 0);
+            sailShape.lineTo(0, 14);
+            sailShape.lineTo(5, 2);
+            sailShape.lineTo(0, 0);
+            const sailGeo = new THREE.ShapeGeometry(sailShape);
+            const sail = new THREE.Mesh(sailGeo, sailMat);
+            sail.position.set(0, 3.5, 2);
+            sail.rotation.y = 0.5; 
+            yachtGroup.add(sail);
+            
+            waterGroup.add(yachtGroup);
+        });
     } else {
         const lakeGeo1 = new THREE.RingGeometry(0, 250, 24);
         const lake1 = new THREE.Mesh(lakeGeo1, waterMat);
@@ -1371,6 +1583,103 @@ function buildOasisLakes() {
 function scatterEnvironment() {
     environmentObjects.forEach(obj => scene.remove(obj));
     environmentObjects = [];
+
+    if (currentLevel === 3) {
+        // Monaco City Street Scenery: Penthouses, hotel towers, and Mediterranean palms
+        const bldGeo = new THREE.BoxGeometry(45, 120, 45);
+        const bldMat = new THREE.MeshStandardMaterial({ color: 0xf5eedc, roughness: 0.6 }); 
+        const glassMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 });
+
+        for (let i = 0; i < 40; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 180 + Math.random() * 800; 
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const tempPos = new THREE.Vector3(x, 0, z);
+
+            const isFarFromWater = tempPos.distanceTo(new THREE.Vector3(220, 0.12, 100)) > 260;
+            if (getMinDistanceToTrack(tempPos) > 110 && (x < 100 || isFarFromWater)) {
+                const bldGroup = new THREE.Group();
+                bldGroup.position.set(x, 0, z);
+                
+                const bld = new THREE.Mesh(bldGeo, bldMat);
+                bld.position.y = 60;
+                bld.castShadow = true;
+                bld.receiveShadow = true;
+                bldGroup.add(bld);
+                
+                // Overlay rows of skyscraper windows
+                for (let h = 10; h < 110; h += 15) {
+                    for (let side = 0; side < 4; side++) {
+                        const win = new THREE.Mesh(new THREE.BoxGeometry(35, 4, 0.2), glassMat);
+                        win.position.y = h;
+                        if (side === 0) win.position.z = 22.6;
+                        if (side === 1) { win.position.z = -22.6; win.rotation.y = Math.PI; }
+                        if (side === 2) { win.position.x = 22.6; win.rotation.y = Math.PI / 2; }
+                        if (side === 3) { win.position.x = -22.6; win.rotation.y = -Math.PI / 2; }
+                        bldGroup.add(win);
+                    }
+                }
+                
+                scene.add(bldGroup);
+                environmentObjects.push(bldGroup);
+            }
+        }
+
+        // Mediterranean Palm Trees
+        function buildPalmTreeMesh() {
+            const tree = new THREE.Group();
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x7a5230, roughness: 0.9 });
+            const leafMat = new THREE.MeshStandardMaterial({ color: 0x2e5c1e, roughness: 0.8 });
+            
+            const segments = 6;
+            let currentBase = new THREE.Vector3(0,0,0);
+            for(let j=0; j<segments; j++) {
+                const trGeo = new THREE.CylinderGeometry(0.8 - j*0.08, 0.9 - j*0.08, 3, 8);
+                const tr = new THREE.Mesh(trGeo, trunkMat);
+                tr.position.y = 1.5;
+                
+                const segGroup = new THREE.Group();
+                segGroup.position.copy(currentBase);
+                segGroup.rotation.z = 0.08;
+                segGroup.add(tr);
+                tree.add(segGroup);
+                
+                currentBase.add(new THREE.Vector3(-0.25, 2.9, 0).applyAxisAngle(new THREE.Vector3(0,0,1), 0.08 * j));
+            }
+            
+            const leafGeo = new THREE.BoxGeometry(6, 0.1, 1.8);
+            leafGeo.translate(3, 0, 0); 
+            for (let k = 0; k < 8; k++) {
+                const leaf = new THREE.Mesh(leafGeo, leafMat);
+                leaf.position.copy(currentBase);
+                leaf.rotation.y = (k / 8) * Math.PI * 2;
+                leaf.rotation.z = -0.3; 
+                tree.add(leaf);
+            }
+            return tree;
+        }
+
+        const cachedPalm = buildPalmTreeMesh();
+        for (let i = 0; i < 150; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 60 + Math.random() * 500;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const tempPos = new THREE.Vector3(x, 0, z);
+            const dist = getMinDistanceToTrack(tempPos);
+            
+            if (dist > (trackWidth / 2 + 6) && dist < 450 && x < 180) {
+                const palmInstance = cachedPalm.clone();
+                palmInstance.position.set(x, 0, z);
+                const scale = 0.5 + Math.random() * 0.7;
+                palmInstance.scale.set(scale, scale, scale);
+                scene.add(palmInstance);
+                environmentObjects.push(palmInstance);
+            }
+        }
+        return;
+    }
 
     const duneGeo = new THREE.SphereGeometry(100, 10, 10);
     duneGeo.scale(2.2, 0.4, 1.1);
@@ -1877,12 +2186,15 @@ function drawMinimap() {
 
 function toggleLevel() {
     startAudioEngine();
-    const targetLvl = currentLevel === 1 ? 2 : 1;
+    let targetLvl = currentLevel + 1;
+    if (targetLvl > 3) targetLvl = 1;
     loadLevel(targetLvl);
 }
 
 function loadLevel(levelNum) {
     currentLevel = levelNum;
+    setAtmosphereForLevel(currentLevel);
+    
     trackCurve = new THREE.CatmullRomCurve3(levelConfigs[currentLevel].points, true);
     sampledCurvePoints = trackCurve.getSpacedPoints(curvePointsCount);
     minimapBounds = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
@@ -1894,7 +2206,13 @@ function loadLevel(levelNum) {
     scatterEnvironment();
     buildCars();
     
-    if (currentLevel === 1) { gripLevel = 3; } else { gripLevel = 5; }
+    if (currentLevel === 1) { 
+        gripLevel = 3; 
+    } else if (currentLevel === 2) { 
+        gripLevel = 5; 
+    } else {
+        gripLevel = 3; 
+    }
     adjustGripLevel(0);
     document.getElementById('level-ui').innerText = levelConfigs[currentLevel].name;
     resetRace();
@@ -2020,7 +2338,6 @@ function handleRaceFinished() {
     const finalTimeStr = updateTimer();
     finalTimeSpan.innerText = finalTimeStr;
     
-    // Evaluate final standing based on whether the AI finished ahead of the player
     const positionText = aiFinished ? "2nd Place" : "1st Place";
     finalPlaceSpan.innerText = positionText;
     
@@ -2032,7 +2349,6 @@ function handleRaceFinished() {
         finishTitle.innerText = "Race Complete!";
     }
 
-    // Save and retrieve track personal record configurations (PR) via localStorage
     const prStorageKey = `hotwheels_pr_track_${currentLevel}_mode_${gameMode}`;
     let previousBest = localStorage.getItem(prStorageKey);
     let isNewRecord = false;
@@ -2043,7 +2359,6 @@ function handleRaceFinished() {
         isNewRecord = true;
     }
     
-    // Format saved personal best time string
     const pbFloatVal = parseFloat(previousBest);
     const pbMins = Math.floor(pbFloatVal / 60000).toString().padStart(2, '0');
     const pbSecs = Math.floor((pbFloatVal % 60000) / 1000).toString().padStart(2, '0');
@@ -2051,7 +2366,6 @@ function handleRaceFinished() {
     
     document.getElementById('stat-pb').innerText = `${pbMins}:${pbSecs}.${pbMs}` + (isNewRecord ? " (NEW!)" : "");
 
-    // Compute fastest lap time
     let fastestLapVal = Infinity;
     for (let i = 0; i < lapTimes.length; i++) {
         if (lapTimes[i] < fastestLapVal) fastestLapVal = lapTimes[i];
@@ -2065,14 +2379,12 @@ function handleRaceFinished() {
     }
     document.getElementById('stat-fastest-lap').innerText = fastestLapStr;
 
-    // Compute max speed
     let maxSpeedVal = 0;
     for (let i = 0; i < raceSpeeds.length; i++) {
         if (raceSpeeds[i] > maxSpeedVal) maxSpeedVal = raceSpeeds[i];
     }
     document.getElementById('stat-max-speed').innerText = Math.round(maxSpeedVal * 38);
 
-    // Compute average speed
     let avgSpeedVal = 0;
     if (raceSpeeds.length > 0) {
         let sum = 0;
@@ -2081,7 +2393,6 @@ function handleRaceFinished() {
     }
     document.getElementById('stat-avg-speed').innerText = Math.round(avgSpeedVal);
 
-    // Compute average G-Force represented as a safe percentage of the track gripLimit
     let avgGVal = 0;
     if (raceGForces.length > 0) {
         let sum = 0;
@@ -2140,7 +2451,6 @@ function resetRace() {
     totalElapsed = 0;
     lastRacePos = 1;
 
-    // Reset statistics buffers
     raceSpeeds = [];
     raceGForces = [];
     lapTimes = [];
@@ -2168,7 +2478,6 @@ function updateTimer() {
         totalElapsed = performance.now() - timerStart;
         const lapElapsed = performance.now() - currentLapStartTime;
         
-        // Format Live Lap Time UI Card
         const lMins = Math.floor(lapElapsed / 60000).toString().padStart(2, '0');
         const lSecs = Math.floor((lapElapsed % 60000) / 1000).toString().padStart(2, '0');
         const lMs = Math.floor((lapElapsed % 1000) / 10).toString().padStart(2, '0');
@@ -2266,7 +2575,6 @@ function updateAiPhysics() {
         return;
     }
 
-    // Let the AI stop smoothly when it completes the race, allowing the player to continue
     if (aiCar.lap > 3) {
         if (!aiFinished) {
             aiFinished = true;
@@ -2279,7 +2587,7 @@ function updateAiPhysics() {
 
     if (gameMode === 'SCALEXTRIC') {
         if (aiCar.isRolledOver) {
-            aiCar.crashVelocity.y -= 0.025;
+            aiCar.crashVelocity.y -= 0.025; 
             aiCar.mesh.position.add(aiCar.crashVelocity);
             aiCar.mesh.rotation.x += 0.25;
             aiCar.mesh.rotation.y += 0.15;
@@ -2313,10 +2621,8 @@ function updateAiPhysics() {
             if ((distToLake1 < 480 || distToLake2 < 220) && aiCar.position.y < 2.5) { inWater = true; }
         }
         
-        // No water speed capping for AI under No Speed Limit mode
         if (inWater && speedGovernorEnabled) aiTargetSpeed *= 0.55;
 
-        // Drive the slot car if not finished
         if (aiCar.lap <= 3) {
             if (aiCar.speed < aiTargetSpeed) { aiCar.speed += aiCar.accel * 0.75; } else { aiCar.speed -= aiCar.decel; }
         }
@@ -2364,7 +2670,6 @@ function updateAiPhysics() {
         return;
     }
 
-    // Standard VS AI Sandbox Physics
     let minDist = Infinity;
     let closestIndex = 0;
     let startSearch, endSearch;
@@ -2406,7 +2711,6 @@ function updateAiPhysics() {
         if ((distToLake1 < 480 || distToLake2 < 220) && aiCar.position.y < 2.5) { aiInWater = true; }
     }
     
-    // No water speed capping for AI under No Speed Limit mode
     if (aiInWater && speedGovernorEnabled) targetSpeed *= 0.5;
 
     if (aiCar.lap <= 3) {
@@ -2541,7 +2845,6 @@ function updatePhysics() {
     let tireParticleColor = 0xeeeeee; 
     let tireParticleType = 'smoke';
 
-    // Speed in water is NOT limited under No Speed Limit (Governor Disabled) mode!
     if (inWater) {
         if (speedGovernorEnabled) {
             maxAllowedSpeed = 2.4; 
@@ -2551,7 +2854,6 @@ function updatePhysics() {
         tireParticleType = 'splash';
     }
 
-    // Track active speed & physical G forces for telemetry statistics
     if (gameState === 'RACING') {
         raceSpeeds.push(Math.abs(car.speed));
         
@@ -2598,7 +2900,6 @@ function updatePhysics() {
         if (car.slotProgress >= 1.0) {
             car.slotProgress -= 1.0;
             if (checkpointPassed) {
-                // Record completed Lap duration
                 const now = performance.now();
                 const finishedLapTime = now - currentLapStartTime;
                 lapTimes.push(finishedLapTime);
@@ -2814,7 +3115,6 @@ function updatePhysics() {
 
     if (closestIndex < startWindowIndex && lastClosestIdx > lapThresholdIndex) {
         if (checkpointPassed) {
-            // Record completed Lap duration
             const now = performance.now();
             const finishedLapTime = now - currentLapStartTime;
             lapTimes.push(finishedLapTime);
