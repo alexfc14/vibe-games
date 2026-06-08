@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pong Runner 3D</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            touch-action: none;
+            overflow: hidden;
+            background-color: #080810;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* Custom Neon Glows */
+        .neon-text-pink {
+            text-shadow: 0 0 5px rgba(236, 72, 153, 0.5), 0 0 15px rgba(236, 72, 153, 0.8);
+        }
+        .neon-text-cyan {
+            text-shadow: 0 0 5px rgba(6, 182, 212, 0.5), 0 0 15px rgba(6, 182, 212, 0.8);
+        }
+        .neon-border-pink {
+            box-shadow: 0 0 10px rgba(236, 72, 153, 0.3), inset 0 0 10px rgba(236, 72, 153, 0.3);
+        }
+        /* Floating HUD Coins Effect */
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.8); opacity: 0; }
+            20% { transform: translateY(-20px) scale(1.1); opacity: 1; }
+            100% { transform: translateY(-80px) scale(0.9); opacity: 0; }
+        }
+        .floating-item {
+            animation: floatUp 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            pointer-events: none;
+            position: absolute;
+            font-weight: bold;
+            font-family: 'Orbitron', sans-serif;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="relative w-screen h-screen select-none overflow-hidden">
+
+    <!-- Canvas Container -->
+    <div id="canvas-container" class="absolute inset-0 w-full h-full z-0"></div>
+
+    <!-- UI Overlay / HUD -->
+    <div id="hud" class="absolute inset-x-0 top-0 p-4 md:p-6 flex justify-between items-start pointer-events-none z-10 hidden">
+        <!-- Left Stats (Score & Distance) -->
+        <div class="flex flex-col gap-2">
+            <div class="backdrop-blur-md bg-slate-950/50 px-4 py-2 rounded-xl border border-cyan-500/30 flex items-center gap-3">
+                <span class="text-xs uppercase text-cyan-400 font-bold tracking-widest">Bank</span>
+                <span id="hud-score" class="text-2xl font-orbitron font-extrabold text-white neon-text-cyan">€0.00</span>
+            </div>
+            <div class="backdrop-blur-md bg-slate-950/50 px-4 py-1 rounded-lg border border-slate-700/50 flex items-center gap-2 w-max">
+                <span class="text-xs uppercase text-slate-400 font-bold">Distance</span>
+                <span id="hud-distance" class="text-md font-orbitron text-slate-200">0 m</span>
+            </div>
+        </div>
+
+        <!-- Center Notification (Arrow Lock warning, etc.) -->
+        <div id="hud-notification" class="absolute left-1/2 -translate-x-1/2 top-6 backdrop-blur-md bg-red-950/60 border border-red-500/40 px-4 py-1.5 rounded-full text-red-200 text-sm font-semibold tracking-wider flex items-center gap-2 transition-all duration-300 opacity-0 scale-90">
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            <span id="hud-notification-text">STEERING LOCKED!</span>
+        </div>
+
+        <!-- Right Stats (Lives, Multiplier, Sound) -->
+        <div class="flex flex-col items-end gap-2 pointer-events-auto">
+            <div class="backdrop-blur-md bg-slate-950/50 px-4 py-2 rounded-xl border border-pink-500/30 flex items-center gap-2">
+                <span class="text-xs uppercase text-pink-400 font-bold tracking-widest mr-1">Lives</span>
+                <div id="hud-lives" class="flex gap-1 text-xl">
+                    <!-- Hearts generated dynamically -->
+                </div>
+            </div>
+            
+            <div class="flex gap-2">
+                <!-- Speed Display -->
+                <div class="backdrop-blur-md bg-slate-950/50 px-3 py-1 rounded-lg border border-slate-700/50 text-xs text-slate-300 font-semibold flex items-center gap-1">
+                    <span>Speed:</span>
+                    <span id="hud-speed" class="text-yellow-400 font-orbitron">1.0x</span>
+                </div>
+                <!-- Mute Button -->
+                <button id="btn-mute" class="backdrop-blur-md bg-slate-950/50 hover:bg-slate-900/60 p-2 rounded-lg border border-slate-700/50 text-slate-300 transition-colors">
+                    <svg id="icon-audio-on" xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    </svg>
+                    <svg id="icon-audio-mute" xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container for dynamic floating score texts -->
+    <div id="floating-texts-layer" class="absolute inset-0 pointer-events-none z-20"></div>
+
+    <!-- Start / Welcome Screen (Improved Scrollability for Mobile) -->
+    <div id="start-screen" class="absolute inset-0 flex justify-center items-start overflow-y-auto bg-slate-950/90 backdrop-blur-md p-4 z-30 transition-opacity duration-500">
+        <div class="max-w-xl w-full my-auto backdrop-blur-xl bg-slate-900/50 rounded-2xl border border-cyan-500/30 p-5 md:p-8 flex flex-col items-center text-center shadow-2xl neon-border-pink">
+            <h1 class="text-3xl md:text-5xl font-orbitron font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 uppercase tracking-wider mb-1 animate-pulse">
+                PONG RUNNER 3D
+            </h1>
+            <p class="text-slate-400 font-semibold mb-5 tracking-wide text-sm md:text-base">SURVIVE THE HIGH-SPEED NEON MATRIX</p>
+            
+            <!-- Guide Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2.5 w-full text-left text-xs mb-6">
+                <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 flex flex-col justify-between">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-3 h-3 rounded-full bg-yellow-400 block shadow-[0_0_8px_#facc15]"></span>
+                        <span class="font-bold text-slate-200">Coins</span>
+                    </div>
+                    <span class="text-slate-400">Collect euros & cents on the floor as you land!</span>
+                </div>
+                <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 flex flex-col justify-between">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-3 h-3 block bg-red-600 rounded-sm shadow-[0_0_8px_#ef4444]"></span>
+                        <span class="font-bold text-slate-200">Holes</span>
+                    </div>
+                    <span class="text-slate-400">Avoid gaps or plummet into the digital abyss.</span>
+                </div>
+                <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 flex flex-col justify-between">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-cyan-400 font-extrabold text-sm shadow-[0_0_8px_#22d3ee]">▲</span>
+                        <span class="font-bold text-slate-200">Trampoline</span>
+                    </div>
+                    <span class="text-slate-400">Bounce high, skipping the next platform landing entirely!</span>
+                </div>
+                <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 flex flex-col justify-between">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-green-400 font-extrabold text-sm font-orbitron">◀ ▶</span>
+                        <span class="font-bold text-slate-200">Forced Slides</span>
+                    </div>
+                    <span class="text-slate-400">Forcibly slides you left or right on bounce.</span>
+                </div>
+                <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 flex flex-col justify-between">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-yellow-400 font-extrabold text-sm font-orbitron">▲</span>
+                        <span class="font-bold text-slate-200">Forward Arrow</span>
+                    </div>
+                    <span class="text-slate-400">Locks steering! Cannot swap lanes next jump.</span>
+                </div>
+                <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 flex flex-col justify-between">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-pink-500 font-extrabold text-sm">♥</span>
+                        <span class="font-bold text-slate-200">Heart</span>
+                    </div>
+                    <span class="text-slate-400">Restores one lost simulation backup life.</span>
+                </div>
+            </div>
+
+            <!-- Controls Info -->
+            <div class="text-slate-400 text-xs md:text-sm mb-5 bg-slate-950/30 w-full py-2.5 rounded-lg border border-slate-800/40 leading-relaxed">
+                <span class="font-bold text-slate-200 block mb-1">CONTROLS</span>
+                Desktop: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-white text-xs">A</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-white text-xs">◀</kbd> and <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-white text-xs">D</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-white text-xs">▶</kbd> to change lanes.<br>
+                Mobile: Tap bottom arrows or Swipe left/right anywhere on screen.<br>
+                <span class="text-rose-400 font-semibold">⚠️ WARNING: Jumping left from left lane or right from right lane leads to death!</span>
+            </div>
+
+            <!-- Difficulty Selection & Start -->
+            <div class="flex flex-col gap-3 w-full">
+                <div class="flex justify-center gap-2" id="difficulty-selectors">
+                    <button data-diff="casual" class="px-4 py-2 rounded-xl text-xs md:text-sm font-bold bg-slate-800 text-slate-300 hover:bg-slate-750 border border-transparent transition-all">Casual</button>
+                    <button data-diff="arcade" class="px-4 py-2 rounded-xl text-xs md:text-sm font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 hover:bg-cyan-500/35 transition-all">Arcade</button>
+                    <button data-diff="cyber" class="px-4 py-2 rounded-xl text-xs md:text-sm font-bold bg-slate-800 text-slate-300 hover:bg-slate-750 border border-transparent transition-all">Cyber-Speed</button>
+                </div>
+                
+                <!-- Start Button -->
+                <button id="btn-start" class="w-full mt-2 py-3.5 bg-gradient-to-r from-pink-500 to-cyan-500 hover:from-pink-600 hover:to-cyan-600 text-white font-orbitron font-extrabold text-lg md:text-xl rounded-xl shadow-lg hover:shadow-cyan-500/25 transition-all transform hover:-translate-y-0.5">
+                    INITIATE RUN
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Screen (Improved Scrollability) -->
+    <div id="game-over-screen" class="absolute inset-0 flex justify-center items-start overflow-y-auto bg-slate-950/95 backdrop-blur-md p-4 z-30 hidden transition-opacity duration-300">
+        <div class="max-w-md w-full my-auto backdrop-blur-xl bg-slate-900/50 rounded-2xl border border-red-500/30 p-6 md:p-8 flex flex-col items-center text-center shadow-2xl">
+            <h2 class="text-3xl md:text-4xl font-orbitron font-black text-red-500 uppercase tracking-widest mb-2 neon-text-pink animate-bounce">
+                CONNECTION LOST
+            </h2>
+            <p class="text-slate-400 font-semibold mb-6 tracking-wider text-sm md:text-base">BALL DE-SYNCHRONIZED FROM FLOOR GRID</p>
+
+            <!-- Final Score Block -->
+            <div class="bg-slate-950/60 w-full p-5 rounded-xl border border-slate-800 flex flex-col gap-3 mb-6">
+                <div class="flex justify-between items-center border-b border-slate-800/60 pb-2.5">
+                    <span class="text-slate-400 text-sm uppercase">Collected Loot</span>
+                    <span id="final-score" class="text-2xl font-orbitron font-extrabold text-cyan-400">€0.00</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-slate-800/60 pb-2.5">
+                    <span class="text-slate-400 text-sm uppercase">Intervals Climbed</span>
+                    <span id="final-distance" class="text-lg font-orbitron font-bold text-slate-200">0 m</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400 text-sm uppercase">Global Best Bank</span>
+                    <span id="high-score" class="text-lg font-orbitron font-bold text-yellow-400">€0.00</span>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex flex-col gap-3 w-full">
+                <button id="btn-restart" class="w-full py-4 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-orbitron font-extrabold text-lg rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5">
+                    RE-SPAWN BALL
+                </button>
+                <button id="btn-menu" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm rounded-xl transition-all">
+                    RETURN TO TERMINAL
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- On-Screen Mobile Action Buttons -->
+    <div id="mobile-controls" class="absolute inset-x-0 bottom-6 px-8 flex justify-between pointer-events-none z-10 hidden">
+        <button id="btn-mobile-left" class="pointer-events-auto w-20 h-20 active:scale-95 transition-transform backdrop-blur-md bg-slate-950/40 active:bg-cyan-500/30 border border-cyan-500/30 hover:border-cyan-400 text-cyan-400 rounded-full flex items-center justify-center text-3xl font-bold font-orbitron select-none">
+            ◀
+        </button>
+        <button id="btn-mobile-right" class="pointer-events-auto w-20 h-20 active:scale-95 transition-transform backdrop-blur-md bg-slate-950/40 active:bg-cyan-500/30 border border-cyan-500/30 hover:border-cyan-400 text-cyan-400 rounded-full flex items-center justify-center text-3xl font-bold font-orbitron select-none">
+            ▶
+        </button>
+    </div>
+
+    <!-- Script Block containing Game Logic -->
+    <script>
+        // --- CHIPTUNE AUDIO ENGINE (WEB AUDIO API) ---
+        const Sound = {
+            ctx: null,
+            muted: localStorage.getItem('pong_runner_muted') === 'true',
+            
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                this.updateUI();
+            },
+            
+            toggleMute() {
+                this.muted = !this.muted;
+                localStorage.setItem('pong_runner_muted', this.muted);
+                this.updateUI();
+                this.play('coin'); // Auditory feedback
+            },
+            
+            updateUI() {
+                document.getElementById('icon-audio-on').classList.toggle('hidden', this.muted);
+                document.getElementById('icon-audio-mute').classList.toggle('hidden', !this.muted);
+            },
+            
+            play(type) {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                
+                const ctx = this.ctx;
+                
+                if (type === 'bounce') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(140, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(260, ctx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.08);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.08);
+                } 
+                else if (type === 'coin') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, ctx.currentTime);
+                    osc.frequency.setValueAtTime(1318, ctx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.25);
+                } 
+                else if (type === 'trampoline') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(180, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(580, ctx.currentTime + 0.18);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.18);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.18);
+                } 
+                else if (type === 'hurt') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(55, ctx.currentTime + 0.35);
+                    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                } 
+                else if (type === 'heart') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 arpeggio
+                    notes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.05);
+                        gain.gain.setValueAtTime(0.08, ctx.currentTime + idx * 0.05);
+                        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + idx * 0.05 + 0.12);
+                        osc.start(ctx.currentTime + idx * 0.05);
+                        osc.stop(ctx.currentTime + idx * 0.05 + 0.12);
+                    });
+                }
+                else if (type === 'gameover') {
+                    const notes = [220, 207.65, 196, 174.61]; // Sad descending arpeggio
+                    notes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.15);
+                        gain.gain.setValueAtTime(0.15, ctx.currentTime + idx * 0.15);
+                        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + idx * 0.15 + 0.3);
+                        osc.start(ctx.currentTime + idx * 0.15);
+                        osc.stop(ctx.currentTime + idx * 0.15 + 0.3);
+                    });
+                }
+            }
+        };
+
+        // --- GLOBAL SETUP & STATE VARIABLES ---
+        let scene, camera, renderer;
+        let ball, ballGroup;
+        let activeSegments = {}; // Map of intervalIndex -> segment visual group object
+        let trackData = {}; // Map of intervalIndex -> 3-lane cell configs
+        let currentReachableStates = []; // Reachability solver current state list
+        
+        // Game metrics & settings
+        let gameActive = false;
+        let scoreCents = 0;
+        let intervalsSurvived = 0;
+        let lives = 3;
+        let maxLives = 5;
+        let targetLane = 1; // 0: Left, 1: Center, 2: Right, now can be -1 or 3 for edge boundary falls
+        let currentLane = 1;
+        let difficulty = 'arcade';
+        let isInvulnerable = false;
+        let invulnerabilityTimer = 0;
+        
+        // Interval dimensional config
+        const intervalLength = 10.0;
+        
+        // Ball speed mechanics
+        let currentSpeedMultiplier = 1.0;
+        let bounceStartIndex = 0;
+        let isHighBounce = false;
+        const normalPeakHeight = 3.2;
+        const highPeakHeight = 7.5;
+        
+        // Particle System Pool
+        const particlePool = [];
+        const maxParticles = 60;
+        
+        // Ball visual historical trail (Neon Ghost Trail)
+        const trailSpheres = [];
+        const maxTrailLength = 12;
+
+        // Steering lock visual alert helper
+        let steeringLockAlertTimer = 0;
+
+        // Game Configuration constants by difficulty
+        const DIFF_SETTINGS = {
+            casual: { baseSpeed: 10, speedGrowth: 0.002, startLives: 4 },
+            arcade: { baseSpeed: 12, speedGrowth: 0.004, startLives: 3 },
+            cyber: { baseSpeed: 16, speedGrowth: 0.007, startLives: 2 }
+        };
+
+        // FIXED: Redefined coordinates & significantly amplified coin scales + neon coloration!
+        const COIN_TYPES = {
+            '1c':  { cents: 1,   color: 0xff4500, scale: 0.65 }, // Vibrant neon copper
+            '2c':  { cents: 2,   color: 0xff4500, scale: 0.72 },
+            '5c':  { cents: 5,   color: 0xff4500, scale: 0.82 },
+            '10c': { cents: 10,  color: 0xffcc00, scale: 0.72 }, // Vibrant neon gold
+            '20c': { cents: 20,  color: 0xffcc00, scale: 0.80 },
+            '50c': { cents: 50,  color: 0xffcc00, scale: 0.92 },
+            '1e':  { cents: 100, isEuro: true, inner: 0xffbb00, outer: 0xdddddd, scale: 0.85 }, // Hyper reflective bimetal
+            '2e':  { cents: 200, isEuro: true, inner: 0xdddddd, outer: 0xffbb00, scale: 0.98 }
+        };
+
+        // FIXED: Helper function translates target lane index seamlessly to inverted 3D X space
+        // Lane 0: Left (+2.5X) | Lane 1: Center (0.0X) | Lane 2: Right (-2.5X)
+        // Keeps out-of-bound jumps perfectly proportional (-1 is Left Abyss (+5.0X), 3 is Right Abyss (-5.0X))
+        function getXFromLane(lane) {
+            return 2.5 - lane * 2.5;
+        }
+
+        // --- GEOMETRY & MATERIAL REUSE (CRITICAL FOR PERFORMANCE) ---
+        let geomPlatform, geomCircleOutline;
+        let geomSpring, geomTrampolineBase, geomTrampolinePad;
+        let geomHeartBox, geomHeartSphere, geomArrowBar, geomParticle;
+        let matPlatform, matPlatformGlow, matBall, matParticle, matHeart;
+        let matCyanGlow, matArrowGlow, matTrampolineBase;
+
+        // Initialize reusable materials and shapes once
+        function initGlobalAssets() {
+            geomPlatform = new THREE.BoxGeometry(2.0, 0.4, 9.0);
+            geomParticle = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+            geomTrampolineBase = new THREE.BoxGeometry(1.8, 0.1, 3.5);
+            geomTrampolinePad = new THREE.BoxGeometry(1.6, 0.12, 3.1);
+            geomHeartBox = new THREE.BoxGeometry(0.35, 0.35, 0.35);
+            geomHeartSphere = new THREE.SphereGeometry(0.2, 12, 12);
+            geomArrowBar = new THREE.BoxGeometry(0.15, 0.08, 0.6);
+
+            // Sleek, highly reflective cyber slate material for platforms
+            matPlatform = new THREE.MeshStandardMaterial({ color: 0x0c0c1b, roughness: 0.12, metalness: 0.9 });
+            matBall = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1, metalness: 0.1 });
+            matParticle = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.8 });
+            
+            // Emissive glowing materials for items
+            matHeart = new THREE.MeshStandardMaterial({ color: 0xff2a85, emissive: 0xff1493, emissiveIntensity: 2.2 });
+            matCyanGlow = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00bfff, emissiveIntensity: 2.2 });
+            matArrowGlow = new THREE.MeshStandardMaterial({ color: 0xfff000, emissive: 0xffd700, emissiveIntensity: 2.5 });
+            matTrampolineBase = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.6 });
+        }
+
+
+        // --- STATE-BASED PROCEDURAL GENERATION & MATHEMATICAL SOLVER ---
+
+        // Randomly pick a cell type based on progress/difficulty
+        function generateRandomCell(index) {
+            const rand = Math.random();
+            
+            // Build safe zones first (first 6 cells)
+            if (index < 6) return { type: 'blank' };
+
+            // Gradually introduce hazards/elements as index grows
+            let pBlank = 0.50;
+            let pHole = Math.min(0.28, 0.05 + index * 0.0018);
+            let pCoin = 0.28;
+            let pTramp = Math.min(0.08, 0.01 + index * 0.0006);
+            let pArrow = Math.min(0.08, 0.01 + index * 0.0005);
+            let pHeart = 0.01;
+
+            if (rand < pBlank) {
+                return { type: 'blank' };
+            } else if (rand < pBlank + pHole) {
+                return { type: 'hole' };
+            } else if (rand < pBlank + pHole + pCoin) {
+                // Return a coin type based on current interval depth
+                let coinKey = '1c';
+                const cRand = Math.random();
+                if (index < 25) {
+                    coinKey = cRand < 0.6 ? '1c' : (cRand < 0.9 ? '2c' : '5c');
+                } else if (index < 65) {
+                    coinKey = cRand < 0.4 ? '5c' : (cRand < 0.7 ? '10c' : (cRand < 0.9 ? '20c' : '50c'));
+                } else {
+                    coinKey = cRand < 0.4 ? '50c' : (cRand < 0.75 ? '1e' : '2e');
+                }
+                return { type: 'coin', detail: coinKey };
+            } else if (rand < pBlank + pHole + pCoin + pTramp) {
+                return { type: 'trampoline' };
+            } else if (rand < pBlank + pHole + pCoin + pTramp + pArrow) {
+                const arrowRand = Math.random();
+                const arrowType = arrowRand < 0.35 ? 'arrow-left' : (arrowRand < 0.70 ? 'arrow-right' : 'arrow-forward');
+                return { type: arrowType };
+            } else {
+                return { type: 'heart' };
+            }
+        }
+
+        // Return transition list possible from state "s" at intervalIndex-1 into "newSegment" at intervalIndex
+        function getValidTransitionsFromState(s, intervalIndex, newSegment) {
+            const validNexts = [];
+            
+            // Case 1: High bounce is active. We are currently flying over intervalIndex-1, landing on intervalIndex.
+            if (s.flyOver) {
+                // During high jump we are in the air and can choose any adjacent lane to land on.
+                const landingLanes = [s.lane - 1, s.lane, s.lane + 1].filter(l => l >= 0 && l <= 2);
+                
+                for (let l of landingLanes) {
+                    if (newSegment[l].type !== 'hole') {
+                        // Is it a trampoline? If so, we high-bounce again (skip next landing)
+                        if (newSegment[l].type === 'trampoline') {
+                            validNexts.push({ lane: l, flyOver: true });
+                        } else {
+                            validNexts.push({ lane: l, flyOver: false });
+                        }
+                    }
+                }
+            } 
+            // Case 2: Normal bounce. We land at intervalIndex-1, lane s.lane
+            else {
+                // If previous tile was a trampoline, we must fly over intervalIndex (cannot steer yet).
+                const prevCell = trackData[intervalIndex - 1]?.[s.lane];
+                if (prevCell && prevCell.type === 'trampoline') {
+                    // Flying over intervalIndex, next state has to be in the same lane (flying).
+                    validNexts.push({ lane: s.lane, flyOver: true });
+                } else {
+                    // Normal landing. Evaluate arrow restrictions of current landed tile at intervalIndex-1
+                    let allowedLanes = [];
+                    if (prevCell && prevCell.type === 'arrow-forward') {
+                        allowedLanes = [s.lane];
+                    } else if (prevCell && prevCell.type === 'arrow-left') {
+                        if (s.lane > 0) allowedLanes = [s.lane - 1];
+                    } else if (prevCell && prevCell.type === 'arrow-right') {
+                        if (s.lane < 2) allowedLanes = [s.lane + 1];
+                    } else {
+                        allowedLanes = [s.lane - 1, s.lane, s.lane + 1].filter(l => l >= 0 && l <= 2);
+                    }
+
+                    // Check which targeted landing lanes on intervalIndex are not holes
+                    for (let l of allowedLanes) {
+                        if (newSegment[l].type !== 'hole') {
+                            if (newSegment[l].type === 'trampoline') {
+                                validNexts.push({ lane: l, flyOver: true });
+                            } else {
+                                validNexts.push({ lane: l, flyOver: false });
+                            }
+                        }
+                    }
+                }
+            }
+            return validNexts;
+        }
+
+        // Repair a segment dynamically to guarantee path availability from any of the current reachable states
+        function fixSegment(segment, reachableStates, intervalIndex) {
+            // Guard against empty reachableStates to prevent undefined crash
+            if (!reachableStates || reachableStates.length === 0) {
+                reachableStates = [{ lane: 1, flyOver: false }];
+            }
+
+            // Pick a valid reachable state at random to base our fix on
+            const originState = reachableStates[Math.floor(Math.random() * reachableStates.length)];
+            
+            // Choose what safe landing lane(s) we can create
+            let chosenLane = originState.lane;
+            
+            if (originState.flyOver) {
+                // Land safely on any adjacent lane
+                const options = [originState.lane - 1, originState.lane, originState.lane + 1].filter(l => l >= 0 && l <= 2);
+                chosenLane = options[Math.floor(Math.random() * options.length)];
+            } else {
+                const prevCell = trackData[intervalIndex - 1]?.[originState.lane];
+                if (prevCell && prevCell.type === 'trampoline') {
+                    // Flying over this tile, no fix is actually required since player flies over intervalIndex completely!
+                    return segment;
+                } else {
+                    // Handle arrow restrictions
+                    if (prevCell && prevCell.type === 'arrow-forward') {
+                        chosenLane = originState.lane;
+                    } else if (prevCell && prevCell.type === 'arrow-left' && originState.lane > 0) {
+                        chosenLane = originState.lane - 1;
+                    } else if (prevCell && prevCell.type === 'arrow-right' && originState.lane < 2) {
+                        chosenLane = originState.lane + 1;
+                    } else {
+                        // Standard adjacent steering
+                        const options = [originState.lane - 1, originState.lane, originState.lane + 1].filter(l => l >= 0 && l <= 2);
+                        chosenLane = options[Math.floor(Math.random() * options.length)];
+                    }
+                }
+            }
+
+            // Change selected lane to a safe element. Make it highly rewarding (coins / hearts)!
+            const safeRoll = Math.random();
+            let newCellType = { type: 'blank' };
+            if (safeRoll < 0.65) {
+                let coinKey = '10c';
+                const coinRoll = Math.random();
+                if (coinRoll < 0.5) coinKey = '50c';
+                else if (coinRoll < 0.8) coinKey = '1e';
+                else coinKey = '2e';
+                newCellType = { type: 'coin', detail: coinKey };
+            } else if (safeRoll < 0.80) {
+                newCellType = { type: 'trampoline' };
+            } else if (safeRoll < 0.88) {
+                newCellType = { type: 'heart' };
+            }
+
+            segment[chosenLane] = newCellType;
+            return segment;
+        }
+
+        // Dynamically append, validate and save a new track segment
+        function generateSegment(index) {
+            // 1. Roll raw random cells
+            let segment = [
+                generateRandomCell(index),
+                generateRandomCell(index),
+                generateRandomCell(index)
+            ];
+
+            // Guard against empty currentReachableStates before validating
+            if (!currentReachableStates || currentReachableStates.length === 0) {
+                currentReachableStates = [{ lane: 1, flyOver: false }];
+            }
+
+            // 2. Validate paths
+            let nextStates = [];
+            for (let state of currentReachableStates) {
+                let transitions = getValidTransitionsFromState(state, index, segment);
+                for (let trans of transitions) {
+                    // Deduplicate
+                    if (!nextStates.some(s => s.lane === trans.lane && s.flyOver === trans.flyOver)) {
+                        nextStates.push(trans);
+                    }
+                }
+            }
+
+            // 3. Fix segment if no solutions exist
+            if (nextStates.length === 0) {
+                segment = fixSegment(segment, currentReachableStates, index);
+                // Recompute valid states after fix
+                for (let state of currentReachableStates) {
+                    let transitions = getValidTransitionsFromState(state, index, segment);
+                    for (let trans of transitions) {
+                        if (!nextStates.some(s => s.lane === trans.lane && s.flyOver === trans.flyOver)) {
+                            nextStates.push(trans);
+                        }
+                    }
+                }
+            }
+
+            // Absolute emergency safeguard: if nextStates is STILL empty, force a safe center platform landing
+            if (nextStates.length === 0) {
+                segment[1] = { type: 'blank' }; 
+                nextStates = [{ lane: 1, flyOver: false }];
+            }
+
+            // Cache data and update reachability map
+            trackData[index] = segment;
+            currentReachableStates = nextStates;
+            
+            // 4. Build visual 3D entities
+            buildSegmentVisuals(index, segment);
+        }
+
+
+        // --- VISUAL 3D BUILDERS FOR SCENE ENTITIES ---
+
+        // Create a stylish custom 3D coin model based on its value/denomination with ultra glow
+        function createCoinMesh(config) {
+            const coinGroup = new THREE.Group();
+            
+            if (config.isEuro) {
+                // Bi-metallic Euro structure (Ring + Inner Disc) with strong glowing emission
+                const outerColor = config.outer;
+                const innerColor = config.inner;
+                
+                const matOuter = new THREE.MeshStandardMaterial({ 
+                    color: outerColor, 
+                    metalness: 0.95, 
+                    roughness: 0.1,
+                    emissive: outerColor,
+                    emissiveIntensity: 0.7 
+                });
+                const matInner = new THREE.MeshStandardMaterial({ 
+                    color: innerColor, 
+                    metalness: 0.95, 
+                    roughness: 0.1,
+                    emissive: innerColor,
+                    emissiveIntensity: 0.8
+                });
+                
+                // Outer ring representation (rotated to stand up vertically like a wheel)
+                const geomRing = new THREE.CylinderGeometry(0.36 * config.scale, 0.36 * config.scale, 0.1, 16);
+                const ringMesh = new THREE.Mesh(geomRing, matOuter);
+                ringMesh.rotation.z = Math.PI / 2; // Stand up upright
+                coinGroup.add(ringMesh);
+                
+                // Inner core representation
+                const geomCore = new THREE.CylinderGeometry(0.24 * config.scale, 0.24 * config.scale, 0.11, 16);
+                const coreMesh = new THREE.Mesh(geomCore, matInner);
+                coreMesh.rotation.z = Math.PI / 2; // Stand up upright
+                coinGroup.add(coreMesh);
+            } else {
+                // Standard single copper/nordic gold metal cylinder coin with strong glowing emission
+                const matMetal = new THREE.MeshStandardMaterial({ 
+                    color: config.color, 
+                    metalness: 0.9, 
+                    roughness: 0.15,
+                    emissive: config.color,
+                    emissiveIntensity: 0.7
+                });
+                const geomCoin = new THREE.CylinderGeometry(0.3 * config.scale, 0.3 * config.scale, 0.08, 16);
+                const coinMesh = new THREE.Mesh(geomCoin, matMetal);
+                coinMesh.rotation.z = Math.PI / 2; // Stand up upright
+                coinGroup.add(coinMesh);
+            }
+
+            // ADDED: Highly distinguishable outer glowing energy ring around each coin to lock onto visually
+            const ringGeom = new THREE.RingGeometry(0.42 * config.scale, 0.46 * config.scale, 16);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: config.isEuro ? 0x00f0ff : (config.cents >= 10 ? 0xffea00 : 0xff5500),
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.75
+            });
+            const glowRing = new THREE.Mesh(ringGeom, ringMat);
+            glowRing.rotation.y = 0; // Flat facing the player
+            coinGroup.add(glowRing);
+            
+            return coinGroup;
+        }
+
+        // Create a stylized 3D red heart
+        function createHeartMesh() {
+            const heartGroup = new THREE.Group();
+            
+            // Box rotated 45 degrees
+            const centerBox = new THREE.Mesh(geomHeartBox, matHeart);
+            centerBox.rotation.z = Math.PI / 4;
+            heartGroup.add(centerBox);
+            
+            // Spherical lobes on the sides
+            const leftLobe = new THREE.Mesh(geomHeartSphere, matHeart);
+            leftLobe.position.set(-0.16, 0.16, 0);
+            heartGroup.add(leftLobe);
+            
+            const rightLobe = new THREE.Mesh(geomHeartSphere, matHeart);
+            rightLobe.position.set(0.16, 0.16, 0);
+            heartGroup.add(rightLobe);
+            
+            heartGroup.scale.set(1.2, 1.2, 1.2);
+            return heartGroup;
+        }
+
+        // Create Chevron arrow meshes (pointing Left, Right, or Forward)
+        function createArrowMesh(type) {
+            const arrowGroup = new THREE.Group();
+            
+            // Create a chevron shape using two rotated box beams
+            const leftWing = new THREE.Mesh(geomArrowBar, matArrowGlow);
+            leftWing.position.set(-0.18, 0, 0);
+            leftWing.rotation.y = Math.PI / 4;
+            arrowGroup.add(leftWing);
+            
+            const rightWing = new THREE.Mesh(geomArrowBar, matArrowGlow);
+            rightWing.position.set(0.18, 0, 0);
+            rightWing.rotation.y = -Math.PI / 4;
+            arrowGroup.add(rightWing);
+            
+            // FIXED: Rotations completely aligned to point towards the intended physical direction
+            if (type === 'arrow-left') {
+                // Points Left (+X axis in camera perspective view)
+                arrowGroup.rotation.y = Math.PI / 2;
+            } else if (type === 'arrow-right') {
+                // Points Right (-X axis in camera perspective view)
+                arrowGroup.rotation.y = -Math.PI / 2;
+            } else {
+                arrowGroup.rotation.y = 0; // Pointing forward
+            }
+            
+            return arrowGroup;
+        }
+
+        // Create a trampoline pad
+        function createTrampolineMesh() {
+            const trampGroup = new THREE.Group();
+            
+            // Base frame
+            const baseMesh = new THREE.Mesh(geomTrampolineBase, matTrampolineBase);
+            baseMesh.position.y = 0.05;
+            trampGroup.add(baseMesh);
+            
+            // Glowing action bouncy pad
+            const padMesh = new THREE.Mesh(geomTrampolinePad, matCyanGlow);
+            padMesh.position.y = 0.1;
+            trampGroup.add(padMesh);
+            
+            return trampGroup;
+        }
+
+        // Construct visually stunning platforms and items for Three.js scene
+        function buildSegmentVisuals(index, segment) {
+            const segmentGroup = new THREE.Group();
+            segmentGroup.position.z = index * intervalLength;
+            
+            const interactiveItems = []; // Array to track meshes for collision collection checks
+
+            for (let l = 0; l < 3; l++) {
+                const cell = segment[l];
+                const laneX = getXFromLane(l); // FIXED: Use helper function for exact placement coordinates
+
+                // Check for abyss holes - skip generating the platform altogether (pitch black void)
+                if (cell.type === 'hole') {
+                    continue; 
+                }
+
+                // Standard platform container (with a sleek highly reflective cyber slate style)
+                const platform = new THREE.Mesh(geomPlatform, matPlatform);
+                platform.position.set(laneX, -0.2, 0);
+                segmentGroup.add(platform);
+
+                // High-visibility parallel cyan neon guide-rails to outline active platforms clearly
+                const edgeGeom = new THREE.BoxGeometry(0.08, 0.04, 9.0);
+                
+                const leftEdge = new THREE.Mesh(edgeGeom, matCyanGlow);
+                leftEdge.position.set(laneX - 0.96, 0.02, 0);
+                segmentGroup.add(leftEdge);
+
+                const rightEdge = new THREE.Mesh(edgeGeom, matCyanGlow);
+                rightEdge.position.set(laneX + 0.96, 0.02, 0);
+                segmentGroup.add(rightEdge);
+
+                // Generate special game elements on platforms
+                let itemMesh = null;
+
+                // PLACED ON FLOOR AT POINT OF BOUNCING (Y aligned so player hits them precisely as they bounce)
+                if (cell.type === 'coin') {
+                    const config = COIN_TYPES[cell.detail];
+                    itemMesh = createCoinMesh(config);
+                    // Rest perfectly on top of platform at the bounce impact zone
+                    itemMesh.position.set(laneX, 0.45, 0);
+                } 
+                else if (cell.type === 'heart') {
+                    itemMesh = createHeartMesh();
+                    itemMesh.position.set(laneX, 0.45, 0);
+                } 
+                else if (cell.type === 'trampoline') {
+                    itemMesh = createTrampolineMesh();
+                    itemMesh.position.set(laneX, 0, 0); // Flat on platform floor
+                } 
+                else if (cell.type.startsWith('arrow-')) {
+                    itemMesh = createArrowMesh(cell.type);
+                    itemMesh.position.set(laneX, 0.15, 0); // Resting flat on platform floor
+                }
+
+                if (itemMesh) {
+                    segmentGroup.add(itemMesh);
+                    // Cache references for tracking rotation or triggering collection collisions
+                    interactiveItems.push({
+                        type: cell.type,
+                        mesh: itemMesh,
+                        lane: l,
+                        coinDetail: cell.detail
+                    });
+                }
+            }
+
+            scene.add(segmentGroup);
+            
+            // Track the segment data structure to reuse or dispose cleanly later
+            activeSegments[index] = {
+                group: segmentGroup,
+                items: interactiveItems
+            };
+        }
+
+
+        // --- PARTICLE SYSTEM AND CHROME FX ---
+
+        // Burst a cluster of colorful glowing particles when actions happen
+        function triggerParticleBurst(position, color, count = 12) {
+            let spawned = 0;
+            for (let p of particlePool) {
+                if (!p.active) {
+                    p.active = true;
+                    p.mesh.position.copy(position);
+                    p.mesh.material.color.setHex(color);
+                    p.mesh.visible = true;
+                    
+                    // Direct explosion vectors
+                    p.velocity.set(
+                        (Math.random() - 0.5) * 6,
+                        (Math.random() * 5) + 2,
+                        (Math.random() - 0.5) * 6
+                    );
+                    p.life = 0.8; // Life duration in seconds
+                    p.mesh.scale.set(1, 1, 1);
+                    
+                    spawned++;
+                    if (spawned >= count) break;
+                }
+            }
+        }
+
+        // Project 3D vector coordinates to absolute screen pixels for HTML notifications
+        function spawnFloatingText(position3D, text, colorClass) {
+            const vector = new THREE.Vector3().copy(position3D);
+            vector.project(camera);
+            
+            const x = (vector.x * .5 + .5) * window.innerWidth;
+            const y = (-(vector.y * .5) + .5) * window.innerHeight;
+            
+            const el = document.createElement('div');
+            el.className = `floating-item text-xl md:text-2xl ${colorClass}`;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            el.innerText = text;
+            
+            document.getElementById('floating-texts-layer').appendChild(el);
+            
+            // Clean up DOM immediately after fade animates out
+            setTimeout(() => {
+                el.remove();
+            }, 1000);
+        }
+
+
+        // --- SCENE INITIALIZATION & SETUP ---
+
+        function initScene() {
+            const container = document.getElementById('canvas-container');
+            
+            // Create Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x040409);
+            // Exponential cyberpunk neon foggy horizon
+            scene.fog = new THREE.FogExp2(0x040409, 0.015);
+
+            // Create Camera
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1500);
+
+            // Create WebGL Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Dynamic Ambient Lighting (Purple Matrix Vibes)
+            const ambientLight = new THREE.AmbientLight(0x281035, 0.7);
+            scene.add(ambientLight);
+
+            // Soft Key Directional Light for highlighting geometry shapes
+            const dirLight = new THREE.DirectionalLight(0xff00b7, 0.6);
+            dirLight.position.set(5, 20, 10);
+            scene.add(dirLight);
+
+            // Instantiate Global Assets for performance
+            initGlobalAssets();
+
+            // Create the game player ball
+            ballGroup = new THREE.Group();
+            ball = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), matBall);
+            ballGroup.add(ball);
+            scene.add(ballGroup);
+
+            // Attach dynamic Neon light directly to the ball to paint the environment as it bounces
+            const ballLight = new THREE.PointLight(0x00f0ff, 2.5, 15);
+            ballLight.position.set(0, 0, 0);
+            ballGroup.add(ballLight);
+
+            // Generate Pre-instantiated Particles Pool to completely avoid runtime allocations
+            for (let i = 0; i < maxParticles; i++) {
+                const pMat = matParticle.clone();
+                const pMesh = new THREE.Mesh(geomParticle, pMat);
+                pMesh.visible = false;
+                scene.add(pMesh);
+                particlePool.push({
+                    mesh: pMesh,
+                    active: false,
+                    velocity: new THREE.Vector3(),
+                    life: 0
+                });
+            }
+
+            // Create the Comet Trail spheres
+            for (let i = 0; i < maxTrailLength; i++) {
+                const trailMat = new THREE.MeshBasicMaterial({
+                    color: 0x00ffff,
+                    transparent: true,
+                    opacity: 0.8 * (1 - i / maxTrailLength)
+                });
+                const trailMesh = new THREE.Mesh(new THREE.SphereGeometry(0.42 * (1 - i / maxTrailLength), 16, 16), trailMat);
+                scene.add(trailMesh);
+                trailSpheres.push(trailMesh);
+            }
+
+            // Generate background stars / cosmic floating cyber dust
+            const starCount = 200;
+            const starGeom = new THREE.BufferGeometry();
+            const starPositions = new Float32Array(starCount * 3);
+            for (let i = 0; i < starCount * 3; i += 3) {
+                starPositions[i] = (Math.random() - 0.5) * 500;
+                starPositions[i + 1] = Math.random() * 100 + 10;
+                starPositions[i + 2] = (Math.random() - 0.5) * 1000;
+            }
+            starGeom.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+            const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.6, transparent: true, opacity: 0.8 });
+            const starField = new THREE.Points(starGeom, starMat);
+            scene.add(starField);
+
+            // Handle Resize
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+
+        // --- LANE CONTROL INPUTS ---
+
+        function moveLane(direction) {
+            if (!gameActive) return;
+
+            // If player is currently off-track / tumbling in the abyss, freeze inputs until respawn snapping
+            if (currentLane < 0 || currentLane > 2) return;
+
+            // Look up constraints of the tile landed on at the START of current jump phase
+            const currentIntervalTile = trackData[bounceStartIndex]?.[currentLane];
+            const isSteeringLocked = currentIntervalTile && (
+                currentIntervalTile.type === 'arrow-forward' ||
+                currentIntervalTile.type === 'arrow-left' ||
+                currentIntervalTile.type === 'arrow-right'
+            );
+
+            if (isSteeringLocked) {
+                // Steering locks are absolute for the duration of the current jump! Trigger visual HUD alarm
+                triggerSteeringLockedAlert();
+                return;
+            }
+
+            const originLane = targetLane;
+            
+            // FIXED: Allow targetLane to go to -1 (left boundary jump) or 3 (right boundary jump)
+            // Left moves towards negative, Right moves towards positive in logical lane indices!
+            targetLane = targetLane + direction;
+            if (targetLane < -1) targetLane = -1;
+            if (targetLane > 3) targetLane = 3;
+            
+            if (originLane !== targetLane) {
+                // Subtle horizontal lean effect (realigned to bank into the steering motion)
+                ball.rotation.z = direction * 0.4;
+            }
+        }
+
+        function triggerSteeringLockedAlert() {
+            steeringLockAlertTimer = 0.5; // half second notification
+            const alertHUD = document.getElementById('hud-notification');
+            alertHUD.classList.remove('opacity-0', 'scale-90');
+            alertHUD.classList.add('opacity-100', 'scale-100');
+            Sound.play('hurt');
+        }
+
+        // --- KEYBOARD LISTENERS ---
+        window.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                moveLane(-1); // Left key slides Left (direction = -1)
+            } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                moveLane(1);  // Right key slides Right (direction = 1)
+            }
+        });
+
+        // --- SWIPE GESTURES DETECTION FOR TOUCH SYSTEM ---
+        let touchStartX = 0;
+        let touchStartY = 0;
+        window.addEventListener('touchstart', e => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        window.addEventListener('touchend', e => {
+            const diffX = e.changedTouches[0].clientX - touchStartX;
+            const diffY = e.changedTouches[0].clientY - touchStartY;
+            
+            // Evaluate horizontal swipes exceeding minimal threshold
+            if (Math.abs(diffX) > 35 && Math.abs(diffX) > Math.abs(diffY)) {
+                if (diffX < 0) {
+                    moveLane(-1); // Swipe left moves Left
+                } else {
+                    moveLane(1);  // Swipe right moves Right
+                }
+            }
+        }, { passive: true });
+
+
+        // --- PROCEDURAL RECONSTRUCTION & DISPOSAL (ZERO MEMORY LEAKS) ---
+
+        // Free up ThreeJS objects fully from RAM memory
+        function cleanAllActiveSegments() {
+            for (let idxStr in activeSegments) {
+                const idx = parseInt(idxStr);
+                removeSegmentAtIndex(idx);
+            }
+            activeSegments = {};
+            trackData = {};
+        }
+
+        function removeSegmentAtIndex(index) {
+            const segment = activeSegments[index];
+            if (!segment) return;
+
+            scene.remove(segment.group);
+            segment.group.traverse(child => {
+                if (child.isMesh) {
+                    child.geometry.dispose();
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => m.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+            });
+            delete activeSegments[index];
+            delete trackData[index];
+        }
+
+
+        // --- CORE GAME STATE MANAGEMENT & SYSTEM LOOP ---
+
+        function startNewRun() {
+            // Read settings
+            const settings = DIFF_SETTINGS[difficulty];
+            lives = settings.startLives;
+            scoreCents = 0;
+            intervalsSurvived = 0;
+            targetLane = 1;
+            currentLane = 1;
+            bounceStartIndex = 0;
+            isHighBounce = false;
+            currentSpeedMultiplier = 1.0;
+            isInvulnerable = false;
+            invulnerabilityTimer = 0;
+            
+            // Clean up and clear old visuals completely
+            cleanAllActiveSegments();
+            
+            // Set starting reachability solve state
+            currentReachableStates = [{ lane: 1, flyOver: false }];
+
+            // Generate initial runway chunk buffer (100 segments ahead)
+            for (let i = 0; i < 100; i++) {
+                generateSegment(i);
+            }
+
+            // FIXED: Position ball precisely using helper translation
+            ballGroup.position.set(getXFromLane(currentLane), 0, 0);
+            
+            // Reset trail visual history
+            for (let mesh of trailSpheres) {
+                mesh.position.copy(ballGroup.position);
+            }
+
+            // Sync HTML overlays
+            updateHUD();
+            document.getElementById('start-screen').classList.add('opacity-0');
+            setTimeout(() => {
+                document.getElementById('start-screen').classList.add('hidden');
+            }, 500);
+            
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+            if (window.innerHeight < 768) {
+                document.getElementById('mobile-controls').classList.remove('hidden');
+            }
+
+            Sound.init();
+            gameActive = true;
+        }
+
+        function triggerGameOver() {
+            gameActive = false;
+            Sound.play('gameover');
+            
+            // LocalStorage HighScore updates
+            const highKey = `pong_runner_highscore_${difficulty}`;
+            const currentHighCents = parseInt(localStorage.getItem(highKey)) || 0;
+            if (scoreCents > currentHighCents) {
+                localStorage.setItem(highKey, scoreCents);
+            }
+
+            // Format final screen
+            document.getElementById('final-score').innerText = `€${(scoreCents / 100).toFixed(2)}`;
+            document.getElementById('final-distance').innerText = `${intervalsSurvived} m`;
+            document.getElementById('high-score').innerText = `€${((Math.max(scoreCents, currentHighCents)) / 100).toFixed(2)}`;
+            
+            document.getElementById('game-over-screen').classList.remove('hidden');
+            document.getElementById('game-over-screen').classList.add('flex');
+            
+            // Hide running mobile layouts
+            document.getElementById('mobile-controls').classList.add('hidden');
+        }
+
+        // Lose life and trigger bounce cushion protection
+        function registerDamage() {
+            if (isInvulnerable) return;
+
+            lives--;
+            Sound.play('hurt');
+            triggerParticleBurst(ballGroup.position, 0xff0033, 20);
+
+            if (lives <= 0) {
+                triggerGameOver();
+            } else {
+                // Grant invulnerability frames and flash the ball
+                isInvulnerable = true;
+                invulnerabilityTimer = 1.8; // 1.8 seconds invulnerability
+            }
+            updateHUD();
+        }
+
+        function collectCoin(coinKey, itemPosition) {
+            const coinDef = COIN_TYPES[coinKey];
+            if (!coinDef) return;
+
+            scoreCents += coinDef.cents;
+            Sound.play('coin');
+            
+            // Spawn dynamic coin splash
+            triggerParticleBurst(itemPosition, coinDef.isEuro ? 0xffea00 : 0xffaa00, 10);
+            
+            // Build custom floating money tag (+1€, +5c)
+            const popupText = coinDef.isEuro ? `+${coinDef.cents / 100}€` : `+${coinDef.cents}¢`;
+            const popupColor = coinDef.isEuro ? 'text-yellow-400 neon-text-cyan' : 'text-orange-400';
+            spawnFloatingText(itemPosition, popupText, popupColor);
+            
+            updateHUD();
+        }
+
+        function collectHeart(itemPosition) {
+            if (lives < maxLives) {
+                lives++;
+                Sound.play('heart');
+                triggerParticleBurst(itemPosition, 0xff2a85, 15);
+                spawnFloatingText(itemPosition, "+1 LIFE", "text-pink-500 neon-text-pink");
+                updateHUD();
+            } else {
+                // Max life converting bonus!
+                scoreCents += 200; // Gift 2 Euros
+                Sound.play('coin');
+                triggerParticleBurst(itemPosition, 0xffea00, 15);
+                spawnFloatingText(itemPosition, "MAX LIFE BONUS: +2€", "text-yellow-400 neon-text-cyan");
+                updateHUD();
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-score').innerText = `€${(scoreCents / 100).toFixed(2)}`;
+            document.getElementById('hud-distance').innerText = `${intervalsSurvived} m`;
+            document.getElementById('hud-speed').innerText = `${currentSpeedMultiplier.toFixed(1)}x`;
+
+            // Draw Backup simulation Heart symbols
+            const livesDiv = document.getElementById('hud-lives');
+            livesDiv.innerHTML = '';
+            for (let i = 0; i < maxLives; i++) {
+                const heartSpan = document.createElement('span');
+                heartSpan.className = i < lives ? 'text-pink-500 font-extrabold animate-pulse' : 'text-slate-800';
+                heartSpan.innerText = '♥';
+                livesDiv.appendChild(heartSpan);
+            }
+        }
+
+
+        // --- COLLISION RESOLUTION AND PHYSICS JUMPS ---
+
+        // Called precisely when the ball completes a parabolic jump phase
+        function handlePlatformLanding(landingIntervalIndex) {
+            intervalsSurvived = landingIntervalIndex;
+            updateHUD();
+
+            // Clear old segments left behind for extreme memory optimization
+            const purgeThreshold = landingIntervalIndex - 6;
+            for (let idxStr in activeSegments) {
+                const idx = parseInt(idxStr);
+                if (idx < purgeThreshold) {
+                    removeSegmentAtIndex(idx);
+                }
+            }
+
+            // Ensure dynamic forward run-way remains buffered at 100 segments
+            const currentMaxGenerated = Math.max(...Object.keys(trackData).map(Number));
+            if (currentMaxGenerated - landingIntervalIndex < 80) {
+                for (let i = currentMaxGenerated + 1; i <= landingIntervalIndex + 100; i++) {
+                    generateSegment(i);
+                }
+            }
+
+            // Process Landing Lane Tile Collision Rules
+            const landedTile = trackData[landingIntervalIndex]?.[targetLane];
+
+            // FIXED: Trigger Fall Death on Abyss Holes OR Out of Bounds (-1 or 3)
+            if (!landedTile || landedTile.type === 'hole') {
+                registerDamage();
+                
+                // Snap player instantly back to closest edge lane to avoid infinite falling void loop
+                if (targetLane < 0) {
+                    targetLane = 0;
+                    currentLane = 0;
+                } else if (targetLane > 2) {
+                    targetLane = 2;
+                    currentLane = 2;
+                }
+                
+                // Reset jump parameters safely so response snapping is perfectly aligned
+                isHighBounce = false;
+                bounceStartIndex = landingIntervalIndex;
+                return;
+            }
+
+            // Landing Sound
+            Sound.play('bounce');
+
+            // Set squash-stretch impact timing
+            squashTimer = 0.12;
+
+            // Evaluate forced landing events
+            if (landedTile.type === 'trampoline') {
+                Sound.play('trampoline');
+                triggerParticleBurst(ballGroup.position, 0x00f0ff, 12);
+                
+                // Squash and stretch base pad visual bounce
+                const segObj = activeSegments[landingIntervalIndex];
+                if (segObj) {
+                    const trampMesh = segObj.items.find(i => i.type === 'trampoline')?.mesh;
+                    if (trampMesh) {
+                        trampMesh.scale.set(1.2, 0.4, 1.2);
+                        setTimeout(() => trampMesh.scale.set(1.0, 1.0, 1.0), 150);
+                    }
+                }
+
+                // Initiate a Double Jump (flying over the immediately next platform index)
+                isHighBounce = true;
+                bounceStartIndex = landingIntervalIndex;
+            } 
+            else {
+                // Standard Jump reset
+                isHighBounce = false;
+                bounceStartIndex = landingIntervalIndex;
+                
+                // Read and apply immediate landing shift arrow directions
+                if (landedTile.type === 'arrow-left') {
+                    targetLane = Math.max(0, targetLane - 1);
+                } else if (landedTile.type === 'arrow-right') {
+                    targetLane = Math.min(2, targetLane + 1);
+                }
+            }
+        }
+
+
+        // --- ENGINE LOOP TICK UPDATES ---
+
+        let clock = new THREE.Clock();
+        let squashTimer = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const deltaTime = Math.min(clock.getDelta(), 0.1); // Clip extreme lag frames
+
+            if (gameActive) {
+                // Get current difficulty configuration settings
+                const config = DIFF_SETTINGS[difficulty];
+                
+                // Progressive running speed multiplier based on climb progress
+                currentSpeedMultiplier = 1.0 + Math.min(0.8, intervalsSurvived * config.speedGrowth);
+                const currentZSpeed = config.baseSpeed * currentSpeedMultiplier;
+
+                // 1. Linearly translate ball forward down highway
+                ballGroup.position.z += currentZSpeed * deltaTime;
+
+                // 2. Evaluate parabolic bounce trajectory
+                const totalBounceDistance = isHighBounce ? (intervalLength * 2) : intervalLength;
+                const peakHeight = isHighBounce ? highPeakHeight : normalPeakHeight;
+
+                const progress = (ballGroup.position.z % totalBounceDistance) / totalBounceDistance;
+                
+                // Complete continuous vertical paraboloid trajectory formula
+                let currentY = peakHeight * 4.0 * progress * (1.0 - progress);
+                
+                // Cushion drop correction for fall recovery
+                if (isInvulnerable && !isHighBounce && progress < 0.2) {
+                    currentY = Math.max(currentY, 1.0);
+                }
+                ballGroup.position.y = currentY;
+
+                // Evaluate exact landing boundary intersections
+                const currentIntervalIndex = Math.floor(ballGroup.position.z / intervalLength);
+                const projectedLandingIndex = isHighBounce ? (bounceStartIndex + 2) : (bounceStartIndex + 1);
+
+                if (ballGroup.position.z >= projectedLandingIndex * intervalLength) {
+                    handlePlatformLanding(projectedLandingIndex);
+                }
+
+                // 3. Smooth Horizontal interpolation for responsive slides (Includes out of bounds -1 and 3)
+                currentLane = THREE.MathUtils.lerp(currentLane, targetLane, 0.16);
+                
+                // FIXED: Direct translation mapping to physical space using coordinate helper
+                ballGroup.position.x = getXFromLane(currentLane);
+
+                // Apply organic rotative banking leans depending on sliding speed (banks into turns)
+                const slideVelocity = (targetLane - currentLane);
+                ball.rotation.z = THREE.MathUtils.lerp(ball.rotation.z, slideVelocity * 0.45, 0.1);
+                ball.rotation.x += currentZSpeed * 0.1 * deltaTime; // Continual ball forward roll
+
+                // 4. Update squash-and-stretch parameters
+                if (squashTimer > 0) {
+                    squashTimer -= deltaTime;
+                    ball.scale.set(1.22, 0.68, 1.22); // Impact flattening
+                } else {
+                    // Normal flight stretching based on vertical velocity
+                    const verticalVelocity = (isHighBounce ? 1 : 0.5) * (0.5 - progress);
+                    const stretchY = 1.0 + Math.abs(verticalVelocity) * 0.28;
+                    const squashXZ = 1.0 - Math.abs(verticalVelocity) * 0.14;
+                    ball.scale.set(squashXZ, stretchY, squashXZ);
+                }
+
+                // 5. Update Steering Lock Notification alpha HUD flashes
+                if (steeringLockAlertTimer > 0) {
+                    steeringLockAlertTimer -= deltaTime;
+                    if (steeringLockAlertTimer <= 0) {
+                        const alertHUD = document.getElementById('hud-notification');
+                        alertHUD.classList.add('opacity-0', 'scale-90');
+                        alertHUD.classList.remove('opacity-100', 'scale-100');
+                    }
+                }
+
+                // 6. Handle Invulnerability flash feedback
+                if (isInvulnerable) {
+                    invulnerabilityTimer -= deltaTime;
+                    ball.visible = Math.floor(Date.now() / 60) % 2 === 0; // rapid strobing
+                    if (invulnerabilityTimer <= 0) {
+                        isInvulnerable = false;
+                        ball.visible = true;
+                    }
+                }
+
+                // 7. Dynamic Camera system following smoothly behind the ball (camera look constraints clamped)
+                camera.position.x = THREE.MathUtils.lerp(camera.position.x, THREE.MathUtils.clamp(ballGroup.position.x * 0.7, -4.5, 4.5), 0.08);
+                camera.position.y = THREE.MathUtils.lerp(camera.position.y, ballGroup.position.y * 0.35 + 4.8, 0.08);
+                camera.position.z = ballGroup.position.z - 7.5; // Locked chasing distance offset
+                camera.lookAt(new THREE.Vector3(ballGroup.position.x * 0.5, ballGroup.position.y * 0.3 + 0.5, ballGroup.position.z + 10.0));
+
+                // 8. Visual item collection collision checks (Evaluated on the current Interval index)
+                const currentSeg = activeSegments[currentIntervalIndex];
+                if (currentSeg && currentSeg.items) {
+                    for (let i = currentSeg.items.length - 1; i >= 0; i--) {
+                        const item = currentSeg.items[i];
+                        
+                        // Check if ball is on the correct lane and inside collection volume
+                        if (item.lane === Math.round(currentLane)) {
+                            // Compute direct 3D distance check (Items are on the floor, so distance threshold captures ball exactly as it hits the floor)
+                            const worldItemPos = new THREE.Vector3();
+                            item.mesh.getWorldPosition(worldItemPos);
+                            
+                            const distance = ballGroup.position.distanceTo(worldItemPos);
+                            
+                            if (distance < 1.35) {
+                                // Trigger collection and remove visual model from scene
+                                if (item.type === 'coin') {
+                                    collectCoin(item.coinDetail, worldItemPos);
+                                } else if (item.type === 'heart') {
+                                    collectHeart(worldItemPos);
+                                }
+                                
+                                currentSeg.group.remove(item.mesh);
+                                currentSeg.items.splice(i, 1);
+                            }
+                        }
+                    }
+                }
+
+                // 9. Passive Item Rotations (Coins spin upright on Y axis & have organic vertical hover waves)
+                const activeIndices = Object.keys(activeSegments).map(Number);
+                const hoverOffset = Math.sin(Date.now() * 0.005) * 0.12; // Organic bouncing hover waves
+                for (let idx of activeIndices) {
+                    const seg = activeSegments[idx];
+                    if (seg && seg.items) {
+                        for (let item of seg.items) {
+                            if (item.type === 'coin' || item.type === 'heart') {
+                                item.mesh.rotation.y += 2.2 * deltaTime; // Constant faster spin
+                                item.mesh.position.y = 0.45 + hoverOffset; // Floating hover elevation
+                            }
+                        }
+                    }
+                }
+
+                // 10. Update Comet Ghost Trail
+                for (let i = trailSpheres.length - 1; i > 0; i--) {
+                    trailSpheres[i].position.copy(trailSpheres[i - 1].position);
+                }
+                trailSpheres[0].position.copy(ballGroup.position);
+                const trailVisible = ball.visible;
+                for (let t of trailSpheres) {
+                    t.visible = trailVisible;
+                }
+            } else {
+                // Passive Start-Screen camera rotation loop for background aesthetics
+                const rotTime = Date.now() * 0.00015;
+                camera.position.set(Math.cos(rotTime) * 12.0, 8.0, -10.0);
+                camera.lookAt(new THREE.Vector3(0, 0, 15));
+            }
+
+            // 11. Update active particles and fade them out
+            for (let p of particlePool) {
+                if (p.active) {
+                    p.mesh.position.addScaledVector(p.velocity, deltaTime);
+                    p.velocity.y -= 9.8 * deltaTime; // Gravity pull
+                    p.life -= deltaTime;
+                    
+                    const ratio = p.life / 0.8;
+                    p.mesh.scale.set(ratio, ratio, ratio);
+                    
+                    if (p.life <= 0) {
+                        p.active = false;
+                        p.mesh.visible = false;
+                    }
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+
+        // --- SCREEN ROUTING AND DOM BINDING TRIGGER ---
+
+        window.onload = function() {
+            // Initiate Three.js engine viewport
+            initScene();
+
+            // Set default sound mute configuration from LocalStorage
+            Sound.updateUI();
+
+            // Bind start screen difficulty buttons
+            const diffButtons = document.querySelectorAll('#difficulty-selectors button');
+            diffButtons.forEach(btn => {
+                // pointerdown handles both touch and click instantaneously with no 300ms mobile lag
+                btn.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    diffButtons.forEach(b => {
+                        b.className = "px-4 py-2 rounded-xl text-xs md:text-sm font-bold bg-slate-800 text-slate-300 hover:bg-slate-750 border border-transparent transition-all";
+                    });
+                    btn.className = "px-4 py-2 rounded-xl text-xs md:text-sm font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 hover:bg-cyan-500/35 transition-all";
+                    difficulty = btn.dataset.diff;
+                    Sound.play('bounce'); // Satisfying tap audio cue
+                });
+            });
+
+            // Start screen action (Start Game on click/pointerdown)
+            const startBtn = document.getElementById('btn-start');
+            const handleStartTrigger = (e) => {
+                e.preventDefault();
+                startNewRun();
+            };
+            startBtn.addEventListener('click', handleStartTrigger);
+            startBtn.addEventListener('pointerdown', handleStartTrigger);
+
+            // Re-spawn Action
+            document.getElementById('btn-restart').addEventListener('click', () => {
+                startNewRun();
+            });
+
+            // Return to main console menu
+            document.getElementById('btn-menu').addEventListener('click', () => {
+                document.getElementById('game-over-screen').classList.add('hidden');
+                document.getElementById('start-screen').classList.remove('hidden');
+                document.getElementById('start-screen').classList.remove('opacity-0');
+                document.getElementById('hud').classList.add('hidden');
+            });
+
+            // Mute Controls Toggle
+            document.getElementById('btn-mute').addEventListener('click', (e) => {
+                e.stopPropagation();
+                Sound.toggleMute();
+            });
+
+            // Touch Screen On-Screen Arrow Controls (Zero mobile delay)
+            document.getElementById('btn-mobile-left').addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                moveLane(-1); // Mobile Left slides Left
+            });
+            document.getElementById('btn-mobile-right').addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                moveLane(1);  // Mobile Right slides Right
+            });
+
+            // Run central draw animation clock
+            animate();
+        };
+    </script>
+</body>
+</html>
