@@ -7,6 +7,7 @@ Live links to play:
 * [2D Parking](https://alexfc14.github.io/vibe-games/2d_car_parking/play.html)
 * [Hotwheels Racing](https://alexfc14.github.io/vibe-games/hotwheels/play.html)
 * [Carrom](https://alexfc14.github.io/vibe-games/carrom/play.html)
+* [Pong Runner](https://alexfc14.github.io/vibe-games/pong-runner/play.html)
 
 ----
 # License
