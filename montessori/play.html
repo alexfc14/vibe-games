@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Montessori Infant Visual Series</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body, html {
+            margin: 0; padding: 0; overflow: hidden;
+            width: 100%; height: 100%; user-select: none;
+            -webkit-user-select: none; background-color: #f7f5f0;
+            transition: background-color 1.5s ease;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+    </style>
+</head>
+<body class="relative">
+
+    <!-- Three.js Canvas Container -->
+    <div id="canvas-container" class="absolute inset-0 z-0"></div>
+
+    <!-- Minimalist Utility Bar -->
+    <div class="absolute top-4 right-4 flex gap-2 z-20 pointer-events-none">
+        <div class="pointer-events-auto flex gap-2 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-1.5 rounded-2xl border border-white/20 dark:border-white/5 shadow-sm animate-fade-in">
+            <!-- Blow Wind Gust -->
+            <button id="btn-wind-gust" class="p-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50 active:scale-90 transition-all duration-300" title="Blow Wind Gust">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+            </button>
+            <!-- Toggle Music -->
+            <button id="toggle-sound" class="p-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50 active:scale-90 transition-all duration-300" title="Toggle Generative Music Box">
+                <svg id="sound-icon-on" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+                <svg id="sound-icon-off" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zm12.364-1.414L15.05 10.636m0 4.242L17.95 12"/></svg>
+            </button>
+            <!-- Day/Night Toggle -->
+            <button id="toggle-theme" class="p-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50 active:scale-90 transition-all duration-300" title="Toggle Night Projector">
+                <svg id="sun-icon" class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.364l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+                <svg id="moon-icon" class="w-5 h-5 text-indigo-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Explicit Navigation Overlay Arrows (Instant switching) -->
+    <div class="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none z-15">
+        <button id="btn-prev" class="pointer-events-auto w-12 h-12 rounded-full bg-white/20 dark:bg-slate-900/20 backdrop-blur-md flex items-center justify-center text-slate-700/60 dark:text-slate-300/60 shadow-md border border-white/20 active:scale-95 transition-all hover:bg-white/40 dark:hover:bg-slate-900/40">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <button id="btn-next" class="pointer-events-auto w-12 h-12 rounded-full bg-white/20 dark:bg-slate-900/20 backdrop-blur-md flex items-center justify-center text-slate-700/60 dark:text-slate-300/60 shadow-md border border-white/20 active:scale-95 transition-all hover:bg-white/40 dark:hover:bg-slate-900/40">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+        </button>
+    </div>
+
+    <!-- Navigation Dots (5 Dots for the 5 Mobiles) -->
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 pointer-events-auto z-10">
+        <button class="nav-dot w-2.5 h-2.5 rounded-full bg-indigo-500 transition-all duration-300" data-idx="0"></button>
+        <button class="nav-dot w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700 transition-all duration-300" data-idx="1"></button>
+        <button class="nav-dot w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700 transition-all duration-300" data-idx="2"></button>
+        <button class="nav-dot w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700 transition-all duration-300" data-idx="3"></button>
+        <button class="nav-dot w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700 transition-all duration-300" data-idx="4"></button>
+    </div>
+
+    <script>
+        // ============================================================================
+        // 1. ENGINE SETUP
+        // ============================================================================
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0xf7f5f0, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(-30, 4.2, 11); // Start focused directly on Munari
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        container.appendChild(renderer.domElement);
+
+        const params = {
+            activeMobile: 0,
+            isNight: false,
+            windSpeed: 0.35,
+            gustStrength: 0,
+            autoLoopTime: 120000 // 2 minutes auto-rotate
+        };
+
+        // ============================================================================
+        // 2. LIGHTING & ENVIRONMENT
+        // ============================================================================
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.DirectionalLight(0xfff9f2, 1.3);
+        sunLight.position.set(10, 15, 8);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.set(2048, 2048);
+        sunLight.shadow.bias = -0.0005;
+        scene.add(sunLight);
+
+        const dynamicPointLight = new THREE.PointLight(0xffeedd, 1.5, 20);
+        dynamicPointLight.position.set(0, 6, 2);
+        scene.add(dynamicPointLight);
+
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0xefebe3, roughness: 0.95 });
+        const wall = new THREE.Mesh(new THREE.PlaneGeometry(300, 100), wallMat);
+        wall.position.set(0, 4, -4.5);
+        wall.receiveShadow = true;
+        scene.add(wall);
+
+        // Starry ceiling projector for Night Mode
+        const starCount = 400;
+        const starGeometry = new THREE.BufferGeometry();
+        const starPositions = new Float32Array(starCount * 3);
+        const starColors = new Float32Array(starCount * 3);
+
+        for (let i = 0; i < starCount; i++) {
+            starPositions[i * 3] = (Math.random() - 0.5) * 120;
+            starPositions[i * 3 + 1] = 12 + Math.random() * 20;
+            starPositions[i * 3 + 2] = (Math.random() - 0.5) * 40;
+
+            starColors[i * 3] = 0.8 + Math.random() * 0.2;
+            starColors[i * 3 + 1] = 0.85 + Math.random() * 0.15;
+            starColors[i * 3 + 2] = 1.0;
+        }
+
+        starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+        starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+        const starMaterial = new THREE.PointsMaterial({
+            size: 0.22,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.0,
+            blending: THREE.AdditiveBlending
+        });
+
+        const starField = new THREE.Points(starGeometry, starMaterial);
+        scene.add(starField);
+
+        // ============================================================================
+        // 3. TEXTURES & COZY INFANT MATERIALS
+        // ============================================================================
+        function createTexture(type) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 512, 512);
+            ctx.fillStyle = '#000';
+            
+            if (type === 'checker') {
+                for (let y = 0; y < 8; y++) {
+                    for (let x = 0; x < 8; x++) {
+                        if ((x + y) % 2 === 0) ctx.fillRect(x * 64, y * 64, 64, 64);
+                    }
+                }
+            } else if (type === 'stripes') {
+                for (let i = 0; i < 512; i += 64) ctx.fillRect(i, 0, 32, 512);
+            } else if (type === 'target') {
+                for (let r = 240; r > 20; r -= 48) {
+                    ctx.beginPath(); ctx.arc(256, 256, r, 0, Math.PI * 2);
+                    ctx.fill(); ctx.fillStyle = ctx.fillStyle === '#000' ? '#fff' : '#000';
+                }
+            } else if (type === 'diagonal') {
+                ctx.beginPath();
+                ctx.moveTo(0, 0); ctx.lineTo(512, 512); ctx.lineTo(0, 512);
+                ctx.closePath(); ctx.fill();
+                ctx.beginPath(); ctx.arc(256, 256, 128, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 16;
+                ctx.strokeRect(128, 128, 256, 256);
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            return texture;
+        }
+
+        const texChecker = createTexture('checker');
+        const texStripes = createTexture('stripes');
+        const texTarget = createTexture('target');
+        const texDiagonal = createTexture('diagonal');
+
+        const woodMat = new THREE.MeshStandardMaterial({ color: 0xdfb48c, roughness: 0.7, metalness: 0.05 });
+        const glassMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff, transparent: true, opacity: 0.45,
+            transmission: 0.95, roughness: 0.04, metalness: 0.1,
+            clearcoat: 1.0, clearcoatRoughness: 0.04, ior: 1.5, side: THREE.DoubleSide
+        });
+
+        // ============================================================================
+        // 4. PHYSICS ENGINE
+        // ============================================================================
+        const physicsObjects = [];
+        function addPhysicsObject(config) {
+            const obj = {
+                id: config.id,
+                parent: config.parent || null,
+                rootPos: config.rootPos ? config.rootPos.clone() : new THREE.Vector3(),
+                localOffset: config.localOffset || [0, 0, 0],
+                wireLength: config.wireLength || 1,
+                angleX: 0, angleZ: 0, spinY: Math.random() * Math.PI,
+                velX: 0, velZ: 0, velSpinY: (Math.random() - 0.5) * 0.1,
+                pos: new THREE.Vector3(),
+                type: config.type || 'shape',
+                mesh: config.mesh,
+                mass: config.mass || 1.0
+            };
+
+            const lineGeom = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+            obj.wire = new THREE.Line(lineGeom, new THREE.LineBasicMaterial({ color: 0xdfdcd3, opacity: 0.6, transparent: true }));
+            scene.add(obj.wire);
+            
+            physicsObjects.push(obj);
+            return obj;
+        }
+
+        function getAnchor(obj) {
+            if (!obj.parent) return obj.rootPos.clone();
+            const offset = new THREE.Vector3(...obj.localOffset).applyEuler(new THREE.Euler(obj.parent.angleX, obj.parent.spinY, obj.parent.angleZ, 'YXZ'));
+            return obj.parent.pos.clone().add(offset);
+        }
+
+        function createHanger(x) {
+            const group = new THREE.Group();
+            const standMat = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.45 });
+            
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 14, 16), standMat);
+            pole.position.set(x - 4.5, 3, -1.8);
+            pole.castShadow = true; pole.receiveShadow = true;
+            group.add(pole);
+
+            const radius = 4.5;
+            for (let i = 0; i <= 12; i++) {
+                const angle = (i / 12) * (Math.PI / 2);
+                const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.5, 16), standMat);
+                seg.position.set((x - 4.5) + (radius * Math.sin(angle)), 10 + (radius * Math.cos(angle)), -1.8 + (1.8 * (i / 12)));
+                seg.rotation.z = -angle;
+                seg.castShadow = true;
+                group.add(seg);
+            }
+            scene.add(group);
+        }
+
+        // ============================================================================
+        // 5. THE 5 HIGH-CONTRAST INFANT MOBILES (Centered & Balanced)
+        // ============================================================================
+        const mobilePositions = [-30, -15, 0, 15, 30];
+        mobilePositions.forEach(createHanger);
+
+        // ----------------------------------------------------
+        // -- Mobile 0: The Balanced Munari (FULLY RESTORED) --
+        // ----------------------------------------------------
+        const m0 = new THREE.Group(); scene.add(m0);
+
+        // Top rod
+        const r0_1 = addPhysicsObject({
+            id: 'm0_r1', parent: null, rootPos: new THREE.Vector3(-30, 8.5, 0), wireLength: 1.0, type: 'rod',
+            mesh: new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 5.0).rotateZ(Math.PI / 2), woodMat), mass: 2.5
+        });
+        m0.add(r0_1.mesh);
+
+        // Left sub-rod hanging from top rod
+        const rLeft = addPhysicsObject({
+            id: 'm0_rLeft', parent: r0_1, localOffset: [-2.5, 0, 0], wireLength: 1.8, type: 'rod',
+            mesh: new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 2.2).rotateZ(Math.PI / 2), woodMat), mass: 1.5
+        });
+        m0.add(rLeft.mesh);
+
+        // Glass sphere hanging on right of left sub-rod
+        const glass = addPhysicsObject({
+            id: 'm0_glass', parent: rLeft, localOffset: [1.1, 0, 0], wireLength: 2.2, type: 'shape',
+            mesh: new THREE.Mesh(new THREE.SphereGeometry(0.65, 32, 32), glassMat), mass: 1.2
+        });
+        m0.add(glass.mesh);
+
+        // Checkerboard Disc hanging on left of left sub-rod
+        const discGeom = new THREE.CylinderGeometry(0.48, 0.48, 0.04, 32).rotateX(Math.PI / 2);
+        const disc = addPhysicsObject({
+            id: 'm0_disc', parent: rLeft, localOffset: [-1.1, 0, 0], wireLength: 2.8, type: 'shape',
+            mesh: new THREE.Mesh(discGeom, new THREE.MeshStandardMaterial({ map: texChecker, roughness: 0.6 })), mass: 0.8
+        });
+        m0.add(disc.mesh);
+
+        // Right sub-rod (Rod 2) hanging from top rod
+        const r0_2 = addPhysicsObject({
+            id: 'm0_r2', parent: r0_1, localOffset: [2.5, 0, 0], wireLength: 1.6, type: 'rod',
+            mesh: new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 3.6).rotateZ(Math.PI / 2), woodMat), mass: 1.5
+        });
+        m0.add(r0_2.mesh);
+
+        // Striped Cylinder hanging on left of Rod 2
+        const cylGeom = new THREE.CylinderGeometry(0.35, 0.35, 1.1, 32);
+        const cyl = addPhysicsObject({
+            id: 'm0_cyl', parent: r0_2, localOffset: [-1.8, 0, 0], wireLength: 3.0, type: 'shape',
+            mesh: new THREE.Mesh(cylGeom, new THREE.MeshStandardMaterial({ map: texStripes, roughness: 0.5 })), mass: 0.9
+        });
+        m0.add(cyl.mesh);
+
+        // Rod 3 hanging on right of Rod 2
+        const r0_3 = addPhysicsObject({
+            id: 'm0_r3', parent: r0_2, localOffset: [1.8, 0, 0], wireLength: 1.0, type: 'rod',
+            mesh: new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.4).rotateZ(Math.PI / 2), woodMat), mass: 1.0
+        });
+        m0.add(r0_3.mesh);
+
+        // Diagonal Square hanging on left of Rod 3
+        const square = addPhysicsObject({
+            id: 'm0_square', parent: r0_3, localOffset: [-1.2, 0, 0], wireLength: 2.4, type: 'shape',
+            mesh: new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 0.04), new THREE.MeshStandardMaterial({ map: texDiagonal, roughness: 0.6 })), mass: 0.8
+        });
+        m0.add(square.mesh);
+
+        // Target Triangle hanging on right of Rod 3
+        const triShape = new THREE.Shape();
+        triShape.moveTo(0, 0.6); triShape.lineTo(-0.6, -0.5); triShape.lineTo(0.6, -0.5); triShape.closePath();
+        const triGeom = new THREE.ExtrudeGeometry(triShape, { depth: 0.04, bevelEnabled: false }).center();
+        const triangle = addPhysicsObject({
+            id: 'm0_triangle', parent: r0_3, localOffset: [1.2, 0, 0], wireLength: 3.2, type: 'shape',
+            mesh: new THREE.Mesh(triGeom, new THREE.MeshStandardMaterial({ map: texTarget, roughness: 0.6 })), mass: 0.8
+        });
+        m0.add(triangle.mesh);
+
+        // ----------------------------------------------------
+        // -- Mobile 1: Concentric Nesting Rings --
+        // ----------------------------------------------------
+        const m1 = new THREE.Group(); scene.add(m1);
+        const r1_1 = addPhysicsObject({
+            id: 'm1_r1', parent: null, rootPos: new THREE.Vector3(-15, 8.5, 0), wireLength: 1.0, type: 'rod',
+            mesh: new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 4.0).rotateZ(Math.PI/2), woodMat), mass: 2.0
+        });
+        m1.add(r1_1.mesh);
+
+        // Nested concentric rings hanging directly from the center hook
+        const ringOuter = addPhysicsObject({
+            id: 'm1_ring_outer', parent: r1_1, localOffset: [0, 0, 0], wireLength: 2.5, type: 'shape',
+            mesh: new THREE.Mesh(new THREE.TorusGeometry(0.85, 0.06, 16, 64), new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.5 })), mass: 0.9
+        });
+        m1.add(ringOuter.mesh);
+
+        const ringMiddle = addPhysicsObject({
+            id: 'm1_ring_middle', parent: r1_1, localOffset: [0, 0, 0], wireLength: 2.5, type: 'shape',
+            mesh: new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.05, 16, 64), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 })), mass: 0.7
+        });
+        m1.add(ringMiddle.mesh);
+
+        const discGeom2 = new THREE.CylinderGeometry(0.25, 0.25, 0.04, 32).rotateX(Math.PI / 2);
+        const ringInner = addPhysicsObject({
+            id: 'm1_ring_inner', parent: r1_1, localOffset: [0, 0, 0], wireLength: 2.5, type: 'shape',
+            mesh: new THREE.Mesh(discGeom2, new THREE.MeshStandardMaterial({ map: texChecker, roughness: 0.6 })), mass: 0.5
+        });
+        m1.add(ringInner.mesh);
+
+        // Balanced side ornaments for complete harmony
+        const bLeft = addPhysicsObject({
+            id: 'm1_bleft', parent: r1_1, localOffset: [-1.6, 0, 0], wireLength: 2.0, type: 'shape',
+            mesh: new THREE.Mesh(new THREE.SphereGeometry(0.4, 32, 32), new THREE.MeshStandardMaterial({ map: texChecker, roughness: 0.5 })), mass: 0.8
+        });
+        m1.add(bLeft.mesh);
+
+        const bRight = addPhysicsObject({
+            id: 'm1_bright', parent: r1_1, localOffset: [1.6, 0, 0], wireLength: 2.0, type: 'shape',
+            mesh: new THREE.Mesh(new THREE.SphereGeometry(0.4, 32, 32), new THREE.MeshStandardMaterial({ map: texTarget, roughness: 0.5 })), mass: 0.8
+        });
+        m1.add(bRight.mesh);
+
+        // ----------------------------------------------------
+        // -- Mobile 2: The Bauhaus B&W --
+        // ----------------------------------------------------
+        const m2 = new THREE.Group(); scene.add(m2);
+        const r2_1 = addPhysicsObject({
+            id: 'm2_r1', parent: null, rootPos: new THREE.Vector3(0, 8.5, 0), wireLength: 1.0, type: 'rod',
+            mesh: new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 4.5).rotateZ(Math.PI/2), woodMat), mass: 2.0
+        });
+        m2.add(r2_1.mesh);
+
+        const bhGeoms = [new THREE.BoxGeometry(0.85, 0.85, 0.85), new THREE.SphereGeometry(0.52, 32, 32), new THREE.OctahedronGeometry(0.6)];
+        const bhMats = [
+            new THREE.MeshStandardMaterial({ map: texChecker, roughness: 0.5 }),
+            new THREE.MeshStandardMaterial({ map: texTarget, roughness: 0.5 }),
+            new THREE.MeshStandardMaterial({ map: texStripes, roughness: 0.5 })
+        ];
+
+        bhGeoms.forEach((geo, i) => {
+            const shape = addPhysicsObject({
+                id: `m2_bh_${i}`, parent: r2_1, localOffset: [-1.5 + i * 1.5, 0, 0], wireLength: 2.4, type: 'shape',
+                mesh: new THREE.Mesh(geo, bhMats[i]), mass: 0.9
+            });
+            m2.add(shape.mesh);
+        });
+
+        // ----------------------------------------------------
+        // -- Mobile 3: Alternating Checker Cubes --
+        // ----------------------------------------------------
+        const m3 = new THREE.Group(); scene.add(m3);
+        const r3_1 = addPhysicsObject({
+            id: 'm3_r1', parent: null, rootPos: new THREE.Vector3(15, 8.5, 0), wireLength: 1.0, type: 'rod',
+            mesh: new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 4.4).rotateZ(Math.PI/2), woodMat), mass: 2.0
+        });
+        m3.add(r3_1.mesh);
+
+        const m3Cubes = [
+            new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), new THREE.MeshStandardMaterial({ map: texChecker })),
+            new THREE.Mesh(new THREE.SphereGeometry(0.42, 32, 32), new THREE.MeshStandardMaterial({ map: texTarget })),
+            new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), new THREE.MeshStandardMaterial({ map: texStripes }))
+        ];
+
+        m3Cubes.forEach((m, i) => {
+            const shape = addPhysicsObject({
+                id: `m3_shape_${i}`, parent: r3_1, localOffset: [-1.5 + i * 1.5, 0, 0], wireLength: 1.8 + (i % 2) * 0.8, type: 'shape',
+                mesh: m, mass: 0.85
+            });
+            m3.add(shape.mesh);
+        });
+
+        // ----------------------------------------------------
+        // -- Mobile 4: The Radiant Star --
+        // ----------------------------------------------------
+        const m4 = new THREE.Group(); scene.add(m4);
+        const r4_1 = addPhysicsObject({
+            id: 'm4_r1', parent: null, rootPos: new THREE.Vector3(30, 8.5, 0), wireLength: 1.0, type: 'rod',
+            mesh: new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 4.2).rotateZ(Math.PI/2), woodMat), mass: 2.0
+        });
+        m4.add(r4_1.mesh);
+
+        const radiant1 = addPhysicsObject({
+            id: 'm4_radiant1', parent: r4_1, localOffset: [-1.4, 0, 0], wireLength: 2.8, type: 'shape',
+            mesh: new THREE.Mesh(new THREE.IcosahedronGeometry(0.75, 0), new THREE.MeshStandardMaterial({ color: 0x000000, wireframe: true })), mass: 0.7
+        });
+        m4.add(radiant1.mesh);
+
+        const radiantCenter = addPhysicsObject({
+            id: 'm4_radiant_center', parent: r4_1, localOffset: [0, 0, 0], wireLength: 2.0, type: 'shape',
+            mesh: new THREE.Mesh(new THREE.OctahedronGeometry(0.6), new THREE.MeshStandardMaterial({ map: texDiagonal, roughness: 0.5 })), mass: 0.8
+        });
+        m4.add(radiantCenter.mesh);
+
+        const radiant2 = addPhysicsObject({
+            id: 'm4_radiant2', parent: r4_1, localOffset: [1.4, 0, 0], wireLength: 2.8, type: 'shape',
+            mesh: new THREE.Mesh(new THREE.IcosahedronGeometry(0.75, 0), new THREE.MeshStandardMaterial({ color: 0xffffff, wireframe: true })), mass: 0.7
+        });
+        m4.add(radiant2.mesh);
+
+        // ============================================================================
+        // 6. GENERATIVE LULLABY ENGINE (Rich, dynamic ambient melodies)
+        // ============================================================================
+        let audioCtx = null;
+        let sequencer = null;
+        let isMuted = true;
+
+        // Custom chime sound builder mimicking physical tines
+        function playChimeTone(frequency, duration = 3.0) {
+            if (!audioCtx || isMuted) return;
+
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            // Slightly detuned to create a rich music box chorus
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+            
+            osc2.type = 'triangle';
+            osc2.frequency.setValueAtTime(frequency + (Math.random() - 0.5) * 1.5, audioCtx.currentTime);
+
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(frequency * 2.5, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(frequency * 0.4, audioCtx.currentTime + duration);
+
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.18, audioCtx.currentTime + 0.015);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+            osc1.connect(filter);
+            osc2.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc1.start(); osc2.start();
+            osc1.stop(audioCtx.currentTime + duration);
+            osc2.stop(audioCtx.currentTime + duration);
+        }
+
+        // Generative ambient compose rules (Pentatonic scales that naturally morph)
+        const scales = {
+            peacefulMajor: [60, 62, 64, 67, 69, 72, 74, 76, 79],
+            dreamyLydian: [60, 62, 64, 66, 67, 69, 71, 72, 74],
+            celestialMisty: [62, 65, 67, 69, 72, 74, 77, 79, 81]
+        };
+
+        let activeScaleName = 'peacefulMajor';
+        let stepCount = 0;
+
+        function stepAmbientSequencer() {
+            stepCount++;
+            // Dynamically morph scales every 16 beats to change keys & moods elegantly
+            if (stepCount % 16 === 0) {
+                const keys = Object.keys(scales);
+                activeScaleName = keys[Math.floor(Math.random() * keys.length)];
+            }
+
+            const currentScale = scales[activeScaleName];
+            
+            // Generate melodic structures based on golden ratios
+            const r = Math.random();
+            let note;
+            if (r < 0.45) {
+                // Play melodic step
+                note = currentScale[Math.floor(Math.random() * 5)];
+            } else if (r < 0.8) {
+                // Play higher harmonic twinkle
+                note = currentScale[4 + Math.floor(Math.random() * 5)];
+            } else {
+                // Rest beat
+                return;
+            }
+
+            playChimeTone(440 * Math.pow(2, (note - 69) / 12), 3.5);
+
+            // Occassionally play soft, rich root chords in background on downbeats
+            if (stepCount % 4 === 0 && Math.random() > 0.5) {
+                const rootNote = currentScale[0] - 12; // deep bass anchor
+                const thirdNote = currentScale[2] - 12;
+                playChimeTone(440 * Math.pow(2, (rootNote - 69) / 12), 4.5);
+                playChimeTone(440 * Math.pow(2, (thirdNote - 69) / 12), 4.5);
+            }
+        }
+
+        function startLullaby() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            sequencer = setInterval(stepAmbientSequencer, 1200);
+        }
+
+        function stopLullaby() {
+            if (sequencer) {
+                clearInterval(sequencer);
+                sequencer = null;
+            }
+        }
+
+        // ============================================================================
+        // 7. USER NAVIGATION INTERACTIVITY
+        // ============================================================================
+        let loopInterval = null;
+
+        function updateUI() {
+            document.querySelectorAll('.nav-dot').forEach((dot, i) => {
+                dot.className = `nav-dot rounded-full transition-all duration-300 ${i === params.activeMobile ? 'w-4 h-2 bg-indigo-500' : 'w-2 h-2 bg-slate-300'}`;
+            });
+        }
+
+        function setMobile(idx) {
+            params.activeMobile = (idx + 5) % 5;
+            updateUI();
+            resetAutoLoopTimer(); // Instantly clears and schedules new auto rotation to prevent disruption
+        }
+
+        function resetAutoLoopTimer() {
+            if (loopInterval) clearInterval(loopInterval);
+            loopInterval = setInterval(() => {
+                setMobile(params.activeMobile + 1);
+            }, params.autoLoopTime);
+        }
+
+        // Swipe Gestures
+        let startX = 0;
+        window.addEventListener('touchstart', e => startX = e.touches[0].clientX, { passive: true });
+        window.addEventListener('touchend', e => {
+            const dx = e.changedTouches[0].clientX - startX;
+            if (Math.abs(dx) > 55) {
+                setMobile(params.activeMobile + (dx > 0 ? -1 : 1));
+            }
+        }, { passive: true });
+
+        // Event hooks
+        document.getElementById('btn-prev').onclick = () => setMobile(params.activeMobile - 1);
+        document.getElementById('btn-next').onclick = () => setMobile(params.activeMobile + 1);
+
+        document.querySelectorAll('.nav-dot').forEach(dot => {
+            dot.onclick = (e) => setMobile(parseInt(e.target.dataset.idx));
+        });
+
+        // ============================================================================
+        // 8. ENVIRONMENTAL CONTROLS & NIGHT MODE
+        // ============================================================================
+        document.getElementById('toggle-sound').onclick = () => {
+            isMuted = !isMuted;
+            document.getElementById('sound-icon-on').classList.toggle('hidden', isMuted);
+            document.getElementById('sound-icon-off').classList.toggle('hidden', !isMuted);
+            if (!isMuted) startLullaby();
+            else stopLullaby();
+        };
+
+        document.getElementById('btn-wind-gust').onclick = () => {
+            params.gustStrength = 4.0;
+            physicsObjects.forEach(o => {
+                o.velX += (Math.random() - 0.5) * 2.8;
+                o.velSpinY += (Math.random() - 0.5) * 4.0;
+            });
+        };
+
+        const toggleThemeBtn = document.getElementById('toggle-theme');
+        toggleThemeBtn.onclick = () => {
+            params.isNight = !params.isNight;
+            document.getElementById('sun-icon').classList.toggle('hidden', params.isNight);
+            document.getElementById('moon-icon').classList.toggle('hidden', !params.isNight);
+
+            if (params.isNight) {
+                document.body.style.backgroundColor = '#0b0f19';
+                let steps = 0;
+                const timer = setInterval(() => {
+                    starMaterial.opacity = Math.min(0.85, starMaterial.opacity + 0.05);
+                    scene.fog.color.setHex(0x0b0f19);
+                    renderer.setClearColor(0x0b0f19);
+                    ambientLight.color.setHex(0x181d29);
+                    sunLight.color.setHex(0x2d3547);
+                    sunLight.intensity = 0.45;
+                    dynamicPointLight.color.setHex(0xbaa5f5);
+                    dynamicPointLight.intensity = 2.0;
+                    wallMat.color.setHex(0x0c111c);
+                    if (++steps >= 20) clearInterval(timer);
+                }, 40);
+            } else {
+                document.body.style.backgroundColor = '#f7f5f0';
+                let steps = 0;
+                const timer = setInterval(() => {
+                    starMaterial.opacity = Math.max(0.0, starMaterial.opacity - 0.05);
+                    scene.fog.color.setHex(0xf7f5f0);
+                    renderer.setClearColor(0xf7f5f0);
+                    ambientLight.color.setHex(0xffffff);
+                    sunLight.color.setHex(0xfff9f2);
+                    sunLight.intensity = 1.3;
+                    dynamicPointLight.color.setHex(0xffeedd);
+                    dynamicPointLight.intensity = 1.5;
+                    wallMat.color.setHex(0xefebe3);
+                    if (++steps >= 20) clearInterval(timer);
+                }, 40);
+            }
+        };
+
+        // Tap Objects to Sway Interaction
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('mousedown', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            let checkGroup;
+            if (params.activeMobile === 0) checkGroup = m0;
+            else if (params.activeMobile === 1) checkGroup = m1;
+            else if (params.activeMobile === 2) checkGroup = m2;
+            else if (params.activeMobile === 3) checkGroup = m3;
+            else checkGroup = m4;
+
+            const intersects = raycaster.intersectObjects(checkGroup.children, true);
+            if (intersects.length > 0) {
+                const target = intersects[0].object;
+                const phNode = physicsObjects.find(o => o.mesh === target);
+                if (phNode) {
+                    phNode.velX += (Math.random() - 0.5) * 4.5;
+                    phNode.velZ += (Math.random() - 0.5) * 4.5;
+                    phNode.velSpinY += (Math.random() - 0.5) * 8.0;
+
+                    if (!isMuted) {
+                        const notes = scales[activeScaleName];
+                        playChimeTone(440 * Math.pow(2, (notes[Math.floor(Math.random() * notes.length)] + 12 - 69) / 12), 2.5);
+                    }
+                }
+            }
+        });
+
+        // ============================================================================
+        // 9. REALISTIC DECAYING PHYSICS SWAY LOOP
+        // ============================================================================
+        const clock = new THREE.Clock();
+
+        function updatePhysics(dt) {
+            if (dt > 0.08) dt = 0.08;
+
+            const time = clock.getElapsedTime();
+            params.gustStrength *= 0.98;
+            const windForce = (params.windSpeed + params.gustStrength) * Math.sin(time * 0.45);
+
+            physicsObjects.forEach(obj => {
+                const anchor = getAnchor(obj);
+                const restX = -3.8 * Math.sin(obj.angleX);
+                const restZ = -3.8 * Math.sin(obj.angleZ);
+                const restSpin = -0.06 * obj.spinY;
+
+                const windResistance = obj.type === 'shape' ? 1.5 : 0.45;
+                const appliedWind = windForce * windResistance;
+
+                obj.velX += (restX + appliedWind) * dt / obj.mass;
+                obj.velZ += (restZ) * dt / obj.mass;
+                obj.velSpinY += (restSpin + appliedWind * 0.25) * dt / obj.mass;
+
+                obj.velX *= Math.exp(-0.9 * dt);
+                obj.velZ *= Math.exp(-0.9 * dt);
+                obj.velSpinY *= Math.exp(-0.45 * dt);
+
+                obj.angleX += obj.velX * dt;
+                obj.angleZ += obj.velZ * dt;
+                obj.spinY += obj.velSpinY * dt;
+
+                const wireOffset = new THREE.Vector3(
+                    obj.wireLength * Math.sin(obj.angleX),
+                    -obj.wireLength * Math.cos(obj.angleX) * Math.cos(obj.angleZ),
+                    obj.wireLength * Math.sin(obj.angleZ)
+                );
+
+                obj.pos.copy(anchor).add(wireOffset);
+                obj.mesh.position.copy(obj.pos);
+                obj.mesh.rotation.set(obj.angleX, obj.spinY, obj.angleZ, 'YXZ');
+
+                const posAttr = obj.wire.geometry.attributes.position;
+                posAttr.setXYZ(0, anchor.x, anchor.y, anchor.z);
+                posAttr.setXYZ(1, obj.pos.x, obj.pos.y, obj.pos.z);
+                posAttr.needsUpdate = true;
+            });
+        }
+
+        // ============================================================================
+        // 10. RENDER LOOP & CAMERA RESIZING
+        // ============================================================================
+        let cameraTargetX = -30.0;
+
+        window.onresize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        };
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = clock.getDelta();
+            updatePhysics(dt);
+
+            cameraTargetX = mobilePositions[params.activeMobile];
+            camera.position.x += (cameraTargetX - camera.position.x) * 0.06;
+            camera.lookAt(camera.position.x, 4.0, 0);
+
+            if (params.isNight) {
+                const time = clock.getElapsedTime();
+                const posArr = starGeometry.attributes.position.array;
+                for (let i = 0; i < starCount; i++) {
+                    posArr[i * 3 + 1] += Math.sin(time * 0.15 + i) * 0.0015;
+                }
+                starGeometry.attributes.position.needsUpdate = true;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        resetAutoLoopTimer();
+        updateUI();
+        animate();
+
+    </script>
+</body>
+</html>
