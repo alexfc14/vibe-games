@@ -54,35 +54,50 @@
     <div id="canvas-container" class="absolute inset-0 w-full h-full z-0"></div>
 
     <!-- UI Overlay / HUD -->
-    <div id="hud" class="absolute inset-x-0 top-0 p-4 md:p-6 flex justify-between items-start pointer-events-none z-10 hidden">
-        <!-- Left Stats (Score & Distance) -->
-        <div class="flex flex-col gap-2">
-            <div class="backdrop-blur-md bg-slate-950/50 px-4 py-2 rounded-xl border border-cyan-500/30 flex items-center gap-3">
+    <div id="hud" class="absolute inset-x-0 top-0 p-4 md:p-6 flex flex-col gap-2 z-10 hidden">
+        <!-- Row 1: Bank (Left), Lives (Right), and Steering Alert (Center/Floating) -->
+        <div class="flex justify-between items-center w-full relative">
+            <!-- Bank (Left) -->
+            <div class="backdrop-blur-md bg-slate-950/50 px-4 py-2 rounded-xl border border-cyan-500/30 flex items-center gap-3 pointer-events-auto">
                 <span class="text-xs uppercase text-cyan-400 font-bold tracking-widest">Bank</span>
-                <span id="hud-score" class="text-2xl font-orbitron font-extrabold text-white neon-text-cyan">€0.00</span>
+                <span id="hud-score" class="text-xl md:text-2xl font-orbitron font-extrabold text-white neon-text-cyan">€0.00</span>
             </div>
-            <div class="backdrop-blur-md bg-slate-950/50 px-4 py-1 rounded-lg border border-slate-700/50 flex items-center gap-2 w-max">
-                <span class="text-xs uppercase text-slate-400 font-bold">Distance</span>
-                <span id="hud-distance" class="text-md font-orbitron text-slate-200">0 m</span>
+
+            <!-- Steering Lock Notification (Centered absolutely in Row 1 to avoid pushing columns) -->
+            <div id="hud-notification" class="absolute left-1/2 -translate-x-1/2 backdrop-blur-md bg-red-950/60 border border-red-500/40 px-4 py-1.5 rounded-full text-red-200 text-xs md:text-sm font-semibold tracking-wider flex items-center gap-2 transition-all duration-300 opacity-0 scale-90 pointer-events-none">
+                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                <span id="hud-notification-text">STEERING LOCKED!</span>
             </div>
-        </div>
 
-        <!-- Center Notification (Arrow Lock warning, etc.) -->
-        <div id="hud-notification" class="absolute left-1/2 -translate-x-1/2 top-6 backdrop-blur-md bg-red-950/60 border border-red-500/40 px-4 py-1.5 rounded-full text-red-200 text-sm font-semibold tracking-wider flex items-center gap-2 transition-all duration-300 opacity-0 scale-90">
-            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-            <span id="hud-notification-text">STEERING LOCKED!</span>
-        </div>
-
-        <!-- Right Stats (Lives, Multiplier, Sound) -->
-        <div class="flex flex-col items-end gap-2 pointer-events-auto">
-            <div class="backdrop-blur-md bg-slate-950/50 px-4 py-2 rounded-xl border border-pink-500/30 flex items-center gap-2">
+            <!-- Lives (Right) -->
+            <div class="backdrop-blur-md bg-slate-950/50 px-4 py-2 rounded-xl border border-pink-500/30 flex items-center gap-2 pointer-events-auto">
                 <span class="text-xs uppercase text-pink-400 font-bold tracking-widest mr-1">Lives</span>
-                <div id="hud-lives" class="flex gap-1 text-xl">
+                <div id="hud-lives" class="flex gap-1 text-lg md:text-xl">
                     <!-- Hearts generated dynamically -->
                 </div>
             </div>
-            
-            <div class="flex gap-2">
+        </div>
+
+        <!-- Row 2: Distance (Left), MENU Button (Center), and Speed + Mute Controls (Right) -->
+        <div class="flex justify-between items-center w-full mt-1 relative">
+            <!-- Distance (Left) -->
+            <div class="backdrop-blur-md bg-slate-950/50 px-4 py-1 rounded-lg border border-slate-700/50 flex items-center gap-2 w-max pointer-events-auto">
+                <span class="text-xs uppercase text-slate-400 font-bold">Distance</span>
+                <span id="hud-distance" class="text-sm md:text-md font-orbitron text-slate-200">0 m</span>
+            </div>
+
+            <!-- MENU Button (Center - Perfectly positioned in the second row between distance and speed) -->
+            <div class="absolute left-1/2 -translate-x-1/2 pointer-events-auto">
+                <button id="btn-hud-menu" class="backdrop-blur-md bg-slate-950/60 hover:bg-slate-900/80 px-5 py-1.5 rounded-xl border border-cyan-500/30 text-cyan-400 text-xs md:text-sm font-bold font-orbitron tracking-widest transition-all duration-200 active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.15)] flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    MENU
+                </button>
+            </div>
+
+            <!-- Speed & Mute (Right) -->
+            <div class="flex gap-2 items-center pointer-events-auto">
                 <!-- Speed Display -->
                 <div class="backdrop-blur-md bg-slate-950/50 px-3 py-1 rounded-lg border border-slate-700/50 text-xs text-slate-300 font-semibold flex items-center gap-1">
                     <span>Speed:</span>
@@ -121,7 +136,7 @@
                 </div>
                 
                 <!-- Start Button (Renamed to "RUN") -->
-                <button id="btn-start" class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-cyan-500 hover:from-pink-600 hover:to-cyan-600 text-white font-orbitron font-extrabold text-lg md:text-xl rounded-xl shadow-lg hover:shadow-cyan-500/25 transition-all transform hover:-translate-y-0.5">
+                <button id="btn-start" class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-cyan-500 hover:from-pink-600 hover:to-cyan-600 text-white font-orbitron font-extrabold text-lg md:text-xl rounded-xl shadow-lg hover:shadow-cyan-500/25 transition-all transform hover:-translate-y-0.5 animate-pulse">
                     RUN
                 </button>
             </div>
@@ -169,7 +184,7 @@
                         <span class="text-yellow-400 font-extrabold text-sm font-orbitron">▲</span>
                         <span class="font-bold text-slate-200">Forward Arrow</span>
                     </div>
-                    <span class="text-slate-400">Locks steering! Cannot swap lanes next jump.</span>
+                    <span class="text-slate-400">Rolls flat along the floor to the next interval without bouncing!</span>
                 </div>
                 <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 flex flex-col justify-between">
                     <div class="flex items-center gap-2 mb-1">
@@ -206,12 +221,12 @@
                 </div>
             </div>
 
-            <!-- Buttons -->
+            <!-- Buttons (Protected with countdown and disabled states) -->
             <div class="flex flex-col gap-3 w-full">
-                <button id="btn-restart" class="w-full py-4 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-orbitron font-extrabold text-lg rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5">
-                    RE-SPAWN BALL
+                <button id="btn-restart" class="w-full py-4 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-orbitron font-extrabold text-lg rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 opacity-50 pointer-events-none">
+                    RE-SPAWN BALL (3s)
                 </button>
-                <button id="btn-menu" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm rounded-xl transition-all">
+                <button id="btn-menu" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm rounded-xl transition-all opacity-50 pointer-events-none">
                     RETURN TO TERMINAL
                 </button>
             </div>
@@ -364,6 +379,8 @@
         let difficulty = 'arcade';
         let isInvulnerable = false;
         let invulnerabilityTimer = 0;
+        let gameOverButtonsEnabled = false; // Flag to prevent accidental restarts on game over screen
+        let gameOverTimer = null;
         
         // Interval dimensional config
         const intervalLength = 10.0;
@@ -372,6 +389,7 @@
         let currentSpeedMultiplier = 1.0;
         let bounceStartIndex = 0;
         let isHighBounce = false;
+        let isRolling = false; // NEW: Flag to control flat rolling mode on Forward Arrow
         const normalPeakHeight = 3.2;
         const highPeakHeight = 7.5;
         
@@ -506,7 +524,7 @@
                     }
                 }
             } 
-            // Case 2: Normal bounce. We land at intervalIndex-1, lane s.lane
+            // Case 2: Normal bounce / Roll. We land at intervalIndex-1, lane s.lane
             else {
                 // If previous tile was a trampoline, we must fly over intervalIndex (cannot steer yet).
                 const prevCell = trackData[intervalIndex - 1]?.[s.lane];
@@ -900,7 +918,7 @@
             const y = (-(vector.y * .5) + .5) * window.innerHeight;
             
             const el = document.createElement('div');
-            // FIXED: Upgraded font size to 3xl md:text-5xl and centered transforms for extreme visibility
+            // Upgraded font size to 3xl md:text-5xl and centered transforms for extreme visibility
             el.className = `floating-item text-3xl md:text-5xl tracking-widest ${colorClass}`;
             el.style.left = `${x}px`;
             el.style.top = `${y}px`;
@@ -909,7 +927,7 @@
             
             document.getElementById('floating-texts-layer').appendChild(el);
             
-            // FIXED: Extended animation lifecycle match of 1.8 seconds
+            // Extended animation lifecycle match of 1.8 seconds
             setTimeout(() => {
                 el.remove();
             }, 1800);
@@ -1068,11 +1086,13 @@
         window.addEventListener('pointerdown', (e) => {
             if (!gameActive) return;
 
-            // Ignore top panel touches (where the stats HUD and Mute buttons sit)
+            // Ignore top panel touches (where the stats HUD, Menu, and Mute buttons sit)
             if (e.clientY < 110) return;
 
             // Ignore direct mute button target to prevent dual firing with HUD operations
             if (e.target.closest('#btn-mute')) return;
+            // Ignore direct menu button target
+            if (e.target.closest('#btn-hud-menu')) return;
 
             // Split screen right down the middle
             const isLeftHalf = e.clientX < (window.innerWidth / 2);
@@ -1137,6 +1157,7 @@
             currentLane = 1;
             bounceStartIndex = 0;
             isHighBounce = false;
+            isRolling = false; // Reset rolling status on start
             currentSpeedMultiplier = 1.0;
             isInvulnerable = false;
             invulnerabilityTimer = 0;
@@ -1169,7 +1190,7 @@
             
             document.getElementById('game-over-screen').classList.add('hidden');
             document.getElementById('hud').classList.remove('hidden');
-            if (window.innerHeight < 1024) { // Show on mobile & tablets cleanly
+            if (window.innerWidth < 1024) { // Show mobile indicators cleanly on touch viewports
                 document.getElementById('mobile-controls').classList.remove('hidden');
             }
 
@@ -1198,6 +1219,52 @@
             
             // Hide running mobile layouts
             document.getElementById('mobile-controls').classList.add('hidden');
+
+            // Enable 3-second delay protection on Game Over screen buttons to block accidental clicks
+            gameOverButtonsEnabled = false;
+            const btnRestart = document.getElementById('btn-restart');
+            const btnMenu = document.getElementById('btn-menu');
+            
+            btnRestart.classList.add('opacity-50', 'pointer-events-none');
+            btnMenu.classList.add('opacity-50', 'pointer-events-none');
+
+            let secondsLeft = 3;
+            btnRestart.innerText = `RE-SPAWN BALL (${secondsLeft}s)`;
+            
+            if (gameOverTimer) clearInterval(gameOverTimer);
+            gameOverTimer = setInterval(() => {
+                secondsLeft--;
+                if (secondsLeft > 0) {
+                    btnRestart.innerText = `RE-SPAWN BALL (${secondsLeft}s)`;
+                } else {
+                    clearInterval(gameOverTimer);
+                    btnRestart.innerText = `RE-SPAWN BALL`;
+                    // Smoothly restore interaction styles
+                    btnRestart.classList.remove('opacity-50', 'pointer-events-none');
+                    btnMenu.classList.remove('opacity-50', 'pointer-events-none');
+                    gameOverButtonsEnabled = true;
+                }
+            }, 1000);
+        }
+
+        // Return player immediately back to main menu
+        function returnToTerminalMenu() {
+            gameActive = false;
+            cleanAllActiveSegments();
+            
+            // Hide HUD and show Main Start Screen
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('mobile-controls').classList.add('hidden');
+            
+            const startScreen = document.getElementById('start-screen');
+            startScreen.classList.remove('hidden');
+            // Allow layout engine to render container before starting CSS transition
+            setTimeout(() => {
+                startScreen.classList.remove('opacity-0');
+            }, 50);
+
+            Sound.play('hurt'); // Satisying go-back auditory click trigger
         }
 
         // Lose life and trigger bounce cushion protection
@@ -1228,7 +1295,7 @@
             // Spawn dynamic coin splash
             triggerParticleBurst(itemPosition, coinDef.isEuro ? 0xffea00 : 0xffaa00, 10);
             
-            // FIXED: Larger floating text animations
+            // Larger floating text popups
             const popupText = coinDef.isEuro ? `+${coinDef.cents / 100}€` : `+${coinDef.cents}¢`;
             const popupColor = coinDef.isEuro ? 'text-yellow-400 neon-text-cyan' : 'text-orange-400';
             spawnFloatingText(itemPosition, popupText, popupColor);
@@ -1272,7 +1339,7 @@
 
         // --- COLLISION RESOLUTION AND PHYSICS JUMPS ---
 
-        // Called precisely when the ball completes a parabolic jump phase
+        // Called precisely when the ball completes a parabolic jump/roll phase
         function handlePlatformLanding(landingIntervalIndex) {
             intervalsSurvived = landingIntervalIndex;
             updateHUD();
@@ -1312,6 +1379,7 @@
                 
                 // Reset jump parameters safely so response snapping is perfectly aligned
                 isHighBounce = false;
+                isRolling = false; // Stop rolling state if player dies/resets
                 bounceStartIndex = landingIntervalIndex;
                 return;
             }
@@ -1322,8 +1390,16 @@
             // Set squash-stretch impact timing
             squashTimer = 0.12;
 
-            // Evaluate forced landing events
-            if (landedTile.type === 'trampoline') {
+            // Evaluate landing events and trigger state machine shifts
+            if (landedTile.type === 'arrow-forward') {
+                // Trigger Rolling Mode until the end of this interval
+                isRolling = true;
+                isHighBounce = false;
+                bounceStartIndex = landingIntervalIndex;
+                triggerParticleBurst(ballGroup.position, 0xffd700, 15);
+            } 
+            else if (landedTile.type === 'trampoline') {
+                isRolling = false;
                 Sound.play('trampoline');
                 triggerParticleBurst(ballGroup.position, 0x00f0ff, 12);
                 
@@ -1343,6 +1419,7 @@
             } 
             else {
                 // Standard Jump reset
+                isRolling = false;
                 isHighBounce = false;
                 bounceStartIndex = landingIntervalIndex;
                 
@@ -1377,14 +1454,20 @@
                 // 1. Linearly translate ball forward down highway
                 ballGroup.position.z += currentZSpeed * deltaTime;
 
-                // 2. Evaluate parabolic bounce trajectory
+                // 2. Evaluate parabolic bounce trajectory or rolling flat trajectory
                 const totalBounceDistance = isHighBounce ? (intervalLength * 2) : intervalLength;
                 const peakHeight = isHighBounce ? highPeakHeight : normalPeakHeight;
 
                 const progress = (ballGroup.position.z % totalBounceDistance) / totalBounceDistance;
                 
-                // Complete continuous vertical paraboloid trajectory formula
-                let currentY = peakHeight * 4.0 * progress * (1.0 - progress);
+                let currentY;
+                if (isRolling) {
+                    // Keep the ball flat on the ground (resting exactly on top of platforms)
+                    currentY = 0.0;
+                } else {
+                    // Complete continuous vertical paraboloid trajectory formula
+                    currentY = peakHeight * 4.0 * progress * (1.0 - progress);
+                }
                 
                 // Cushion drop correction for fall recovery
                 if (isInvulnerable && !isHighBounce && progress < 0.2) {
@@ -1409,18 +1492,23 @@
                 // Apply organic rotative banking leans depending on sliding speed (banks into turns)
                 const slideVelocity = (targetLane - currentLane);
                 ball.rotation.z = THREE.MathUtils.lerp(ball.rotation.z, slideVelocity * 0.45, 0.1);
-                ball.rotation.x += currentZSpeed * 0.1 * deltaTime; // Continual ball forward roll
 
-                // 4. Update squash-and-stretch parameters
-                if (squashTimer > 0) {
+                // 4. Update squash-and-stretch parameters & Fast rolling rotation
+                if (isRolling) {
+                    // Flat speed squash profile & ultra fast rotation around the roll axis
+                    ball.scale.set(1.18, 0.72, 1.18);
+                    ball.rotation.x += currentZSpeed * 0.25 * deltaTime;
+                } else if (squashTimer > 0) {
                     squashTimer -= deltaTime;
                     ball.scale.set(1.22, 0.68, 1.22); // Impact flattening
+                    ball.rotation.x += currentZSpeed * 0.1 * deltaTime;
                 } else {
                     // Normal flight stretching based on vertical velocity
                     const verticalVelocity = (isHighBounce ? 1 : 0.5) * (0.5 - progress);
                     const stretchY = 1.0 + Math.abs(verticalVelocity) * 0.28;
                     const squashXZ = 1.0 - Math.abs(verticalVelocity) * 0.14;
                     ball.scale.set(squashXZ, stretchY, squashXZ);
+                    ball.rotation.x += currentZSpeed * 0.1 * deltaTime; // Continual ball forward roll
                 }
 
                 // 5. Update Steering Lock Notification alpha HUD flashes
@@ -1493,7 +1581,7 @@
                     }
                 }
 
-                // 10. Update Comet Ghost Trail
+                // 10. Update Comet Ghost Trail & modulate trail styling during rolls
                 for (let i = trailSpheres.length - 1; i > 0; i--) {
                     trailSpheres[i].position.copy(trailSpheres[i - 1].position);
                 }
@@ -1501,6 +1589,12 @@
                 const trailVisible = ball.visible;
                 for (let t of trailSpheres) {
                     t.visible = trailVisible;
+                    // Modulate trail color if rolling to highlight high speed
+                    if (isRolling) {
+                        t.material.color.setHex(0xffea00); // Golden trail for speed roll
+                    } else {
+                        t.material.color.setHex(0x00ffff); // Standard cyan trail
+                    }
                 }
             } else {
                 // Passive Start-Screen camera rotation loop for background aesthetics
@@ -1563,13 +1657,15 @@
             startBtn.addEventListener('click', handleStartTrigger);
             startBtn.addEventListener('pointerdown', handleStartTrigger);
 
-            // Re-spawn Action
+            // Re-spawn Action (Protected by 3-second cooldown)
             document.getElementById('btn-restart').addEventListener('click', () => {
+                if (!gameOverButtonsEnabled) return;
                 startNewRun();
             });
 
-            // Return to main console menu
+            // Return to main console menu (Protected by 3-second cooldown)
             document.getElementById('btn-menu').addEventListener('click', () => {
+                if (!gameOverButtonsEnabled) return;
                 document.getElementById('game-over-screen').classList.add('hidden');
                 document.getElementById('start-screen').classList.remove('hidden');
                 document.getElementById('start-screen').classList.remove('opacity-0');
@@ -1581,6 +1677,16 @@
                 e.stopPropagation();
                 Sound.toggleMute();
             });
+
+            // HUD Return To Terminal Menu Button Toggle
+            const hudMenuBtn = document.getElementById('btn-hud-menu');
+            const handleHudMenuTrigger = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                returnToTerminalMenu();
+            };
+            hudMenuBtn.addEventListener('click', handleHudMenuTrigger);
+            hudMenuBtn.addEventListener('pointerdown', handleHudMenuTrigger);
 
             // Run central draw animation clock
             animate();
