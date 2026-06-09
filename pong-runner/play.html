@@ -55,8 +55,8 @@
 
     <!-- UI Overlay / HUD -->
     <div id="hud" class="absolute inset-x-0 top-0 p-4 md:p-6 flex flex-col gap-2 z-10 hidden">
-        <!-- Row 1: Bank (Left), Lives (Right), and Steering Alert (Center/Floating) -->
-        <div class="flex justify-between items-center w-full relative">
+        <!-- Row 1: Bank (Left), Lives & Clone Status (Right), and Steering Alert (Center/Floating) -->
+        <div class="flex justify-between items-start w-full relative">
             <!-- Bank (Left) -->
             <div class="backdrop-blur-md bg-slate-950/50 px-4 py-2 rounded-xl border border-cyan-500/30 flex items-center gap-3 pointer-events-auto">
                 <span class="text-xs uppercase text-cyan-400 font-bold tracking-widest">Bank</span>
@@ -69,11 +69,21 @@
                 <span id="hud-notification-text">STEERING LOCKED!</span>
             </div>
 
-            <!-- Lives (Right) -->
-            <div class="backdrop-blur-md bg-slate-950/50 px-4 py-2 rounded-xl border border-pink-500/30 flex items-center gap-2 pointer-events-auto">
-                <span class="text-xs uppercase text-pink-400 font-bold tracking-widest mr-1">Lives</span>
-                <div id="hud-lives" class="flex gap-1 text-lg md:text-xl">
-                    <!-- Hearts generated dynamically -->
+            <!-- Lives & Clones Stacking Panel (Right) -->
+            <div class="flex flex-col items-end gap-1.5 pointer-events-auto">
+                <!-- Main Ball Lives -->
+                <div class="backdrop-blur-md bg-slate-950/50 px-4 py-2 rounded-xl border border-pink-500/30 flex items-center gap-2">
+                    <span class="text-xs uppercase text-pink-400 font-bold tracking-widest mr-1">Lives</span>
+                    <div id="hud-lives" class="flex gap-1 text-lg md:text-xl">
+                        <!-- Hearts generated dynamically -->
+                    </div>
+                </div>
+                <!-- Clone Ball Lives (Displayed dynamically below Normal Ball) -->
+                <div id="hud-clone-container" class="backdrop-blur-md bg-slate-950/50 px-4 py-1.5 rounded-xl border border-orange-500/30 flex items-center gap-2 transition-all duration-300 opacity-0 scale-90 pointer-events-none">
+                    <span class="text-[10px] uppercase text-orange-400 font-bold tracking-widest mr-1">Clone</span>
+                    <div id="hud-clone-lives" class="flex gap-1 text-md md:text-lg">
+                        <!-- Clone hearts generated dynamically -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -142,7 +152,7 @@
             </div>
 
             <!-- Controls Info -->
-            <div class="text-slate-400 text-xs md:text-sm mb-5 bg-slate-950/30 w-full py-2.5 rounded-lg border border-slate-800/40 leading-relaxed text-left">
+            <div class="text-slate-400 text-xs md:text-sm mb-5 bg-slate-950/30 w-full py-2.5 rounded-lg border border-slate-800/40 leading-relaxed text-left text-center">
                 <span class="font-bold text-slate-200 block mb-1 text-center">CONTROLS</span>
                 • Desktop: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-white text-xs">A</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-white text-xs">◀</kbd> and <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-white text-xs">D</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-white text-xs">▶</kbd> to change lanes.<br>
                 • Mobile: Tap anywhere on the Left/Right side of screen or swipe left/right.<br>
@@ -188,10 +198,10 @@
                 </div>
                 <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 flex flex-col justify-between">
                     <div class="flex items-center gap-2 mb-1">
-                        <span class="text-pink-500 font-extrabold text-sm">♥</span>
-                        <span class="font-bold text-slate-200">Heart</span>
+                        <span class="w-3 h-3 rounded-full bg-orange-500 block shadow-[0_0_8px_#f97316]"></span>
+                        <span class="font-bold text-slate-200">Clone Ball</span>
                     </div>
-                    <span class="text-slate-400">Restores one lost simulation backup life.</span>
+                    <span class="text-slate-400">Spawns a controllable clone ball on adjacent lane in lockstep!</span>
                 </div>
             </div>
         </div>
@@ -245,6 +255,19 @@
 
     <!-- Script Block containing Game Logic -->
     <script>
+        // --- CUSTOM DETERMINISTIC SEED RANDOM ENGINE ---
+        class SeededRandom {
+            constructor(seed) {
+                this.seed = seed;
+            }
+            // Returns a deterministic pseudorandom number between 0 and 1
+            next() {
+                let x = Math.sin(this.seed++) * 10000;
+                return x - Math.floor(x);
+            }
+        }
+        let levelPRNG = new SeededRandom(55555); // Global PRNG tracker
+
         // --- CHIPTUNE AUDIO ENGINE (WEB AUDIO API) ---
         const Sound = {
             ctx: null,
@@ -367,6 +390,8 @@
         let activeSegments = {}; // Map of intervalIndex -> segment visual group object
         let trackData = {}; // Map of intervalIndex -> 3-lane cell configs
         let currentReachableStates = []; // Reachability solver current state list
+        let activeBalls = []; // Array of active ball structures to track multiball mechanics
+        let previouslyMerged = false; // State flag to track if clones/normals are merged in same lane
         
         // Game metrics & settings
         let gameActive = false;
@@ -389,7 +414,8 @@
         let currentSpeedMultiplier = 1.0;
         let bounceStartIndex = 0;
         let isHighBounce = false;
-        let isRolling = false; // NEW: Flag to control flat rolling mode on Forward Arrow
+        let isRolling = false; // Flag to control flat rolling mode on Forward Arrow
+        let globalZ = 0; // Globally shared player Z progress tracker to keep all balls locked in alignment
         const normalPeakHeight = 3.2;
         const highPeakHeight = 7.5;
         
@@ -397,8 +423,8 @@
         const particlePool = [];
         const maxParticles = 60;
         
-        // Ball visual historical trail (Neon Ghost Trail)
-        const trailSpheres = [];
+        // Trail length parameters
+        const trailSpheres = []; // Unused legacy ref kept for global script references
         const maxTrailLength = 12;
 
         // Steering lock visual alert helper
@@ -464,27 +490,33 @@
 
         // Randomly pick a cell type based on progress/difficulty
         function generateRandomCell(index) {
-            const rand = Math.random();
+            const rand = levelPRNG.next();
             
             // Build safe zones first (first 6 cells)
             if (index < 6) return { type: 'blank' };
 
             // Gradually introduce hazards/elements as index grows
-            let pBlank = 0.50;
+            let pBlank = 0.42;
             let pHole = Math.min(0.28, 0.05 + index * 0.0018);
-            let pCoin = 0.28;
+            let pCoin = 0.24;
             let pTramp = Math.min(0.08, 0.01 + index * 0.0006);
-            let pArrow = Math.min(0.08, 0.01 + index * 0.0005);
-            let pHeart = 0.01;
+            
+            // Sized up arrow element density by exactly 2x
+            let pArrow = Math.min(0.16, 0.02 + index * 0.001);
+            
+            // FIXED: Bring more hearts earlier (scaled up base probabilities earlier in run)
+            let pHeart = Math.min(0.025, 0.008 + index * 0.0001);
+
+            // FIXED: Introduce clones a bit later (only after interval index 30)
+            let pCloneBall = index < 30 ? 0 : 0.035;
 
             if (rand < pBlank) {
                 return { type: 'blank' };
             } else if (rand < pBlank + pHole) {
                 return { type: 'hole' };
             } else if (rand < pBlank + pHole + pCoin) {
-                // Return a coin type based on current interval depth
                 let coinKey = '1c';
-                const cRand = Math.random();
+                const cRand = levelPRNG.next();
                 if (index < 25) {
                     coinKey = cRand < 0.6 ? '1c' : (cRand < 0.9 ? '2c' : '5c');
                 } else if (index < 65) {
@@ -496,11 +528,15 @@
             } else if (rand < pBlank + pHole + pCoin + pTramp) {
                 return { type: 'trampoline' };
             } else if (rand < pBlank + pHole + pCoin + pTramp + pArrow) {
-                const arrowRand = Math.random();
+                const arrowRand = levelPRNG.next();
                 const arrowType = arrowRand < 0.35 ? 'arrow-left' : (arrowRand < 0.70 ? 'arrow-right' : 'arrow-forward');
                 return { type: arrowType };
-            } else {
+            } else if (rand < pBlank + pHole + pCoin + pTramp + pArrow + pHeart) {
                 return { type: 'heart' };
+            } else if (rand < pBlank + pHole + pCoin + pTramp + pArrow + pHeart + pCloneBall) {
+                return { type: 'orange-ball' };
+            } else {
+                return { type: 'blank' };
             }
         }
 
@@ -567,7 +603,7 @@
             }
 
             // Pick a valid reachable state at random to base our fix on
-            const originState = reachableStates[Math.floor(Math.random() * reachableStates.length)];
+            const originState = reachableStates[Math.floor(levelPRNG.next() * reachableStates.length)];
             
             // Choose what safe landing lane(s) we can create
             let chosenLane = originState.lane;
@@ -575,7 +611,7 @@
             if (originState.flyOver) {
                 // Land safely on any adjacent lane
                 const options = [originState.lane - 1, originState.lane, originState.lane + 1].filter(l => l >= 0 && l <= 2);
-                chosenLane = options[Math.floor(Math.random() * options.length)];
+                chosenLane = options[Math.floor(levelPRNG.next() * options.length)];
             } else {
                 const prevCell = trackData[intervalIndex - 1]?.[originState.lane];
                 if (prevCell && prevCell.type === 'trampoline') {
@@ -592,17 +628,17 @@
                     } else {
                         // Standard adjacent steering
                         const options = [originState.lane - 1, originState.lane, originState.lane + 1].filter(l => l >= 0 && l <= 2);
-                        chosenLane = options[Math.floor(Math.random() * options.length)];
+                        chosenLane = options[Math.floor(levelPRNG.next() * options.length)];
                     }
                 }
             }
 
             // Change selected lane to a safe element. Make it highly rewarding (coins / hearts)!
-            const safeRoll = Math.random();
+            const safeRoll = levelPRNG.next();
             let newCellType = { type: 'blank' };
             if (safeRoll < 0.65) {
                 let coinKey = '10c';
-                const coinRoll = Math.random();
+                const coinRoll = levelPRNG.next();
                 if (coinRoll < 0.5) coinKey = '50c';
                 else if (coinRoll < 0.8) coinKey = '1e';
                 else coinKey = '2e';
@@ -662,6 +698,17 @@
                 segment[1] = { type: 'blank' }; 
                 nextStates = [{ lane: 1, flyOver: false }];
             }
+
+            // Pre-calculate the exact spawn lane indicator detail on track for orange ball clones
+            segment.forEach((cell, laneIdx) => {
+                if (cell.type === 'orange-ball') {
+                    if (laneIdx === 0 || laneIdx === 2) {
+                        cell.detail = 'spawn-center'; // Side lanes spawn clones in center
+                    } else {
+                        cell.detail = levelPRNG.next() < 0.5 ? 'spawn-left' : 'spawn-right'; // Center spawns left or right
+                    }
+                }
+            });
 
             // Cache data and update reachability map
             trackData[index] = segment;
@@ -759,6 +806,24 @@
             
             heartGroup.scale.set(1.2, 1.2, 1.2);
             return heartGroup;
+        }
+
+        // FIXED: Create a gorgeous glowing orange sphere replicating standard ball scale (0.5 radius) exactly
+        function createOrangeBallMesh() {
+            const group = new THREE.Group();
+            
+            // Emissive orange ping pong ball replica
+            const sphereMat = new THREE.MeshStandardMaterial({
+                color: 0xff7700,
+                roughness: 0.12,
+                metalness: 0.1,
+                emissive: 0xff3300,
+                emissiveIntensity: 2.2
+            });
+            const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), sphereMat);
+            group.add(sphere);
+            
+            return group;
         }
 
         // Create Chevron arrow meshes (pointing Left, Right, or Forward)
@@ -860,6 +925,19 @@
                 else if (cell.type.startsWith('arrow-')) {
                     itemMesh = createArrowMesh(cell.type);
                     itemMesh.position.set(laneX, 0.15, 0); // Resting flat on platform floor
+                }
+                else if (cell.type === 'orange-ball') {
+                    itemMesh = createOrangeBallMesh();
+                    let displacedX = laneX;
+                    if (cell.detail === 'spawn-left') {
+                        displacedX += 0.5; // Shifted leftwards
+                    } else if (cell.detail === 'spawn-right') {
+                        displacedX -= 0.5; // Shifted rightwards
+                    } else if (cell.detail === 'spawn-center') {
+                        if (l === 0) displacedX -= 0.5; // Left lane points center (shifts rightwards)
+                        if (l === 2) displacedX += 0.5; // Right lane points center (shifts leftwards)
+                    }
+                    itemMesh.position.set(displacedX, 0.45, 0);
                 }
 
                 if (itemMesh) {
@@ -966,17 +1044,6 @@
             // Instantiate Global Assets for performance
             initGlobalAssets();
 
-            // Create the game player ball
-            ballGroup = new THREE.Group();
-            ball = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), matBall);
-            ballGroup.add(ball);
-            scene.add(ballGroup);
-
-            // Attach dynamic Neon light directly to the ball to paint the environment as it bounces
-            const ballLight = new THREE.PointLight(0x00f0ff, 2.5, 15);
-            ballLight.position.set(0, 0, 0);
-            ballGroup.add(ballLight);
-
             // Generate Pre-instantiated Particles Pool to completely avoid runtime allocations
             for (let i = 0; i < maxParticles; i++) {
                 const pMat = matParticle.clone();
@@ -989,18 +1056,6 @@
                     velocity: new THREE.Vector3(),
                     life: 0
                 });
-            }
-
-            // Create the Comet Trail spheres
-            for (let i = 0; i < maxTrailLength; i++) {
-                const trailMat = new THREE.MeshBasicMaterial({
-                    color: 0x00ffff,
-                    transparent: true,
-                    opacity: 0.8 * (1 - i / maxTrailLength)
-                });
-                const trailMesh = new THREE.Mesh(new THREE.SphereGeometry(0.42 * (1 - i / maxTrailLength), 16, 16), trailMat);
-                scene.add(trailMesh);
-                trailSpheres.push(trailMesh);
             }
 
             // Generate background stars / cosmic floating cyber dust
@@ -1033,11 +1088,12 @@
         function moveLane(direction) {
             if (!gameActive) return;
 
-            // If player is currently off-track / tumbling in the abyss, freeze inputs until respawn snapping
-            if (currentLane < 0 || currentLane > 2) return;
+            // If player has already fallen into the abyss, restrict action steering inputs
+            if (activeBalls.length === 0) return;
 
-            // Look up constraints of the tile landed on at the START of current jump phase
-            const currentIntervalTile = trackData[bounceStartIndex]?.[currentLane];
+            // Lock check constraints based on first ball lane position
+            const primaryBall = activeBalls[0];
+            const currentIntervalTile = trackData[bounceStartIndex]?.[primaryBall.currentLane];
             const isSteeringLocked = currentIntervalTile && (
                 currentIntervalTile.type === 'arrow-forward' ||
                 currentIntervalTile.type === 'arrow-left' ||
@@ -1050,18 +1106,17 @@
                 return;
             }
 
-            const originLane = targetLane;
-            
-            // Allow targetLane to go to -1 (left boundary jump) or 3 (right boundary jump)
-            // Left moves towards negative, Right moves towards positive in logical lane indices!
-            targetLane = targetLane + direction;
-            if (targetLane < -1) targetLane = -1;
-            if (targetLane > 3) targetLane = 3;
-            
-            if (originLane !== targetLane) {
-                // Subtle horizontal lean effect (banks into the steering motion)
-                ball.rotation.z = direction * 0.4;
-            }
+            // Move all active multiballs concurrently in lockstep across their lanes
+            activeBalls.forEach(b => {
+                const originLane = b.targetLane;
+                b.targetLane = b.targetLane + direction;
+                if (b.targetLane < -1) b.targetLane = -1;
+                if (b.targetLane > 3) b.targetLane = 3;
+                
+                if (originLane !== b.targetLane) {
+                    b.mesh.rotation.z = direction * 0.4;
+                }
+            });
         }
 
         function triggerSteeringLockedAlert() {
@@ -1144,6 +1199,82 @@
             delete trackData[index];
         }
 
+        // Helper to cleanly dispose of an active ball and its corresponding trail spheres
+        // FIXED: Fully unifies dynamic array references to completely prevent orphaned memory traces
+        function removeBall(ballObj) {
+            scene.remove(ballObj.group);
+            ballObj.group.traverse(child => {
+                if (child.isMesh) {
+                    child.geometry.dispose();
+                    child.material.dispose();
+                }
+            });
+            ballObj.trail.forEach(t => {
+                scene.remove(t);
+                t.geometry.dispose();
+                t.material.dispose();
+            });
+        }
+
+        // Helper to build trail spheres on ball spawn
+        function createTrailSpheres(color) {
+            const trail = [];
+            for (let i = 0; i < maxTrailLength; i++) {
+                const trailMat = new THREE.MeshBasicMaterial({
+                    color: color,
+                    transparent: true,
+                    opacity: 0.8 * (1 - i / maxTrailLength)
+                });
+                const trailMesh = new THREE.Mesh(new THREE.SphereGeometry(0.42 * (1 - i / maxTrailLength), 16, 16), trailMat);
+                scene.add(trailMesh);
+                trail.push(trailMesh);
+            }
+            return trail;
+        }
+
+        // Reinitialize primary ball setup and clear old multiballs completely
+        function resetBalls() {
+            if (activeBalls) {
+                activeBalls.forEach(b => {
+                    removeBall(b);
+                });
+            }
+            activeBalls = [];
+
+            // Spawn primary white ball
+            const primaryBallGroup = new THREE.Group();
+            const primaryBall = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), matBall);
+            primaryBallGroup.add(primaryBall);
+            scene.add(primaryBallGroup);
+
+            const primaryLight = new THREE.PointLight(0x00f0ff, 2.5, 15);
+            primaryBallGroup.add(primaryLight);
+
+            primaryBallGroup.position.set(getXFromLane(1), 0, 0);
+
+            const primaryTrail = createTrailSpheres(0x00ffff);
+            primaryTrail.forEach(t => t.position.copy(primaryBallGroup.position));
+
+            activeBalls.push({
+                id: 'primary',
+                group: primaryBallGroup,
+                mesh: primaryBall,
+                targetLane: 1,
+                currentLane: 1,
+                isClone: false,
+                trail: primaryTrail,
+                isHighBounce: false,
+                isRolling: false,
+                bounceStartIndex: 0,
+                squashTimer: 0,
+                shouldRemove: false,
+                lives: lives // Match global standard lives count
+            });
+
+            // Set global refs for back-compatibility with passive screen loops
+            ballGroup = primaryBallGroup;
+            ball = primaryBall;
+        }
 
         // --- CORE GAME STATE MANAGEMENT & SYSTEM LOOP ---
 
@@ -1156,16 +1287,21 @@
             targetLane = 1;
             currentLane = 1;
             bounceStartIndex = 0;
+            globalZ = 0;
             isHighBounce = false;
             isRolling = false; // Reset rolling status on start
             currentSpeedMultiplier = 1.0;
             isInvulnerable = false;
             invulnerabilityTimer = 0;
+            previouslyMerged = false; // Reset lane merge alert tracking status
             
+            // FIXED: Initialize deterministic PRNG with difficulty seed
+            levelPRNG = new SeededRandom(DIFF_SEEDS[difficulty] || 55555);
+
             // Clean up and clear old visuals completely
             cleanAllActiveSegments();
             
-            // Set starting reachability solve state
+            // Reset state solve reachability map
             currentReachableStates = [{ lane: 1, flyOver: false }];
 
             // Generate initial runway chunk buffer (100 segments ahead)
@@ -1173,13 +1309,8 @@
                 generateSegment(i);
             }
 
-            // Position ball precisely using helper translation
-            ballGroup.position.set(getXFromLane(currentLane), 0, 0);
-            
-            // Reset trail visual history
-            for (let mesh of trailSpheres) {
-                mesh.position.copy(ballGroup.position);
-            }
+            // Call multiball reset setup
+            resetBalls();
 
             // Sync HTML overlays
             updateHUD();
@@ -1267,59 +1398,207 @@
             Sound.play('hurt'); // Satisying go-back auditory click trigger
         }
 
-        // Lose life and trigger bounce cushion protection
-        function registerDamage() {
-            if (isInvulnerable) return;
+        // FIXED: Unified damage registration, plays audio cue, triggers floating warning overlays,
+        // and safely updates dynamic invulnerability frameworks per-ball.
+        // Also tracks independent clone vs primary de-synchronizations smoothly.
+        function registerDamage(b) {
+            if (isInvulnerable && !b.isClone) return;
 
-            lives--;
             Sound.play('hurt');
-            triggerParticleBurst(ballGroup.position, 0xff0033, 20);
 
-            if (lives <= 0) {
-                triggerGameOver();
+            if (!b.isClone) {
+                lives--;
+                triggerParticleBurst(b.group.position, 0xff0033, 20);
+                if (lives <= 0) {
+                    b.shouldRemove = true;
+                    spawnFloatingText(b.group.position, "PRIMARY LOST", "text-pink-500 font-orbitron");
+                } else {
+                    // Grant standard invulnerability frames and strobe ball visuals
+                    isInvulnerable = true;
+                    invulnerabilityTimer = 1.8;
+                    spawnFloatingText(b.group.position, "-1 LIFE", "text-pink-500 font-orbitron animate-pulse");
+                }
             } else {
-                // Grant invulnerability frames and flash the ball
-                isInvulnerable = true;
-                invulnerabilityTimer = 1.8; // 1.8 seconds invulnerability
+                b.lives--;
+                triggerParticleBurst(b.group.position, 0xffaa00, 15);
+                if (b.lives <= 0) {
+                    b.shouldRemove = true;
+                    spawnFloatingText(b.group.position, "CLONE LOST", "text-orange-500 font-orbitron");
+                } else {
+                    spawnFloatingText(b.group.position, "-1 CLONE LIFE", "text-orange-500 font-orbitron animate-pulse");
+                }
             }
             updateHUD();
         }
 
-        function collectCoin(coinKey, itemPosition) {
+        // FIXED: Spawns popups offset left/right depending on the collecting ball's identity (Clone vs Primary)
+        // to clearly display double coin collections without any overlaps!
+        function collectCoin(coinKey, ballPosition, isClone) {
             const coinDef = COIN_TYPES[coinKey];
             if (!coinDef) return;
 
             scoreCents += coinDef.cents;
             Sound.play('coin');
             
-            // Spawn dynamic coin splash
-            triggerParticleBurst(itemPosition, coinDef.isEuro ? 0xffea00 : 0xffaa00, 10);
+            // Shift animation coordinates left/right based on ball type to prevent merged overlaps
+            const animPosition = new THREE.Vector3().copy(ballPosition);
+            if (isClone) {
+                animPosition.x += 0.4;
+                animPosition.y += 0.2;
+            } else {
+                animPosition.x -= 0.4;
+                animPosition.y += 0.2;
+            }
+
+            // Spawn dynamic coin splash at the specific offset position
+            triggerParticleBurst(animPosition, coinDef.isEuro ? 0xffea00 : 0xffaa00, 10);
             
-            // Larger floating text popups
+            // Sized up popup text animations
             const popupText = coinDef.isEuro ? `+${coinDef.cents / 100}€` : `+${coinDef.cents}¢`;
-            const popupColor = coinDef.isEuro ? 'text-yellow-400 neon-text-cyan' : 'text-orange-400';
-            spawnFloatingText(itemPosition, popupText, popupColor);
+            const popupColor = coinDef.isEuro 
+                ? (isClone ? 'text-yellow-400 neon-text-pink' : 'text-yellow-400 neon-text-cyan') 
+                : (isClone ? 'text-orange-500' : 'text-orange-300');
+            
+            spawnFloatingText(animPosition, popupText, popupColor);
             
             updateHUD();
         }
 
-        function collectHeart(itemPosition) {
-            if (lives < maxLives) {
-                lives++;
-                Sound.play('heart');
-                triggerParticleBurst(itemPosition, 0xff2a85, 15);
-                spawnFloatingText(itemPosition, "+1 LIFE", "text-pink-500 neon-text-pink");
-                updateHUD();
+        // FIXED: Spawns popups offset left/right depending on the collecting ball's identity (Clone vs Primary)
+        function collectHeart(ballPosition, isClone) {
+            // Shift animation coordinates left/right based on ball type to prevent merged overlaps
+            const animPosition = new THREE.Vector3().copy(ballPosition);
+            if (isClone) {
+                animPosition.x += 0.4;
+                animPosition.y += 0.2;
             } else {
-                // Max life converting bonus!
-                scoreCents += 200; // Gift 2 Euros
-                Sound.play('coin');
-                triggerParticleBurst(itemPosition, 0xffea00, 15);
-                spawnFloatingText(itemPosition, "MAX LIFE BONUS: +2€", "text-yellow-400 neon-text-cyan");
-                updateHUD();
+                animPosition.x -= 0.4;
+                animPosition.y += 0.2;
             }
+
+            if (isClone) {
+                // If clone collects heart, increase clone lives up to maxLives (5)
+                const clone = activeBalls.find(b => b.isClone);
+                if (clone) {
+                    if (clone.lives < maxLives) {
+                        clone.lives++;
+                        Sound.play('heart');
+                        triggerParticleBurst(animPosition, 0xffaa00, 15);
+                        spawnFloatingText(animPosition, "+1 CLONE LIFE", "text-orange-400 neon-text-pink");
+                    } else {
+                        // Max clone lives converting bonus
+                        scoreCents += 200;
+                        Sound.play('coin');
+                        triggerParticleBurst(animPosition, 0xffea00, 15);
+                        spawnFloatingText(animPosition, "CLONE MAX BONUS: +2€", "text-yellow-400 neon-text-cyan");
+                    }
+                }
+            } else {
+                // Primary ball collects heart
+                if (lives < maxLives) {
+                    lives++;
+                    Sound.play('heart');
+                    triggerParticleBurst(animPosition, 0xff2a85, 15);
+                    spawnFloatingText(animPosition, "+1 LIFE", "text-pink-500 neon-text-pink");
+                } else {
+                    // Max life converting bonus!
+                    scoreCents += 200; // Gift 2 Euros
+                    Sound.play('coin');
+                    triggerParticleBurst(animPosition, 0xffea00, 15);
+                    spawnFloatingText(animPosition, "MAX LIFE BONUS: +2€", "text-yellow-400 neon-text-cyan");
+                }
+            }
+            updateHUD();
         }
 
+        // Clone stack checks are fully implemented. Now rewards life up to max health (5), then grants cash!
+        function collectOrangeBall(collidingBall, worldItemPos, collectedLaneIdx) {
+            // Calculated currentIntervalIndex locally within scope using global variables to avoid ReferenceError
+            const currentIntervalIndex = Math.floor(globalZ / intervalLength);
+
+            // Fetch the beforehand decided clone spawn lane from track data details cache
+            const landedTile = trackData[currentIntervalIndex]?.[collectedLaneIdx];
+            const detail = landedTile ? landedTile.detail : 'spawn-center';
+
+            let cloneSpawnLane = 1; // Default spawn Center
+            if (detail === 'spawn-left') {
+                cloneSpawnLane = 0;
+            } else if (detail === 'spawn-right') {
+                cloneSpawnLane = 2;
+            } else if (detail === 'spawn-center') {
+                cloneSpawnLane = 1;
+            }
+
+            // If we already have a clone active, reward player with a bonus life (up to 5 clone lives) or money if health is full
+            const clone = activeBalls.find(b => b.isClone);
+            if (clone) {
+                if (clone.lives < maxLives) {
+                    clone.lives++;
+                    Sound.play('heart');
+                    triggerParticleBurst(worldItemPos, 0xffaa00, 15);
+                    spawnFloatingText(worldItemPos, "+1 CLONE LIFE", "text-orange-400 neon-text-pink");
+                    updateHUD();
+                } else {
+                    scoreCents += 300; // Award 3 Euros stacking points bonus!
+                    Sound.play('coin');
+                    triggerParticleBurst(worldItemPos, 0xffea00, 15);
+                    spawnFloatingText(worldItemPos, "MAX LIVES BONUS +3€", "text-yellow-400 neon-text-cyan");
+                    updateHUD();
+                }
+                return;
+            }
+
+            Sound.play('heart');
+            triggerParticleBurst(worldItemPos, 0xffaa00, 18);
+
+            // Create orange glowing clone sphere
+            const cloneBallGroup = new THREE.Group();
+            const cloneBallMesh = new THREE.Mesh(
+                new THREE.SphereGeometry(0.5, 32, 32),
+                new THREE.MeshStandardMaterial({
+                    color: 0xffaa00,
+                    roughness: 0.12,
+                    metalness: 0.1,
+                    emissive: 0xff5500,
+                    emissiveIntensity: 1.5
+                })
+            );
+            cloneBallGroup.add(cloneBallMesh);
+            scene.add(cloneBallGroup);
+
+            // Clone ball neon light
+            const cloneLight = new THREE.PointLight(0xff4500, 2.5, 12);
+            cloneBallGroup.add(cloneLight);
+
+            // Position clone ball at the corresponding launch lane matching primary ball's Y/Z
+            cloneBallGroup.position.set(getXFromLane(cloneSpawnLane), collidingBall.group.position.y, globalZ);
+
+            // Spawn trails and copy clone start positions to avoid stretch glitches
+            const cloneTrail = createTrailSpheres(0xff4500);
+            cloneTrail.forEach(t => t.position.copy(cloneBallGroup.position));
+
+            // Copy active physics status from colliding ball to maintain perfect synchronization
+            activeBalls.push({
+                id: 'clone_' + Date.now(),
+                group: cloneBallGroup,
+                mesh: cloneBallMesh,
+                targetLane: cloneSpawnLane,
+                currentLane: cloneSpawnLane,
+                isClone: true,
+                trail: cloneTrail,
+                isHighBounce: collidingBall.isHighBounce,
+                isRolling: collidingBall.isRolling,
+                bounceStartIndex: collidingBall.bounceStartIndex,
+                squashTimer: 0,
+                shouldRemove: false,
+                lives: 1 // Starts with 1 clone life, can expand up to 5 lives
+            });
+
+            spawnFloatingText(worldItemPos, "MULTIBALL ACTIVE!", "text-orange-400 neon-text-pink");
+            updateHUD();
+        }
+
+        // FIXED: Dynamically renders clone ball status / hearts stacked below normal lives (supports up to 5 hearts)
         function updateHUD() {
             document.getElementById('hud-score').innerText = `€${(scoreCents / 100).toFixed(2)}`;
             document.getElementById('hud-distance').innerText = `${intervalsSurvived} m`;
@@ -1330,104 +1609,122 @@
             livesDiv.innerHTML = '';
             for (let i = 0; i < maxLives; i++) {
                 const heartSpan = document.createElement('span');
-                heartSpan.className = i < lives ? 'text-pink-500 font-extrabold animate-pulse' : 'text-slate-800';
+                // FIXED: Displays primary hearts accurately (renders black/empty when primary ball is completely destroyed)
+                const primaryExists = activeBalls.some(b => !b.isClone);
+                const currentLives = primaryExists ? lives : 0;
+                heartSpan.className = i < currentLives ? 'text-pink-500 font-extrabold animate-pulse' : 'text-slate-800';
                 heartSpan.innerText = '♥';
                 livesDiv.appendChild(heartSpan);
+            }
+
+            // Draw Clone ball status below supporting up to 5 dynamic orange hearts
+            const clone = activeBalls.find(b => b.isClone);
+            const cloneContainer = document.getElementById('hud-clone-container');
+            const cloneLivesDiv = document.getElementById('hud-clone-lives');
+            
+            if (clone) {
+                cloneContainer.classList.remove('opacity-0', 'scale-90', 'pointer-events-none');
+                cloneContainer.classList.add('opacity-100', 'scale-100');
+                
+                cloneLivesDiv.innerHTML = '';
+                for (let i = 0; i < maxLives; i++) {
+                    const heartSpan = document.createElement('span');
+                    heartSpan.className = i < clone.lives ? 'text-orange-500 font-extrabold animate-pulse' : 'text-slate-800';
+                    heartSpan.innerText = '♥';
+                    cloneLivesDiv.appendChild(heartSpan);
+                }
+            } else {
+                cloneContainer.classList.add('opacity-0', 'scale-90', 'pointer-events-none');
+                cloneContainer.classList.remove('opacity-100', 'scale-100');
+                cloneLivesDiv.innerHTML = '';
             }
         }
 
 
         // --- COLLISION RESOLUTION AND PHYSICS JUMPS ---
 
-        // Called precisely when the ball completes a parabolic jump/roll phase
-        function handlePlatformLanding(landingIntervalIndex) {
-            intervalsSurvived = landingIntervalIndex;
-            updateHUD();
+        // Decoupled landing triggers, now resolves logic independently for each individual ball
+        function handleIndividualBallLanding(b, landingIntervalIndex) {
+            // Keep intervalsSurvived updated based on the primary ball
+            if (!b.isClone) {
+                intervalsSurvived = landingIntervalIndex;
+                updateHUD();
 
-            // Clear old segments left behind for extreme memory optimization
-            const purgeThreshold = landingIntervalIndex - 6;
-            for (let idxStr in activeSegments) {
-                const idx = parseInt(idxStr);
-                if (idx < purgeThreshold) {
-                    removeSegmentAtIndex(idx);
+                // Clear old segments left behind for memory optimization
+                const purgeThreshold = landingIntervalIndex - 6;
+                for (let idxStr in activeSegments) {
+                    const idx = parseInt(idxStr);
+                    if (idx < purgeThreshold) {
+                        removeSegmentAtIndex(idx);
+                    }
+                }
+
+                // Ensure dynamic forward run-way remains buffered at 100 segments
+                const currentMaxGenerated = Math.max(...Object.keys(trackData).map(Number));
+                if (currentMaxGenerated - landingIntervalIndex < 80) {
+                    for (let i = currentMaxGenerated + 1; i <= landingIntervalIndex + 100; i++) {
+                        generateSegment(i);
+                    }
                 }
             }
 
-            // Ensure dynamic forward run-way remains buffered at 100 segments
-            const currentMaxGenerated = Math.max(...Object.keys(trackData).map(Number));
-            if (currentMaxGenerated - landingIntervalIndex < 80) {
-                for (let i = currentMaxGenerated + 1; i <= landingIntervalIndex + 100; i++) {
-                    generateSegment(i);
-                }
-            }
+            const landedTile = trackData[landingIntervalIndex]?.[b.targetLane];
+            const outOfBounds = (b.targetLane < 0 || b.targetLane > 2);
+            const hitHazard = !landedTile || landedTile.type === 'hole' || outOfBounds;
 
-            // Process Landing Lane Tile Collision Rules
-            const landedTile = trackData[landingIntervalIndex]?.[targetLane];
-
-            // Trigger Fall Death on Abyss Holes OR Out of Bounds (-1 or 3)
-            if (!landedTile || landedTile.type === 'hole') {
-                registerDamage();
-                
-                // Snap player instantly back to closest edge lane to avoid infinite falling void loop
-                if (targetLane < 0) {
-                    targetLane = 0;
-                    currentLane = 0;
-                } else if (targetLane > 2) {
-                    targetLane = 2;
-                    currentLane = 2;
+            // FIXED: Fully unified damage framework handles edge boundaries, trampoline rescues, and clone destructions smoothly
+            if (hitHazard) {
+                registerDamage(b);
+                if (!b.shouldRemove) {
+                    // Recover safely onto the closest track edge lane
+                    if (b.targetLane < 0) { b.targetLane = 0; b.currentLane = 0; }
+                    if (b.targetLane > 2) { b.targetLane = 2; b.currentLane = 2; }
+                    b.isHighBounce = false;
+                    b.isRolling = false;
+                    b.bounceStartIndex = landingIntervalIndex;
                 }
-                
-                // Reset jump parameters safely so response snapping is perfectly aligned
-                isHighBounce = false;
-                isRolling = false; // Stop rolling state if player dies/resets
-                bounceStartIndex = landingIntervalIndex;
                 return;
             }
 
-            // Landing Sound
+            // Safe Landing!
             Sound.play('bounce');
+            b.squashTimer = 0.12;
 
-            // Set squash-stretch impact timing
-            squashTimer = 0.12;
-
-            // Evaluate landing events and trigger state machine shifts
+            // Evaluate platform physics triggers for this specific ball
             if (landedTile.type === 'arrow-forward') {
-                // Trigger Rolling Mode until the end of this interval
-                isRolling = true;
-                isHighBounce = false;
-                bounceStartIndex = landingIntervalIndex;
-                triggerParticleBurst(ballGroup.position, 0xffd700, 15);
+                b.isRolling = true;
+                b.isHighBounce = false;
+                b.bounceStartIndex = landingIntervalIndex;
+                triggerParticleBurst(b.group.position, 0xffd700, 15);
             } 
             else if (landedTile.type === 'trampoline') {
-                isRolling = false;
+                b.isRolling = false;
                 Sound.play('trampoline');
-                triggerParticleBurst(ballGroup.position, 0x00f0ff, 12);
+                triggerParticleBurst(b.group.position, 0x00f0ff, 12);
                 
-                // Squash and stretch base pad visual bounce
+                // Squash base pad visuals
                 const segObj = activeSegments[landingIntervalIndex];
                 if (segObj) {
-                    const trampMesh = segObj.items.find(i => i.type === 'trampoline')?.mesh;
+                    const trampMesh = segObj.items.find(i => i.type === 'trampoline' && i.lane === b.targetLane)?.mesh;
                     if (trampMesh) {
                         trampMesh.scale.set(1.2, 0.4, 1.2);
                         setTimeout(() => trampMesh.scale.set(1.0, 1.0, 1.0), 150);
                     }
                 }
 
-                // Initiate a Double Jump (flying over the immediately next platform index)
-                isHighBounce = true;
-                bounceStartIndex = landingIntervalIndex;
+                b.isHighBounce = true;
+                b.bounceStartIndex = landingIntervalIndex;
             } 
             else {
-                // Standard Jump reset
-                isRolling = false;
-                isHighBounce = false;
-                bounceStartIndex = landingIntervalIndex;
+                b.isRolling = false;
+                b.isHighBounce = false;
+                b.bounceStartIndex = landingIntervalIndex;
                 
-                // Read and apply immediate landing shift arrow directions
+                // Arrows on edge lanes now correctly drive balls into the void to fall and die
                 if (landedTile.type === 'arrow-left') {
-                    targetLane = Math.max(0, targetLane - 1);
+                    b.targetLane = b.targetLane - 1;
                 } else if (landedTile.type === 'arrow-right') {
-                    targetLane = Math.min(2, targetLane + 1);
+                    b.targetLane = b.targetLane + 1;
                 }
             }
         }
@@ -1437,6 +1734,13 @@
 
         let clock = new THREE.Clock();
         let squashTimer = 0;
+
+        // FIXED: Definition of Seeds
+        const DIFF_SEEDS = {
+            casual: 11111,
+            arcade: 55555,
+            cyber: 99999
+        };
 
         function animate() {
             requestAnimationFrame(animate);
@@ -1451,67 +1755,128 @@
                 currentSpeedMultiplier = 1.0 + Math.min(0.8, intervalsSurvived * config.speedGrowth);
                 const currentZSpeed = config.baseSpeed * currentSpeedMultiplier;
 
-                // 1. Linearly translate ball forward down highway
-                ballGroup.position.z += currentZSpeed * deltaTime;
+                // Linearly translate global player Z progress down highway
+                globalZ += currentZSpeed * deltaTime;
 
-                // 2. Evaluate parabolic bounce trajectory or rolling flat trajectory
-                const totalBounceDistance = isHighBounce ? (intervalLength * 2) : intervalLength;
-                const peakHeight = isHighBounce ? highPeakHeight : normalPeakHeight;
+                const currentIntervalIndex = Math.floor(globalZ / intervalLength);
 
-                const progress = (ballGroup.position.z % totalBounceDistance) / totalBounceDistance;
-                
-                let currentY;
-                if (isRolling) {
-                    // Keep the ball flat on the ground (resting exactly on top of platforms)
-                    currentY = 0.0;
+                // Detect if clone and primary ball consolidate into the same lane, and trigger a "MERGE!" pop-up
+                if (activeBalls.length > 1) {
+                    const presentlyMerged = (activeBalls[0].targetLane === activeBalls[1].targetLane);
+                    if (presentlyMerged && !previouslyMerged) {
+                        const avgPos = new THREE.Vector3().addVectors(activeBalls[0].group.position, activeBalls[1].group.position).multiplyScalar(0.5);
+                        spawnFloatingText(avgPos, "MERGE!", "text-orange-500 neon-text-cyan font-black");
+                        previouslyMerged = true;
+                    } else if (!presentlyMerged) {
+                        previouslyMerged = false;
+                    }
                 } else {
-                    // Complete continuous vertical paraboloid trajectory formula
-                    currentY = peakHeight * 4.0 * progress * (1.0 - progress);
+                    previouslyMerged = false;
                 }
+
+                // Update positions, individual physics states, scales and trails of all active multiballs
+                activeBalls.forEach(b => {
+                    b.group.position.z = globalZ;
+
+                    // Evaluate individual parabolic bounce trajectory or rolling flat trajectory
+                    const totalBounceDistance = b.isHighBounce ? (intervalLength * 2) : intervalLength;
+                    const peakHeight = b.isHighBounce ? highPeakHeight : normalPeakHeight;
+
+                    // Compute progress since this specific ball's bounce start Z coordinate
+                    const distSinceBounce = b.group.position.z - (b.bounceStartIndex * intervalLength);
+                    const progress = THREE.MathUtils.clamp(distSinceBounce / totalBounceDistance, 0, 1);
+
+                    let currentY;
+                    if (b.isRolling) {
+                        currentY = 0.0;
+                    } else {
+                        // Complete continuous vertical paraboloid trajectory formula
+                        currentY = peakHeight * 4.0 * progress * (1.0 - progress);
+                    }
+                    
+                    // Cushion drop correction for fall recovery (only evaluated for primary ball)
+                    if (isInvulnerable && !b.isClone && !b.isHighBounce && progress < 0.2) {
+                        currentY = Math.max(currentY, 1.0);
+                    }
+                    b.group.position.y = currentY;
+
+                    // Landing check for this specific ball
+                    const projectedLandingIndex = b.isHighBounce ? (b.bounceStartIndex + 2) : (b.bounceStartIndex + 1);
+                    if (b.group.position.z >= projectedLandingIndex * intervalLength) {
+                        handleIndividualBallLanding(b, projectedLandingIndex);
+                    }
+
+                    // Smooth Horizontal interpolation for responsive slides (Includes out of bounds -1 and 3)
+                    b.currentLane = THREE.MathUtils.lerp(b.currentLane, b.targetLane, 0.16);
+                    b.group.position.x = getXFromLane(b.currentLane);
+
+                    // Apply organic rotative banking leans depending on sliding speed (banks into turns)
+                    const slideVelocity = (b.targetLane - b.currentLane);
+                    b.mesh.rotation.z = THREE.MathUtils.lerp(b.mesh.rotation.z, slideVelocity * 0.45, 0.1);
+
+                    // Update squash-and-stretch parameters & Fast rolling rotation
+                    if (b.isRolling) {
+                        b.mesh.scale.set(1.18, 0.72, 1.18);
+                        b.mesh.rotation.x += currentZSpeed * 0.25 * deltaTime;
+                    } else if (b.squashTimer > 0) {
+                        b.squashTimer -= deltaTime;
+                        b.mesh.scale.set(1.22, 0.68, 1.22); // Impact flattening
+                        b.mesh.rotation.x += currentZSpeed * 0.1 * deltaTime;
+                    } else {
+                        // Normal flight stretching based on vertical velocity
+                        const verticalVelocity = (b.isHighBounce ? 1 : 0.5) * (0.5 - progress);
+                        const stretchY = 1.0 + Math.abs(verticalVelocity) * 0.28;
+                        const squashXZ = 1.0 - Math.abs(verticalVelocity) * 0.14;
+                        b.mesh.scale.set(squashXZ, stretchY, squashXZ);
+                        b.mesh.rotation.x += currentZSpeed * 0.1 * deltaTime; // Continual ball forward roll
+                    }
+
+                    // Update Comet Ghost Trail & modulate trail styling during rolls
+                    for (let i = b.trail.length - 1; i > 0; i--) {
+                        b.trail[i].position.copy(b.trail[i - 1].position);
+                    }
+                    b.trail[0].position.copy(b.group.position);
+                    const trailVisible = b.mesh.visible;
+                    b.trail.forEach(t => {
+                        t.visible = trailVisible;
+                        // Modulate trail color if rolling to highlight high speed
+                        if (b.isRolling) {
+                            t.material.color.setHex(0xffea00); // Golden trail for speed roll
+                        } else {
+                            t.material.color.setHex(b.isClone ? 0xff6600 : 0x00ffff); // Clone orange trail vs primary cyan trail
+                        }
+                    });
+                });
+
+                // FIXED: Clean up clones or primary balls that were de-synced (marked for removal)
+                const survivors = [];
+                let listChanged = false;
+                activeBalls.forEach(b => {
+                    if (b.shouldRemove) {
+                        removeBall(b);
+                        listChanged = true;
+                    } else {
+                        survivors.push(b);
+                    }
+                });
+                activeBalls = survivors;
                 
-                // Cushion drop correction for fall recovery
-                if (isInvulnerable && !isHighBounce && progress < 0.2) {
-                    currentY = Math.max(currentY, 1.0);
-                }
-                ballGroup.position.y = currentY;
-
-                // Evaluate exact landing boundary intersections
-                const currentIntervalIndex = Math.floor(ballGroup.position.z / intervalLength);
-                const projectedLandingIndex = isHighBounce ? (bounceStartIndex + 2) : (bounceStartIndex + 1);
-
-                if (ballGroup.position.z >= projectedLandingIndex * intervalLength) {
-                    handlePlatformLanding(projectedLandingIndex);
+                // Sync HUD elements and shift main ball references if the primary ball has died
+                if (listChanged) {
+                    if (survivors.length > 0) {
+                        ballGroup = survivors[0].group;
+                        ball = survivors[0].mesh;
+                    }
+                    updateHUD();
                 }
 
-                // 3. Smooth Horizontal interpolation for responsive slides (Includes out of bounds -1 and 3)
-                currentLane = THREE.MathUtils.lerp(currentLane, targetLane, 0.16);
-                
-                // Direct translation mapping to physical space using coordinate helper
-                ballGroup.position.x = getXFromLane(currentLane);
-
-                // Apply organic rotative banking leans depending on sliding speed (banks into turns)
-                const slideVelocity = (targetLane - currentLane);
-                ball.rotation.z = THREE.MathUtils.lerp(ball.rotation.z, slideVelocity * 0.45, 0.1);
-
-                // 4. Update squash-and-stretch parameters & Fast rolling rotation
-                if (isRolling) {
-                    // Flat speed squash profile & ultra fast rotation around the roll axis
-                    ball.scale.set(1.18, 0.72, 1.18);
-                    ball.rotation.x += currentZSpeed * 0.25 * deltaTime;
-                } else if (squashTimer > 0) {
-                    squashTimer -= deltaTime;
-                    ball.scale.set(1.22, 0.68, 1.22); // Impact flattening
-                    ball.rotation.x += currentZSpeed * 0.1 * deltaTime;
-                } else {
-                    // Normal flight stretching based on vertical velocity
-                    const verticalVelocity = (isHighBounce ? 1 : 0.5) * (0.5 - progress);
-                    const stretchY = 1.0 + Math.abs(verticalVelocity) * 0.28;
-                    const squashXZ = 1.0 - Math.abs(verticalVelocity) * 0.14;
-                    ball.scale.set(squashXZ, stretchY, squashXZ);
-                    ball.rotation.x += currentZSpeed * 0.1 * deltaTime; // Continual ball forward roll
+                // If all active balls are lost, trigger Game Over
+                if (activeBalls.length === 0) {
+                    triggerGameOver();
+                    return;
                 }
 
-                // 5. Update Steering Lock Notification alpha HUD flashes
+                // Update Steering Lock Notification alpha HUD flashes
                 if (steeringLockAlertTimer > 0) {
                     steeringLockAlertTimer -= deltaTime;
                     if (steeringLockAlertTimer <= 0) {
@@ -1521,44 +1886,68 @@
                     }
                 }
 
-                // 6. Handle Invulnerability flash feedback
+                // Handle Invulnerability flash feedback (flashes all survivors)
                 if (isInvulnerable) {
                     invulnerabilityTimer -= deltaTime;
-                    ball.visible = Math.floor(Date.now() / 60) % 2 === 0; // rapid strobing
+                    activeBalls.forEach(b => {
+                        b.mesh.visible = Math.floor(Date.now() / 60) % 2 === 0; // rapid strobing
+                    });
                     if (invulnerabilityTimer <= 0) {
                         isInvulnerable = false;
-                        ball.visible = true;
+                        activeBalls.forEach(b => { b.mesh.visible = true; });
                     }
                 }
 
-                // 7. Dynamic Camera system following smoothly behind the ball (camera look constraints clamped)
-                camera.position.x = THREE.MathUtils.lerp(camera.position.x, THREE.MathUtils.clamp(ballGroup.position.x * 0.7, -4.5, 4.5), 0.08);
-                camera.position.y = THREE.MathUtils.lerp(camera.position.y, ballGroup.position.y * 0.35 + 4.8, 0.08);
-                camera.position.z = ballGroup.position.z - 7.5; // Locked chasing distance offset
-                camera.lookAt(new THREE.Vector3(ballGroup.position.x * 0.5, ballGroup.position.y * 0.3 + 0.5, ballGroup.position.z + 10.0));
+                // Camera tracking targets the first remaining ball to keep the viewport centered
+                const mainBall = activeBalls[0];
+                if (mainBall) {
+                    camera.position.x = THREE.MathUtils.lerp(camera.position.x, THREE.MathUtils.clamp(mainBall.group.position.x * 0.7, -4.5, 4.5), 0.08);
+                    camera.position.y = THREE.MathUtils.lerp(camera.position.y, mainBall.group.position.y * 0.35 + 4.8, 0.08);
+                    camera.position.z = globalZ - 7.5; // Locked chasing distance offset
+                    camera.lookAt(new THREE.Vector3(mainBall.group.position.x * 0.5, mainBall.group.position.y * 0.3 + 0.5, globalZ + 10.0));
+                }
 
-                // 8. Visual item collection collision checks (Evaluated on the current Interval index)
+                // FIXED: All colliding balls now independently check collision with coin segments to enable double counting
+                // Triggering individual collection splashes and distinct left-and-right text popups
                 const currentSeg = activeSegments[currentIntervalIndex];
                 if (currentSeg && currentSeg.items) {
                     for (let i = currentSeg.items.length - 1; i >= 0; i--) {
                         const item = currentSeg.items[i];
                         
-                        // Check if ball is on the correct lane and inside collection volume
-                        if (item.lane === Math.round(currentLane)) {
-                            // Compute direct 3D distance check (Items are on the floor, so distance threshold captures ball exactly as it hits the floor)
+                        // Find any balls currently matching this item's lane
+                        const collidingBalls = activeBalls.filter(b => Math.round(b.currentLane) === item.lane);
+                        
+                        if (collidingBalls.length > 0) {
                             const worldItemPos = new THREE.Vector3();
                             item.mesh.getWorldPosition(worldItemPos);
                             
-                            const distance = ballGroup.position.distanceTo(worldItemPos);
-                            
-                            if (distance < 1.35) {
-                                // Trigger collection and remove visual model from scene
-                                if (item.type === 'coin') {
-                                    collectCoin(item.coinDetail, worldItemPos);
-                                } else if (item.type === 'heart') {
-                                    collectHeart(worldItemPos);
+                            let collected = false;
+                            collidingBalls.forEach(b => {
+                                const distance = b.group.position.distanceTo(worldItemPos);
+                                if (distance < 1.35) {
+                                    if (!collected) {
+                                        // First ball collects it
+                                        collected = true;
+                                        if (item.type === 'coin') {
+                                            collectCoin(item.coinDetail, b.group.position, b.isClone);
+                                        } else if (item.type === 'heart') {
+                                            collectHeart(b.group.position, b.isClone);
+                                        } else if (item.type === 'orange-ball') {
+                                            collectOrangeBall(b, worldItemPos, item.lane);
+                                        }
+                                    } else {
+                                        // Second ball collects it too (merged in same frame)
+                                        if (item.type === 'coin') {
+                                            collectCoin(item.coinDetail, b.group.position, b.isClone);
+                                        } else if (item.type === 'heart') {
+                                            collectHeart(b.group.position, b.isClone);
+                                        }
+                                        // Skip double spawning or redundant bonuses for clone ball powerup
+                                    }
                                 }
-                                
+                            });
+
+                            if (collected) {
                                 currentSeg.group.remove(item.mesh);
                                 currentSeg.items.splice(i, 1);
                             }
@@ -1566,34 +1955,18 @@
                     }
                 }
 
-                // 9. Passive Item Rotations (Coins spin upright on Y axis & have organic vertical hover waves)
+                // Passive Item Rotations (Coins & Clone Balls spin upright on Y axis & have organic vertical hover waves)
                 const activeIndices = Object.keys(activeSegments).map(Number);
                 const hoverOffset = Math.sin(Date.now() * 0.005) * 0.12; // Organic bouncing hover waves
                 for (let idx of activeIndices) {
                     const seg = activeSegments[idx];
                     if (seg && seg.items) {
                         for (let item of seg.items) {
-                            if (item.type === 'coin' || item.type === 'heart') {
+                            if (item.type === 'coin' || item.type === 'heart' || item.type === 'orange-ball') {
                                 item.mesh.rotation.y += 2.2 * deltaTime; // Constant faster spin
                                 item.mesh.position.y = 0.45 + hoverOffset; // Floating hover elevation
                             }
                         }
-                    }
-                }
-
-                // 10. Update Comet Ghost Trail & modulate trail styling during rolls
-                for (let i = trailSpheres.length - 1; i > 0; i--) {
-                    trailSpheres[i].position.copy(trailSpheres[i - 1].position);
-                }
-                trailSpheres[0].position.copy(ballGroup.position);
-                const trailVisible = ball.visible;
-                for (let t of trailSpheres) {
-                    t.visible = trailVisible;
-                    // Modulate trail color if rolling to highlight high speed
-                    if (isRolling) {
-                        t.material.color.setHex(0xffea00); // Golden trail for speed roll
-                    } else {
-                        t.material.color.setHex(0x00ffff); // Standard cyan trail
                     }
                 }
             } else {
@@ -1603,7 +1976,7 @@
                 camera.lookAt(new THREE.Vector3(0, 0, 15));
             }
 
-            // 11. Update active particles and fade them out
+            // Update active particles and fade them out
             for (let p of particlePool) {
                 if (p.active) {
                     p.mesh.position.addScaledVector(p.velocity, deltaTime);
