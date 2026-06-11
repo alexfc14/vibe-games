@@ -3,253 +3,592 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pong Runner 3D</title>
+    <title>Pong Runner 3D - Samurai Edition</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts for authentic Japanese calligraphy & Serif brush styles -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@600;900&family=Yuji+Mai&family=Yuji+Syuku&display=swap" rel="stylesheet">
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
+        /* Classic Japanese Skeuomorphic Styles */
         body {
-            font-family: 'Rajdhani', sans-serif;
+            font-family: 'Noto Serif JP', 'Georgia', serif;
             touch-action: none;
             overflow: hidden;
-            background-color: #080810;
+            background-color: #0b0c10;
+            /* Deep charred cedar wood trim background */
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.85)),
+                repeating-linear-gradient(0deg, #1b120c, #1b120c 4px, #140d09 4px, #140d09 8px);
         }
-        .font-orbitron {
-            font-family: 'Orbitron', sans-serif;
+
+        /* Traditional Japanese Washi Rice Paper texture */
+        .washi-paper {
+            background-color: #fcf8f2;
+            background-image: 
+                radial-gradient(rgba(139, 115, 85, 0.1) 1px, transparent 0),
+                linear-gradient(to bottom, rgba(253, 246, 230, 0.95), rgba(246, 231, 204, 0.95));
+            background-size: 16px 16px, 100% 100%;
+            border: 3px double #8b7355;
+            box-shadow: inset 0 0 15px rgba(139, 115, 85, 0.35), 0 4px 15px rgba(0, 0, 0, 0.6);
+            color: #2b1f1d;
         }
-        /* Custom Neon Glows */
-        .neon-text-pink {
-            text-shadow: 0 0 5px rgba(236, 72, 153, 0.5), 0 0 15px rgba(236, 72, 153, 0.8);
+
+        /* Red vermillion wax stamp (Hanko) seal style */
+        .hanko-seal {
+            border: 2px solid #b32d2e;
+            color: #b32d2e;
+            font-family: 'Yuji Mai', serif;
+            display: inline-block;
+            padding: 2px 6px;
+            transform: rotate(-3deg);
+            box-shadow: inset 0 0 4px rgba(179, 45, 46, 0.2);
+            text-shadow: none;
         }
-        .neon-text-cyan {
-            text-shadow: 0 0 5px rgba(6, 182, 212, 0.5), 0 0 15px rgba(6, 182, 212, 0.8);
+
+        /* Gorgeous vermillion-lacquer glossy plates for buttons */
+        .lacquer-btn-red {
+            background: linear-gradient(to bottom, #d63c3c 0%, #b81d1d 50%, #9c1010 50%, #7e0707 100%);
+            border: 1px solid #4a0303;
+            border-bottom: 3px solid #3c0000;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 3px 6px rgba(0, 0, 0, 0.5);
+            text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.8);
+            color: #fcf8f2;
+            font-weight: bold;
+            font-family: 'Noto Serif JP', serif;
+            transition: all 0.05s;
         }
-        .neon-border-pink {
-            box-shadow: 0 0 10px rgba(236, 72, 153, 0.3), inset 0 0 10px rgba(236, 72, 153, 0.3);
+        .lacquer-btn-red:active {
+            background: linear-gradient(to bottom, #5a0404 0%, #730606 50%, #8e0e0e 50%, #a81c1c 100%);
+            transform: translateY(2px);
+            border-bottom: 1px solid #3c0000;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8), 0 1px 1px rgba(255,255,255,0.1);
         }
-        /* Floating HUD Coins Effect - Slower, larger, and lingers longer on screen */
-        @keyframes floatUp {
-            0% { transform: translateY(0) scale(0.5); opacity: 0; }
-            15% { transform: translateY(-20px) scale(1.6); opacity: 1; }
-            80% { transform: translateY(-45px) scale(1.3); opacity: 1; }
-            100% { transform: translateY(-100px) scale(0.8); opacity: 0; }
+
+        /* Black lacquer/golden hinge borders */
+        .lacquer-btn-dark {
+            background: linear-gradient(to bottom, #3a3d40 0%, #202224 50%, #151618 50%, #0a0b0c 100%);
+            border: 1px solid #000000;
+            border-bottom: 3px solid #111;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 3px 6px rgba(0, 0, 0, 0.5);
+            text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.9);
+            color: #d4af37; /* Japanese Gold */
+            font-weight: bold;
+            font-family: 'Noto Serif JP', serif;
+            transition: all 0.05s;
         }
-        .floating-item {
-            animation: floatUp 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        .lacquer-btn-dark:active {
+            background: linear-gradient(to bottom, #0d0e0f 0%, #151618 50%, #222426 50%, #2f3235 100%);
+            transform: translateY(2px);
+            border-bottom: 1px solid #111;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+        }
+
+        /* Traditional Japanese Lacquer / Wood Segmented Control */
+        .edo-segmented-control {
+            background: #231912; /* Dark charred wood frame */
+            border: 2px solid #8b7355; /* Bronze border */
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 2px;
+            display: inline-flex;
+            width: 100%;
+        }
+        .edo-segment {
+            background: linear-gradient(to bottom, #f2ebd9 0%, #decbae 100%); /* Light cedar bark / scroll paper */
+            border-right: 1px solid #8b7355;
+            color: #4a3424; /* Charcoal-brown text */
+            text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+            font-family: 'Noto Serif JP', serif;
+            font-weight: 900;
+            font-size: 11px;
+            transition: all 0.15s;
+            text-align: center;
+            padding: 6px 0;
+        }
+        .edo-segment:last-child {
+            border-right: none;
+        }
+        .edo-segment.active {
+            background: linear-gradient(to bottom, #d63c3c 0%, #9c1010 100%); /* Vivid lacquer red */
+            color: #fcf8f2;
+            text-shadow: 0 -1px 0 rgba(0,0,0,0.7);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.6);
+        }
+
+        /* Traditional Japanese Gold Silk cord look */
+        .gold-silk-border {
+            border: 2px solid #d4af37;
+            box-shadow: 0 0 6px rgba(212, 175, 55, 0.4);
+        }
+
+        /* Tatami mat woven borders */
+        .tatami-border {
+            border: 4px solid #5a6650; /* Tatami green */
+            outline: 2px solid #8b7355;
+        }
+
+        /* Authentic ink brush lettering */
+        .brush-title {
+            font-family: 'Yuji Syuku', serif;
+            text-shadow: 1px 1px 0px #ffffff, -1px -1px 0px #ffffff, 2px 2px 0px rgba(0,0,0,0.1);
+        }
+
+        /* 2D Floating Item Animation - Stays screen-locked, floats up straight in 2D space */
+        @keyframes floatUp2D {
+            0% { transform: translate(-50%, 0) scale(0.7); opacity: 0; }
+            15% { transform: translate(-50%, -35px) scale(1.3); opacity: 1; }
+            85% { transform: translate(-50%, -115px) scale(1.0); opacity: 1; }
+            100% { transform: translate(-50%, -145px) scale(0.85); opacity: 0; }
+        }
+        .floating-item-2d {
             pointer-events: none;
             position: absolute;
             font-weight: 900;
-            font-family: 'Orbitron', sans-serif;
+            font-family: 'Yuji Syuku', serif;
             z-index: 100;
-            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.95));
+            white-space: nowrap; /* Prevent text word-wrapping and overlapping */
+            /* Thicker, high-contrast dark brush shadow for extreme legibility */
+            text-shadow: 
+                -2px -2px 0 #000,  
+                 2px -2px 0 #000,
+                -2px  2px 0 #000,
+                 2px  2px 0 #000,
+                 0 3px 6px rgba(0,0,0,0.95);
+            animation: floatUp2D 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Traditional Japanese Shōji Shrine Cabinet Bezel */
+        .shrine-bezel {
+            width: 440px;
+            height: 860px;
+            border-radius: 20px;
+            background: #1e1511; /* Dark cedar wood */
+            padding: 22px;
+            border: 6px solid #100b08;
+            box-shadow: 
+                0 0 0 4px #d4af37, /* Gold leaf lining */
+                0 15px 45px rgba(0,0,0,0.9),
+                inset 0 0 20px rgba(0,0,0,0.8);
+            position: relative;
+        }
+        /* Curving roof beam details at the top of the shrine (Skeuomorphic) */
+        .shrine-bezel::before {
+            content: '';
+            position: absolute;
+            top: -14px;
+            left: 5%;
+            width: 90%;
+            height: 18px;
+            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+            background: #0f0a08;
+            border: 2px solid #d4af37;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+        }
+        
+        /* Interactive Brass Tsuba Home Button */
+        .shrine-home-btn {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #c5a059 0%, #8c6b2d 50%, #543f17 100%);
+            border: 3px solid #281e0a;
+            box-shadow: 
+                inset 0 2px 4px rgba(255,255,255,0.4),
+                0 4px 8px rgba(0,0,0,0.7),
+                0 -1px 1px rgba(0,0,0,0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.05s, box-shadow 0.05s;
+        }
+        .shrine-home-btn:active {
+            transform: translateX(-50%) scale(0.94);
+            box-shadow: 
+                inset 0 4px 8px rgba(0,0,0,0.9),
+                0 2px 2px rgba(0,0,0,0.4);
+        }
+        /* Sakura family crest design (Kamon) inside Tsuba Home Button */
+        .shrine-home-btn-crest {
+            width: 24px;
+            height: 24px;
+            background-color: #281e0a;
+            clip-path: polygon(50% 0%, 80% 30%, 100% 60%, 75% 100%, 50% 80%, 25% 100%, 0% 60%, 20% 30%);
+            border-radius: 2px;
+        }
+
+        .shrine-screen {
+            width: 100%;
+            height: 700px;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            background: #07070a;
+            box-shadow: inset 0 0 25px rgba(0,0,0,1);
+            border: 3px solid #000;
+        }
+
+        /* Fallback for responsive screens */
+        @media (max-height: 900px) or (max-width: 480px) {
+            .shrine-bezel {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+                padding: 0;
+                box-shadow: none;
+                background: transparent;
+                border: none;
+            }
+            .shrine-bezel::before, .shrine-home-btn {
+                display: none;
+            }
+            .shrine-screen {
+                height: 100%;
+                border-radius: 0;
+                border: none;
+            }
+        }
+
+        /* Japanese Banner-style Status Bar */
+        .edo-status-bar {
+            height: 22px;
+            background: linear-gradient(to bottom, #1c1511 0%, #120d0a 100%);
+            border-bottom: 2px solid #d4af37;
+            font-size: 11px;
+            font-family: 'Noto Serif JP', serif;
+            font-weight: bold;
+            color: #fcf8f2;
+            padding: 0 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 40;
+            position: relative;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+        .edo-status-signals {
+            display: flex;
+            align-items: center;
+            gap: 2.5px;
+        }
+        /* Hand-inked drop signals */
+        .edo-signal-drop {
+            width: 5px;
+            height: 5px;
+            background-color: #d4af37;
+            border-radius: 50% 50% 50% 50% / 80% 80% 20% 20%;
+            transform: rotate(-45deg);
+        }
+        /* Candle-flame fuel gauge representating battery */
+        .edo-status-candle {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .edo-candle-wick {
+            width: 4px;
+            height: 12px;
+            background-color: #fff;
+            position: relative;
+            border-radius: 1px;
+            border: 1px solid #444;
+        }
+        .edo-candle-flame {
+            width: 6px;
+            height: 10px;
+            background: radial-gradient(circle, #ffea00 20%, #ff3a00 100%);
+            border-radius: 50% 50% 20% 20%;
+            animation: flicker 0.4s infinite alternate;
+        }
+        @keyframes flicker {
+            0% { transform: scale(1); opacity: 0.9; }
+            100% { transform: scale(1.2) translateY(-1px); opacity: 1; }
+        }
+
+        /* Classic slide switches in skeuomorphic brass/wood design */
+        .edo-switch {
+            width: 52px;
+            height: 24px;
+            border-radius: 4px;
+            background: linear-gradient(to bottom, #2d2017 0%, #4a3424 100%);
+            border: 2px solid #d4af37;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+            position: relative;
+            cursor: pointer;
+        }
+        .edo-switch.active {
+            background: linear-gradient(to bottom, #d63c3c 0%, #9c1010 100%);
+        }
+        .edo-switch-handle {
+            width: 20px;
+            height: 18px;
+            border-radius: 2px;
+            background: linear-gradient(to bottom, #f0dfc5 0%, #cca068 100%);
+            border: 1px solid #5a3f17;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.5);
+            position: absolute;
+            top: 1px;
+            left: 2px;
+            transition: left 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .edo-switch.active .edo-switch-handle {
+            left: 26px;
         }
     </style>
 </head>
-<body class="relative w-screen h-screen select-none overflow-hidden">
+<body class="w-screen h-screen flex items-center justify-center select-none overflow-hidden p-0 md:p-4">
 
-    <!-- Canvas Container -->
-    <div id="canvas-container" class="absolute inset-0 w-full h-full z-0"></div>
-
-    <!-- UI Overlay / HUD -->
-    <div id="hud" class="absolute inset-x-0 top-0 p-4 md:p-6 flex flex-col gap-2 z-10 hidden">
-        <!-- Row 1: Bank (Left), Lives & Clone Status (Right), and Steering Alert (Center/Floating) -->
-        <div class="flex justify-between items-start w-full relative">
-            <!-- Bank (Left) -->
-            <div class="backdrop-blur-md bg-slate-950/50 px-4 py-2 rounded-xl border border-cyan-500/30 flex items-center gap-3 pointer-events-auto">
-                <span class="text-xs uppercase text-cyan-400 font-bold tracking-widest">Bank</span>
-                <span id="hud-score" class="text-xl md:text-2xl font-orbitron font-extrabold text-white neon-text-cyan">€0.00</span>
-            </div>
-
-            <!-- Steering Lock Notification (Centered absolutely in Row 1 to avoid pushing columns) -->
-            <div id="hud-notification" class="absolute left-1/2 -translate-x-1/2 backdrop-blur-md bg-red-950/60 border border-red-500/40 px-4 py-1.5 rounded-full text-red-200 text-xs md:text-sm font-semibold tracking-wider flex items-center gap-2 transition-all duration-300 opacity-0 scale-90 pointer-events-none">
-                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                <span id="hud-notification-text">STEERING LOCKED!</span>
-            </div>
-
-            <!-- Lives & Clones Stacking Panel (Right) -->
-            <div class="flex flex-col items-end gap-1.5 pointer-events-auto">
-                <!-- Main Ball Lives -->
-                <div class="backdrop-blur-md bg-slate-950/50 px-4 py-2 rounded-xl border border-pink-500/30 flex items-center gap-2">
-                    <span class="text-xs uppercase text-pink-400 font-bold tracking-widest mr-1">Lives</span>
-                    <div id="hud-lives" class="flex gap-1 text-lg md:text-xl">
-                        <!-- Hearts generated dynamically -->
-                    </div>
-                </div>
-                <!-- Clone Ball Lives (Displayed dynamically below Normal Ball) -->
-                <div id="hud-clone-container" class="backdrop-blur-md bg-slate-950/50 px-4 py-1.5 rounded-xl border border-orange-500/30 flex items-center gap-2 transition-all duration-300 opacity-0 scale-90 pointer-events-none">
-                    <span class="text-[10px] uppercase text-orange-400 font-bold tracking-widest mr-1">Clone</span>
-                    <div id="hud-clone-lives" class="flex gap-1 text-md md:text-lg">
-                        <!-- Clone hearts generated dynamically -->
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Row 2: Distance (Left), MENU Button (Center), and Speed + Mute Controls (Right) -->
-        <div class="flex justify-between items-center w-full mt-1 relative">
-            <!-- Distance (Left) -->
-            <div class="backdrop-blur-md bg-slate-950/50 px-4 py-1 rounded-lg border border-slate-700/50 flex items-center gap-2 w-max pointer-events-auto">
-                <span class="text-xs uppercase text-slate-400 font-bold">Distance</span>
-                <span id="hud-distance" class="text-sm md:text-md font-orbitron text-slate-200">0 m</span>
-            </div>
-
-            <!-- MENU Button (Center - Perfectly positioned in the second row between distance and speed) -->
-            <div class="absolute left-1/2 -translate-x-1/2 pointer-events-auto">
-                <button id="btn-hud-menu" class="backdrop-blur-md bg-slate-950/60 hover:bg-slate-900/80 px-5 py-1.5 rounded-xl border border-cyan-500/30 text-cyan-400 text-xs md:text-sm font-bold font-orbitron tracking-widest transition-all duration-200 active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.15)] flex items-center gap-1.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                    MENU
-                </button>
-            </div>
-
-            <!-- Speed & Mute (Right) -->
-            <div class="flex gap-2 items-center pointer-events-auto">
-                <!-- Speed Display -->
-                <div class="backdrop-blur-md bg-slate-950/50 px-3 py-1 rounded-lg border border-slate-700/50 text-xs text-slate-300 font-semibold flex items-center gap-1">
-                    <span>Speed:</span>
-                    <span id="hud-speed" class="text-yellow-400 font-orbitron">1.0x</span>
-                </div>
-                <!-- Mute Button -->
-                <button id="btn-mute" class="backdrop-blur-md bg-slate-950/50 hover:bg-slate-900/60 p-2 rounded-lg border border-slate-700/50 text-slate-300 transition-colors">
-                    <svg id="icon-audio-on" xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                    </svg>
-                    <svg id="icon-audio-mute" xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Container for dynamic floating score texts -->
-    <div id="floating-texts-layer" class="absolute inset-0 pointer-events-none z-20"></div>
-
-    <!-- Start / Welcome Screen (Difficulty and RUN buttons placed on top for zero scrolling) -->
-    <div id="start-screen" class="absolute inset-0 flex justify-center items-start overflow-y-auto bg-slate-950/90 backdrop-blur-md p-4 z-30 transition-opacity duration-500">
-        <div class="max-w-xl w-full my-auto backdrop-blur-xl bg-slate-900/50 rounded-2xl border border-cyan-500/30 p-5 md:p-8 flex flex-col items-center text-center shadow-2xl neon-border-pink">
-            <h1 class="text-3xl md:text-5xl font-orbitron font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 uppercase tracking-wider mb-1 animate-pulse">
-                PONG RUNNER 3D
-            </h1>
-            <p class="text-slate-400 font-semibold mb-4 tracking-wide text-sm md:text-base">SURVIVE THE HIGH-SPEED NEON MATRIX</p>
+    <!-- Skeuomorphic Physical Japanese Shōji Cabinet Frame -->
+    <div class="shrine-bezel">
+        <div class="shrine-screen flex flex-col">
             
-            <!-- Difficulty Selection & Start (Priority - Placed on Top) -->
-            <div class="flex flex-col gap-3 w-full mb-6">
-                <div class="flex justify-center gap-2" id="difficulty-selectors">
-                    <button data-diff="casual" class="px-4 py-2 rounded-xl text-xs md:text-sm font-bold bg-slate-800 text-slate-300 hover:bg-slate-750 border border-transparent transition-all">Casual</button>
-                    <button data-diff="arcade" class="px-4 py-2 rounded-xl text-xs md:text-sm font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 hover:bg-cyan-500/35 transition-all">Arcade</button>
-                    <button data-diff="cyber" class="px-4 py-2 rounded-xl text-xs md:text-sm font-bold bg-slate-800 text-slate-300 hover:bg-slate-750 border border-transparent transition-all">Cyber-Speed</button>
+            <!-- Traditional Edo-Net Status Bar -->
+            <div class="edo-status-bar">
+                <div class="edo-status-signals">
+                    <div class="flex gap-0.5 items-end mr-1.5 h-3">
+                        <div class="edo-signal-drop"></div>
+                        <div class="edo-signal-drop"></div>
+                        <div class="edo-signal-drop"></div>
+                        <div class="edo-signal-drop"></div>
+                        <div class="edo-signal-drop"></div>
+                    </div>
+                    <span class="text-[9px] tracking-widest">EDO-NET</span>
                 </div>
+                <div class="edo-status-time tracking-wider">辰の刻</div>
+                <div class="edo-status-candle">
+                    <span class="text-[8px] mr-1">SOY-WAX</span>
+                    <div class="edo-candle-flame"></div>
+                    <div class="edo-candle-wick"></div>
+                </div>
+            </div>
+
+            <!-- Main Canvas Container -->
+            <div id="canvas-container" class="absolute inset-0 w-full h-full z-0 pt-[22px]"></div>
+
+            <!-- UI Overlay / HUD -->
+            <div id="hud" class="absolute inset-x-0 top-[22px] p-3 flex flex-col gap-2 z-10 hidden">
+                <!-- Top HUD stats scrolls -->
+                <div class="flex justify-between items-center w-full relative">
+                    <!-- Left Bar: Koban Gold Scroll -->
+                    <div class="washi-paper px-3 py-1.5 rounded flex flex-col items-start min-w-[90px]">
+                        <span class="text-[8px] uppercase text-amber-900 font-black tracking-widest leading-none">KOBAN BANK</span>
+                        <span id="hud-score" class="text-base font-black text-[#a67c1e] drop-shadow-sm">€0.00</span>
+                    </div>
+
+                    <!-- Center Bar: Steering Lock alert badge (Vermillion parchment) -->
+                    <div id="hud-notification" class="absolute left-1/2 -translate-x-1/2 washi-paper border-red-700 bg-red-100 px-3 py-1 rounded text-red-900 text-xs font-bold tracking-wide flex items-center gap-1.5 transition-all duration-300 opacity-0 scale-90 pointer-events-none shadow-lg">
+                        <span class="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping"></span>
+                        <span id="hud-notification-text">STEERING LOCKED</span>
+                    </div>
+
+                    <!-- Right Bar: Life Fan indicators -->
+                    <div class="flex flex-col items-end gap-1">
+                        <div class="washi-paper px-3 py-1.5 rounded flex items-center gap-1.5">
+                            <span class="text-[8px] uppercase text-red-900 font-black tracking-widest mr-1">MARBLES</span>
+                            <div id="hud-lives" class="flex gap-0.5 text-sm">
+                                <!-- Crimson sakura flowers generated dynamically -->
+                            </div>
+                        </div>
+                        <!-- Clone Ball status -->
+                        <div id="hud-clone-container" class="washi-paper px-2 py-1 rounded flex items-center gap-1 transition-all duration-300 opacity-0 scale-90 pointer-events-none shadow-md">
+                            <span class="text-[7px] uppercase text-orange-900 font-bold">CLONE</span>
+                            <div id="hud-clone-lives" class="flex gap-0.5 text-xs"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub HUD row: Speed, Unified discrete control Cluster, Distance -->
+                <div class="flex justify-between items-center w-full mt-0.5">
+                    <!-- Distance Badge -->
+                    <div class="washi-paper px-2 py-1 rounded text-[10px]">
+                        Climb: <span id="hud-distance" class="font-black text-black">0 m</span>
+                    </div>
+
+                    <!-- Discrete Icon-based Navigation controls (Leave, Pause, Restart) -->
+                    <div class="flex items-center gap-1 bg-[#150f0c] p-1 rounded border border-[#5a3f17] shadow-inner">
+                        <!-- Leave/Exit Button -->
+                        <button id="btn-hud-menu" class="lacquer-btn-dark p-1.5 rounded flex items-center justify-center" title="Leave Shrine">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                        </button>
+                        <!-- Pause/Resume Button -->
+                        <button id="btn-hud-pause" class="lacquer-btn-dark p-1.5 rounded flex items-center justify-center" title="Pause/Resume Game">
+                            <svg id="svg-pause-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                        <!-- Quick Restart Button -->
+                        <button id="btn-hud-restart" class="lacquer-btn-dark p-1.5 rounded flex items-center justify-center" title="Re-forge Steel">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.5" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Speed Indicators & Sound Switch -->
+                    <div class="flex items-center gap-1.5">
+                        <div class="washi-paper px-2 py-1 rounded text-[10px] text-amber-900 font-black">
+                            <span id="hud-speed">1.0x</span>
+                        </div>
+                        <!-- Mute switch -->
+                        <div class="flex items-center gap-1 bg-[#1a130f] p-1 rounded border border-[#5a3f17]">
+                            <span class="text-[7px] text-amber-500 font-bold">MUTE</span>
+                            <div id="btn-mute-switch" class="edo-switch">
+                                <div class="edo-switch-handle"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Container for dynamic floating score texts -->
+            <div id="floating-texts-layer" class="absolute inset-0 pointer-events-none z-20"></div>
+
+            <!-- Start / Welcome Screen (Aged Calligraphy Parchment Scroll) -->
+            <div id="start-screen" class="absolute inset-0 flex flex-col justify-start items-center bg-[#07070a]/95 overflow-y-auto p-4 z-30 transition-opacity duration-500 pt-[35px]">
                 
-                <!-- Start Button (Renamed to "RUN") -->
-                <button id="btn-start" class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-cyan-500 hover:from-pink-600 hover:to-cyan-600 text-white font-orbitron font-extrabold text-lg md:text-xl rounded-xl shadow-lg hover:shadow-cyan-500/25 transition-all transform hover:-translate-y-0.5 animate-pulse">
-                    RUN
-                </button>
+                <!-- Hand-crafted ink header plaque -->
+                <div class="washi-paper tatami-border w-full py-4 px-3 mb-4 shadow-xl text-center">
+                    <h1 class="text-3xl font-black brush-title tracking-wider text-red-950 uppercase">
+                        輪走三次元
+                    </h1>
+                    <p class="text-[11px] font-bold text-amber-900 tracking-widest mt-1">PONG RUNNER 3D: SAMURAI SHINE</p>
+                    <div class="hanko-seal mt-2 text-xs font-black">幕府公認</div>
+                </div>
+
+                <!-- Game Setup Box on Rice Paper -->
+                <div class="w-full washi-paper rounded p-4 flex flex-col gap-4 text-left shadow-lg">
+                    
+                    <!-- Segmented Control for Difficulty (Samurai Red-lacquer themed selector) -->
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[10px] font-black text-slate-700 uppercase tracking-widest ml-1">CONSOLE DIFFICULTY</label>
+                        <div class="edo-segmented-control w-full" id="difficulty-selectors">
+                            <button data-diff="casual" class="edo-segment flex-1 active">CASUAL</button>
+                            <button data-diff="arcade" class="edo-segment flex-1">ARCADE</button>
+                            <button data-diff="cyber" class="edo-segment flex-1">CYBER</button>
+                        </div>
+                    </div>
+
+                    <!-- Instructions Layout as a classic List View group -->
+                    <div>
+                        <label class="text-[10px] font-black text-slate-700 uppercase tracking-widest ml-1">SAMURAI METHOD</label>
+                        <div class="mt-1.5 bg-stone-100 rounded border border-stone-300 overflow-hidden text-xs text-stone-900">
+                            <div class="p-2.5 border-b border-stone-200 flex justify-between items-center">
+                                <span class="font-bold">🖥️ Desktop Lanes:</span>
+                                <span class="text-stone-700">A / D or Left / Right Arrows</span>
+                            </div>
+                            <div class="p-2.5 border-b border-stone-200 flex justify-between items-center">
+                                <span class="font-bold">📱 Mobile Slide:</span>
+                                <span class="text-stone-700">Tap Left/Right screen halves</span>
+                            </div>
+                            <div class="p-2.5 text-red-800 bg-red-50 leading-snug">
+                                <strong>⚠️ Bushido Oath:</strong> Falling off target lanes will instantly plunge your steel marble into the dark shrine void!
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lacquer Red Start Button -->
+                    <button id="btn-start" class="lacquer-btn-red w-full py-3 rounded text-lg font-black tracking-widest">
+                        UNSHEATH BLADE (START)
+                    </button>
+                </div>
+
+                <!-- Element Legend Details List inside Setup Panel -->
+                <div class="w-full mt-4 washi-paper p-3">
+                    <h3 class="text-xs font-black text-slate-800 mb-2 uppercase tracking-widest">Feudal Shrine Elements</h3>
+                    <div class="grid grid-cols-2 gap-2 text-[9px] text-stone-800 leading-tight">
+                        <div class="bg-stone-50 p-2 rounded border border-stone-200 flex flex-col justify-between col-span-2">
+                            <strong class="text-amber-800">🏆 Distinguishable Feudal Treasures</strong>
+                            <div class="grid grid-cols-5 gap-1 mt-1 text-[7.5px] leading-tight">
+                                <div class="flex flex-col"><b class="text-[#cd7f32]">Bronze Sen</b><span>Copper oval disc. Bronze glow.</span></div>
+                                <div class="flex flex-col border-l border-stone-300 pl-1"><b class="text-[#a0aab2]">Silver Mon</b><span>Central square hole. Silver glow.</span></div>
+                                <div class="flex flex-col border-l border-stone-300 pl-1"><b class="text-[#d4af37]">Gold Koban</b><span>Oval bar + ruby center core. Ruby glow.</span></div>
+                                <div class="flex flex-col border-l border-stone-300 pl-1"><b class="text-[#10b981]">Emerald Gem</b><span>Rare hex jade. Emerald glow.</span></div>
+                                <div class="flex flex-col border-l border-stone-300 pl-1"><b class="text-[#22d3ee]">Diamond</b><span>Ultra-rare double pyramid. Cyan glow.</span></div>
+                            </div>
+                        </div>
+                        <div class="bg-stone-50 p-2 rounded border border-stone-200 flex flex-col justify-between">
+                            <strong class="text-red-800">❤️ Ruby Sakura</strong>
+                            <span>Sip life tea to replenish your marbles.</span>
+                        </div>
+                        <div class="bg-stone-50 p-2 rounded border border-stone-200 flex flex-col justify-between">
+                            <strong class="text-emerald-800">🥁 Taiko Drums</strong>
+                            <span>Deep-bouncing launchers that skip tracks!</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Controls Info -->
-            <div class="text-slate-400 text-xs md:text-sm mb-5 bg-slate-950/30 w-full py-2.5 rounded-lg border border-slate-800/40 leading-relaxed text-left text-center">
-                <span class="font-bold text-slate-200 block mb-1 text-center">CONTROLS</span>
-                • Desktop: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-white text-xs">A</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-white text-xs">◀</kbd> and <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-white text-xs">D</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-white text-xs">▶</kbd> to change lanes.<br>
-                • Mobile: Tap anywhere on the Left/Right side of screen or swipe left/right.<br>
-                <span class="text-rose-400 font-semibold block mt-1 text-center">⚠️ WARNING: Jumping left from left lane or right from right lane leads to death!</span>
+            <!-- Paused Overlay (Parchment Scroll style) -->
+            <div id="pause-overlay" class="absolute inset-0 flex items-center justify-center bg-black/60 z-30 hidden p-4">
+                <div class="washi-paper tatami-border max-w-xs w-full p-6 flex flex-col items-center text-center shadow-2xl animate-fade-in">
+                    <div class="hanko-seal text-xs font-black mb-2">一時停止</div>
+                    <h2 class="text-2xl font-black brush-title text-red-950 mb-3">Battle Paused</h2>
+                    <p class="text-xs text-stone-700 mb-5 leading-normal">The steel marbles remain frozen in quiet contemplation of the track.</p>
+                    
+                    <button id="btn-pause-resume" class="lacquer-btn-red w-full py-2.5 rounded text-sm font-black tracking-wider">
+                        RESUME BATTLE (再開)
+                    </button>
+                </div>
             </div>
 
-            <!-- Guide Grid (Secondary Information) -->
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-2.5 w-full text-left text-xs">
-                <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 flex flex-col justify-between">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="w-3 h-3 rounded-full bg-yellow-400 block shadow-[0_0_8px_#facc15]"></span>
-                        <span class="font-bold text-slate-200">Coins</span>
+            <!-- Game Over Screen (Solemn Temple Bell Alert) -->
+            <div id="game-over-screen" class="absolute inset-0 flex items-center justify-center bg-black/75 z-30 hidden p-4">
+                <div class="washi-paper tatami-border max-w-sm w-full p-5 flex flex-col items-center text-center shadow-2xl">
+                    <div class="hanko-seal text-xs font-black mb-2">敗北</div>
+                    <h2 class="text-2xl font-black brush-title text-red-950 mb-1">Honor Lost</h2>
+                    <p class="text-xs text-stone-700 mb-4 leading-normal">Your steel marbles plummeted from the lacquered shrine tracks.</p>
+
+                    <!-- Score list in skeuomorphic rounded plate -->
+                    <div class="bg-stone-100 w-full rounded border border-stone-300 p-3 flex flex-col gap-2 mb-5 text-xs text-left">
+                        <div class="flex justify-between items-center border-b border-stone-200 pb-1.5">
+                            <span class="text-stone-600">Feudal Loot:</span>
+                            <span id="final-score" class="font-black text-amber-900 text-sm">€0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-stone-200 pb-1.5">
+                            <span class="text-stone-600">Distance Travelled:</span>
+                            <span id="final-distance" class="font-black text-stone-900 text-sm">0 m</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-stone-600">Ancestral Best:</span>
+                            <span id="high-score" class="font-black text-amber-600 text-sm">€0.00</span>
+                        </div>
                     </div>
-                    <span class="text-slate-400">Collect euros & cents on the floor as you land!</span>
-                </div>
-                <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 flex flex-col justify-between">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="w-3 h-3 block bg-red-600 rounded-sm shadow-[0_0_8px_#ef4444]"></span>
-                        <span class="font-bold text-slate-200">Holes</span>
+
+                    <!-- Double gloss actions stack -->
+                    <div class="flex flex-col gap-2 w-full">
+                        <button id="btn-restart" class="lacquer-btn-red w-full py-2.5 rounded text-sm font-black tracking-wider opacity-50 pointer-events-none">
+                            RE-FORGE STEEL (3s)
+                        </button>
+                        <button id="btn-menu" class="lacquer-btn-dark w-full py-2.5 rounded text-sm font-black tracking-wider opacity-50 pointer-events-none">
+                            RETURN TO TEMPLES
+                        </button>
                     </div>
-                    <span class="text-slate-400">Avoid gaps or plummet into the digital abyss.</span>
-                </div>
-                <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 flex flex-col justify-between">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="text-cyan-400 font-extrabold text-sm shadow-[0_0_8px_#22d3ee]">▲</span>
-                        <span class="font-bold text-slate-200">Trampoline</span>
-                    </div>
-                    <span class="text-slate-400">Bounce high, skipping the next platform landing entirely!</span>
-                </div>
-                <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 flex flex-col justify-between">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="text-green-400 font-extrabold text-sm font-orbitron">◀ ▶</span>
-                        <span class="font-bold text-slate-200">Forced Slides</span>
-                    </div>
-                    <span class="text-slate-400">Forcibly slides you left or right on bounce.</span>
-                </div>
-                <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 flex flex-col justify-between">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="text-yellow-400 font-extrabold text-sm font-orbitron">▲</span>
-                        <span class="font-bold text-slate-200">Forward Arrow</span>
-                    </div>
-                    <span class="text-slate-400">Rolls flat along the floor to the next interval without bouncing!</span>
-                </div>
-                <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 flex flex-col justify-between">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="w-3 h-3 rounded-full bg-orange-500 block shadow-[0_0_8px_#f97316]"></span>
-                        <span class="font-bold text-slate-200">Clone Ball</span>
-                    </div>
-                    <span class="text-slate-400">Spawns a controllable clone ball on adjacent lane in lockstep!</span>
                 </div>
             </div>
+
+            <!-- Touch control highlighting zones -->
+            <div id="mobile-controls" class="absolute inset-x-0 bottom-6 px-10 flex justify-between pointer-events-none z-10 hidden">
+                <div id="btn-mobile-left" class="w-11 h-11 transition-all duration-100 backdrop-blur-sm bg-black/40 border-2 border-[#d4af37] text-[#d4af37] rounded flex items-center justify-center text-md shadow-lg">
+                    ◀
+                </div>
+                <div id="btn-mobile-right" class="w-11 h-11 transition-all duration-100 backdrop-blur-sm bg-black/40 border-2 border-[#d4af37] text-[#d4af37] rounded flex items-center justify-center text-md shadow-lg">
+                    ▶
+                </div>
+            </div>
+
         </div>
-    </div>
 
-    <!-- Game Over Screen (Improved Scrollability) -->
-    <div id="game-over-screen" class="absolute inset-0 flex justify-center items-start overflow-y-auto bg-slate-950/95 backdrop-blur-md p-4 z-30 hidden transition-opacity duration-300">
-        <div class="max-w-md w-full my-auto backdrop-blur-xl bg-slate-900/50 rounded-2xl border border-red-500/30 p-6 md:p-8 flex flex-col items-center text-center shadow-2xl">
-            <h2 class="text-3xl md:text-4xl font-orbitron font-black text-red-500 uppercase tracking-widest mb-2 neon-text-pink animate-bounce">
-                CONNECTION LOST
-            </h2>
-            <p class="text-slate-400 font-semibold mb-6 tracking-wider text-sm md:text-base">BALL DE-SYNCHRONIZED FROM FLOOR GRID</p>
-
-            <!-- Final Score Block -->
-            <div class="bg-slate-950/60 w-full p-5 rounded-xl border border-slate-800 flex flex-col gap-3 mb-6">
-                <div class="flex justify-between items-center border-b border-slate-800/60 pb-2.5">
-                    <span class="text-slate-400 text-sm uppercase">Collected Loot</span>
-                    <span id="final-score" class="text-2xl font-orbitron font-extrabold text-cyan-400">€0.00</span>
-                </div>
-                <div class="flex justify-between items-center border-b border-slate-800/60 pb-2.5">
-                    <span class="text-slate-400 text-sm uppercase">Intervals Climbed</span>
-                    <span id="final-distance" class="text-lg font-orbitron font-bold text-slate-200">0 m</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-slate-400 text-sm uppercase">Global Best Bank</span>
-                    <span id="high-score" class="text-lg font-orbitron font-bold text-yellow-400">€0.00</span>
-                </div>
-            </div>
-
-            <!-- Buttons (Protected with countdown and disabled states) -->
-            <div class="flex flex-col gap-3 w-full">
-                <button id="btn-restart" class="w-full py-4 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-orbitron font-extrabold text-lg rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 opacity-50 pointer-events-none">
-                    RE-SPAWN BALL (3s)
-                </button>
-                <button id="btn-menu" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm rounded-xl transition-all opacity-50 pointer-events-none">
-                    RETURN TO TERMINAL
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- On-Screen Mobile Action Buttons (Passive highlights) -->
-    <div id="mobile-controls" class="absolute inset-x-0 bottom-16 px-10 flex justify-between pointer-events-none z-10 hidden">
-        <div id="btn-mobile-left" class="w-16 h-16 transition-transform duration-100 backdrop-blur-md bg-slate-950/40 border border-cyan-500/30 text-cyan-400 rounded-full flex items-center justify-center text-xl font-bold font-orbitron select-none shadow-[0_0_15px_rgba(6,182,212,0.15)]">
-            ◀
-        </div>
-        <div id="btn-mobile-right" class="w-16 h-16 transition-transform duration-100 backdrop-blur-md bg-slate-950/40 border border-cyan-500/30 text-cyan-400 rounded-full flex items-center justify-center text-xl font-bold font-orbitron select-none shadow-[0_0_15px_rgba(6,182,212,0.15)]">
-            ▶
+        <!-- Fully Interactive Physical Shrine Cabinet Tsuba Home Button -->
+        <div id="btn-home-physical" class="shrine-home-btn" title="Leave and return to Temple Shrine">
+            <div class="shrine-home-btn-crest"></div>
         </div>
     </div>
 
@@ -260,15 +599,14 @@
             constructor(seed) {
                 this.seed = seed;
             }
-            // Returns a deterministic pseudorandom number between 0 and 1
             next() {
                 let x = Math.sin(this.seed++) * 10000;
                 return x - Math.floor(x);
             }
         }
-        let levelPRNG = new SeededRandom(55555); // Global PRNG tracker
+        let levelPRNG = new SeededRandom(55555);
 
-        // --- CHIPTUNE AUDIO ENGINE (WEB AUDIO API) ---
+        // --- TRADITIONAL INSTRUMENT AUDIO ENGINE ---
         const Sound = {
             ctx: null,
             muted: localStorage.getItem('pong_runner_muted') === 'true',
@@ -284,12 +622,18 @@
                 this.muted = !this.muted;
                 localStorage.setItem('pong_runner_muted', this.muted);
                 this.updateUI();
-                this.play('coin'); // Auditory feedback
+                this.play('coin');
             },
             
             updateUI() {
-                document.getElementById('icon-audio-on').classList.toggle('hidden', this.muted);
-                document.getElementById('icon-audio-mute').classList.toggle('hidden', !this.muted);
+                const switchEl = document.getElementById('btn-mute-switch');
+                if (switchEl) {
+                    if (this.muted) {
+                        switchEl.classList.remove('active');
+                    } else {
+                        switchEl.classList.add('active');
+                    }
+                }
             },
             
             play(type) {
@@ -300,86 +644,125 @@
                 const ctx = this.ctx;
                 
                 if (type === 'bounce') {
+                    // Woody "Clack" of Japanese Hyoshigi wooden blocks
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
                     osc.connect(gain);
                     gain.connect(ctx.destination);
                     osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(140, ctx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(260, ctx.currentTime + 0.08);
-                    gain.gain.setValueAtTime(0.12, ctx.currentTime);
-                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.08);
+                    osc.frequency.setValueAtTime(220, ctx.currentTime);
+                    osc.frequency.setValueAtTime(440, ctx.currentTime + 0.01);
+                    osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.05);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.05);
                     osc.start();
-                    osc.stop(ctx.currentTime + 0.08);
+                    osc.stop(ctx.currentTime + 0.05);
                 } 
                 else if (type === 'coin') {
+                    // Golden ring of ancient Koban coins clashing
+                    const osc1 = ctx.createOscillator();
+                    const osc2 = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    
+                    osc1.connect(gain);
+                    osc2.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    osc1.type = 'sine';
+                    osc1.frequency.setValueAtTime(1200, ctx.currentTime);
+                    osc1.frequency.setValueAtTime(1500, ctx.currentTime + 0.06);
+                    
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(2200, ctx.currentTime);
+                    
+                    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.22);
+                    
+                    osc1.start();
+                    osc2.start();
+                    osc1.stop(ctx.currentTime + 0.22);
+                    osc2.stop(ctx.currentTime + 0.22);
+                } 
+                else if (type === 'trampoline') {
+                    // Resonant boom of a Taiko Drum
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
                     osc.connect(gain);
                     gain.connect(ctx.destination);
                     osc.type = 'sine';
-                    osc.frequency.setValueAtTime(880, ctx.currentTime);
-                    osc.frequency.setValueAtTime(1318, ctx.currentTime + 0.08);
-                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    osc.frequency.setValueAtTime(90, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(45, ctx.currentTime + 0.25);
+                    gain.gain.setValueAtTime(0.4, ctx.currentTime);
                     gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.25);
                     osc.start();
                     osc.stop(ctx.currentTime + 0.25);
                 } 
-                else if (type === 'trampoline') {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(180, ctx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(580, ctx.currentTime + 0.18);
-                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.18);
-                    osc.start();
-                    osc.stop(ctx.currentTime + 0.18);
-                } 
                 else if (type === 'hurt') {
+                    // Metallic sword parry clash clank!
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
                     osc.connect(gain);
                     gain.connect(ctx.destination);
                     osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(220, ctx.currentTime);
-                    osc.frequency.linearRampToValueAtTime(55, ctx.currentTime + 0.35);
-                    gain.gain.setValueAtTime(0.25, ctx.currentTime);
-                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.35);
+                    osc.frequency.setValueAtTime(800, ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.04);
+                    osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.25);
+                    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.25);
                     osc.start();
-                    osc.stop(ctx.currentTime + 0.35);
+                    osc.stop(ctx.currentTime + 0.25);
                 } 
                 else if (type === 'heart') {
-                    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 arpeggio
-                    notes.forEach((freq, idx) => {
+                    // Mystical Koto harp arpeggio (Pentatonic scale)
+                    const scale = [523.25, 587.33, 659.25, 783.99, 880.00]; // Pentatonic notes
+                    scale.forEach((freq, idx) => {
                         const osc = ctx.createOscillator();
                         const gain = ctx.createGain();
                         osc.connect(gain);
                         gain.connect(ctx.destination);
                         osc.type = 'sine';
-                        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.05);
-                        gain.gain.setValueAtTime(0.08, ctx.currentTime + idx * 0.05);
-                        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + idx * 0.05 + 0.12);
-                        osc.start(ctx.currentTime + idx * 0.05);
-                        osc.stop(ctx.currentTime + idx * 0.05 + 0.12);
+                        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.04);
+                        gain.gain.setValueAtTime(0.06, ctx.currentTime + idx * 0.04);
+                        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + idx * 0.04 + 0.15);
+                        osc.start(ctx.currentTime + idx * 0.04);
+                        osc.stop(ctx.currentTime + idx * 0.04 + 0.15);
                     });
                 }
                 else if (type === 'gameover') {
-                    const notes = [220, 207.65, 196, 174.61]; // Sad descending arpeggio
-                    notes.forEach((freq, idx) => {
-                        const osc = ctx.createOscillator();
-                        const gain = ctx.createGain();
-                        osc.connect(gain);
-                        gain.connect(ctx.destination);
-                        osc.type = 'sawtooth';
-                        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.15);
-                        gain.gain.setValueAtTime(0.15, ctx.currentTime + idx * 0.15);
-                        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + idx * 0.15 + 0.3);
-                        osc.start(ctx.currentTime + idx * 0.15);
-                        osc.stop(ctx.currentTime + idx * 0.15 + 0.3);
-                    });
+                    // Solemn, vibrating Buddhist Temple Bell (Bonshō) toll
+                    const osc = ctx.createOscillator();
+                    const filter = ctx.createBiquadFilter();
+                    const gain = ctx.createGain();
+                    
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(82, ctx.currentTime); // Low fundamental
+                    
+                    // Complex metallic hum frequencies added
+                    const harmonic1 = ctx.createOscillator();
+                    const harmonic2 = ctx.createOscillator();
+                    harmonic1.connect(gain);
+                    harmonic2.connect(gain);
+                    harmonic1.type = 'sine';
+                    harmonic2.type = 'sine';
+                    harmonic1.frequency.setValueAtTime(164, ctx.currentTime);
+                    harmonic2.frequency.setValueAtTime(246, ctx.currentTime);
+                    
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(400, ctx.currentTime);
+                    
+                    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.0);
+                    
+                    osc.start();
+                    harmonic1.start();
+                    harmonic2.start();
+                    osc.stop(ctx.currentTime + 2.0);
+                    harmonic1.stop(ctx.currentTime + 2.0);
+                    harmonic2.stop(ctx.currentTime + 2.0);
                 }
             }
         };
@@ -387,127 +770,159 @@
         // --- GLOBAL SETUP & STATE VARIABLES ---
         let scene, camera, renderer;
         let ball, ballGroup;
-        let activeSegments = {}; // Map of intervalIndex -> segment visual group object
-        let trackData = {}; // Map of intervalIndex -> 3-lane cell configs
-        let currentReachableStates = []; // Reachability solver current state list
-        let activeBalls = []; // Array of active ball structures to track multiball mechanics
-        let previouslyMerged = false; // State flag to track if clones/normals are merged in same lane
+        let activeSegments = {};
+        let trackData = {};
+        let currentReachableStates = [];
+        let activeBalls = [];
+        let previouslyMerged = false;
         
-        // Game metrics & settings
         let gameActive = false;
+        let isPaused = false;
         let scoreCents = 0;
         let intervalsSurvived = 0;
         let lives = 3;
         let maxLives = 5;
-        let targetLane = 1; // 0: Left, 1: Center, 2: Right, can be -1 or 3 for edge boundary falls
+        let targetLane = 1;
         let currentLane = 1;
         let difficulty = 'arcade';
         let isInvulnerable = false;
         let invulnerabilityTimer = 0;
-        let gameOverButtonsEnabled = false; // Flag to prevent accidental restarts on game over screen
+        let gameOverButtonsEnabled = false;
         let gameOverTimer = null;
         
-        // Interval dimensional config
         const intervalLength = 10.0;
-        
-        // Ball speed mechanics
         let currentSpeedMultiplier = 1.0;
         let bounceStartIndex = 0;
         let isHighBounce = false;
-        let isRolling = false; // Flag to control flat rolling mode on Forward Arrow
-        let globalZ = 0; // Globally shared player Z progress tracker to keep all balls locked in alignment
+        let isRolling = false;
+        let globalZ = 0;
         const normalPeakHeight = 3.2;
         const highPeakHeight = 7.5;
         
-        // Particle System Pool
         const particlePool = [];
         const maxParticles = 60;
-        
-        // Trail length parameters
-        const trailSpheres = []; // Unused legacy ref kept for global script references
         const maxTrailLength = 12;
-
-        // Steering lock visual alert helper
         let steeringLockAlertTimer = 0;
 
-        // Game Configuration constants by difficulty
         const DIFF_SETTINGS = {
             casual: { baseSpeed: 10, speedGrowth: 0.002, startLives: 4 },
             arcade: { baseSpeed: 12, speedGrowth: 0.004, startLives: 3 },
             cyber: { baseSpeed: 16, speedGrowth: 0.007, startLives: 2 }
         };
 
-        // Redefined coordinates & significantly amplified coin scales + neon coloration!
-        const COIN_TYPES = {
-            '1c':  { cents: 1,   color: 0xff4500, scale: 0.65 }, // Vibrant neon copper
-            '2c':  { cents: 2,   color: 0xff4500, scale: 0.72 },
-            '5c':  { cents: 5,   color: 0xff4500, scale: 0.82 },
-            '10c': { cents: 10,  color: 0xffcc00, scale: 0.72 }, // Vibrant neon gold
-            '20c': { cents: 20,  color: 0xffcc00, scale: 0.80 },
-            '50c': { cents: 50,  color: 0xffcc00, scale: 0.92 },
-            '1e':  { cents: 100, isEuro: true, inner: 0xffbb00, outer: 0xdddddd, scale: 0.85 }, // Hyper reflective bimetal
-            '2e':  { cents: 200, isEuro: true, inner: 0xdddddd, outer: 0xffbb00, scale: 0.98 }
+        const DIFF_SEEDS = {
+            casual: 11111,
+            arcade: 55555,
+            cyber: 99999
         };
 
-        // Helper function translates target lane index seamlessly to inverted 3D X space
-        // Lane 0: Left (+2.5X) | Lane 1: Center (0.0X) | Lane 2: Right (-2.5X)
-        // Keeps out-of-bound jumps perfectly proportional (-1 is Left Abyss (+5.0X), 3 is Right Abyss (-5.0X))
+        // Distinguishable Feudal Treasures (Scale mapping: 1 = small, 2 = normal, 5 = big)
+        const COIN_TYPES = {
+            '1c':   { cents: 1,     group: 'bronze',  scale: 0.60 }, // Small Bronze Sen
+            '2c':   { cents: 2,     group: 'bronze',  scale: 0.85 }, // Medium Bronze Sen
+            '5c':   { cents: 5,     group: 'bronze',  scale: 1.15 }, // Big Bronze Sen
+            '10c':  { cents: 10,    group: 'silver',  scale: 0.60 }, // Small Silver Mon
+            '20c':  { cents: 20,    group: 'silver',  scale: 0.85 }, // Medium Silver Mon
+            '50c':  { cents: 50,    group: 'silver',  scale: 1.15 }, // Big Silver Mon
+            '1e':   { cents: 100,   group: 'gold',    scale: 0.60 }, // Small Gold Koban + Ruby
+            '2e':   { cents: 200,   group: 'gold',    scale: 0.85 }, // Medium Gold Koban + Ruby
+            '5e':   { cents: 500,   group: 'gold',    scale: 1.15 }, // Big Gold Koban + Ruby
+            '10e':  { cents: 1000,  group: 'emerald', scale: 0.60 }, // Small Emerald jade
+            '20e':  { cents: 2000,  group: 'emerald', scale: 0.85 }, // Medium Emerald jade
+            '50e':  { cents: 5000,  group: 'emerald', scale: 1.15 }, // Big Emerald jade
+            '100e': { cents: 10000, group: 'diamond', scale: 0.95 }  // Ancestral Diamond double-pyramid
+        };
+
         function getXFromLane(lane) {
             return 2.5 - lane * 2.5;
         }
 
-        // --- GEOMETRY & MATERIAL REUSE (CRITICAL FOR PERFORMANCE) ---
-        let geomPlatform, geomCircleOutline;
-        let geomSpring, geomTrampolineBase, geomTrampolinePad;
-        let geomHeartBox, geomHeartSphere, geomArrowBar, geomParticle;
-        let matPlatform, matPlatformGlow, matBall, matParticle, matHeart;
-        let matCyanGlow, matArrowGlow, matTrampolineBase;
+        // --- GEOMETRY & MATERIAL REUSE (SAMURAI SHINE STYLING) ---
+        let geomPlatform;
+        let geomTaikoDrum, geomTaikoSkin, geomArrowBar, geomParticle;
+        let matPlatform, matGoldLacquer, matKatanaSteel, matParticle, matSakuraRuby;
+        let matTaikoShell, matTaikoSkin, matBrassArrow;
 
-        // Initialize reusable materials and shapes once
         function initGlobalAssets() {
             geomPlatform = new THREE.BoxGeometry(2.0, 0.4, 9.0);
             geomParticle = new THREE.BoxGeometry(0.12, 0.12, 0.12);
-            geomTrampolineBase = new THREE.BoxGeometry(1.8, 0.1, 3.5);
-            geomTrampolinePad = new THREE.BoxGeometry(1.6, 0.12, 3.1);
-            geomHeartBox = new THREE.BoxGeometry(0.35, 0.35, 0.35);
-            geomHeartSphere = new THREE.SphereGeometry(0.2, 12, 12);
-            geomArrowBar = new THREE.BoxGeometry(0.15, 0.08, 0.6);
+            geomTaikoDrum = new THREE.CylinderGeometry(0.9, 0.9, 0.4, 16);
+            geomTaikoSkin = new THREE.CylinderGeometry(0.85, 0.85, 0.45, 16);
+            geomArrowBar = new THREE.BoxGeometry(0.15, 0.06, 0.6);
 
-            // Sleek, highly reflective cyber slate material for platforms
-            matPlatform = new THREE.MeshStandardMaterial({ color: 0x0c0c1b, roughness: 0.12, metalness: 0.9 });
-            matBall = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1, metalness: 0.1 });
-            matParticle = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.8 });
+            // Shinto vermillion shrine planks
+            matPlatform = new THREE.MeshStandardMaterial({ 
+                color: 0x3d0f0b, // Aged vermillion cedarwood
+                roughness: 0.35, 
+                metalness: 0.15 
+            });
+
+            // Polished lacquer gold leaf boundaries
+            matGoldLacquer = new THREE.MeshStandardMaterial({ 
+                color: 0xd4af37, 
+                roughness: 0.15, 
+                metalness: 0.95,
+                emissive: 0x3b2a00,
+                emissiveIntensity: 0.2
+            });
+
+            // Folded steel katana core marble
+            matKatanaSteel = new THREE.MeshStandardMaterial({ 
+                color: 0xa8b2bc, 
+                roughness: 0.05, 
+                metalness: 0.98 
+            });
+
+            matParticle = new THREE.MeshStandardMaterial({ 
+                roughness: 0.2, 
+                metalness: 0.8,
+                transparent: true, 
+                opacity: 0.9 
+            });
             
-            // Emissive glowing materials for items
-            matHeart = new THREE.MeshStandardMaterial({ color: 0xff2a85, emissive: 0xff1493, emissiveIntensity: 2.2 });
-            matCyanGlow = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00bfff, emissiveIntensity: 2.2 });
-            matArrowGlow = new THREE.MeshStandardMaterial({ color: 0xfff000, emissive: 0xffd700, emissiveIntensity: 2.5 });
-            matTrampolineBase = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.6 });
+            // Hand-blown ruby-glass sakura flower petals
+            matSakuraRuby = new THREE.MeshStandardMaterial({ 
+                color: 0xd63351, 
+                emissive: 0x5a040d, 
+                emissiveIntensity: 0.4,
+                roughness: 0.05,
+                metalness: 0.75,
+                transparent: true,
+                opacity: 0.92
+            });
+
+            matBrassArrow = new THREE.MeshStandardMaterial({
+                color: 0xc49b3c,
+                roughness: 0.18,
+                metalness: 0.85
+            });
+
+            matTaikoShell = new THREE.MeshStandardMaterial({ 
+                color: 0x6e1b0d, // Dark wine-red lacquer
+                roughness: 0.2,
+                metalness: 0.7
+            });
+
+            matTaikoSkin = new THREE.MeshStandardMaterial({
+                color: 0xebd2ad, // Raw animal skin parchment look
+                roughness: 0.65,
+                metalness: 0.05
+            });
         }
 
+        // --- PROCEDURAL ENGINE & SOLVER ---
 
-        // --- STATE-BASED PROCEDURAL GENERATION & MATHEMATICAL SOLVER ---
-
-        // Randomly pick a cell type based on progress/difficulty
+        // Balanced progressive rarity system across segments
         function generateRandomCell(index) {
             const rand = levelPRNG.next();
-            
-            // Build safe zones first (first 6 cells)
             if (index < 6) return { type: 'blank' };
 
-            // Gradually introduce hazards/elements as index grows
             let pBlank = 0.42;
             let pHole = Math.min(0.28, 0.05 + index * 0.0018);
             let pCoin = 0.24;
             let pTramp = Math.min(0.08, 0.01 + index * 0.0006);
-            
-            // Sized up arrow element density by exactly 2x
             let pArrow = Math.min(0.16, 0.02 + index * 0.001);
-            
-            // FIXED: Bring more hearts earlier (scaled up base probabilities earlier in run)
             let pHeart = Math.min(0.025, 0.008 + index * 0.0001);
-
-            // FIXED: Introduce clones a bit later (only after interval index 30)
             let pCloneBall = index < 30 ? 0 : 0.035;
 
             if (rand < pBlank) {
@@ -517,12 +932,28 @@
             } else if (rand < pBlank + pHole + pCoin) {
                 let coinKey = '1c';
                 const cRand = levelPRNG.next();
-                if (index < 25) {
-                    coinKey = cRand < 0.6 ? '1c' : (cRand < 0.9 ? '2c' : '5c');
-                } else if (index < 65) {
-                    coinKey = cRand < 0.4 ? '5c' : (cRand < 0.7 ? '10c' : (cRand < 0.9 ? '20c' : '50c'));
+                
+                // Balanced milestone unlocks along track index (index represents segment, each segment is 10 meters)
+                let pDiamond = (index >= 250) ? 0.008 : 0.0;     // Unlocked beyond 2500m (0.8% rare find)
+                let pEmerald = (index >= 120) ? 0.025 : 0.0;     // Unlocked beyond 1200m (2.5% rare find)
+                let pGold = (index >= 40) ? 0.12 : 0.0;          // Unlocked beyond 400m (12%)
+                let pSilver = 0.38;                              // Standard (38%)
+                // The rest defaults to Bronze
+
+                if (cRand < pDiamond) {
+                    coinKey = '100e'; // Legendary Diamond
+                } else if (cRand < pDiamond + pEmerald) {
+                    const gemRoll = levelPRNG.next();
+                    coinKey = gemRoll < 0.5 ? '10e' : (gemRoll < 0.85 ? '20e' : '50e'); // Emerald group
+                } else if (cRand < pDiamond + pEmerald + pGold) {
+                    const goldRoll = levelPRNG.next();
+                    coinKey = goldRoll < 0.5 ? '1e' : (goldRoll < 0.85 ? '2e' : '5e'); // Gold group
+                } else if (cRand < pDiamond + pEmerald + pGold + pSilver) {
+                    const silverRoll = levelPRNG.next();
+                    coinKey = silverRoll < 0.5 ? '10c' : (silverRoll < 0.85 ? '20c' : '50c'); // Silver group
                 } else {
-                    coinKey = cRand < 0.4 ? '50c' : (cRand < 0.75 ? '1e' : '2e');
+                    const bronzeRoll = levelPRNG.next();
+                    coinKey = bronzeRoll < 0.5 ? '1c' : (bronzeRoll < 0.85 ? '2c' : '5c'); // Bronze group
                 }
                 return { type: 'coin', detail: coinKey };
             } else if (rand < pBlank + pHole + pCoin + pTramp) {
@@ -540,18 +971,12 @@
             }
         }
 
-        // Return transition list possible from state "s" at intervalIndex-1 into "newSegment" at intervalIndex
         function getValidTransitionsFromState(s, intervalIndex, newSegment) {
             const validNexts = [];
-            
-            // Case 1: High bounce is active. We are currently flying over intervalIndex-1, landing on intervalIndex.
             if (s.flyOver) {
-                // During high jump we are in the air and can choose any adjacent lane to land on.
                 const landingLanes = [s.lane - 1, s.lane, s.lane + 1].filter(l => l >= 0 && l <= 2);
-                
                 for (let l of landingLanes) {
                     if (newSegment[l].type !== 'hole') {
-                        // Is it a trampoline? If so, we high-bounce again (skip next landing)
                         if (newSegment[l].type === 'trampoline') {
                             validNexts.push({ lane: l, flyOver: true });
                         } else {
@@ -559,16 +984,11 @@
                         }
                     }
                 }
-            } 
-            // Case 2: Normal bounce / Roll. We land at intervalIndex-1, lane s.lane
-            else {
-                // If previous tile was a trampoline, we must fly over intervalIndex (cannot steer yet).
+            } else {
                 const prevCell = trackData[intervalIndex - 1]?.[s.lane];
                 if (prevCell && prevCell.type === 'trampoline') {
-                    // Flying over intervalIndex, next state has to be in the same lane (flying).
                     validNexts.push({ lane: s.lane, flyOver: true });
                 } else {
-                    // Normal landing. Evaluate arrow restrictions of current landed tile at intervalIndex-1
                     let allowedLanes = [];
                     if (prevCell && prevCell.type === 'arrow-forward') {
                         allowedLanes = [s.lane];
@@ -580,7 +1000,6 @@
                         allowedLanes = [s.lane - 1, s.lane, s.lane + 1].filter(l => l >= 0 && l <= 2);
                     }
 
-                    // Check which targeted landing lanes on intervalIndex are not holes
                     for (let l of allowedLanes) {
                         if (newSegment[l].type !== 'hole') {
                             if (newSegment[l].type === 'trampoline') {
@@ -595,30 +1014,21 @@
             return validNexts;
         }
 
-        // Repair a segment dynamically to guarantee path availability from any of the current reachable states
         function fixSegment(segment, reachableStates, intervalIndex) {
-            // Guard against empty reachableStates to prevent undefined crash
             if (!reachableStates || reachableStates.length === 0) {
                 reachableStates = [{ lane: 1, flyOver: false }];
             }
-
-            // Pick a valid reachable state at random to base our fix on
             const originState = reachableStates[Math.floor(levelPRNG.next() * reachableStates.length)];
-            
-            // Choose what safe landing lane(s) we can create
             let chosenLane = originState.lane;
             
             if (originState.flyOver) {
-                // Land safely on any adjacent lane
                 const options = [originState.lane - 1, originState.lane, originState.lane + 1].filter(l => l >= 0 && l <= 2);
                 chosenLane = options[Math.floor(levelPRNG.next() * options.length)];
             } else {
                 const prevCell = trackData[intervalIndex - 1]?.[originState.lane];
                 if (prevCell && prevCell.type === 'trampoline') {
-                    // Flying over this tile, no fix is actually required since player flies over intervalIndex completely!
                     return segment;
                 } else {
-                    // Handle arrow restrictions
                     if (prevCell && prevCell.type === 'arrow-forward') {
                         chosenLane = originState.lane;
                     } else if (prevCell && prevCell.type === 'arrow-left' && originState.lane > 0) {
@@ -626,14 +1036,12 @@
                     } else if (prevCell && prevCell.type === 'arrow-right' && originState.lane < 2) {
                         chosenLane = originState.lane + 1;
                     } else {
-                        // Standard adjacent steering
                         const options = [originState.lane - 1, originState.lane, originState.lane + 1].filter(l => l >= 0 && l <= 2);
                         chosenLane = options[Math.floor(levelPRNG.next() * options.length)];
                     }
                 }
             }
 
-            // Change selected lane to a safe element. Make it highly rewarding (coins / hearts)!
             const safeRoll = levelPRNG.next();
             let newCellType = { type: 'blank' };
             if (safeRoll < 0.65) {
@@ -653,36 +1061,29 @@
             return segment;
         }
 
-        // Dynamically append, validate and save a new track segment
         function generateSegment(index) {
-            // 1. Roll raw random cells
             let segment = [
                 generateRandomCell(index),
                 generateRandomCell(index),
                 generateRandomCell(index)
             ];
 
-            // Guard against empty currentReachableStates before validating
             if (!currentReachableStates || currentReachableStates.length === 0) {
                 currentReachableStates = [{ lane: 1, flyOver: false }];
             }
 
-            // 2. Validate paths
             let nextStates = [];
             for (let state of currentReachableStates) {
                 let transitions = getValidTransitionsFromState(state, index, segment);
                 for (let trans of transitions) {
-                    // Deduplicate
                     if (!nextStates.some(s => s.lane === trans.lane && s.flyOver === trans.flyOver)) {
                         nextStates.push(trans);
                     }
                 }
             }
 
-            // 3. Fix segment if no solutions exist
             if (nextStates.length === 0) {
                 segment = fixSegment(segment, currentReachableStates, index);
-                // Recompute valid states after fix
                 for (let state of currentReachableStates) {
                     let transitions = getValidTransitionsFromState(state, index, segment);
                     for (let trans of transitions) {
@@ -693,225 +1094,301 @@
                 }
             }
 
-            // Absolute emergency safeguard: if nextStates is STILL empty, force a safe center platform landing
             if (nextStates.length === 0) {
                 segment[1] = { type: 'blank' }; 
                 nextStates = [{ lane: 1, flyOver: false }];
             }
 
-            // Pre-calculate the exact spawn lane indicator detail on track for orange ball clones
             segment.forEach((cell, laneIdx) => {
                 if (cell.type === 'orange-ball') {
                     if (laneIdx === 0 || laneIdx === 2) {
-                        cell.detail = 'spawn-center'; // Side lanes spawn clones in center
+                        cell.detail = 'spawn-center';
                     } else {
-                        cell.detail = levelPRNG.next() < 0.5 ? 'spawn-left' : 'spawn-right'; // Center spawns left or right
+                        cell.detail = levelPRNG.next() < 0.5 ? 'spawn-left' : 'spawn-right';
                     }
                 }
             });
 
-            // Cache data and update reachability map
             trackData[index] = segment;
             currentReachableStates = nextStates;
-            
-            // 4. Build visual 3D entities
             buildSegmentVisuals(index, segment);
         }
 
-
-        // --- VISUAL 3D BUILDERS FOR SCENE ENTITIES ---
-
-        // Create a stylish custom 3D coin model based on its value/denomination with ultra glow
+        // --- VISUAL 3D BUILDERS FOR DISTINGUISHABLE TREASURES ---
+        // PERFORMANCE FIX: All dynamic PointLights have been completely removed from coin meshes. 
+        // Emissive properties, mirror specularity, and lightweight geometry halos are used instead to preserve gorgeous glow at a locked 60 FPS!
         function createCoinMesh(config) {
             const coinGroup = new THREE.Group();
             
-            if (config.isEuro) {
-                // Bi-metallic Euro structure (Ring + Inner Disc) with strong glowing emission
-                const outerColor = config.outer;
-                const innerColor = config.inner;
-                
-                const matOuter = new THREE.MeshStandardMaterial({ 
-                    color: outerColor, 
+            if (config.group === 'diamond') {
+                // Highly distinct diamond double-pyramid crystal geometry with vibrant emissive ice glow
+                const matDiamond = new THREE.MeshStandardMaterial({
+                    color: 0xffffff,
+                    emissive: 0x22d3ee,
+                    emissiveIntensity: 0.9,
+                    roughness: 0.01,
+                    metalness: 0.1,
+                    transparent: true,
+                    opacity: 0.95
+                });
+                const geomDiamond = new THREE.OctahedronGeometry(0.3, 0);
+                const diamondMesh = new THREE.Mesh(geomDiamond, matDiamond);
+                diamondMesh.scale.set(1, 1.8, 1); // Diamond stretch
+                coinGroup.add(diamondMesh);
+
+                // Sparkling cyan wireframe wrap
+                const wireframe = new THREE.WireframeGeometry(geomDiamond);
+                const line = new THREE.LineSegments(wireframe);
+                line.material.color.setHex(0x22d3ee);
+                line.material.depthTest = false;
+                line.material.opacity = 0.5;
+                line.material.transparent = true;
+                line.scale.set(1, 1.8, 1);
+                coinGroup.add(line);
+
+                // High-performance light-weight flat halo ring
+                const haloGeom = new THREE.RingGeometry(0.4, 0.45, 12);
+                const haloMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee, side: THREE.DoubleSide, transparent: true, opacity: 0.4 });
+                const halo = new THREE.Mesh(haloGeom, haloMat);
+                halo.rotation.x = Math.PI / 2;
+                coinGroup.add(halo);
+            }
+            else if (config.group === 'emerald') {
+                // Faceted hexagonal emerald jade gemstone with deep green emissive glow
+                const matEmerald = new THREE.MeshStandardMaterial({
+                    color: 0x10b981,
+                    roughness: 0.05,
+                    metalness: 0.1,
+                    emissive: 0x10b981,
+                    emissiveIntensity: 0.8,
+                    transparent: true,
+                    opacity: 0.90
+                });
+                const geomGem = new THREE.OctahedronGeometry(0.28, 0);
+                const gemMesh = new THREE.Mesh(geomGem, matEmerald);
+                coinGroup.add(gemMesh);
+
+                // Delicate gold wire wrap
+                const wireframe = new THREE.WireframeGeometry(geomGem);
+                const line = new THREE.LineSegments(wireframe);
+                line.material.color.setHex(0xd4af37);
+                line.material.depthTest = false;
+                line.material.opacity = 0.55;
+                line.material.transparent = true;
+                coinGroup.add(line);
+
+                // High-performance light-weight flat halo ring
+                const haloGeom = new THREE.RingGeometry(0.38, 0.43, 12);
+                const haloMat = new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, transparent: true, opacity: 0.45 });
+                const halo = new THREE.Mesh(haloGeom, haloMat);
+                halo.rotation.x = Math.PI / 2;
+                coinGroup.add(halo);
+            }
+            else if (config.group === 'gold') {
+                // Oval pure gold Koban coin
+                const matGold = new THREE.MeshStandardMaterial({ 
+                    color: 0xffd700, 
+                    metalness: 0.98, 
+                    roughness: 0.04,
+                    emissive: 0x4a3600,
+                    emissiveIntensity: 0.25
+                });
+                const geomBase = new THREE.CylinderGeometry(0.24, 0.24, 0.08, 16);
+                const baseMesh = new THREE.Mesh(geomBase, matGold);
+                baseMesh.rotation.z = Math.PI / 2;
+                baseMesh.scale.set(1, 1.6, 1); // Oval Koban stretch
+                coinGroup.add(baseMesh);
+
+                // Glistening crimson Ruby Core Gem
+                const matRuby = new THREE.MeshStandardMaterial({
+                    color: 0xff0033,
+                    emissive: 0xff0033,
+                    emissiveIntensity: 0.9,
+                    roughness: 0.05,
+                    metalness: 0.95
+                });
+                const geomRuby = new THREE.SphereGeometry(0.12, 8, 8);
+                const rubyMesh1 = new THREE.Mesh(geomRuby, matRuby);
+                rubyMesh1.position.set(0.05, 0, 0); 
+                coinGroup.add(rubyMesh1);
+
+                const rubyMesh2 = rubyMesh1.clone();
+                rubyMesh2.position.set(-0.05, 0, 0); 
+                coinGroup.add(rubyMesh2);
+
+                // High-performance light-weight flat ruby halo ring
+                const haloGeom = new THREE.RingGeometry(0.35, 0.40, 12);
+                const haloMat = new THREE.MeshBasicMaterial({ color: 0xff0033, side: THREE.DoubleSide, transparent: true, opacity: 0.4 });
+                const halo = new THREE.Mesh(haloGeom, haloMat);
+                halo.rotation.x = Math.PI / 2;
+                coinGroup.add(halo);
+            }
+            else if (config.group === 'silver') {
+                // Highly distinct mirror-polished shiny Silver Mon coin with a square center hole
+                const matSilver = new THREE.MeshStandardMaterial({ 
+                    color: 0xe5e7eb, 
+                    metalness: 0.99, 
+                    roughness: 0.03,
+                    emissive: 0x333333,
+                    emissiveIntensity: 0.2
+                });
+                const geomBase = new THREE.CylinderGeometry(0.22, 0.22, 0.07, 16);
+                const baseMesh = new THREE.Mesh(geomBase, matSilver);
+                baseMesh.rotation.z = Math.PI / 2;
+                baseMesh.scale.set(1, 1.5, 1);
+                coinGroup.add(baseMesh);
+
+                // Square dark center inlay to simulate traditional coin holes
+                const matHole = new THREE.MeshStandardMaterial({
+                    color: 0x111111,
+                    roughness: 0.9,
+                    metalness: 0.1
+                });
+                const geomHole = new THREE.BoxGeometry(0.061, 0.14, 0.14);
+                const holeMesh = new THREE.Mesh(geomHole, matHole);
+                coinGroup.add(holeMesh);
+            }
+            else { 
+                // Shiny polished bronze/copper Sen coin (Low value)
+                const matBronze = new THREE.MeshStandardMaterial({ 
+                    color: 0xcd7f32, // Classic rich copper-bronze
                     metalness: 0.95, 
-                    roughness: 0.1,
-                    emissive: outerColor,
-                    emissiveIntensity: 0.7 
+                    roughness: 0.06,
+                    emissive: 0x3d1b00,
+                    emissiveIntensity: 0.15
                 });
-                const matInner = new THREE.MeshStandardMaterial({ 
-                    color: innerColor, 
-                    metalness: 0.95, 
-                    roughness: 0.1,
-                    emissive: innerColor,
-                    emissiveIntensity: 0.8
-                });
-                
-                // Outer ring representation (rotated to stand up vertically like a wheel)
-                const geomRing = new THREE.CylinderGeometry(0.36 * config.scale, 0.36 * config.scale, 0.1, 16);
-                const ringMesh = new THREE.Mesh(geomRing, matOuter);
-                ringMesh.rotation.z = Math.PI / 2; // Stand up upright
-                coinGroup.add(ringMesh);
-                
-                // Inner core representation
-                const geomCore = new THREE.CylinderGeometry(0.24 * config.scale, 0.24 * config.scale, 0.11, 16);
-                const coreMesh = new THREE.Mesh(geomCore, matInner);
-                coreMesh.rotation.z = Math.PI / 2; // Stand up upright
-                coinGroup.add(coreMesh);
-            } else {
-                // Standard single copper/nordic gold metal cylinder coin with strong glowing emission
-                const matMetal = new THREE.MeshStandardMaterial({ 
-                    color: config.color, 
-                    metalness: 0.9, 
-                    roughness: 0.15,
-                    emissive: config.color,
-                    emissiveIntensity: 0.7
-                });
-                const geomCoin = new THREE.CylinderGeometry(0.3 * config.scale, 0.3 * config.scale, 0.08, 16);
-                const coinMesh = new THREE.Mesh(geomCoin, matMetal);
-                coinMesh.rotation.z = Math.PI / 2; // Stand up upright
+                const geomCoin = new THREE.CylinderGeometry(0.2, 0.2, 0.06, 16);
+                const coinMesh = new THREE.Mesh(geomCoin, matBronze);
+                coinMesh.rotation.z = Math.PI / 2;
+                coinMesh.scale.set(1, 1.4, 1);
                 coinGroup.add(coinMesh);
             }
-
-            // Highly distinguishable outer glowing energy ring around each coin to lock onto visually
-            const ringGeom = new THREE.RingGeometry(0.42 * config.scale, 0.46 * config.scale, 16);
-            const ringMat = new THREE.MeshBasicMaterial({
-                color: config.isEuro ? 0x00f0ff : (config.cents >= 10 ? 0xffea00 : 0xff5500),
-                side: THREE.DoubleSide,
-                transparent: true,
-                opacity: 0.75
-            });
-            const glowRing = new THREE.Mesh(ringGeom, ringMat);
-            glowRing.rotation.y = 0; // Flat facing the player
-            coinGroup.add(glowRing);
             
+            // Unified scalar multiplier to scale diameter, thickness, and size proportionally!
+            coinGroup.scale.set(config.scale, config.scale, config.scale);
             return coinGroup;
         }
 
-        // Create a stylized 3D red heart
         function createHeartMesh() {
-            const heartGroup = new THREE.Group();
+            const sakuraGroup = new THREE.Group();
             
-            // Box rotated 45 degrees
-            const centerBox = new THREE.Mesh(geomHeartBox, matHeart);
-            centerBox.rotation.z = Math.PI / 4;
-            heartGroup.add(centerBox);
+            // Generate 5 delicate overlapping ruby flower petals grouped together
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * Math.PI * 2) / 5;
+                const petalMesh = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), matSakuraRuby);
+                petalMesh.scale.set(1.4, 0.4, 0.8);
+                petalMesh.position.set(Math.cos(angle) * 0.18, Math.sin(angle) * 0.18, 0);
+                petalMesh.rotation.z = angle;
+                sakuraGroup.add(petalMesh);
+            }
             
-            // Spherical lobes on the sides
-            const leftLobe = new THREE.Mesh(geomHeartSphere, matHeart);
-            leftLobe.position.set(-0.16, 0.16, 0);
-            heartGroup.add(leftLobe);
+            // Glowing golden stamen node inside flower
+            const centerMesh = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), matGoldLacquer);
+            sakuraGroup.add(centerMesh);
             
-            const rightLobe = new THREE.Mesh(geomHeartSphere, matHeart);
-            rightLobe.position.set(0.16, 0.16, 0);
-            heartGroup.add(rightLobe);
-            
-            heartGroup.scale.set(1.2, 1.2, 1.2);
-            return heartGroup;
+            sakuraGroup.scale.set(1.3, 1.3, 1.3);
+            return sakuraGroup;
         }
 
-        // FIXED: Create a gorgeous glowing orange sphere replicating standard ball scale (0.5 radius) exactly
         function createOrangeBallMesh() {
             const group = new THREE.Group();
-            
-            // Emissive orange ping pong ball replica
             const sphereMat = new THREE.MeshStandardMaterial({
-                color: 0xff7700,
-                roughness: 0.12,
-                metalness: 0.1,
-                emissive: 0xff3300,
-                emissiveIntensity: 2.2
+                color: 0xe65c00,
+                roughness: 0.05,
+                metalness: 0.2,
+                transparent: true,
+                opacity: 0.88,
+                emissive: 0x992200,
+                emissiveIntensity: 0.4
             });
             const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), sphereMat);
             group.add(sphere);
-            
             return group;
         }
 
-        // Create Chevron arrow meshes (pointing Left, Right, or Forward)
         function createArrowMesh(type) {
             const arrowGroup = new THREE.Group();
             
-            // Create a chevron shape using two rotated box beams
-            const leftWing = new THREE.Mesh(geomArrowBar, matArrowGlow);
+            const leftWing = new THREE.Mesh(geomArrowBar, matBrassArrow);
             leftWing.position.set(-0.18, 0, 0);
             leftWing.rotation.y = Math.PI / 4;
             arrowGroup.add(leftWing);
             
-            const rightWing = new THREE.Mesh(geomArrowBar, matArrowGlow);
+            const rightWing = new THREE.Mesh(geomArrowBar, matBrassArrow);
             rightWing.position.set(0.18, 0, 0);
             rightWing.rotation.y = -Math.PI / 4;
             arrowGroup.add(rightWing);
             
-            // Rotations aligned to point towards the intended physical direction
             if (type === 'arrow-left') {
-                // Points Left (+X axis in camera perspective view)
                 arrowGroup.rotation.y = Math.PI / 2;
             } else if (type === 'arrow-right') {
-                // Points Right (-X axis in camera perspective view)
                 arrowGroup.rotation.y = -Math.PI / 2;
             } else {
-                arrowGroup.rotation.y = 0; // Pointing forward
+                arrowGroup.rotation.y = 0;
             }
             
             return arrowGroup;
         }
 
-        // Create a trampoline pad
-        function createTrampolineMesh() {
-            const trampGroup = new THREE.Group();
+        function createTaikoMesh() {
+            // Beautiful traditional Japanese Taiko Drum!
+            const drumGroup = new THREE.Group();
             
-            // Base frame
-            const baseMesh = new THREE.Mesh(geomTrampolineBase, matTrampolineBase);
-            baseMesh.position.y = 0.05;
-            trampGroup.add(baseMesh);
+            // Taiko outer curved shell
+            const baseMesh = new THREE.Mesh(geomTaikoDrum, matTaikoShell);
+            baseMesh.rotation.x = Math.PI / 2;
+            drumGroup.add(baseMesh);
             
-            // Glowing action bouncy pad
-            const padMesh = new THREE.Mesh(geomTrampolinePad, matCyanGlow);
-            padMesh.position.y = 0.1;
-            trampGroup.add(padMesh);
+            // Raw leather skin pads on top and bottom
+            const skinMesh = new THREE.Mesh(geomTaikoSkin, matTaikoSkin);
+            skinMesh.rotation.x = Math.PI / 2;
+            drumGroup.add(skinMesh);
+
+            // Gilded studs around the rims
+            for (let i = 0; i < 12; i++) {
+                const angle = (i * Math.PI * 2) / 12;
+                const stud = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), matGoldLacquer);
+                stud.position.set(Math.cos(angle) * 0.88, 0.15, Math.sin(angle) * 0.88);
+                drumGroup.add(stud);
+            }
             
-            return trampGroup;
+            return drumGroup;
         }
 
-        // Construct visually platforms and items for Three.js scene
         function buildSegmentVisuals(index, segment) {
             const segmentGroup = new THREE.Group();
             segmentGroup.position.z = index * intervalLength;
-            
-            const interactiveItems = []; // Array to track meshes for collision checks
+            const interactiveItems = [];
 
             for (let l = 0; l < 3; l++) {
                 const cell = segment[l];
-                const laneX = getXFromLane(l); // Use helper function for exact placement coordinates
+                const laneX = getXFromLane(l);
 
-                // Check for abyss holes - skip generating the platform altogether (pitch black void)
                 if (cell.type === 'hole') {
                     continue; 
                 }
 
-                // Standard platform container (with a sleek highly reflective cyber slate style)
+                // Vermillion mahogany shrine deck tiles
                 const platform = new THREE.Mesh(geomPlatform, matPlatform);
                 platform.position.set(laneX, -0.2, 0);
                 segmentGroup.add(platform);
 
-                // High-visibility parallel cyan neon guide-rails to outline active platforms clearly
-                const edgeGeom = new THREE.BoxGeometry(0.08, 0.04, 9.0);
+                // Polished gold-leaf boundary lines
+                const edgeGeom = new THREE.BoxGeometry(0.06, 0.05, 9.0);
                 
-                const leftEdge = new THREE.Mesh(edgeGeom, matCyanGlow);
+                const leftEdge = new THREE.Mesh(edgeGeom, matGoldLacquer);
                 leftEdge.position.set(laneX - 0.96, 0.02, 0);
                 segmentGroup.add(leftEdge);
 
-                const rightEdge = new THREE.Mesh(edgeGeom, matCyanGlow);
+                const rightEdge = new THREE.Mesh(edgeGeom, matGoldLacquer);
                 rightEdge.position.set(laneX + 0.96, 0.02, 0);
                 segmentGroup.add(rightEdge);
 
-                // Generate special game elements on platforms
                 let itemMesh = null;
 
-                // PLACED ON FLOOR AT POINT OF BOUNCING (Y aligned so player hits them precisely as they bounce)
                 if (cell.type === 'coin') {
                     const config = COIN_TYPES[cell.detail];
                     itemMesh = createCoinMesh(config);
-                    // Rest perfectly on top of platform at the bounce impact zone
                     itemMesh.position.set(laneX, 0.45, 0);
                 } 
                 else if (cell.type === 'heart') {
@@ -919,23 +1396,21 @@
                     itemMesh.position.set(laneX, 0.45, 0);
                 } 
                 else if (cell.type === 'trampoline') {
-                    itemMesh = createTrampolineMesh();
-                    itemMesh.position.set(laneX, 0, 0); // Flat on platform floor
+                    itemMesh = createTaikoMesh();
+                    itemMesh.position.set(laneX, 0.2, 0);
                 } 
                 else if (cell.type.startsWith('arrow-')) {
                     itemMesh = createArrowMesh(cell.type);
-                    itemMesh.position.set(laneX, 0.15, 0); // Resting flat on platform floor
+                    itemMesh.position.set(laneX, 0.15, 0);
                 }
                 else if (cell.type === 'orange-ball') {
                     itemMesh = createOrangeBallMesh();
                     let displacedX = laneX;
-                    if (cell.detail === 'spawn-left') {
-                        displacedX += 0.5; // Shifted leftwards
-                    } else if (cell.detail === 'spawn-right') {
-                        displacedX -= 0.5; // Shifted rightwards
-                    } else if (cell.detail === 'spawn-center') {
-                        if (l === 0) displacedX -= 0.5; // Left lane points center (shifts rightwards)
-                        if (l === 2) displacedX += 0.5; // Right lane points center (shifts leftwards)
+                    if (cell.detail === 'spawn-left') displacedX += 0.5;
+                    else if (cell.detail === 'spawn-right') displacedX -= 0.5;
+                    else if (cell.detail === 'spawn-center') {
+                        if (l === 0) displacedX -= 0.5;
+                        if (l === 2) displacedX += 0.5;
                     }
                     itemMesh.position.set(displacedX, 0.45, 0);
                 }
@@ -952,17 +1427,14 @@
             }
 
             scene.add(segmentGroup);
-            
             activeSegments[index] = {
                 group: segmentGroup,
                 items: interactiveItems
             };
         }
 
+        // --- PARTICLE SYSTEM AND SAKURA CHROME FX ---
 
-        // --- PARTICLE SYSTEM AND CHROME FX ---
-
-        // Burst a cluster of colorful glowing particles when actions happen
         function triggerParticleBurst(position, color, count = 12) {
             let spawned = 0;
             for (let p of particlePool) {
@@ -972,13 +1444,12 @@
                     p.mesh.material.color.setHex(color);
                     p.mesh.visible = true;
                     
-                    // Direct explosion vectors
                     p.velocity.set(
                         (Math.random() - 0.5) * 6,
-                        (Math.random() * 5) + 2,
+                        (Math.random() * 5) + 2.5,
                         (Math.random() - 0.5) * 6
                     );
-                    p.life = 0.8; // Life duration in seconds
+                    p.life = 0.8;
                     p.mesh.scale.set(1, 1, 1);
                     
                     spawned++;
@@ -987,64 +1458,71 @@
             }
         }
 
-        // Project 3D vector coordinates to absolute screen pixels for HTML notifications (Larger popups)
-        function spawnFloatingText(position3D, text, colorClass) {
+        // FIXED: Reverted back to the requested 2D-screen popping layout where positions 
+        // are projected ONCE at collection time and then float up straight in 2D space.
+        // No forward camera-movement tracking to ensure a steady, smooth, classic interface.
+        // ADDED screen-space pixel offset support (xOffset, yOffset) to separate multiplier texts.
+        function spawnFloatingText(position3D, text, colorClass, xOffset = 0, yOffset = 0) {
             const vector = new THREE.Vector3().copy(position3D);
             vector.project(camera);
             
-            const x = (vector.x * .5 + .5) * window.innerWidth;
-            const y = (-(vector.y * .5) + .5) * window.innerHeight;
+            const container = document.getElementById('canvas-container');
+            const rect = container.getBoundingClientRect();
+            
+            let x = (vector.x * 0.5 + 0.5) * rect.width;
+            let y = (-(vector.y * 0.5) + 0.5) * rect.height + 22; // Offset top status bar
+            
+            // Apply guaranteed screen-space pixel offsets
+            x += xOffset;
+            y += yOffset;
             
             const el = document.createElement('div');
-            // Upgraded font size to 3xl md:text-5xl and centered transforms for extreme visibility
-            el.className = `floating-item text-3xl md:text-5xl tracking-widest ${colorClass}`;
+            el.className = `floating-item-2d ${colorClass}`;
             el.style.left = `${x}px`;
             el.style.top = `${y}px`;
-            el.style.transform = 'translate(-50%, -50%)';
             el.innerText = text;
             
             document.getElementById('floating-texts-layer').appendChild(el);
             
-            // Extended animation lifecycle match of 1.8 seconds
-            setTimeout(() => {
-                el.remove();
-            }, 1800);
+            // Pure CSS driven garbage collection after animation ends
+            setTimeout(() => el.remove(), 1800);
         }
-
 
         // --- SCENE INITIALIZATION & SETUP ---
 
         function initScene() {
             const container = document.getElementById('canvas-container');
             
-            // Create Scene
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x040409);
-            // Exponential cyberpunk neon foggy horizon
-            scene.fog = new THREE.FogExp2(0x040409, 0.015);
+            scene.background = new THREE.Color(0x0a0503); // Warm twilight amber-black
+            scene.fog = new THREE.FogExp2(0x0a0503, 0.013);
 
-            // Create Camera
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1500);
+            camera = new THREE.PerspectiveCamera(58, container.clientWidth / container.clientHeight, 0.1, 1500);
 
-            // Create WebGL Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setSize(container.clientWidth, container.clientHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            // Dynamic Ambient Lighting (Purple Matrix Vibes)
-            const ambientLight = new THREE.AmbientLight(0x281035, 0.7);
+            const ambientLight = new THREE.AmbientLight(0x2d1712, 1.1); // Warm ambient
             scene.add(ambientLight);
 
-            // Soft Key Directional Light for highlighting geometry shapes
-            const dirLight = new THREE.DirectionalLight(0xff00b7, 0.6);
-            dirLight.position.set(5, 20, 10);
-            scene.add(dirLight);
+            const dirLight1 = new THREE.DirectionalLight(0xd94b36, 1.4); 
+            dirLight1.position.set(-8, 15, -20);
+            scene.add(dirLight1);
 
-            // Instantiate Global Assets for performance
+            const dirLight2 = new THREE.DirectionalLight(0xffbe5c, 0.7); 
+            dirLight2.position.set(10, 15, 10);
+            scene.add(dirLight2);
+
+            const moonGeom = new THREE.SphereGeometry(24, 32, 32);
+            const moonMat = new THREE.MeshBasicMaterial({ color: 0xd9381e });
+            const moonMesh = new THREE.Mesh(moonGeom, moonMat);
+            moonMesh.position.set(-60, 45, 200);
+            scene.add(moonMesh);
+
             initGlobalAssets();
 
-            // Generate Pre-instantiated Particles Pool to completely avoid runtime allocations
             for (let i = 0; i < maxParticles; i++) {
                 const pMat = matParticle.clone();
                 const pMesh = new THREE.Mesh(geomParticle, pMat);
@@ -1058,40 +1536,35 @@
                 });
             }
 
-            // Generate background stars / cosmic floating cyber dust
-            const starCount = 200;
+            const starCount = 150;
             const starGeom = new THREE.BufferGeometry();
             const starPositions = new Float32Array(starCount * 3);
             for (let i = 0; i < starCount * 3; i += 3) {
-                starPositions[i] = (Math.random() - 0.5) * 500;
-                starPositions[i + 1] = Math.random() * 100 + 10;
-                starPositions[i + 2] = (Math.random() - 0.5) * 1000;
+                starPositions[i] = (Math.random() - 0.5) * 400;
+                starPositions[i + 1] = Math.random() * 80 + 2;
+                starPositions[i + 2] = (Math.random() - 0.5) * 800;
             }
             starGeom.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-            const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.6, transparent: true, opacity: 0.8 });
+            const starMat = new THREE.PointsMaterial({ color: 0xffa3b1, size: 0.65, transparent: true, opacity: 0.7 });
             const starField = new THREE.Points(starGeom, starMat);
             scene.add(starField);
 
-            // Handle Resize
             window.addEventListener('resize', onWindowResize);
         }
 
         function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setSize(container.clientWidth, container.clientHeight);
         }
-
 
         // --- LANE CONTROL INPUTS ---
 
         function moveLane(direction) {
-            if (!gameActive) return;
-
-            // If player has already fallen into the abyss, restrict action steering inputs
+            if (!gameActive || isPaused) return;
             if (activeBalls.length === 0) return;
 
-            // Lock check constraints based on first ball lane position
             const primaryBall = activeBalls[0];
             const currentIntervalTile = trackData[bounceStartIndex]?.[primaryBall.currentLane];
             const isSteeringLocked = currentIntervalTile && (
@@ -1101,12 +1574,10 @@
             );
 
             if (isSteeringLocked) {
-                // Steering locks are absolute for the duration of the current jump! Trigger visual HUD alarm
                 triggerSteeringLockedAlert();
                 return;
             }
 
-            // Move all active multiballs concurrently in lockstep across their lanes
             activeBalls.forEach(b => {
                 const originLane = b.targetLane;
                 b.targetLane = b.targetLane + direction;
@@ -1119,58 +1590,22 @@
             });
         }
 
-        function triggerSteeringLockedAlert() {
-            steeringLockAlertTimer = 0.5; // half second notification
-            const alertHUD = document.getElementById('hud-notification');
-            alertHUD.classList.remove('opacity-0', 'scale-90');
-            alertHUD.classList.add('opacity-100', 'scale-100');
-            Sound.play('hurt');
-        }
-
         // --- KEYBOARD LISTENERS ---
         window.addEventListener('keydown', e => {
             if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-                moveLane(-1); // Left key slides Left (direction = -1)
+                moveLane(-1);
             } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
-                moveLane(1);  // Right key slides Right (direction = 1)
+                moveLane(1);
+            } else if (e.key === 'p' || e.key === 'P' || e.key === ' ') {
+                if (gameActive) {
+                    e.preventDefault();
+                    togglePause();
+                }
             }
         });
 
-        // --- UNIFIED TOUCH SYSTEM (TOUCH ANYWHERE ON SCREEN-HALF) ---
-        // Listens globally to instantly move Left/Right based on screen coordinates tapped
-        window.addEventListener('pointerdown', (e) => {
-            if (!gameActive) return;
+        // --- STATE MANAGEMENT ---
 
-            // Ignore top panel touches (where the stats HUD, Menu, and Mute buttons sit)
-            if (e.clientY < 110) return;
-
-            // Ignore direct mute button target to prevent dual firing with HUD operations
-            if (e.target.closest('#btn-mute')) return;
-            // Ignore direct menu button target
-            if (e.target.closest('#btn-hud-menu')) return;
-
-            // Split screen right down the middle
-            const isLeftHalf = e.clientX < (window.innerWidth / 2);
-            const moveDir = isLeftHalf ? -1 : 1;
-
-            // Trigger actual game movement
-            moveLane(moveDir);
-
-            // Visual button flash animation feedback on tap
-            const flashBtnId = isLeftHalf ? 'btn-mobile-left' : 'btn-mobile-right';
-            const flashBtn = document.getElementById(flashBtnId);
-            if (flashBtn) {
-                flashBtn.classList.add('scale-90', 'bg-cyan-500/30', 'border-cyan-400');
-                setTimeout(() => {
-                    flashBtn.classList.remove('scale-90', 'bg-cyan-500/30', 'border-cyan-400');
-                }, 100);
-            }
-        });
-
-
-        // --- PROCEDURAL RECONSTRUCTION & DISPOSAL (ZERO MEMORY LEAKS) ---
-
-        // Free up ThreeJS objects fully from RAM memory
         function cleanAllActiveSegments() {
             for (let idxStr in activeSegments) {
                 const idx = parseInt(idxStr);
@@ -1178,6 +1613,9 @@
             }
             activeSegments = {};
             trackData = {};
+            
+            // Clean 2D active floating texts to prevent leaks across runs
+            document.getElementById('floating-texts-layer').innerHTML = '';
         }
 
         function removeSegmentAtIndex(index) {
@@ -1199,8 +1637,6 @@
             delete trackData[index];
         }
 
-        // Helper to cleanly dispose of an active ball and its corresponding trail spheres
-        // FIXED: Fully unifies dynamic array references to completely prevent orphaned memory traces
         function removeBall(ballObj) {
             scene.remove(ballObj.group);
             ballObj.group.traverse(child => {
@@ -1216,43 +1652,40 @@
             });
         }
 
-        // Helper to build trail spheres on ball spawn
         function createTrailSpheres(color) {
             const trail = [];
             for (let i = 0; i < maxTrailLength; i++) {
                 const trailMat = new THREE.MeshBasicMaterial({
                     color: color,
                     transparent: true,
-                    opacity: 0.8 * (1 - i / maxTrailLength)
+                    opacity: 0.6 * (1 - i / maxTrailLength)
                 });
-                const trailMesh = new THREE.Mesh(new THREE.SphereGeometry(0.42 * (1 - i / maxTrailLength), 16, 16), trailMat);
+                const trailMesh = new THREE.Mesh(new THREE.SphereGeometry(0.42 * (1 - i / maxTrailLength), 14, 14), trailMat);
                 scene.add(trailMesh);
                 trail.push(trailMesh);
             }
             return trail;
         }
 
-        // Reinitialize primary ball setup and clear old multiballs completely
         function resetBalls() {
             if (activeBalls) {
-                activeBalls.forEach(b => {
-                    removeBall(b);
-                });
+                activeBalls.forEach(b => removeBall(b));
             }
             activeBalls = [];
 
-            // Spawn primary white ball
+            // Primary Katana Steel tamahagane Marble
             const primaryBallGroup = new THREE.Group();
-            const primaryBall = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), matBall);
+            const primaryBall = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), matKatanaSteel);
             primaryBallGroup.add(primaryBall);
             scene.add(primaryBallGroup);
 
-            const primaryLight = new THREE.PointLight(0x00f0ff, 2.5, 15);
+            // Gentle glowing lantern highlight reflection on sphere
+            const primaryLight = new THREE.PointLight(0xffbe5c, 1.8, 12);
             primaryBallGroup.add(primaryLight);
 
             primaryBallGroup.position.set(getXFromLane(1), 0, 0);
 
-            const primaryTrail = createTrailSpheres(0x00ffff);
+            const primaryTrail = createTrailSpheres(0xffffff);
             primaryTrail.forEach(t => t.position.copy(primaryBallGroup.position));
 
             activeBalls.push({
@@ -1268,18 +1701,18 @@
                 bounceStartIndex: 0,
                 squashTimer: 0,
                 shouldRemove: false,
-                lives: lives // Match global standard lives count
+                lives: lives,
+                trampolineActive: false,
+                strikeCount: 0,
+                collectedOnThisSegment: false // tracking segment collections
             });
 
-            // Set global refs for back-compatibility with passive screen loops
             ballGroup = primaryBallGroup;
             ball = primaryBall;
         }
 
-        // --- CORE GAME STATE MANAGEMENT & SYSTEM LOOP ---
-
+        // Level generator seed is randomized dynamically every single run, while retaining difficulty-specific math bounds.
         function startNewRun() {
-            // Read settings
             const settings = DIFF_SETTINGS[difficulty];
             lives = settings.startLives;
             scoreCents = 0;
@@ -1289,69 +1722,82 @@
             bounceStartIndex = 0;
             globalZ = 0;
             isHighBounce = false;
-            isRolling = false; // Reset rolling status on start
+            isRolling = false;
             currentSpeedMultiplier = 1.0;
             isInvulnerable = false;
             invulnerabilityTimer = 0;
-            previouslyMerged = false; // Reset lane merge alert tracking status
+            previouslyMerged = false;
+            isPaused = false;
             
-            // FIXED: Initialize deterministic PRNG with difficulty seed
-            levelPRNG = new SeededRandom(DIFF_SEEDS[difficulty] || 55555);
+            // Mix difficulty defaults with millisecond-precision noise for true unique layout on every launch
+            const dynamicOffset = Math.floor(Math.random() * 888888) + (Date.now() % 9999);
+            levelPRNG = new SeededRandom((DIFF_SEEDS[difficulty] || 55555) + dynamicOffset);
 
-            // Clean up and clear old visuals completely
             cleanAllActiveSegments();
-            
-            // Reset state solve reachability map
             currentReachableStates = [{ lane: 1, flyOver: false }];
 
-            // Generate initial runway chunk buffer (100 segments ahead)
             for (let i = 0; i < 100; i++) {
                 generateSegment(i);
             }
 
-            // Call multiball reset setup
             resetBalls();
-
-            // Sync HTML overlays
             updateHUD();
+
             document.getElementById('start-screen').classList.add('opacity-0');
             setTimeout(() => {
                 document.getElementById('start-screen').classList.add('hidden');
             }, 500);
             
             document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('pause-overlay').classList.add('hidden');
             document.getElementById('hud').classList.remove('hidden');
-            if (window.innerWidth < 1024) { // Show mobile indicators cleanly on touch viewports
+            if (window.innerWidth < 1024) {
                 document.getElementById('mobile-controls').classList.remove('hidden');
             }
 
+            // Sync pause button icon
+            document.getElementById('svg-pause-icon').innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+
             Sound.init();
             gameActive = true;
+        }
+
+        // --- INTUITIVE PAUSE TOGGLING ENGINE ---
+        function togglePause() {
+            if (!gameActive) return;
+            isPaused = !isPaused;
+            const pauseOverlay = document.getElementById('pause-overlay');
+            const pauseIcon = document.getElementById('svg-pause-icon');
+            if (isPaused) {
+                pauseOverlay.classList.remove('hidden');
+                // Play arrow icon
+                pauseIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+                Sound.play('bounce');
+            } else {
+                pauseOverlay.classList.add('hidden');
+                // Pause parallel bars icon
+                pauseIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+                Sound.play('bounce');
+            }
         }
 
         function triggerGameOver() {
             gameActive = false;
             Sound.play('gameover');
             
-            // LocalStorage HighScore updates
             const highKey = `pong_runner_highscore_${difficulty}`;
             const currentHighCents = parseInt(localStorage.getItem(highKey)) || 0;
             if (scoreCents > currentHighCents) {
                 localStorage.setItem(highKey, scoreCents);
             }
 
-            // Format final screen
             document.getElementById('final-score').innerText = `€${(scoreCents / 100).toFixed(2)}`;
             document.getElementById('final-distance').innerText = `${intervalsSurvived} m`;
             document.getElementById('high-score').innerText = `€${((Math.max(scoreCents, currentHighCents)) / 100).toFixed(2)}`;
             
             document.getElementById('game-over-screen').classList.remove('hidden');
-            document.getElementById('game-over-screen').classList.add('flex');
-            
-            // Hide running mobile layouts
             document.getElementById('mobile-controls').classList.add('hidden');
 
-            // Enable 3-second delay protection on Game Over screen buttons to block accidental clicks
             gameOverButtonsEnabled = false;
             const btnRestart = document.getElementById('btn-restart');
             const btnMenu = document.getElementById('btn-menu');
@@ -1360,17 +1806,16 @@
             btnMenu.classList.add('opacity-50', 'pointer-events-none');
 
             let secondsLeft = 3;
-            btnRestart.innerText = `RE-SPAWN BALL (${secondsLeft}s)`;
+            btnRestart.innerText = `RE-FORGE STEEL (${secondsLeft}s)`;
             
             if (gameOverTimer) clearInterval(gameOverTimer);
             gameOverTimer = setInterval(() => {
                 secondsLeft--;
                 if (secondsLeft > 0) {
-                    btnRestart.innerText = `RE-SPAWN BALL (${secondsLeft}s)`;
+                    btnRestart.innerText = `RE-FORGE STEEL (${secondsLeft}s)`;
                 } else {
                     clearInterval(gameOverTimer);
-                    btnRestart.innerText = `RE-SPAWN BALL`;
-                    // Smoothly restore interaction styles
+                    btnRestart.innerText = `RE-FORGE STEEL`;
                     btnRestart.classList.remove('opacity-50', 'pointer-events-none');
                     btnMenu.classList.remove('opacity-50', 'pointer-events-none');
                     gameOverButtonsEnabled = true;
@@ -1378,71 +1823,78 @@
             }, 1000);
         }
 
-        // Return player immediately back to main menu
         function returnToTerminalMenu() {
             gameActive = false;
+            isPaused = false;
             cleanAllActiveSegments();
             
-            // Hide HUD and show Main Start Screen
             document.getElementById('hud').classList.add('hidden');
             document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('pause-overlay').classList.add('hidden');
             document.getElementById('mobile-controls').classList.add('hidden');
             
             const startScreen = document.getElementById('start-screen');
             startScreen.classList.remove('hidden');
-            // Allow layout engine to render container before starting CSS transition
             setTimeout(() => {
                 startScreen.classList.remove('opacity-0');
             }, 50);
 
-            Sound.play('hurt'); // Satisying go-back auditory click trigger
+            Sound.play('hurt');
         }
 
-        // FIXED: Unified damage registration, plays audio cue, triggers floating warning overlays,
-        // and safely updates dynamic invulnerability frameworks per-ball.
-        // Also tracks independent clone vs primary de-synchronizations smoothly.
         function registerDamage(b) {
             if (isInvulnerable && !b.isClone) return;
-
             Sound.play('hurt');
 
             if (!b.isClone) {
                 lives--;
-                triggerParticleBurst(b.group.position, 0xff0033, 20);
+                triggerParticleBurst(b.group.position, 0xbc002d, 20); // Vermillion blood splash
                 if (lives <= 0) {
                     b.shouldRemove = true;
-                    spawnFloatingText(b.group.position, "PRIMARY LOST", "text-pink-500 font-orbitron");
+                    spawnFloatingText(b.group.position, "TAMAHAGANE BROKEN", "text-red-600 font-bold");
                 } else {
-                    // Grant standard invulnerability frames and strobe ball visuals
                     isInvulnerable = true;
                     invulnerabilityTimer = 1.8;
-                    spawnFloatingText(b.group.position, "-1 LIFE", "text-pink-500 font-orbitron animate-pulse");
+                    spawnFloatingText(b.group.position, "-1 LIFE", "text-red-700 font-bold");
                 }
             } else {
                 b.lives--;
-                triggerParticleBurst(b.group.position, 0xffaa00, 15);
+                triggerParticleBurst(b.group.position, 0xe65c00, 15);
                 if (b.lives <= 0) {
                     b.shouldRemove = true;
-                    spawnFloatingText(b.group.position, "CLONE LOST", "text-orange-500 font-orbitron");
+                    spawnFloatingText(b.group.position, "CLONE DEACTIVATED", "text-amber-700 font-bold");
                 } else {
-                    spawnFloatingText(b.group.position, "-1 CLONE LIFE", "text-orange-500 font-orbitron animate-pulse");
+                    spawnFloatingText(b.group.position, "-1 CLONE", "text-amber-600 font-bold");
                 }
             }
             updateHUD();
         }
 
-        // FIXED: Spawns popups offset left/right depending on the collecting ball's identity (Clone vs Primary)
-        // to clearly display double coin collections without any overlaps!
-        function collectCoin(coinKey, ballPosition, isClone) {
+        // --- COMBO COMPILING COIN COLLECTION ---
+        // FIXED: Displays each combo independently with screen-space pixel offsets to prevent overlapping.
+        // Base coin value, TAIKO multiplier, and STRIKE multiplier now float up in sync, offset cleanly.
+        function collectCoin(coinKey, ballPosition, b) {
             const coinDef = COIN_TYPES[coinKey];
             if (!coinDef) return;
 
-            scoreCents += coinDef.cents;
+            // Mark collection on current interval to preserve combo inside standard landings
+            b.collectedOnThisSegment = true;
+
+            // Increment strike consecutive combo count
+            b.strikeCount = (b.strikeCount || 0) + 1;
+
+            // Assemble multipliers (Compounded together!)
+            let trampolineMultiplier = b.trampolineActive ? 2 : 1;
+            let strikeMultiplier = b.strikeCount;
+            let combinedMultiplier = trampolineMultiplier * strikeMultiplier;
+
+            let baseCents = coinDef.cents;
+            let totalAdded = baseCents * combinedMultiplier;
+            scoreCents += totalAdded; // Score Bank properly receives the multiplied payout!
             Sound.play('coin');
             
-            // Shift animation coordinates left/right based on ball type to prevent merged overlaps
             const animPosition = new THREE.Vector3().copy(ballPosition);
-            if (isClone) {
+            if (b.isClone) {
                 animPosition.x += 0.4;
                 animPosition.y += 0.2;
             } else {
@@ -1450,23 +1902,70 @@
                 animPosition.y += 0.2;
             }
 
-            // Spawn dynamic coin splash at the specific offset position
-            triggerParticleBurst(animPosition, coinDef.isEuro ? 0xffea00 : 0xffaa00, 10);
+            // Burst particles corresponding directly to coin colors
+            let particleColor = 0xcd7f32;
+            if (coinDef.group === 'silver') particleColor = 0xe5e7eb;
+            else if (coinDef.group === 'gold') particleColor = 0xffd700;
+            else if (coinDef.group === 'emerald') particleColor = 0x10b981;
+            else if (coinDef.group === 'diamond') particleColor = 0x22d3ee;
+
+            triggerParticleBurst(animPosition, particleColor, 12);
             
-            // Sized up popup text animations
-            const popupText = coinDef.isEuro ? `+${coinDef.cents / 100}€` : `+${coinDef.cents}¢`;
-            const popupColor = coinDef.isEuro 
-                ? (isClone ? 'text-yellow-400 neon-text-pink' : 'text-yellow-400 neon-text-cyan') 
-                : (isClone ? 'text-orange-500' : 'text-orange-300');
+            // Build dynamic text multiplier indicators
+            let comboText = "";
+            if (b.trampolineActive && b.strikeCount > 1) {
+                comboText = `x${combinedMultiplier} DRUM + STRIKE!`;
+            } else if (b.trampolineActive) {
+                comboText = `x2 TAIKO!`;
+            } else if (b.strikeCount > 1) {
+                comboText = `x${b.strikeCount} STRIKE!`;
+            }
+
+            // Assemble visual value label displaying the base coin collection amount (not the final multiplied score)
+            let baseValueLabel = "";
+            if (coinDef.group === 'gold' || coinDef.group === 'emerald' || coinDef.group === 'diamond') {
+                baseValueLabel = `+${(baseCents / 100).toFixed(1)} Koban`;
+            } else {
+                baseValueLabel = `+${baseCents} Sen`;
+            }
             
-            spawnFloatingText(animPosition, popupText, popupColor);
+            let textColorClass = 'text-amber-500 font-black text-2xl';
+            if (coinDef.group === 'gold') textColorClass = 'text-yellow-500 font-black text-2xl';
+            else if (coinDef.group === 'emerald') textColorClass = 'text-emerald-500 font-black text-2xl';
+            else if (coinDef.group === 'diamond') textColorClass = 'text-cyan-400 font-black text-3xl filter drop-shadow-[0_2px_4px_rgba(34,211,238,0.4)]';
+            else if (coinDef.group === 'silver') textColorClass = 'text-stone-300 font-black text-2xl';
+            else textColorClass = 'text-amber-700 font-bold text-xl';
+
+            // 1) Spawn Base value directly centered above coin (Popping instantly at xOffset = 0, yOffset = 0)
+            spawnFloatingText(animPosition, baseValueLabel, textColorClass, 0, 0);
             
+            // 2) Spawn Taiko Combo independently offset to the left (Popping instantly!)
+            if (b.trampolineActive) {
+                spawnFloatingText(
+                    animPosition, 
+                    `x2 TAIKO!`, 
+                    'text-red-500 font-black text-2xl',
+                    -95,  // Shuffled leftwards in pixels to ensure absolute clearance
+                    -35   // Shuffled slightly higher to create a beautiful staggered arch
+                );
+            }
+
+            // 3) Spawn Strike Combo independently offset to the right (Popping instantly!)
+            if (b.strikeCount > 1) {
+                spawnFloatingText(
+                    animPosition, 
+                    `x${b.strikeCount} STRIKE!`, 
+                    'text-yellow-400 font-black text-2xl',
+                    95,   // Shuffled rightwards in pixels to ensure absolute clearance
+                    15    // Shuffled slightly lower to guarantee zero horizontal or vertical overlapping
+                );
+            }
+
             updateHUD();
         }
 
-        // FIXED: Spawns popups offset left/right depending on the collecting ball's identity (Clone vs Primary)
+        // Modulate sakura cherry blossoms with text states instead of fixed colored emojis
         function collectHeart(ballPosition, isClone) {
-            // Shift animation coordinates left/right based on ball type to prevent merged overlaps
             const animPosition = new THREE.Vector3().copy(ballPosition);
             if (isClone) {
                 animPosition.x += 0.4;
@@ -1477,107 +1976,92 @@
             }
 
             if (isClone) {
-                // If clone collects heart, increase clone lives up to maxLives (5)
                 const clone = activeBalls.find(b => b.isClone);
                 if (clone) {
                     if (clone.lives < maxLives) {
                         clone.lives++;
                         Sound.play('heart');
-                        triggerParticleBurst(animPosition, 0xffaa00, 15);
-                        spawnFloatingText(animPosition, "+1 CLONE LIFE", "text-orange-400 neon-text-pink");
+                        triggerParticleBurst(animPosition, 0xe65c00, 15);
+                        spawnFloatingText(animPosition, "+1 CLONE LIFE", "text-amber-600 font-black");
                     } else {
-                        // Max clone lives converting bonus
                         scoreCents += 200;
                         Sound.play('coin');
-                        triggerParticleBurst(animPosition, 0xffea00, 15);
-                        spawnFloatingText(animPosition, "CLONE MAX BONUS: +2€", "text-yellow-400 neon-text-cyan");
+                        triggerParticleBurst(animPosition, 0xd4af37, 15);
+                        spawnFloatingText(animPosition, "KOBAN GIFT: +2 Koban", "text-yellow-600 font-black");
                     }
                 }
             } else {
-                // Primary ball collects heart
                 if (lives < maxLives) {
                     lives++;
                     Sound.play('heart');
-                    triggerParticleBurst(animPosition, 0xff2a85, 15);
-                    spawnFloatingText(animPosition, "+1 LIFE", "text-pink-500 neon-text-pink");
+                    triggerParticleBurst(animPosition, 0xd63351, 15);
+                    spawnFloatingText(animPosition, "+1 LIFE", "text-red-700 font-black");
                 } else {
-                    // Max life converting bonus!
-                    scoreCents += 200; // Gift 2 Euros
+                    scoreCents += 200;
                     Sound.play('coin');
-                    triggerParticleBurst(animPosition, 0xffea00, 15);
-                    spawnFloatingText(animPosition, "MAX LIFE BONUS: +2€", "text-yellow-400 neon-text-cyan");
+                    triggerParticleBurst(animPosition, 0xd4af37, 15);
+                    spawnFloatingText(animPosition, "MAX LIFE GIFT: +2 Koban", "text-yellow-600 font-black");
                 }
             }
             updateHUD();
         }
 
-        // Clone stack checks are fully implemented. Now rewards life up to max health (5), then grants cash!
         function collectOrangeBall(collidingBall, worldItemPos, collectedLaneIdx) {
-            // Calculated currentIntervalIndex locally within scope using global variables to avoid ReferenceError
             const currentIntervalIndex = Math.floor(globalZ / intervalLength);
-
-            // Fetch the beforehand decided clone spawn lane from track data details cache
             const landedTile = trackData[currentIntervalIndex]?.[collectedLaneIdx];
             const detail = landedTile ? landedTile.detail : 'spawn-center';
 
-            let cloneSpawnLane = 1; // Default spawn Center
-            if (detail === 'spawn-left') {
-                cloneSpawnLane = 0;
-            } else if (detail === 'spawn-right') {
-                cloneSpawnLane = 2;
-            } else if (detail === 'spawn-center') {
-                cloneSpawnLane = 1;
-            }
+            let cloneSpawnLane = 1;
+            if (detail === 'spawn-left') cloneSpawnLane = 0;
+            else if (detail === 'spawn-right') cloneSpawnLane = 2;
+            else if (detail === 'spawn-center') cloneSpawnLane = 1;
 
-            // If we already have a clone active, reward player with a bonus life (up to 5 clone lives) or money if health is full
             const clone = activeBalls.find(b => b.isClone);
             if (clone) {
                 if (clone.lives < maxLives) {
                     clone.lives++;
                     Sound.play('heart');
-                    triggerParticleBurst(worldItemPos, 0xffaa00, 15);
-                    spawnFloatingText(worldItemPos, "+1 CLONE LIFE", "text-orange-400 neon-text-pink");
+                    triggerParticleBurst(worldItemPos, 0xe65c00, 15);
+                    spawnFloatingText(worldItemPos, "+1 CLONE LIFE", "text-amber-600 font-black");
                     updateHUD();
                 } else {
-                    scoreCents += 300; // Award 3 Euros stacking points bonus!
+                    scoreCents += 300;
                     Sound.play('coin');
-                    triggerParticleBurst(worldItemPos, 0xffea00, 15);
-                    spawnFloatingText(worldItemPos, "MAX LIVES BONUS +3€", "text-yellow-400 neon-text-cyan");
+                    triggerParticleBurst(worldItemPos, 0xd4af37, 15);
+                    spawnFloatingText(worldItemPos, "KOBAN BONUS +3 Koban", "text-yellow-600 font-black");
                     updateHUD();
                 }
                 return;
             }
 
             Sound.play('heart');
-            triggerParticleBurst(worldItemPos, 0xffaa00, 18);
+            triggerParticleBurst(worldItemPos, 0xe65c00, 18);
 
-            // Create orange glowing clone sphere
+            // Amber glass marble clone ball
             const cloneBallGroup = new THREE.Group();
             const cloneBallMesh = new THREE.Mesh(
                 new THREE.SphereGeometry(0.5, 32, 32),
                 new THREE.MeshStandardMaterial({
-                    color: 0xffaa00,
-                    roughness: 0.12,
-                    metalness: 0.1,
-                    emissive: 0xff5500,
-                    emissiveIntensity: 1.5
+                    color: 0xe65c00,
+                    roughness: 0.05,
+                    metalness: 0.2,
+                    transparent: true,
+                    opacity: 0.9,
+                    emissive: 0xff3300,
+                    emissiveIntensity: 0.3
                 })
             );
             cloneBallGroup.add(cloneBallMesh);
             scene.add(cloneBallGroup);
 
-            // Clone ball neon light
-            const cloneLight = new THREE.PointLight(0xff4500, 2.5, 12);
+            const cloneLight = new THREE.PointLight(0xe65c00, 1.5, 12);
             cloneBallGroup.add(cloneLight);
 
-            // Position clone ball at the corresponding launch lane matching primary ball's Y/Z
             cloneBallGroup.position.set(getXFromLane(cloneSpawnLane), collidingBall.group.position.y, globalZ);
 
-            // Spawn trails and copy clone start positions to avoid stretch glitches
-            const cloneTrail = createTrailSpheres(0xff4500);
+            const cloneTrail = createTrailSpheres(0xe65c00);
             cloneTrail.forEach(t => t.position.copy(cloneBallGroup.position));
 
-            // Copy active physics status from colliding ball to maintain perfect synchronization
             activeBalls.push({
                 id: 'clone_' + Date.now(),
                 group: cloneBallGroup,
@@ -1591,33 +2075,36 @@
                 bounceStartIndex: collidingBall.bounceStartIndex,
                 squashTimer: 0,
                 shouldRemove: false,
-                lives: 1 // Starts with 1 clone life, can expand up to 5 lives
+                lives: 1,
+                trampolineActive: collidingBall.trampolineActive || false,
+                strikeCount: collidingBall.strikeCount || 0,
+                collectedOnThisSegment: false
             });
 
-            spawnFloatingText(worldItemPos, "MULTIBALL ACTIVE!", "text-orange-400 neon-text-pink");
+            spawnFloatingText(worldItemPos, "ANCESTRAL CLONES AWOKEN!", "text-amber-600 font-black");
             updateHUD();
         }
 
-        // FIXED: Dynamically renders clone ball status / hearts stacked below normal lives (supports up to 5 hearts)
+        // Active lives appear as rich vermillion florettes with drop shadows, while depleted lives fade out as ghosted grey florettes.
         function updateHUD() {
             document.getElementById('hud-score').innerText = `€${(scoreCents / 100).toFixed(2)}`;
             document.getElementById('hud-distance').innerText = `${intervalsSurvived} m`;
             document.getElementById('hud-speed').innerText = `${currentSpeedMultiplier.toFixed(1)}x`;
 
-            // Draw Backup simulation Heart symbols
             const livesDiv = document.getElementById('hud-lives');
             livesDiv.innerHTML = '';
             for (let i = 0; i < maxLives; i++) {
                 const heartSpan = document.createElement('span');
-                // FIXED: Displays primary hearts accurately (renders black/empty when primary ball is completely destroyed)
                 const primaryExists = activeBalls.some(b => !b.isClone);
                 const currentLives = primaryExists ? lives : 0;
-                heartSpan.className = i < currentLives ? 'text-pink-500 font-extrabold animate-pulse' : 'text-slate-800';
-                heartSpan.innerText = '♥';
+                
+                heartSpan.className = i < currentLives 
+                    ? 'text-red-600 font-black filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)] animate-pulse' 
+                    : 'text-stone-300 opacity-25';
+                heartSpan.innerText = '✿';
                 livesDiv.appendChild(heartSpan);
             }
 
-            // Draw Clone ball status below supporting up to 5 dynamic orange hearts
             const clone = activeBalls.find(b => b.isClone);
             const cloneContainer = document.getElementById('hud-clone-container');
             const cloneLivesDiv = document.getElementById('hud-clone-lives');
@@ -1629,8 +2116,10 @@
                 cloneLivesDiv.innerHTML = '';
                 for (let i = 0; i < maxLives; i++) {
                     const heartSpan = document.createElement('span');
-                    heartSpan.className = i < clone.lives ? 'text-orange-500 font-extrabold animate-pulse' : 'text-slate-800';
-                    heartSpan.innerText = '♥';
+                    heartSpan.className = i < clone.lives 
+                        ? 'text-amber-600 font-black filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)] animate-pulse' 
+                        : 'text-stone-300 opacity-25';
+                    heartSpan.innerText = '✿';
                     cloneLivesDiv.appendChild(heartSpan);
                 }
             } else {
@@ -1640,17 +2129,13 @@
             }
         }
 
-
         // --- COLLISION RESOLUTION AND PHYSICS JUMPS ---
 
-        // Decoupled landing triggers, now resolves logic independently for each individual ball
         function handleIndividualBallLanding(b, landingIntervalIndex) {
-            // Keep intervalsSurvived updated based on the primary ball
             if (!b.isClone) {
                 intervalsSurvived = landingIntervalIndex;
                 updateHUD();
 
-                // Clear old segments left behind for memory optimization
                 const purgeThreshold = landingIntervalIndex - 6;
                 for (let idxStr in activeSegments) {
                     const idx = parseInt(idxStr);
@@ -1659,7 +2144,6 @@
                     }
                 }
 
-                // Ensure dynamic forward run-way remains buffered at 100 segments
                 const currentMaxGenerated = Math.max(...Object.keys(trackData).map(Number));
                 if (currentMaxGenerated - landingIntervalIndex < 80) {
                     for (let i = currentMaxGenerated + 1; i <= landingIntervalIndex + 100; i++) {
@@ -1672,37 +2156,35 @@
             const outOfBounds = (b.targetLane < 0 || b.targetLane > 2);
             const hitHazard = !landedTile || landedTile.type === 'hole' || outOfBounds;
 
-            // FIXED: Fully unified damage framework handles edge boundaries, trampoline rescues, and clone destructions smoothly
             if (hitHazard) {
                 registerDamage(b);
                 if (!b.shouldRemove) {
-                    // Recover safely onto the closest track edge lane
                     if (b.targetLane < 0) { b.targetLane = 0; b.currentLane = 0; }
                     if (b.targetLane > 2) { b.targetLane = 2; b.currentLane = 2; }
                     b.isHighBounce = false;
                     b.isRolling = false;
                     b.bounceStartIndex = landingIntervalIndex;
+                    b.trampolineActive = false; // hit edge/hazards breaks combos
+                    b.strikeCount = 0;
+                    b.collectedOnThisSegment = false;
                 }
                 return;
             }
 
-            // Safe Landing!
             Sound.play('bounce');
             b.squashTimer = 0.12;
 
-            // Evaluate platform physics triggers for this specific ball
             if (landedTile.type === 'arrow-forward') {
                 b.isRolling = true;
                 b.isHighBounce = false;
                 b.bounceStartIndex = landingIntervalIndex;
-                triggerParticleBurst(b.group.position, 0xffd700, 15);
+                triggerParticleBurst(b.group.position, 0xd4af37, 15);
             } 
             else if (landedTile.type === 'trampoline') {
                 b.isRolling = false;
                 Sound.play('trampoline');
-                triggerParticleBurst(b.group.position, 0x00f0ff, 12);
+                triggerParticleBurst(b.group.position, 0x6e1b0d, 12);
                 
-                // Squash base pad visuals
                 const segObj = activeSegments[landingIntervalIndex];
                 if (segObj) {
                     const trampMesh = segObj.items.find(i => i.type === 'trampoline' && i.lane === b.targetLane)?.mesh;
@@ -1714,13 +2196,23 @@
 
                 b.isHighBounce = true;
                 b.bounceStartIndex = landingIntervalIndex;
+                b.trampolineActive = true; // Trampoline combo active!
             } 
             else {
                 b.isRolling = false;
                 b.isHighBounce = false;
                 b.bounceStartIndex = landingIntervalIndex;
                 
-                // Arrows on edge lanes now correctly drive balls into the void to fall and die
+                // Breaking the trampoline multiplier on normal landing
+                b.trampolineActive = false;
+
+                // STRIKE LOGIC: Blank floor (no coin collected during this interval) resets strikeCount to 0!
+                if (!b.collectedOnThisSegment) {
+                    b.strikeCount = 0;
+                }
+                // Reset tracker for upcoming platform segment
+                b.collectedOnThisSegment = false;
+
                 if (landedTile.type === 'arrow-left') {
                     b.targetLane = b.targetLane - 1;
                 } else if (landedTile.type === 'arrow-right') {
@@ -1729,43 +2221,28 @@
             }
         }
 
-
-        // --- ENGINE LOOP TICK UPDATES ---
+        // --- ENGINE LOOP TICK ---
 
         let clock = new THREE.Clock();
-        let squashTimer = 0;
-
-        // FIXED: Definition of Seeds
-        const DIFF_SEEDS = {
-            casual: 11111,
-            arcade: 55555,
-            cyber: 99999
-        };
 
         function animate() {
             requestAnimationFrame(animate);
 
-            const deltaTime = Math.min(clock.getDelta(), 0.1); // Clip extreme lag frames
+            const deltaTime = Math.min(clock.getDelta(), 0.1);
 
-            if (gameActive) {
-                // Get current difficulty configuration settings
+            if (gameActive && !isPaused) {
                 const config = DIFF_SETTINGS[difficulty];
-                
-                // Progressive running speed multiplier based on climb progress
                 currentSpeedMultiplier = 1.0 + Math.min(0.8, intervalsSurvived * config.speedGrowth);
                 const currentZSpeed = config.baseSpeed * currentSpeedMultiplier;
 
-                // Linearly translate global player Z progress down highway
                 globalZ += currentZSpeed * deltaTime;
-
                 const currentIntervalIndex = Math.floor(globalZ / intervalLength);
 
-                // Detect if clone and primary ball consolidate into the same lane, and trigger a "MERGE!" pop-up
                 if (activeBalls.length > 1) {
                     const presentlyMerged = (activeBalls[0].targetLane === activeBalls[1].targetLane);
                     if (presentlyMerged && !previouslyMerged) {
                         const avgPos = new THREE.Vector3().addVectors(activeBalls[0].group.position, activeBalls[1].group.position).multiplyScalar(0.5);
-                        spawnFloatingText(avgPos, "MERGE!", "text-orange-500 neon-text-cyan font-black");
+                        spawnFloatingText(avgPos, "MERGE!", "text-red-700 font-black");
                         previouslyMerged = true;
                     } else if (!presentlyMerged) {
                         previouslyMerged = false;
@@ -1774,15 +2251,12 @@
                     previouslyMerged = false;
                 }
 
-                // Update positions, individual physics states, scales and trails of all active multiballs
                 activeBalls.forEach(b => {
                     b.group.position.z = globalZ;
 
-                    // Evaluate individual parabolic bounce trajectory or rolling flat trajectory
                     const totalBounceDistance = b.isHighBounce ? (intervalLength * 2) : intervalLength;
                     const peakHeight = b.isHighBounce ? highPeakHeight : normalPeakHeight;
 
-                    // Compute progress since this specific ball's bounce start Z coordinate
                     const distSinceBounce = b.group.position.z - (b.bounceStartIndex * intervalLength);
                     const progress = THREE.MathUtils.clamp(distSinceBounce / totalBounceDistance, 0, 1);
 
@@ -1790,48 +2264,76 @@
                     if (b.isRolling) {
                         currentY = 0.0;
                     } else {
-                        // Complete continuous vertical paraboloid trajectory formula
                         currentY = peakHeight * 4.0 * progress * (1.0 - progress);
                     }
                     
-                    // Cushion drop correction for fall recovery (only evaluated for primary ball)
                     if (isInvulnerable && !b.isClone && !b.isHighBounce && progress < 0.2) {
                         currentY = Math.max(currentY, 1.0);
                     }
                     b.group.position.y = currentY;
 
-                    // Landing check for this specific ball
+                    // Item Collision checks are evaluated prior to platform landing checks.
+                    // This prevents landing boundary evaluations from wiping active combo multipliers right before coins are registered!
+                    const currentSeg = activeSegments[currentIntervalIndex];
+                    if (currentSeg && currentSeg.items) {
+                        for (let i = currentSeg.items.length - 1; i >= 0; i--) {
+                            const item = currentSeg.items[i];
+                            // Check if item is in the same lane
+                            if (item.lane === Math.round(b.currentLane)) {
+                                const worldItemPos = new THREE.Vector3();
+                                item.mesh.getWorldPosition(worldItemPos);
+                                
+                                const dx = b.group.position.x - worldItemPos.x;
+                                const dz = b.group.position.z - worldItemPos.z;
+                                const horizontalDist = Math.sqrt(dx*dx + dz*dz);
+                                const verticalDist = Math.abs(b.group.position.y - worldItemPos.y);
+                                
+                                // FIXED: Reduced vertical check threshold down to physical contact bounds (Y = 1.0).
+                                // This removes the unsolicited "vacuum" effect so coins must be physically touched by the marble.
+                                if (horizontalDist < 1.35 && verticalDist < 1.00) {
+                                    if (item.type === 'coin') {
+                                        collectCoin(item.coinDetail, b.group.position, b);
+                                    } else if (item.type === 'heart') {
+                                        collectHeart(b.group.position, b.isClone);
+                                    } else if (item.type === 'orange-ball') {
+                                        collectOrangeBall(b, worldItemPos, item.lane);
+                                    }
+                                    
+                                    // Remove collected item instantly from Three.js scene and arrays
+                                    currentSeg.group.remove(item.mesh);
+                                    currentSeg.items.splice(i, 1);
+                                }
+                            }
+                        }
+                    }
+
+                    // Platform landing boundary evaluation
                     const projectedLandingIndex = b.isHighBounce ? (b.bounceStartIndex + 2) : (b.bounceStartIndex + 1);
                     if (b.group.position.z >= projectedLandingIndex * intervalLength) {
                         handleIndividualBallLanding(b, projectedLandingIndex);
                     }
 
-                    // Smooth Horizontal interpolation for responsive slides (Includes out of bounds -1 and 3)
                     b.currentLane = THREE.MathUtils.lerp(b.currentLane, b.targetLane, 0.16);
                     b.group.position.x = getXFromLane(b.currentLane);
 
-                    // Apply organic rotative banking leans depending on sliding speed (banks into turns)
                     const slideVelocity = (b.targetLane - b.currentLane);
                     b.mesh.rotation.z = THREE.MathUtils.lerp(b.mesh.rotation.z, slideVelocity * 0.45, 0.1);
 
-                    // Update squash-and-stretch parameters & Fast rolling rotation
                     if (b.isRolling) {
-                        b.mesh.scale.set(1.18, 0.72, 1.18);
+                        b.mesh.scale.set(1.15, 0.76, 1.15);
                         b.mesh.rotation.x += currentZSpeed * 0.25 * deltaTime;
                     } else if (b.squashTimer > 0) {
                         b.squashTimer -= deltaTime;
-                        b.mesh.scale.set(1.22, 0.68, 1.22); // Impact flattening
+                        b.mesh.scale.set(1.22, 0.68, 1.22);
                         b.mesh.rotation.x += currentZSpeed * 0.1 * deltaTime;
                     } else {
-                        // Normal flight stretching based on vertical velocity
                         const verticalVelocity = (b.isHighBounce ? 1 : 0.5) * (0.5 - progress);
                         const stretchY = 1.0 + Math.abs(verticalVelocity) * 0.28;
                         const squashXZ = 1.0 - Math.abs(verticalVelocity) * 0.14;
                         b.mesh.scale.set(squashXZ, stretchY, squashXZ);
-                        b.mesh.rotation.x += currentZSpeed * 0.1 * deltaTime; // Continual ball forward roll
+                        b.mesh.rotation.x += currentZSpeed * 0.1 * deltaTime;
                     }
 
-                    // Update Comet Ghost Trail & modulate trail styling during rolls
                     for (let i = b.trail.length - 1; i > 0; i--) {
                         b.trail[i].position.copy(b.trail[i - 1].position);
                     }
@@ -1839,16 +2341,14 @@
                     const trailVisible = b.mesh.visible;
                     b.trail.forEach(t => {
                         t.visible = trailVisible;
-                        // Modulate trail color if rolling to highlight high speed
                         if (b.isRolling) {
-                            t.material.color.setHex(0xffea00); // Golden trail for speed roll
+                            t.material.color.setHex(0xd4af37); // Gold speed trail
                         } else {
-                            t.material.color.setHex(b.isClone ? 0xff6600 : 0x00ffff); // Clone orange trail vs primary cyan trail
+                            t.material.color.setHex(b.isClone ? 0xd4751c : 0xcccccc);
                         }
                     });
                 });
 
-                // FIXED: Clean up clones or primary balls that were de-synced (marked for removal)
                 const survivors = [];
                 let listChanged = false;
                 activeBalls.forEach(b => {
@@ -1861,7 +2361,6 @@
                 });
                 activeBalls = survivors;
                 
-                // Sync HUD elements and shift main ball references if the primary ball has died
                 if (listChanged) {
                     if (survivors.length > 0) {
                         ballGroup = survivors[0].group;
@@ -1870,13 +2369,11 @@
                     updateHUD();
                 }
 
-                // If all active balls are lost, trigger Game Over
                 if (activeBalls.length === 0) {
                     triggerGameOver();
                     return;
                 }
 
-                // Update Steering Lock Notification alpha HUD flashes
                 if (steeringLockAlertTimer > 0) {
                     steeringLockAlertTimer -= deltaTime;
                     if (steeringLockAlertTimer <= 0) {
@@ -1886,11 +2383,10 @@
                     }
                 }
 
-                // Handle Invulnerability flash feedback (flashes all survivors)
                 if (isInvulnerable) {
                     invulnerabilityTimer -= deltaTime;
                     activeBalls.forEach(b => {
-                        b.mesh.visible = Math.floor(Date.now() / 60) % 2 === 0; // rapid strobing
+                        b.mesh.visible = Math.floor(Date.now() / 60) % 2 === 0;
                     });
                     if (invulnerabilityTimer <= 0) {
                         isInvulnerable = false;
@@ -1898,94 +2394,46 @@
                     }
                 }
 
-                // Camera tracking targets the first remaining ball to keep the viewport centered
                 const mainBall = activeBalls[0];
                 if (mainBall) {
                     camera.position.x = THREE.MathUtils.lerp(camera.position.x, THREE.MathUtils.clamp(mainBall.group.position.x * 0.7, -4.5, 4.5), 0.08);
                     camera.position.y = THREE.MathUtils.lerp(camera.position.y, mainBall.group.position.y * 0.35 + 4.8, 0.08);
-                    camera.position.z = globalZ - 7.5; // Locked chasing distance offset
+                    camera.position.z = globalZ - 7.5;
                     camera.lookAt(new THREE.Vector3(mainBall.group.position.x * 0.5, mainBall.group.position.y * 0.3 + 0.5, globalZ + 10.0));
                 }
 
-                // FIXED: All colliding balls now independently check collision with coin segments to enable double counting
-                // Triggering individual collection splashes and distinct left-and-right text popups
-                const currentSeg = activeSegments[currentIntervalIndex];
-                if (currentSeg && currentSeg.items) {
-                    for (let i = currentSeg.items.length - 1; i >= 0; i--) {
-                        const item = currentSeg.items[i];
-                        
-                        // Find any balls currently matching this item's lane
-                        const collidingBalls = activeBalls.filter(b => Math.round(b.currentLane) === item.lane);
-                        
-                        if (collidingBalls.length > 0) {
-                            const worldItemPos = new THREE.Vector3();
-                            item.mesh.getWorldPosition(worldItemPos);
-                            
-                            let collected = false;
-                            collidingBalls.forEach(b => {
-                                const distance = b.group.position.distanceTo(worldItemPos);
-                                if (distance < 1.35) {
-                                    if (!collected) {
-                                        // First ball collects it
-                                        collected = true;
-                                        if (item.type === 'coin') {
-                                            collectCoin(item.coinDetail, b.group.position, b.isClone);
-                                        } else if (item.type === 'heart') {
-                                            collectHeart(b.group.position, b.isClone);
-                                        } else if (item.type === 'orange-ball') {
-                                            collectOrangeBall(b, worldItemPos, item.lane);
-                                        }
-                                    } else {
-                                        // Second ball collects it too (merged in same frame)
-                                        if (item.type === 'coin') {
-                                            collectCoin(item.coinDetail, b.group.position, b.isClone);
-                                        } else if (item.type === 'heart') {
-                                            collectHeart(b.group.position, b.isClone);
-                                        }
-                                        // Skip double spawning or redundant bonuses for clone ball powerup
-                                    }
-                                }
-                            });
-
-                            if (collected) {
-                                currentSeg.group.remove(item.mesh);
-                                currentSeg.items.splice(i, 1);
-                            }
-                        }
-                    }
-                }
-
-                // Passive Item Rotations (Coins & Clone Balls spin upright on Y axis & have organic vertical hover waves)
+                // Smooth organic item floating and spinning updates
                 const activeIndices = Object.keys(activeSegments).map(Number);
-                const hoverOffset = Math.sin(Date.now() * 0.005) * 0.12; // Organic bouncing hover waves
+                const hoverOffset = Math.sin(Date.now() * 0.005) * 0.12;
                 for (let idx of activeIndices) {
                     const seg = activeSegments[idx];
                     if (seg && seg.items) {
                         for (let item of seg.items) {
                             if (item.type === 'coin' || item.type === 'heart' || item.type === 'orange-ball') {
-                                item.mesh.rotation.y += 2.2 * deltaTime; // Constant faster spin
-                                item.mesh.position.y = 0.45 + hoverOffset; // Floating hover elevation
+                                item.mesh.rotation.y += 1.8 * deltaTime;
+                                item.mesh.position.y = 0.45 + hoverOffset;
                             }
                         }
                     }
                 }
+            } else if (isPaused) {
+                // Keep rendering but pause physics animations
+                renderer.render(scene, camera);
+                return;
             } else {
-                // Passive Start-Screen camera rotation loop for background aesthetics
-                const rotTime = Date.now() * 0.00015;
-                camera.position.set(Math.cos(rotTime) * 12.0, 8.0, -10.0);
+                // Passive screen rotation loop when not in level
+                const rotTime = Date.now() * 0.0001;
+                camera.position.set(Math.cos(rotTime) * 12.0, 7.0, -10.0);
                 camera.lookAt(new THREE.Vector3(0, 0, 15));
             }
 
-            // Update active particles and fade them out
             for (let p of particlePool) {
                 if (p.active) {
                     p.mesh.position.addScaledVector(p.velocity, deltaTime);
-                    p.velocity.y -= 9.8 * deltaTime; // Gravity pull
+                    p.velocity.y -= 9.8 * deltaTime;
                     p.life -= deltaTime;
-                    
                     const ratio = p.life / 0.8;
                     p.mesh.scale.set(ratio, ratio, ratio);
-                    
                     if (p.life <= 0) {
                         p.active = false;
                         p.mesh.visible = false;
@@ -1996,32 +2444,24 @@
             renderer.render(scene, camera);
         }
 
-
-        // --- SCREEN ROUTING AND DOM BINDING TRIGGER ---
+        // --- SCREEN ROUTING AND DOM BINDING ---
 
         window.onload = function() {
-            // Initiate Three.js engine viewport
             initScene();
-
-            // Set default sound mute configuration from LocalStorage
             Sound.updateUI();
 
-            // Bind start screen difficulty buttons
+            // Bind Setup segmented control difficulty buttons
             const diffButtons = document.querySelectorAll('#difficulty-selectors button');
             diffButtons.forEach(btn => {
-                // pointerdown handles both touch and click instantaneously with no 300ms mobile lag
                 btn.addEventListener('pointerdown', (e) => {
                     e.preventDefault();
-                    diffButtons.forEach(b => {
-                        b.className = "px-4 py-2 rounded-xl text-xs md:text-sm font-bold bg-slate-800 text-slate-300 hover:bg-slate-750 border border-transparent transition-all";
-                    });
-                    btn.className = "px-4 py-2 rounded-xl text-xs md:text-sm font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 hover:bg-cyan-500/35 transition-all";
+                    diffButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
                     difficulty = btn.dataset.diff;
-                    Sound.play('bounce'); // Satisfying tap audio cue
+                    Sound.play('bounce');
                 });
             });
 
-            // Start screen action (Start Game on click/pointerdown)
             const startBtn = document.getElementById('btn-start');
             const handleStartTrigger = (e) => {
                 e.preventDefault();
@@ -2030,13 +2470,11 @@
             startBtn.addEventListener('click', handleStartTrigger);
             startBtn.addEventListener('pointerdown', handleStartTrigger);
 
-            // Re-spawn Action (Protected by 3-second cooldown)
             document.getElementById('btn-restart').addEventListener('click', () => {
                 if (!gameOverButtonsEnabled) return;
                 startNewRun();
             });
 
-            // Return to main console menu (Protected by 3-second cooldown)
             document.getElementById('btn-menu').addEventListener('click', () => {
                 if (!gameOverButtonsEnabled) return;
                 document.getElementById('game-over-screen').classList.add('hidden');
@@ -2045,13 +2483,28 @@
                 document.getElementById('hud').classList.add('hidden');
             });
 
-            // Mute Controls Toggle
-            document.getElementById('btn-mute').addEventListener('click', (e) => {
+            // Interactive Physical Home Button click returning to menu
+            const homeBtn = document.getElementById('btn-home-physical');
+            homeBtn.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                if (gameActive) {
+                    returnToTerminalMenu();
+                } else if (!document.getElementById('game-over-screen').classList.contains('hidden') && gameOverButtonsEnabled) {
+                    document.getElementById('game-over-screen').classList.add('hidden');
+                    document.getElementById('start-screen').classList.remove('hidden');
+                    document.getElementById('start-screen').classList.remove('opacity-0');
+                    document.getElementById('hud').classList.add('hidden');
+                    Sound.play('hurt');
+                }
+            });
+
+            // Toggle skeuomorphic switch control on mute action
+            document.getElementById('btn-mute-switch').addEventListener('click', (e) => {
                 e.stopPropagation();
                 Sound.toggleMute();
             });
 
-            // HUD Return To Terminal Menu Button Toggle
+            // HUD discrete button listeners
             const hudMenuBtn = document.getElementById('btn-hud-menu');
             const handleHudMenuTrigger = (e) => {
                 e.preventDefault();
@@ -2061,7 +2514,31 @@
             hudMenuBtn.addEventListener('click', handleHudMenuTrigger);
             hudMenuBtn.addEventListener('pointerdown', handleHudMenuTrigger);
 
-            // Run central draw animation clock
+            const hudPauseBtn = document.getElementById('btn-hud-pause');
+            const handleHudPauseTrigger = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                togglePause();
+            };
+            hudPauseBtn.addEventListener('click', handleHudPauseTrigger);
+            hudPauseBtn.addEventListener('pointerdown', handleHudPauseTrigger);
+
+            const resumeBtn = document.getElementById('btn-pause-resume');
+            resumeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                togglePause();
+            });
+
+            const hudRestartBtn = document.getElementById('btn-hud-restart');
+            const handleHudRestartTrigger = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isPaused) togglePause(); // unpause first if paused
+                startNewRun();
+            };
+            hudRestartBtn.addEventListener('click', handleHudRestartTrigger);
+            hudRestartBtn.addEventListener('pointerdown', handleHudRestartTrigger);
+
             animate();
         };
     </script>
