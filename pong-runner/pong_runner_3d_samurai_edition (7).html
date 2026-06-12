@@ -1,0 +1,2598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pong Runner 3D - Samurai Edition</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for authentic Japanese calligraphy & Serif brush styles -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@600;900&family=Yuji+Mai&family=Yuji+Syuku&display=swap" rel="stylesheet">
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        /* Classic Japanese Skeuomorphic Styles */
+        body {
+            font-family: 'Noto Serif JP', 'Georgia', serif;
+            touch-action: none;
+            overflow: hidden;
+            background-color: #0b0c10;
+            /* Deep charred cedar wood trim background */
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.85)),
+                repeating-linear-gradient(0deg, #1b120c, #1b120c 4px, #140d09 4px, #140d09 8px);
+        }
+
+        /* Traditional Japanese Washi Rice Paper texture */
+        .washi-paper {
+            background-color: #fcf8f2;
+            background-image: 
+                radial-gradient(rgba(139, 115, 85, 0.1) 1px, transparent 0),
+                linear-gradient(to bottom, rgba(253, 246, 230, 0.95), rgba(246, 231, 204, 0.95));
+            background-size: 16px 16px, 100% 100%;
+            border: 3px double #8b7355;
+            box-shadow: inset 0 0 15px rgba(139, 115, 85, 0.35), 0 4px 15px rgba(0, 0, 0, 0.6);
+            color: #2b1f1d;
+        }
+
+        /* Red vermillion wax stamp (Hanko) seal style */
+        .hanko-seal {
+            border: 2px solid #b32d2e;
+            color: #b32d2e;
+            font-family: 'Yuji Mai', serif;
+            display: inline-block;
+            padding: 2px 6px;
+            transform: rotate(-3deg);
+            box-shadow: inset 0 0 4px rgba(179, 45, 46, 0.2);
+            text-shadow: none;
+        }
+
+        /* Gorgeous vermillion-lacquer glossy plates for buttons */
+        .lacquer-btn-red {
+            background: linear-gradient(to bottom, #d63c3c 0%, #b81d1d 50%, #9c1010 50%, #7e0707 100%);
+            border: 1px solid #4a0303;
+            border-bottom: 3px solid #3c0000;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 3px 6px rgba(0, 0, 0, 0.5);
+            text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.8);
+            color: #fcf8f2;
+            font-weight: bold;
+            font-family: 'Noto Serif JP', serif;
+            transition: all 0.05s;
+        }
+        .lacquer-btn-red:active {
+            background: linear-gradient(to bottom, #5a0404 0%, #730606 50%, #8e0e0e 50%, #a81c1c 100%);
+            transform: translateY(2px);
+            border-bottom: 1px solid #3c0000;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8), 0 1px 1px rgba(255,255,255,0.1);
+        }
+
+        /* Black lacquer/golden hinge borders */
+        .lacquer-btn-dark {
+            background: linear-gradient(to bottom, #3a3d40 0%, #202224 50%, #151618 50%, #0a0b0c 100%);
+            border: 1px solid #000000;
+            border-bottom: 3px solid #111;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 3px 6px rgba(0, 0, 0, 0.5);
+            text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.9);
+            color: #d4af37; /* Japanese Gold */
+            font-weight: bold;
+            font-family: 'Noto Serif JP', serif;
+            transition: all 0.05s;
+        }
+        .lacquer-btn-dark:active {
+            background: linear-gradient(to bottom, #0d0e0f 0%, #151618 50%, #222426 50%, #2f3235 100%);
+            transform: translateY(2px);
+            border-bottom: 1px solid #111;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+        }
+
+        /* Traditional Japanese Lacquer / Wood Segmented Control */
+        .edo-segmented-control {
+            background: #231912; /* Dark charred wood frame */
+            border: 2px solid #8b7355; /* Bronze border */
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 2px;
+            display: inline-flex;
+            width: 100%;
+        }
+        .edo-segment {
+            background: linear-gradient(to bottom, #f2ebd9 0%, #decbae 100%); /* Light cedar bark / scroll paper */
+            border-right: 1px solid #8b7355;
+            color: #4a3424; /* Charcoal-brown text */
+            text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+            font-family: 'Noto Serif JP', serif;
+            font-weight: 900;
+            font-size: 11px;
+            transition: all 0.15s;
+            text-align: center;
+            padding: 6px 0;
+        }
+        .edo-segment:last-child {
+            border-right: none;
+        }
+        .edo-segment.active {
+            background: linear-gradient(to bottom, #d63c3c 0%, #9c1010 100%); /* Vivid lacquer red */
+            color: #fcf8f2;
+            text-shadow: 0 -1px 0 rgba(0,0,0,0.7);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.6);
+        }
+
+        /* Traditional Japanese Gold Silk cord look */
+        .gold-silk-border {
+            border: 2px solid #d4af37;
+            box-shadow: 0 0 6px rgba(212, 175, 55, 0.4);
+        }
+
+        /* Tatami mat woven borders */
+        .tatami-border {
+            border: 4px solid #5a6650; /* Tatami green */
+            outline: 2px solid #8b7355;
+        }
+
+        /* Authentic ink brush lettering */
+        .brush-title {
+            font-family: 'Yuji Syuku', serif;
+            text-shadow: 1px 1px 0px #ffffff, -1px -1px 0px #ffffff, 2px 2px 0px rgba(0,0,0,0.1);
+        }
+
+        /* 2D Floating Item Animation - Stays screen-locked, floats up straight in 2D space */
+        @keyframes floatUp2D {
+            0% { transform: translate(-50%, 0) scale(0.7); opacity: 0; }
+            15% { transform: translate(-50%, -35px) scale(1.3); opacity: 1; }
+            85% { transform: translate(-50%, -115px) scale(1.0); opacity: 1; }
+            100% { transform: translate(-50%, -145px) scale(0.85); opacity: 0; }
+        }
+        .floating-item-2d {
+            pointer-events: none;
+            position: absolute;
+            font-weight: 900;
+            font-family: 'Yuji Syuku', serif;
+            z-index: 100;
+            white-space: nowrap; /* Prevent text word-wrapping and overlapping */
+            /* Thicker, high-contrast dark brush shadow for extreme legibility */
+            text-shadow: 
+                -2px -2px 0 #000,  
+                 2px -2px 0 #000,
+                -2px  2px 0 #000,
+                 2px  2px 0 #000,
+                 0 3px 6px rgba(0,0,0,0.95);
+            animation: floatUp2D 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Traditional Japanese Shōji Shrine Cabinet Bezel */
+        .shrine-bezel {
+            width: 440px;
+            height: 860px;
+            border-radius: 20px;
+            background: #1e1511; /* Dark cedar wood */
+            padding: 22px;
+            border: 6px solid #100b08;
+            box-shadow: 
+                0 0 0 4px #d4af37, /* Gold leaf lining */
+                0 15px 45px rgba(0,0,0,0.9),
+                inset 0 0 20px rgba(0,0,0,0.8);
+            position: relative;
+        }
+        /* Curving roof beam details at the top of the shrine (Skeuomorphic) */
+        .shrine-bezel::before {
+            content: '';
+            position: absolute;
+            top: -14px;
+            left: 5%;
+            width: 90%;
+            height: 18px;
+            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+            background: #0f0a08;
+            border: 2px solid #d4af37;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+        }
+        
+        /* Interactive Brass Tsuba Home Button */
+        .shrine-home-btn {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #c5a059 0%, #8c6b2d 50%, #543f17 100%);
+            border: 3px solid #281e0a;
+            box-shadow: 
+                inset 0 2px 4px rgba(255,255,255,0.4),
+                0 4px 8px rgba(0,0,0,0.7),
+                0 -1px 1px rgba(0,0,0,0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.05s, box-shadow 0.05s;
+        }
+        .shrine-home-btn:active {
+            transform: translateX(-50%) scale(0.94);
+            box-shadow: 
+                inset 0 4px 8px rgba(0,0,0,0.9),
+                0 2px 2px rgba(0,0,0,0.4);
+        }
+        /* Sakura family crest design (Kamon) inside Tsuba Home Button */
+        .shrine-home-btn-crest {
+            width: 24px;
+            height: 24px;
+            background-color: #281e0a;
+            clip-path: polygon(50% 0%, 80% 30%, 100% 60%, 75% 100%, 50% 80%, 25% 100%, 0% 60%, 20% 30%);
+            border-radius: 2px;
+        }
+
+        .shrine-screen {
+            width: 100%;
+            height: 700px;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            background: #07070a;
+            box-shadow: inset 0 0 25px rgba(0,0,0,1);
+            border: 3px solid #000;
+        }
+
+        /* Fallback for responsive screens */
+        @media (max-height: 900px) or (max-width: 480px) {
+            .shrine-bezel {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+                padding: 0;
+                box-shadow: none;
+                background: transparent;
+                border: none;
+            }
+            .shrine-bezel::before, .shrine-home-btn {
+                display: none;
+            }
+            .shrine-screen {
+                height: 100%;
+                border-radius: 0;
+                border: none;
+            }
+        }
+
+        /* Japanese Banner-style Status Bar */
+        .edo-status-bar {
+            height: 22px;
+            background: linear-gradient(to bottom, #1c1511 0%, #120d0a 100%);
+            border-bottom: 2px solid #d4af37;
+            font-size: 11px;
+            font-family: 'Noto Serif JP', serif;
+            font-weight: bold;
+            color: #fcf8f2;
+            padding: 0 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 40;
+            position: relative;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+        .edo-status-signals {
+            display: flex;
+            align-items: center;
+            gap: 2.5px;
+        }
+        /* Hand-inked drop signals */
+        .edo-signal-drop {
+            width: 5px;
+            height: 5px;
+            background-color: #d4af37;
+            border-radius: 50% 50% 50% 50% / 80% 80% 20% 20%;
+            transform: rotate(-45deg);
+        }
+        /* Candle-flame fuel gauge representating battery */
+        .edo-status-candle {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .edo-candle-wick {
+            width: 4px;
+            height: 12px;
+            background-color: #fff;
+            position: relative;
+            border-radius: 1px;
+            border: 1px solid #444;
+        }
+        .edo-candle-flame {
+            width: 6px;
+            height: 10px;
+            background: radial-gradient(circle, #ffea00 20%, #ff3a00 100%);
+            border-radius: 50% 50% 20% 20%;
+            animation: flicker 0.4s infinite alternate;
+        }
+        @keyframes flicker {
+            0% { transform: scale(1); opacity: 0.9; }
+            100% { transform: scale(1.2) translateY(-1px); opacity: 1; }
+        }
+
+        /* Classic slide switches in skeuomorphic brass/wood design */
+        .edo-switch {
+            width: 52px;
+            height: 24px;
+            border-radius: 4px;
+            background: linear-gradient(to bottom, #2d2017 0%, #4a3424 100%);
+            border: 2px solid #d4af37;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+            position: relative;
+            cursor: pointer;
+        }
+        .edo-switch.active {
+            background: linear-gradient(to bottom, #d63c3c 0%, #9c1010 100%);
+        }
+        .edo-switch-handle {
+            width: 20px;
+            height: 18px;
+            border-radius: 2px;
+            background: linear-gradient(to bottom, #f0dfc5 0%, #cca068 100%);
+            border: 1px solid #5a3f17;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.5);
+            position: absolute;
+            top: 1px;
+            left: 2px;
+            transition: left 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .edo-switch.active .edo-switch-handle {
+            left: 26px;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex items-center justify-center select-none overflow-hidden p-0 md:p-4">
+
+    <!-- Skeuomorphic Physical Japanese Shōji Cabinet Frame -->
+    <div class="shrine-bezel">
+        <div class="shrine-screen flex flex-col">
+            
+            <!-- Traditional Edo-Net Status Bar -->
+            <div class="edo-status-bar">
+                <div class="edo-status-signals">
+                    <div class="flex gap-0.5 items-end mr-1.5 h-3">
+                        <div class="edo-signal-drop"></div>
+                        <div class="edo-signal-drop"></div>
+                        <div class="edo-signal-drop"></div>
+                        <div class="edo-signal-drop"></div>
+                        <div class="edo-signal-drop"></div>
+                    </div>
+                    <span class="text-[9px] tracking-widest">EDO-NET</span>
+                </div>
+                <div class="edo-status-time tracking-wider">辰の刻</div>
+                <div class="edo-status-candle">
+                    <span class="text-[8px] mr-1">SOY-WAX</span>
+                    <div class="edo-candle-flame"></div>
+                    <div class="edo-candle-wick"></div>
+                </div>
+            </div>
+
+            <!-- Main Canvas Container -->
+            <div id="canvas-container" class="absolute inset-0 w-full h-full z-0 pt-[22px]"></div>
+
+            <!-- UI Overlay / HUD -->
+            <div id="hud" class="absolute inset-x-0 top-[22px] p-3 flex flex-col gap-2 z-10 hidden">
+                <!-- Top HUD stats scrolls -->
+                <div class="flex justify-between items-center w-full relative">
+                    <!-- Left Bar: Koban Gold Scroll -->
+                    <div class="washi-paper px-3 py-1.5 rounded flex flex-col items-start min-w-[90px]">
+                        <span class="text-[8px] uppercase text-amber-900 font-black tracking-widest leading-none">KOBAN BANK</span>
+                        <span id="hud-score" class="text-base font-black text-[#a67c1e] drop-shadow-sm">€0.00</span>
+                    </div>
+
+                    <!-- Center Bar: Steering Lock alert badge (Vermillion parchment) -->
+                    <div id="hud-notification" class="absolute left-1/2 -translate-x-1/2 washi-paper border-red-700 bg-red-100 px-3 py-1 rounded text-red-900 text-xs font-bold tracking-wide flex items-center gap-1.5 transition-all duration-300 opacity-0 scale-90 pointer-events-none shadow-lg">
+                        <span class="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping"></span>
+                        <span id="hud-notification-text">STEERING LOCKED</span>
+                    </div>
+
+                    <!-- Right Bar: Life Fan indicators -->
+                    <div class="flex flex-col items-end gap-1">
+                        <div class="washi-paper px-3 py-1.5 rounded flex items-center gap-1.5">
+                            <span class="text-[8px] uppercase text-red-900 font-black tracking-widest mr-1">MARBLES</span>
+                            <div id="hud-lives" class="flex gap-0.5 text-sm">
+                                <!-- Crimson sakura flowers generated dynamically -->
+                            </div>
+                        </div>
+                        <!-- Clone Ball status -->
+                        <div id="hud-clone-container" class="washi-paper px-2 py-1 rounded flex items-center gap-1 transition-all duration-300 opacity-0 scale-90 pointer-events-none shadow-md">
+                            <span class="text-[7px] uppercase text-orange-900 font-bold">CLONE</span>
+                            <div id="hud-clone-lives" class="flex gap-0.5 text-xs"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub HUD row: Speed, Unified discrete control Cluster, Distance -->
+                <div class="flex justify-between items-center w-full mt-0.5">
+                    <!-- Distance Badge -->
+                    <div class="washi-paper px-2 py-1 rounded text-[10px]">
+                        Climb: <span id="hud-distance" class="font-black text-black">0 m</span>
+                    </div>
+
+                    <!-- Discrete Icon-based Navigation controls (Leave, Pause, Restart) -->
+                    <div class="flex items-center gap-1 bg-[#150f0c] p-1 rounded border border-[#5a3f17] shadow-inner font-semibold">
+                        <!-- Leave/Exit Button -->
+                        <button id="btn-hud-menu" class="lacquer-btn-dark p-1.5 rounded flex items-center justify-center" title="Leave Shrine">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                        </button>
+                        <!-- Pause/Resume Button -->
+                        <button id="btn-hud-pause" class="lacquer-btn-dark p-1.5 rounded flex items-center justify-center" title="Pause/Resume Game">
+                            <svg id="svg-pause-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                        <!-- Quick Restart Button -->
+                        <button id="btn-hud-restart" class="lacquer-btn-dark p-1.5 rounded flex items-center justify-center" title="Re-forge Steel">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.5" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Speed Indicators & Sound Switch -->
+                    <div class="flex items-center gap-1.5">
+                        <div class="washi-paper px-2 py-1 rounded text-[10px] text-amber-900 font-black">
+                            <span id="hud-speed">1.0x</span>
+                        </div>
+                        <!-- Mute switch -->
+                        <div class="flex items-center gap-1 bg-[#1a130f] p-1 rounded border border-[#5a3f17]">
+                            <span class="text-[7px] text-amber-500 font-bold">MUTE</span>
+                            <div id="btn-mute-switch" class="edo-switch">
+                                <div class="edo-switch-handle"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Container for dynamic floating score texts -->
+            <div id="floating-texts-layer" class="absolute inset-0 pointer-events-none z-20"></div>
+
+            <!-- Start / Welcome Screen (Aged Calligraphy Parchment Scroll) -->
+            <div id="start-screen" class="absolute inset-0 flex flex-col justify-start items-center bg-[#07070a]/95 overflow-y-auto p-4 z-30 transition-opacity duration-500 pt-[35px]">
+                
+                <!-- Hand-crafted ink header plaque -->
+                <div class="washi-paper tatami-border w-full py-4 px-3 mb-4 shadow-xl text-center">
+                    <h1 class="text-3xl font-black brush-title tracking-wider text-red-950 uppercase">
+                        輪走三次元
+                    </h1>
+                    <p class="text-[11px] font-bold text-amber-900 tracking-widest mt-1">PONG RUNNER 3D: SAMURAI SHINE</p>
+                    <div class="hanko-seal mt-2 text-xs font-black">幕府公認</div>
+                </div>
+
+                <!-- Game Setup Box on Rice Paper -->
+                <div class="w-full washi-paper rounded p-4 flex flex-col gap-4 text-left shadow-lg">
+                    
+                    <!-- Segmented Control for Difficulty (Samurai Red-lacquer themed selector) -->
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[10px] font-black text-slate-700 uppercase tracking-widest ml-1">CONSOLE DIFFICULTY</label>
+                        <div class="edo-segmented-control w-full" id="difficulty-selectors">
+                            <button data-diff="casual" class="edo-segment flex-1 active">CASUAL</button>
+                            <button data-diff="arcade" class="edo-segment flex-1">ARCADE</button>
+                            <button data-diff="cyber" class="edo-segment flex-1">CYBER</button>
+                        </div>
+                    </div>
+
+                    <!-- Instructions Layout as a classic List View group -->
+                    <div>
+                        <label class="text-[10px] font-black text-slate-700 uppercase tracking-widest ml-1">SAMURAI METHOD</label>
+                        <div class="mt-1.5 bg-stone-100 rounded border border-stone-300 overflow-hidden text-xs text-stone-900">
+                            <div class="p-2.5 border-b border-stone-200 flex justify-between items-center">
+                                <span class="font-bold">🖥️ Desktop Lanes:</span>
+                                <span class="text-stone-700">A / D or Left / Right Arrows</span>
+                            </div>
+                            <div class="p-2.5 border-b border-stone-200 flex justify-between items-center">
+                                <span class="font-bold">📱 Mobile Slide:</span>
+                                <span class="text-stone-700">Tap Left/Right screen halves</span>
+                            </div>
+                            <div class="p-2.5 text-red-800 bg-red-50 leading-snug">
+                                <strong>⚠️ Bushido Oath:</strong> Falling off target lanes will instantly plunge your steel marble into the dark shrine void!
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lacquer Red Start Button -->
+                    <button id="btn-start" class="lacquer-btn-red w-full py-3 rounded text-lg font-black tracking-widest">
+                        UNSHEATH BLADE (START)
+                    </button>
+                </div>
+
+                <!-- Element Legend Details List inside Setup Panel -->
+                <div class="w-full mt-4 washi-paper p-3">
+                    <h3 class="text-xs font-black text-slate-800 mb-2 uppercase tracking-widest">Feudal Shrine Elements</h3>
+                    <div class="grid grid-cols-2 gap-2 text-[9px] text-stone-800 leading-tight">
+                        <div class="bg-stone-50 p-2 rounded border border-stone-200 flex flex-col justify-between col-span-2">
+                            <strong class="text-amber-800">🏆 Distinguishable Feudal Treasures</strong>
+                            <div class="grid grid-cols-5 gap-1 mt-1 text-[7.5px] leading-tight">
+                                <div class="flex flex-col"><b class="text-[#cd7f32]">Bronze Sen</b><span>Copper oval disc. Bronze glow.</span></div>
+                                <div class="flex flex-col border-l border-stone-300 pl-1"><b class="text-[#a0aab2]">Silver Mon</b><span>Central square hole. Silver glow.</span></div>
+                                <div class="flex flex-col border-l border-stone-300 pl-1"><b class="text-[#d4af37]">Gold Koban</b><span>Oval bar + ruby center core. Ruby glow.</span></div>
+                                <div class="flex flex-col border-l border-stone-300 pl-1"><b class="text-[#10b981]">Emerald Gem</b><span>Rare hex jade. Emerald glow.</span></div>
+                                <div class="flex flex-col border-l border-stone-300 pl-1"><b class="text-[#22d3ee]">Diamond</b><span>Ultra-rare double pyramid. Cyan glow.</span></div>
+                            </div>
+                        </div>
+                        <div class="bg-stone-50 p-2 rounded border border-stone-200 flex flex-col justify-between">
+                            <strong class="text-red-800">❤️ Ruby Sakura</strong>
+                            <span>Sip life tea to replenish your marbles.</span>
+                        </div>
+                        <div class="bg-stone-50 p-2 rounded border border-stone-200 flex flex-col justify-between">
+                            <strong class="text-emerald-800">🥁 Taiko Drums</strong>
+                            <span>Deep-bouncing launchers that skip tracks!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paused Overlay (Parchment Scroll style) -->
+            <div id="pause-overlay" class="absolute inset-0 flex items-center justify-center bg-black/60 z-30 hidden p-4">
+                <div class="washi-paper tatami-border max-w-xs w-full p-6 flex flex-col items-center text-center shadow-2xl animate-fade-in">
+                    <div class="hanko-seal text-xs font-black mb-2">一時停止</div>
+                    <h2 class="text-2xl font-black brush-title text-red-950 mb-3">Battle Paused</h2>
+                    <p class="text-xs text-stone-700 mb-5 leading-normal">The steel marbles remain frozen in quiet contemplation of the track.</p>
+                    
+                    <button id="btn-pause-resume" class="lacquer-btn-red w-full py-2.5 rounded text-sm font-black tracking-wider">
+                        RESUME BATTLE (再開)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Over Screen (Solemn Temple Bell Alert) -->
+            <div id="game-over-screen" class="absolute inset-0 flex items-center justify-center bg-black/75 z-30 hidden p-4">
+                <div class="washi-paper tatami-border max-w-sm w-full p-5 flex flex-col items-center text-center shadow-2xl">
+                    <div class="hanko-seal text-xs font-black mb-2">敗北</div>
+                    <h2 class="text-2xl font-black brush-title text-red-950 mb-1">Honor Lost</h2>
+                    <p class="text-xs text-stone-700 mb-4 leading-normal">Your steel marbles plummeted from the lacquered shrine tracks.</p>
+
+                    <!-- Score list in skeuomorphic rounded plate -->
+                    <div class="bg-stone-100 w-full rounded border border-stone-300 p-3 flex flex-col gap-2 mb-5 text-xs text-left">
+                        <div class="flex justify-between items-center border-b border-stone-200 pb-1.5">
+                            <span class="text-stone-600">Feudal Loot:</span>
+                            <span id="final-score" class="font-black text-amber-900 text-sm">€0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-stone-200 pb-1.5">
+                            <span class="text-stone-600">Distance Travelled:</span>
+                            <span id="final-distance" class="font-black text-stone-900 text-sm">0 m</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-stone-600">Ancestral Best:</span>
+                            <span id="high-score" class="font-black text-amber-600 text-sm">€0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Double gloss actions stack -->
+                    <div class="flex flex-col gap-2 w-full">
+                        <button id="btn-restart" class="lacquer-btn-red w-full py-2.5 rounded text-sm font-black tracking-wider opacity-50 pointer-events-none">
+                            RE-FORGE STEEL (3s)
+                        </button>
+                        <button id="btn-menu" class="lacquer-btn-dark w-full py-2.5 rounded text-sm font-black tracking-wider opacity-50 pointer-events-none">
+                            RETURN TO TEMPLES
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Elevated mobile control indicators comfort zones (clears toolbar blocks on iOS/Android perfectly) -->
+            <div id="mobile-controls" class="absolute inset-x-0 bottom-20 px-10 flex justify-between pointer-events-none z-10 hidden">
+                <div id="btn-mobile-left" class="w-12 h-12 transition-all duration-100 backdrop-blur-sm bg-black/40 border-2 border-[#d4af37] text-[#d4af37] rounded-lg flex items-center justify-center text-lg shadow-lg pointer-events-auto cursor-pointer">
+                    ◀
+                </div>
+                <div id="btn-mobile-right" class="w-12 h-12 transition-all duration-100 backdrop-blur-sm bg-black/40 border-2 border-[#d4af37] text-[#d4af37] rounded-lg flex items-center justify-center text-lg shadow-lg pointer-events-auto cursor-pointer">
+                    ▶
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Fully Interactive Physical Shrine Cabinet Tsuba Home Button -->
+        <div id="btn-home-physical" class="shrine-home-btn" title="Leave and return to Temple Shrine">
+            <div class="shrine-home-btn-crest"></div>
+        </div>
+    </div>
+
+    <!-- Script Block containing Game Logic -->
+    <script>
+        // --- CUSTOM DETERMINISTIC SEED RANDOM ENGINE ---
+        class SeededRandom {
+            constructor(seed) {
+                this.seed = seed;
+            }
+            next() {
+                let x = Math.sin(this.seed++) * 10000;
+                return x - Math.floor(x);
+            }
+        }
+        let levelPRNG = new SeededRandom(55555);
+
+        // --- TRADITIONAL INSTRUMENT AUDIO ENGINE ---
+        const Sound = {
+            ctx: null,
+            muted: localStorage.getItem('pong_runner_muted') === 'true',
+            
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                this.updateUI();
+            },
+            
+            toggleMute() {
+                this.muted = !this.muted;
+                localStorage.setItem('pong_runner_muted', this.muted);
+                this.updateUI();
+                this.play('coin');
+            },
+            
+            updateUI() {
+                const switchEl = document.getElementById('btn-mute-switch');
+                if (switchEl) {
+                    if (this.muted) {
+                        switchEl.classList.remove('active');
+                    } else {
+                        switchEl.classList.add('active');
+                    }
+                }
+            },
+            
+            play(type) {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                
+                const ctx = this.ctx;
+                
+                if (type === 'bounce') {
+                    // Woody "Clack" of Japanese Hyoshigi wooden blocks
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(220, ctx.currentTime);
+                    osc.frequency.setValueAtTime(440, ctx.currentTime + 0.01);
+                    osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.05);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.05);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.05);
+                } 
+                else if (type === 'coin') {
+                    // Golden ring of ancient Koban coins clashing
+                    const osc1 = ctx.createOscillator();
+                    const osc2 = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    
+                    osc1.connect(gain);
+                    osc2.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    osc1.type = 'sine';
+                    osc1.frequency.setValueAtTime(1200, ctx.currentTime);
+                    osc1.frequency.setValueAtTime(1500, ctx.currentTime + 0.06);
+                    
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(2200, ctx.currentTime);
+                    
+                    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.22);
+                    
+                    osc1.start();
+                    osc2.start();
+                    osc1.stop(ctx.currentTime + 0.22);
+                    osc2.stop(ctx.currentTime + 0.22);
+                } 
+                else if (type === 'trampoline') {
+                    // Resonant boom of a Taiko Drum
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(90, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(45, ctx.currentTime + 0.25);
+                    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.25);
+                } 
+                else if (type === 'hurt') {
+                    // Metallic sword parry clash clank!
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(800, ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.04);
+                    osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.25);
+                    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.25);
+                } 
+                else if (type === 'heart') {
+                    // Mystical Koto harp arpeggio (Pentatonic scale)
+                    const scale = [523.25, 587.33, 659.25, 783.99, 880.00]; // Pentatonic notes
+                    scale.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.04);
+                        gain.gain.setValueAtTime(0.06, ctx.currentTime + idx * 0.04);
+                        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + idx * 0.04 + 0.15);
+                        osc.start(ctx.currentTime + idx * 0.04);
+                        osc.stop(ctx.currentTime + idx * 0.04 + 0.15);
+                    });
+                }
+                else if (type === 'gameover') {
+                    // Solemn, vibrating Buddhist Temple Bell (Bonshō) toll
+                    const osc = ctx.createOscillator();
+                    const filter = ctx.createBiquadFilter();
+                    const gain = ctx.createGain();
+                    
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(82, ctx.currentTime); // Low fundamental
+                    
+                    // Complex metallic hum frequencies added
+                    const harmonic1 = ctx.createOscillator();
+                    const harmonic2 = ctx.createOscillator();
+                    harmonic1.connect(gain);
+                    harmonic2.connect(gain);
+                    harmonic1.type = 'sine';
+                    harmonic2.type = 'sine';
+                    harmonic1.frequency.setValueAtTime(164, ctx.currentTime);
+                    harmonic2.frequency.setValueAtTime(246, ctx.currentTime);
+                    
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(400, ctx.currentTime);
+                    
+                    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.0);
+                    
+                    osc.start();
+                    harmonic1.start();
+                    harmonic2.start();
+                    osc.stop(ctx.currentTime + 2.0);
+                    harmonic1.stop(ctx.currentTime + 2.0);
+                    harmonic2.stop(ctx.currentTime + 2.0);
+                }
+            }
+        };
+
+        // --- GLOBAL SETUP & STATE VARIABLES ---
+        let scene, camera, renderer;
+        let ball, ballGroup;
+        let activeSegments = {};
+        let trackData = {};
+        let currentReachableStates = [];
+        let activeBalls = [];
+        let previouslyMerged = false;
+        
+        let gameActive = false;
+        let isPaused = false;
+        let scoreCents = 0;
+        let intervalsSurvived = 0;
+        let lives = 3;
+        let maxLives = 5;
+        let targetLane = 1;
+        let currentLane = 1;
+        let difficulty = 'arcade';
+        let isInvulnerable = false;
+        let invulnerabilityTimer = 0;
+        let gameOverButtonsEnabled = false;
+        let gameOverTimer = null;
+        
+        const intervalLength = 10.0;
+        let currentSpeedMultiplier = 1.0;
+        let bounceStartIndex = 0;
+        let isHighBounce = false;
+        let isRolling = false;
+        let globalZ = 0;
+        const normalPeakHeight = 3.2;
+        const highPeakHeight = 7.5;
+        
+        const particlePool = [];
+        const maxParticles = 60;
+        const maxTrailLength = 12;
+        let steeringLockAlertTimer = 0;
+
+        // Dynamic 2D projected floating texts stack
+        const activeFloatingTexts = [];
+
+        const DIFF_SETTINGS = {
+            casual: { baseSpeed: 10, speedGrowth: 0.002, startLives: 4 },
+            arcade: { baseSpeed: 12, speedGrowth: 0.004, startLives: 3 },
+            cyber: { baseSpeed: 16, speedGrowth: 0.007, startLives: 2 }
+        };
+
+        const DIFF_SEEDS = {
+            casual: 11111,
+            arcade: 55555,
+            cyber: 99999
+        };
+
+        // Distinguishable Feudal Treasures (Scale mapping: 1 = small, 2 = normal, 5 = big)
+        const COIN_TYPES = {
+            '1c':   { cents: 1,     group: 'bronze',  scale: 0.60 }, // Small Bronze Sen
+            '2c':   { cents: 2,     group: 'bronze',  scale: 0.85 }, // Medium Bronze Sen
+            '5c':   { cents: 5,     group: 'bronze',  scale: 1.15 }, // Big Bronze Sen
+            '10c':  { cents: 10,    group: 'silver',  scale: 0.60 }, // Small Silver Mon
+            '20c':  { cents: 20,    group: 'silver',  scale: 0.85 }, // Medium Silver Mon
+            '50c':  { cents: 50,    group: 'silver',  scale: 1.15 }, // Big Silver Mon
+            '1e':   { cents: 100,   group: 'gold',    scale: 0.60 }, // Small Gold Koban + Ruby
+            '2e':   { cents: 200,   group: 'gold',    scale: 0.85 }, // Medium Gold Koban + Ruby
+            '5e':   { cents: 500,   group: 'gold',    scale: 1.15 }, // Big Gold Koban + Ruby
+            '10e':  { cents: 1000,  group: 'emerald', scale: 0.60 }, // Small Emerald jade
+            '20e':  { cents: 2000,  group: 'emerald', scale: 0.85 }, // Medium Emerald jade
+            '50e':  { cents: 5000,  group: 'emerald', scale: 1.15 }, // Big Emerald jade
+            '100e': { cents: 10000, group: 'diamond', scale: 0.95 }  // Ancestral Diamond double-pyramid
+        };
+
+        function getXFromLane(lane) {
+            return 2.5 - lane * 2.5;
+        }
+
+        // --- GEOMETRY & MATERIAL REUSE (SAMURAI SHINE STYLING) ---
+        let geomPlatform;
+        let geomTaikoDrum, geomTaikoSkin, geomArrowBar, geomParticle;
+        let matPlatform, matGoldLacquer, matKatanaSteel, matParticle, matSakuraRuby;
+        let matTaikoShell, matTaikoSkin, matBrassArrow;
+
+        function initGlobalAssets() {
+            geomPlatform = new THREE.BoxGeometry(2.0, 0.4, 9.0);
+            geomParticle = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+            geomTaikoDrum = new THREE.CylinderGeometry(0.9, 0.9, 0.4, 16);
+            geomTaikoSkin = new THREE.CylinderGeometry(0.85, 0.85, 0.45, 16);
+            geomArrowBar = new THREE.BoxGeometry(0.15, 0.06, 0.6);
+
+            // Shinto vermillion shrine planks
+            matPlatform = new THREE.MeshStandardMaterial({ 
+                color: 0x3d0f0b, // Aged vermillion cedarwood
+                roughness: 0.25, // Adjusted to catch more glossy highlights
+                metalness: 0.20 
+            });
+
+            // Polished lacquer gold leaf boundaries
+            matGoldLacquer = new THREE.MeshStandardMaterial({ 
+                color: 0xd4af37, 
+                roughness: 0.15, 
+                metalness: 0.95,
+                emissive: 0x3b2a00,
+                emissiveIntensity: 0.5 // Brightened gold boundaries
+            });
+
+            // Folded steel katana core marble
+            matKatanaSteel = new THREE.MeshStandardMaterial({ 
+                color: 0xa8b2bc, 
+                roughness: 0.05, 
+                metalness: 0.98 
+            });
+
+            matParticle = new THREE.MeshStandardMaterial({ 
+                roughness: 0.2, 
+                metalness: 0.8,
+                transparent: true, 
+                opacity: 0.9 
+            });
+            
+            // Hand-blown ruby-glass sakura flower petals
+            matSakuraRuby = new THREE.MeshStandardMaterial({ 
+                color: 0xd63351, 
+                emissive: 0x5a040d, 
+                emissiveIntensity: 0.85, // Brightened heart blossoms
+                roughness: 0.05,
+                metalness: 0.75,
+                transparent: true,
+                opacity: 0.92
+            });
+
+            matBrassArrow = new THREE.MeshStandardMaterial({
+                color: 0xc49b3c,
+                roughness: 0.18,
+                metalness: 0.85
+            });
+
+            matTaikoShell = new THREE.MeshStandardMaterial({ 
+                color: 0x6e1b0d, // Dark wine-red lacquer
+                roughness: 0.2,
+                metalness: 0.7
+            });
+
+            matTaikoSkin = new THREE.MeshStandardMaterial({
+                color: 0xebd2ad, // Raw animal skin parchment look
+                roughness: 0.65,
+                metalness: 0.05
+            });
+        }
+
+        // --- PROCEDURAL ENGINE & SOLVER ---
+
+        // Balanced progressive rarity system across segments
+        function generateRandomCell(index) {
+            const rand = levelPRNG.next();
+            if (index < 6) return { type: 'blank' };
+
+            let pBlank = 0.42;
+            let pHole = Math.min(0.28, 0.05 + index * 0.0018);
+            let pCoin = 0.24;
+            let pTramp = Math.min(0.08, 0.01 + index * 0.0006);
+            let pArrow = Math.min(0.16, 0.02 + index * 0.001);
+            let pHeart = Math.min(0.025, 0.008 + index * 0.0001);
+            let pCloneBall = index < 30 ? 0 : 0.035;
+
+            if (rand < pBlank) {
+                return { type: 'blank' };
+            } else if (rand < pBlank + pHole) {
+                return { type: 'hole' };
+            } else if (rand < pBlank + pHole + pCoin) {
+                let coinKey = '1c';
+                const cRand = levelPRNG.next();
+                
+                // Balanced milestone unlocks along track index (index represents segment, each segment is 10 meters)
+                let pDiamond = (index >= 250) ? 0.008 : 0.0;     // Unlocked beyond 2500m (0.8% rare find)
+                let pEmerald = (index >= 120) ? 0.025 : 0.0;     // Unlocked beyond 1200m (2.5% rare find)
+                let pGold = (index >= 40) ? 0.12 : 0.0;          // Unlocked beyond 400m (12%)
+                let pSilver = 0.38;                              // Standard (38%)
+                // The rest defaults to Bronze
+
+                if (cRand < pDiamond) {
+                    coinKey = '100e'; // Legendary Diamond
+                } else if (cRand < pDiamond + pEmerald) {
+                    const gemRoll = levelPRNG.next();
+                    coinKey = gemRoll < 0.5 ? '10e' : (gemRoll < 0.85 ? '20e' : '50e'); // Emerald group
+                } else if (cRand < pDiamond + pEmerald + pGold) {
+                    const goldRoll = levelPRNG.next();
+                    coinKey = goldRoll < 0.5 ? '1e' : (goldRoll < 0.85 ? '2e' : '5e'); // Gold group
+                } else if (cRand < pDiamond + pEmerald + pGold + pSilver) {
+                    const silverRoll = levelPRNG.next();
+                    coinKey = silverRoll < 0.5 ? '10c' : (silverRoll < 0.85 ? '20c' : '50c'); // Silver group
+                } else {
+                    const bronzeRoll = levelPRNG.next();
+                    coinKey = bronzeRoll < 0.5 ? '1c' : (bronzeRoll < 0.85 ? '2c' : '5c'); // Bronze group
+                }
+                return { type: 'coin', detail: coinKey };
+            } else if (rand < pBlank + pHole + pCoin + pTramp) {
+                return { type: 'trampoline' };
+            } else if (rand < pBlank + pHole + pCoin + pTramp + pArrow) {
+                const arrowRand = levelPRNG.next();
+                const arrowType = arrowRand < 0.35 ? 'arrow-left' : (arrowRand < 0.70 ? 'arrow-right' : 'arrow-forward');
+                return { type: arrowType };
+            } else if (rand < pBlank + pHole + pCoin + pTramp + pArrow + pHeart) {
+                return { type: 'heart' };
+            } else if (rand < pBlank + pHole + pCoin + pTramp + pArrow + pHeart + pCloneBall) {
+                return { type: 'orange-ball' };
+            } else {
+                return { type: 'blank' };
+            }
+        }
+
+        function getValidTransitionsFromState(s, intervalIndex, newSegment) {
+            const validNexts = [];
+            if (s.flyOver) {
+                const landingLanes = [s.lane - 1, s.lane, s.lane + 1].filter(l => l >= 0 && l <= 2);
+                for (let l of landingLanes) {
+                    if (newSegment[l].type !== 'hole') {
+                        if (newSegment[l].type === 'trampoline') {
+                            validNexts.push({ lane: l, flyOver: true });
+                        } else {
+                            validNexts.push({ lane: l, flyOver: false });
+                        }
+                    }
+                }
+            } else {
+                const prevCell = trackData[intervalIndex - 1]?.[s.lane];
+                if (prevCell && prevCell.type === 'trampoline') {
+                    validNexts.push({ lane: s.lane, flyOver: true });
+                } else {
+                    let allowedLanes = [];
+                    if (prevCell && prevCell.type === 'arrow-forward') {
+                        allowedLanes = [s.lane];
+                    } else if (prevCell && prevCell.type === 'arrow-left') {
+                        if (s.lane > 0) allowedLanes = [s.lane - 1];
+                    } else if (prevCell && prevCell.type === 'arrow-right') {
+                        if (s.lane < 2) allowedLanes = [s.lane + 1];
+                    } else {
+                        allowedLanes = [s.lane - 1, s.lane, s.lane + 1].filter(l => l >= 0 && l <= 2);
+                    }
+
+                    for (let l of allowedLanes) {
+                        if (newSegment[l].type !== 'hole') {
+                            if (newSegment[l].type === 'trampoline') {
+                                validNexts.push({ lane: l, flyOver: true });
+                            } else {
+                                validNexts.push({ lane: l, flyOver: false });
+                            }
+                        }
+                    }
+                }
+            }
+            return validNexts;
+        }
+
+        function fixSegment(segment, reachableStates, intervalIndex) {
+            if (!reachableStates || reachableStates.length === 0) {
+                reachableStates = [{ lane: 1, flyOver: false }];
+            }
+            const originState = reachableStates[Math.floor(levelPRNG.next() * reachableStates.length)];
+            let chosenLane = originState.lane;
+            
+            if (originState.flyOver) {
+                const options = [originState.lane - 1, originState.lane, originState.lane + 1].filter(l => l >= 0 && l <= 2);
+                chosenLane = options[Math.floor(levelPRNG.next() * options.length)];
+            } else {
+                const prevCell = trackData[intervalIndex - 1]?.[originState.lane];
+                if (prevCell && prevCell.type === 'trampoline') {
+                    return segment;
+                } else {
+                    if (prevCell && prevCell.type === 'arrow-forward') {
+                        chosenLane = originState.lane;
+                    } else if (prevCell && prevCell.type === 'arrow-left' && originState.lane > 0) {
+                        chosenLane = originState.lane - 1;
+                    } else if (prevCell && prevCell.type === 'arrow-right' && originState.lane < 2) {
+                        chosenLane = originState.lane + 1;
+                    } else {
+                        const options = [originState.lane - 1, originState.lane, originState.lane + 1].filter(l => l >= 0 && l <= 2);
+                        chosenLane = options[Math.floor(levelPRNG.next() * options.length)];
+                    }
+                }
+            }
+
+            const safeRoll = levelPRNG.next();
+            let newCellType = { type: 'blank' };
+            if (safeRoll < 0.65) {
+                let coinKey = '10c';
+                const coinRoll = levelPRNG.next();
+                if (coinRoll < 0.5) coinKey = '50c';
+                else if (coinRoll < 0.8) coinKey = '1e';
+                else coinKey = '2e';
+                newCellType = { type: 'coin', detail: coinKey };
+            } else if (safeRoll < 0.80) {
+                newCellType = { type: 'trampoline' };
+            } else if (safeRoll < 0.88) {
+                newCellType = { type: 'heart' };
+            }
+
+            segment[chosenLane] = newCellType;
+            return segment;
+        }
+
+        function generateSegment(index) {
+            let segment = [
+                generateRandomCell(index),
+                generateRandomCell(index),
+                generateRandomCell(index)
+            ];
+
+            if (!currentReachableStates || currentReachableStates.length === 0) {
+                currentReachableStates = [{ lane: 1, flyOver: false }];
+            }
+
+            let nextStates = [];
+            for (let state of currentReachableStates) {
+                let transitions = getValidTransitionsFromState(state, index, segment);
+                for (let trans of transitions) {
+                    if (!nextStates.some(s => s.lane === trans.lane && s.flyOver === trans.flyOver)) {
+                        nextStates.push(trans);
+                    }
+                }
+            }
+
+            if (nextStates.length === 0) {
+                segment = fixSegment(segment, currentReachableStates, index);
+                for (let state of currentReachableStates) {
+                    let transitions = getValidTransitionsFromState(state, index, segment);
+                    for (let trans of transitions) {
+                        if (!nextStates.some(s => s.lane === trans.lane && s.flyOver === trans.flyOver)) {
+                            nextStates.push(trans);
+                        }
+                    }
+                }
+            }
+
+            if (nextStates.length === 0) {
+                segment[1] = { type: 'blank' }; 
+                nextStates = [{ lane: 1, flyOver: false }];
+            }
+
+            segment.forEach((cell, laneIdx) => {
+                if (cell.type === 'orange-ball') {
+                    if (laneIdx === 0 || laneIdx === 2) {
+                        cell.detail = 'spawn-center';
+                    } else {
+                        cell.detail = levelPRNG.next() < 0.5 ? 'spawn-left' : 'spawn-right';
+                    }
+                }
+            });
+
+            trackData[index] = segment;
+            currentReachableStates = nextStates;
+            buildSegmentVisuals(index, segment);
+        }
+
+        // --- VISUAL 3D BUILDERS FOR DISTINGUISHABLE TREASURES ---
+        // PERFORMANCE FIX: All dynamic PointLights and sharp geometric Rings are removed.
+        // Instead, coins feature vibrant emissive materials wrapped inside a soft, glowing, additive-blending sphere.
+        function createCoinMesh(config) {
+            const coinGroup = new THREE.Group();
+            let glowColor = 0xffffff;
+            
+            if (config.group === 'diamond') {
+                glowColor = 0x22d3ee;
+                // Highly distinct diamond double-pyramid crystal geometry with vibrant emissive ice glow (amplified)
+                const matDiamond = new THREE.MeshStandardMaterial({
+                    color: 0xffffff,
+                    emissive: 0x22d3ee,
+                    emissiveIntensity: 1.6, // Raised brightness
+                    roughness: 0.01,
+                    metalness: 0.1,
+                    transparent: true,
+                    opacity: 0.95
+                });
+                const geomDiamond = new THREE.OctahedronGeometry(0.3, 0);
+                const diamondMesh = new THREE.Mesh(geomDiamond, matDiamond);
+                diamondMesh.scale.set(1, 1.8, 1); // Diamond stretch
+                coinGroup.add(diamondMesh);
+
+                // Sparkling cyan wireframe wrap
+                const wireframe = new THREE.WireframeGeometry(geomDiamond);
+                const line = new THREE.LineSegments(wireframe);
+                line.material.color.setHex(0x22d3ee);
+                line.material.depthTest = false;
+                line.material.opacity = 0.65;
+                line.material.transparent = true;
+                line.scale.set(1, 1.8, 1);
+                coinGroup.add(line);
+            }
+            else if (config.group === 'emerald') {
+                glowColor = 0x10b981;
+                // Faceted hexagonal emerald jade gemstone with deep green emissive glow (amplified)
+                const matEmerald = new THREE.MeshStandardMaterial({
+                    color: 0x10b981,
+                    roughness: 0.05,
+                    metalness: 0.1,
+                    emissive: 0x10b981,
+                    emissiveIntensity: 1.5, // Raised brightness
+                    transparent: true,
+                    opacity: 0.90
+                });
+                const geomGem = new THREE.OctahedronGeometry(0.28, 0);
+                const gemMesh = new THREE.Mesh(geomGem, matEmerald);
+                coinGroup.add(gemMesh); // FIXED: Corrected reference from gemGem to gemMesh
+
+                // Delicate gold wire wrap
+                const wireframe = new THREE.WireframeGeometry(geomGem);
+                const line = new THREE.LineSegments(wireframe);
+                line.material.color.setHex(0xd4af37);
+                line.material.depthTest = false;
+                line.material.opacity = 0.65;
+                line.material.transparent = true;
+                coinGroup.add(line);
+            }
+            else if (config.group === 'gold') {
+                glowColor = 0xff0033;
+                // Oval pure gold Koban coin (amplified)
+                const matGold = new THREE.MeshStandardMaterial({ 
+                    color: 0xffd700, 
+                    metalness: 0.98, 
+                    roughness: 0.04,
+                    emissive: 0xffaa00, // Rich gold emissive
+                    emissiveIntensity: 0.60 // Raised brightness
+                });
+                const geomBase = new THREE.CylinderGeometry(0.24, 0.24, 0.08, 16);
+                const baseMesh = new THREE.Mesh(geomBase, matGold);
+                baseMesh.rotation.z = Math.PI / 2;
+                baseMesh.scale.set(1, 1.6, 1); // Oval Koban stretch
+                coinGroup.add(baseMesh);
+
+                // Glistening crimson Ruby Core Gem (amplified)
+                const matRuby = new THREE.MeshStandardMaterial({
+                    color: 0xff0033,
+                    emissive: 0xff0033,
+                    emissiveIntensity: 1.8, // Raised ruby glow
+                    roughness: 0.05,
+                    metalness: 0.95
+                });
+                const geomRuby = new THREE.SphereGeometry(0.12, 8, 8);
+                const rubyMesh1 = new THREE.Mesh(geomRuby, matRuby);
+                rubyMesh1.position.set(0.05, 0, 0); 
+                coinGroup.add(rubyMesh1);
+
+                const rubyMesh2 = rubyMesh1.clone();
+                rubyMesh2.position.set(-0.05, 0, 0); 
+                coinGroup.add(rubyMesh2);
+            }
+            else if (config.group === 'silver') {
+                glowColor = 0xffffff;
+                // Highly distinct mirror-polished shiny Silver Mon coin with a square center hole (amplified)
+                const matSilver = new THREE.MeshStandardMaterial({ 
+                    color: 0xf3f4f6, 
+                    metalness: 0.99, 
+                    roughness: 0.03,
+                    emissive: 0x888888, // Brighter silver emissive
+                    emissiveIntensity: 0.50 // Raised brightness
+                });
+                const geomBase = new THREE.CylinderGeometry(0.22, 0.22, 0.07, 16);
+                const baseMesh = new THREE.Mesh(geomBase, matSilver);
+                baseMesh.rotation.z = Math.PI / 2;
+                baseMesh.scale.set(1, 1.5, 1);
+                coinGroup.add(baseMesh);
+
+                // Square dark center inlay to simulate traditional coin holes
+                const matHole = new THREE.MeshStandardMaterial({
+                    color: 0x111111,
+                    roughness: 0.9,
+                    metalness: 0.1
+                });
+                const geomHole = new THREE.BoxGeometry(0.061, 0.14, 0.14);
+                const holeMesh = new THREE.Mesh(geomHole, matHole);
+                coinGroup.add(holeMesh);
+            }
+            else { 
+                glowColor = 0xcd7f32;
+                // Shiny polished bronze/copper Sen coin (Low value) (amplified)
+                const matBronze = new THREE.MeshStandardMaterial({ 
+                    color: 0xcd7f32, // Classic rich copper-bronze
+                    metalness: 0.95, 
+                    roughness: 0.06,
+                    emissive: 0xb85c14, // Brighter orange-bronze emissive
+                    emissiveIntensity: 0.50 // Raised brightness
+                });
+                const geomCoin = new THREE.CylinderGeometry(0.2, 0.2, 0.06, 16);
+                const coinMesh = new THREE.Mesh(geomCoin, matBronze);
+                coinMesh.rotation.z = Math.PI / 2;
+                coinMesh.scale.set(1, 1.4, 1);
+                coinGroup.add(coinMesh);
+            }
+            
+            // Add soft glow sphere instead of sharp flat rings
+            const glowGeom = new THREE.SphereGeometry(0.38, 12, 12);
+            const glowMat = new THREE.MeshBasicMaterial({
+                color: glowColor,
+                transparent: true,
+                opacity: 0.28,
+                blending: THREE.AdditiveBlending
+            });
+            const glowSphere = new THREE.Mesh(glowGeom, glowMat);
+            coinGroup.add(glowSphere);
+
+            // Unified scalar multiplier to scale diameter, thickness, and size proportionally!
+            coinGroup.scale.set(config.scale, config.scale, config.scale);
+            return coinGroup;
+        }
+
+        function createHeartMesh() {
+            const sakuraGroup = new THREE.Group();
+            
+            // Generate 5 delicate overlapping ruby flower petals grouped together
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * Math.PI * 2) / 5;
+                const petalMesh = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), matSakuraRuby);
+                petalMesh.scale.set(1.4, 0.4, 0.8);
+                petalMesh.position.set(Math.cos(angle) * 0.18, Math.sin(angle) * 0.18, 0);
+                petalMesh.rotation.z = angle;
+                sakuraGroup.add(petalMesh);
+            }
+            
+            // Glowing golden stamen node inside flower
+            const centerMesh = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), matGoldLacquer);
+            sakuraGroup.add(centerMesh);
+            
+            sakuraGroup.scale.set(1.3, 1.3, 1.3);
+            return sakuraGroup;
+        }
+
+        function createOrangeBallMesh() {
+            const group = new THREE.Group();
+            const sphereMat = new THREE.MeshStandardMaterial({
+                color: 0xe65c00,
+                roughness: 0.05,
+                metalness: 0.2,
+                transparent: true,
+                opacity: 0.88,
+                emissive: 0xff3a00,
+                emissiveIntensity: 0.6
+            });
+            const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), sphereMat);
+            group.add(sphere);
+            return group;
+        }
+
+        // Arrow meshes
+        function createArrowMesh(type) {
+            const arrowGroup = new THREE.Group();
+            
+            const leftWing = new THREE.Mesh(geomArrowBar, matBrassArrow);
+            leftWing.position.set(-0.18, 0, 0);
+            leftWing.rotation.y = Math.PI / 4;
+            arrowGroup.add(leftWing);
+            
+            const rightWing = new THREE.Mesh(geomArrowBar, matBrassArrow);
+            rightWing.position.set(0.18, 0, 0);
+            rightWing.rotation.y = -Math.PI / 4;
+            arrowGroup.add(rightWing);
+            
+            if (type === 'arrow-left') {
+                arrowGroup.rotation.y = Math.PI / 2;
+            } else if (type === 'arrow-right') {
+                arrowGroup.rotation.y = -Math.PI / 2;
+            } else {
+                arrowGroup.rotation.y = 0;
+            }
+            
+            return arrowGroup;
+        }
+
+        function createTaikoMesh() {
+            // Beautiful traditional Japanese Taiko Drum!
+            const drumGroup = new THREE.Group();
+            
+            // Taiko outer curved shell
+            const baseMesh = new THREE.Mesh(geomTaikoDrum, matTaikoShell);
+            baseMesh.rotation.x = Math.PI / 2;
+            drumGroup.add(baseMesh);
+            
+            // Raw leather skin pads on top and bottom
+            const skinMesh = new THREE.Mesh(geomTaikoSkin, matTaikoSkin);
+            skinMesh.rotation.x = Math.PI / 2;
+            drumGroup.add(skinMesh);
+
+            // Gilded studs around the rims
+            for (let i = 0; i < 12; i++) {
+                const angle = (i * Math.PI * 2) / 12;
+                const stud = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), matGoldLacquer);
+                stud.position.set(Math.cos(angle) * 0.88, 0.15, Math.sin(angle) * 0.88);
+                drumGroup.add(stud);
+            }
+            
+            return drumGroup;
+        }
+
+        function buildSegmentVisuals(index, segment) {
+            const segmentGroup = new THREE.Group();
+            segmentGroup.position.z = index * intervalLength;
+            const interactiveItems = [];
+
+            for (let l = 0; l < 3; l++) {
+                const cell = segment[l];
+                const laneX = getXFromLane(l);
+
+                if (cell.type === 'hole') {
+                    continue; 
+                }
+
+                // Vermillion mahogany shrine deck tiles
+                const platform = new THREE.Mesh(geomPlatform, matPlatform);
+                platform.position.set(laneX, -0.2, 0);
+                segmentGroup.add(platform);
+
+                // Polished gold-leaf boundary lines
+                const edgeGeom = new THREE.BoxGeometry(0.06, 0.05, 9.0);
+                
+                const leftEdge = new THREE.Mesh(edgeGeom, matGoldLacquer);
+                leftEdge.position.set(laneX - 0.96, 0.02, 0);
+                segmentGroup.add(leftEdge);
+
+                const rightEdge = new THREE.Mesh(edgeGeom, matGoldLacquer);
+                rightEdge.position.set(laneX + 0.96, 0.02, 0);
+                segmentGroup.add(rightEdge);
+
+                let itemMesh = null;
+
+                if (cell.type === 'coin') {
+                    const config = COIN_TYPES[cell.detail];
+                    itemMesh = createCoinMesh(config);
+                    itemMesh.position.set(laneX, 0.45, 0);
+                } 
+                else if (cell.type === 'heart') {
+                    itemMesh = createHeartMesh();
+                    itemMesh.position.set(laneX, 0.45, 0);
+                } 
+                else if (cell.type === 'trampoline') {
+                    itemMesh = createTaikoMesh();
+                    itemMesh.position.set(laneX, 0.2, 0);
+                } 
+                else if (cell.type.startsWith('arrow-')) {
+                    itemMesh = createArrowMesh(cell.type);
+                    itemMesh.position.set(laneX, 0.15, 0);
+                }
+                else if (cell.type === 'orange-ball') {
+                    itemMesh = createOrangeBallMesh();
+                    let displacedX = laneX;
+                    if (cell.detail === 'spawn-left') displacedX += 0.5;
+                    else if (cell.detail === 'spawn-right') displacedX -= 0.5;
+                    else if (cell.detail === 'spawn-center') {
+                        if (l === 0) displacedX -= 0.5;
+                        if (l === 2) displacedX += 0.5;
+                    }
+                    itemMesh.position.set(displacedX, 0.45, 0);
+                }
+
+                if (itemMesh) {
+                    segmentGroup.add(itemMesh);
+                    interactiveItems.push({
+                        type: cell.type,
+                        mesh: itemMesh,
+                        lane: l,
+                        coinDetail: cell.detail
+                    });
+                }
+            }
+
+            scene.add(segmentGroup);
+            activeSegments[index] = {
+                group: segmentGroup,
+                items: interactiveItems
+            };
+        }
+
+        // --- PARTICLE SYSTEM AND SAKURA CHROME FX ---
+
+        function triggerParticleBurst(position, color, count = 12) {
+            let spawned = 0;
+            for (let p of particlePool) {
+                if (!p.active) {
+                    p.active = true;
+                    p.mesh.position.copy(position);
+                    p.mesh.material.color.setHex(color);
+                    p.mesh.visible = true;
+                    
+                    p.velocity.set(
+                        (Math.random() - 0.5) * 6,
+                        (Math.random() * 5) + 2.5,
+                        (Math.random() - 0.5) * 6
+                    );
+                    p.life = 0.8;
+                    p.mesh.scale.set(1, 1, 1);
+                    
+                    spawned++;
+                    if (spawned >= count) break;
+                }
+            }
+        }
+
+        // FIXED: Reverted back to the requested 2D-screen popping layout where positions 
+        // are projected ONCE at collection time and then float up straight in 2D space.
+        // No forward camera-movement tracking to ensure a steady, smooth, classic interface.
+        // ADDED screen-space pixel offset support (xOffset, yOffset) to separate multiplier texts.
+        function spawnFloatingText(position3D, text, colorClass, xOffset = 0, yOffset = 0) {
+            const vector = new THREE.Vector3().copy(position3D);
+            vector.project(camera);
+            
+            const container = document.getElementById('canvas-container');
+            const rect = container.getBoundingClientRect();
+            
+            let x = (vector.x * 0.5 + 0.5) * rect.width;
+            let y = (-(vector.y * 0.5) + 0.5) * rect.height + 22; // Offset top status bar
+            
+            // Apply guaranteed screen-space pixel offsets
+            x += xOffset;
+            y += yOffset;
+            
+            const el = document.createElement('div');
+            el.className = `floating-item-2d ${colorClass}`;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            el.innerText = text;
+            
+            document.getElementById('floating-texts-layer').appendChild(el);
+            
+            // Pure CSS driven garbage collection after animation ends
+            setTimeout(() => el.remove(), 1800);
+        }
+
+        // --- SCENE INITIALIZATION & SETUP ---
+
+        // GLOW BOOST: Scene general brightness raised by increasing Ambient and Directional light levels,
+        // and warm ambient sunset hues are highlighted. Background mist cleared slightly for crisp visual depth.
+        function initScene() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x140b08); // Slightly warmer sunset black
+            scene.fog = new THREE.FogExp2(0x140b08, 0.011); // Cleared background fog density slightly (0.013 -> 0.011)
+
+            camera = new THREE.PerspectiveCamera(58, container.clientWidth / container.clientHeight, 0.1, 1500);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0x42261b, 1.4); // Raised general Ambient levels (1.1 -> 1.4)
+            scene.add(ambientLight);
+
+            const dirLight1 = new THREE.DirectionalLight(0xe05643, 1.8); // Raised primary red sun backlight (1.4 -> 1.8)
+            dirLight1.position.set(-8, 15, -20);
+            scene.add(dirLight1);
+
+            const dirLight2 = new THREE.DirectionalLight(0xffc673, 1.2); // Raised warm gold side-filling lantern (0.7 -> 1.2)
+            dirLight2.position.set(10, 15, 10);
+            scene.add(dirLight2);
+
+            const moonGeom = new THREE.SphereGeometry(24, 32, 32);
+            const moonMat = new THREE.MeshBasicMaterial({ color: 0xff3b1e }); // Warmer harvest background moon
+            const moonMesh = new THREE.Mesh(moonGeom, moonMat);
+            moonMesh.position.set(-60, 45, 200);
+            scene.add(moonMesh);
+
+            initGlobalAssets();
+
+            for (let i = 0; i < maxParticles; i++) {
+                const pMat = matParticle.clone();
+                const pMesh = new THREE.Mesh(geomParticle, pMat);
+                pMesh.visible = false;
+                scene.add(pMesh);
+                particlePool.push({
+                    mesh: pMesh,
+                    active: false,
+                    velocity: new THREE.Vector3(),
+                    life: 0
+                });
+            }
+
+            const starCount = 150;
+            const starGeom = new THREE.BufferGeometry();
+            const starPositions = new Float32Array(starCount * 3);
+            for (let i = 0; i < starCount * 3; i += 3) {
+                starPositions[i] = (Math.random() - 0.5) * 400;
+                starPositions[i + 1] = Math.random() * 80 + 2;
+                starPositions[i + 2] = (Math.random() - 0.5) * 800;
+            }
+            starGeom.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+            const starMat = new THREE.PointsMaterial({ color: 0xffa3b1, size: 0.65, transparent: true, opacity: 0.7 });
+            const starField = new THREE.Points(starGeom, starMat);
+            scene.add(starField);
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // --- LANE CONTROL INPUTS ---
+
+        function moveLane(direction) {
+            if (!gameActive || isPaused) return;
+            if (activeBalls.length === 0) return;
+
+            const primaryBall = activeBalls[0];
+            const currentIntervalTile = trackData[bounceStartIndex]?.[primaryBall.currentLane];
+            const isSteeringLocked = currentIntervalTile && (
+                currentIntervalTile.type === 'arrow-forward' ||
+                currentIntervalTile.type === 'arrow-left' ||
+                currentIntervalTile.type === 'arrow-right'
+            );
+
+            if (isSteeringLocked) {
+                triggerSteeringLockedAlert();
+                return;
+            }
+
+            activeBalls.forEach(b => {
+                const originLane = b.targetLane;
+                b.targetLane = b.targetLane + direction;
+                if (b.targetLane < -1) b.targetLane = -1;
+                if (b.targetLane > 3) b.targetLane = 3;
+                
+                if (originLane !== b.targetLane) {
+                    b.mesh.rotation.z = direction * 0.4;
+                }
+            });
+        }
+
+        // --- KEYBOARD LISTENERS ---
+        window.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                moveLane(-1);
+            } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                moveLane(1);
+            } else if (e.key === 'p' || e.key === 'P' || e.key === ' ') {
+                if (gameActive) {
+                    e.preventDefault();
+                    togglePause();
+                }
+            }
+        });
+
+        // --- STATE MANAGEMENT ---
+
+        function cleanAllActiveSegments() {
+            for (let idxStr in activeSegments) {
+                const idx = parseInt(idxStr);
+                removeSegmentAtIndex(idx);
+            }
+            activeSegments = {};
+            trackData = {};
+            
+            // Clean 2D active floating texts to prevent leaks across runs
+            document.getElementById('floating-texts-layer').innerHTML = '';
+        }
+
+        function removeSegmentAtIndex(index) {
+            const segment = activeSegments[index];
+            if (!segment) return;
+
+            scene.remove(segment.group);
+            segment.group.traverse(child => {
+                if (child.isMesh) {
+                    child.geometry.dispose();
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => m.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+            });
+            delete activeSegments[index];
+            delete trackData[index];
+        }
+
+        function removeBall(ballObj) {
+            scene.remove(ballObj.group);
+            ballObj.group.traverse(child => {
+                if (child.isMesh) {
+                    child.geometry.dispose();
+                    child.material.dispose();
+                }
+            });
+            ballObj.trail.forEach(t => {
+                scene.remove(t);
+                t.geometry.dispose();
+                t.material.dispose();
+            });
+        }
+
+        function createTrailSpheres(color) {
+            const trail = [];
+            for (let i = 0; i < maxTrailLength; i++) {
+                const trailMat = new THREE.MeshBasicMaterial({
+                    color: color,
+                    transparent: true,
+                    opacity: 0.6 * (1 - i / maxTrailLength)
+                });
+                const trailMesh = new THREE.Mesh(new THREE.SphereGeometry(0.42 * (1 - i / maxTrailLength), 14, 14), trailMat);
+                scene.add(trailMesh);
+                trail.push(trailMesh);
+            }
+            return trail;
+        }
+
+        function resetBalls() {
+            if (activeBalls) {
+                activeBalls.forEach(b => removeBall(b));
+            }
+            activeBalls = [];
+
+            // Primary Katana Steel tamahagane Marble
+            const primaryBallGroup = new THREE.Group();
+            const primaryBall = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), matKatanaSteel);
+            primaryBallGroup.add(primaryBall);
+            scene.add(primaryBallGroup);
+
+            // Gentle glowing lantern highlight reflection on sphere
+            const primaryLight = new THREE.PointLight(0xffbe5c, 1.8, 12);
+            primaryBallGroup.add(primaryLight);
+
+            primaryBallGroup.position.set(getXFromLane(1), 0, 0);
+
+            const primaryTrail = createTrailSpheres(0xffffff);
+            primaryTrail.forEach(t => t.position.copy(primaryBallGroup.position));
+
+            activeBalls.push({
+                id: 'primary',
+                group: primaryBallGroup,
+                mesh: primaryBall,
+                targetLane: 1,
+                currentLane: 1,
+                isClone: false,
+                trail: primaryTrail,
+                isHighBounce: false,
+                isRolling: false,
+                bounceStartIndex: 0,
+                squashTimer: 0,
+                shouldRemove: false,
+                lives: lives,
+                trampolineActive: false,
+                strikeCount: 0,
+                collectedOnThisSegment: false // tracking segment collections
+            });
+
+            ballGroup = primaryBallGroup;
+            ball = primaryBall;
+        }
+
+        // Level generator seed is randomized dynamically every single run, while retaining difficulty-specific math bounds.
+        function startNewRun() {
+            const settings = DIFF_SETTINGS[difficulty];
+            lives = settings.startLives;
+            scoreCents = 0;
+            intervalsSurvived = 0;
+            targetLane = 1;
+            currentLane = 1;
+            bounceStartIndex = 0;
+            globalZ = 0;
+            isHighBounce = false;
+            isRolling = false;
+            currentSpeedMultiplier = 1.0;
+            isInvulnerable = false;
+            invulnerabilityTimer = 0;
+            previouslyMerged = false;
+            isPaused = false;
+            
+            // Mix difficulty defaults with millisecond-precision noise for true unique layout on every launch
+            const dynamicOffset = Math.floor(Math.random() * 888888) + (Date.now() % 9999);
+            levelPRNG = new SeededRandom((DIFF_SEEDS[difficulty] || 55555) + dynamicOffset);
+
+            cleanAllActiveSegments();
+            currentReachableStates = [{ lane: 1, flyOver: false }];
+
+            // FIXED: Raised initial runway buffer to 150 segments to guarantee we never exhaust the lane generator
+            for (let i = 0; i < 150; i++) {
+                generateSegment(i);
+            }
+
+            resetBalls();
+            updateHUD();
+
+            document.getElementById('start-screen').classList.add('opacity-0');
+            setTimeout(() => {
+                document.getElementById('start-screen').classList.add('hidden');
+            }, 500);
+            
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('pause-overlay').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+            if (window.innerWidth < 1024) {
+                document.getElementById('mobile-controls').classList.remove('hidden');
+            }
+
+            // Sync pause button icon
+            document.getElementById('svg-pause-icon').innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+
+            Sound.init();
+            gameActive = true;
+        }
+
+        // --- INTUITIVE PAUSE TOGGLING ENGINE ---
+        function togglePause() {
+            if (!gameActive) return;
+            isPaused = !isPaused;
+            const pauseOverlay = document.getElementById('pause-overlay');
+            const pauseIcon = document.getElementById('svg-pause-icon');
+            if (isPaused) {
+                pauseOverlay.classList.remove('hidden');
+                // Play arrow icon
+                pauseIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+                Sound.play('bounce');
+            } else {
+                pauseOverlay.classList.add('hidden');
+                // Pause parallel bars icon
+                pauseIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+                Sound.play('bounce');
+            }
+        }
+
+        function triggerGameOver() {
+            gameActive = false;
+            Sound.play('gameover');
+            
+            const highKey = `pong_runner_highscore_${difficulty}`;
+            const currentHighCents = parseInt(localStorage.getItem(highKey)) || 0;
+            if (scoreCents > currentHighCents) {
+                localStorage.setItem(highKey, scoreCents);
+            }
+
+            document.getElementById('final-score').innerText = `€${(scoreCents / 100).toFixed(2)}`;
+            document.getElementById('final-distance').innerText = `${intervalsSurvived} m`;
+            document.getElementById('high-score').innerText = `€${((Math.max(scoreCents, currentHighCents)) / 100).toFixed(2)}`;
+            
+            document.getElementById('game-over-screen').classList.remove('hidden');
+            document.getElementById('mobile-controls').classList.add('hidden');
+
+            gameOverButtonsEnabled = false;
+            const btnRestart = document.getElementById('btn-restart');
+            const btnMenu = document.getElementById('btn-menu');
+            
+            btnRestart.classList.add('opacity-50', 'pointer-events-none');
+            btnMenu.classList.add('opacity-50', 'pointer-events-none');
+
+            let secondsLeft = 3;
+            btnRestart.innerText = `RE-FORGE STEEL (${secondsLeft}s)`;
+            
+            if (gameOverTimer) clearInterval(gameOverTimer);
+            gameOverTimer = setInterval(() => {
+                secondsLeft--;
+                if (secondsLeft > 0) {
+                    btnRestart.innerText = `RE-FORGE STEEL (${secondsLeft}s)`;
+                } else {
+                    clearInterval(gameOverTimer);
+                    btnRestart.innerText = `RE-FORGE STEEL`;
+                    btnRestart.classList.remove('opacity-50', 'pointer-events-none');
+                    btnMenu.classList.remove('opacity-50', 'pointer-events-none');
+                    gameOverButtonsEnabled = true;
+                }
+            }, 1000);
+        }
+
+        function returnToTerminalMenu() {
+            gameActive = false;
+            isPaused = false;
+            cleanAllActiveSegments();
+            
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('pause-overlay').classList.add('hidden');
+            document.getElementById('mobile-controls').classList.add('hidden');
+            
+            const startScreen = document.getElementById('start-screen');
+            startScreen.classList.remove('hidden');
+            setTimeout(() => {
+                startScreen.classList.remove('opacity-0');
+            }, 50);
+
+            Sound.play('hurt');
+        }
+
+        function registerDamage(b) {
+            if (isInvulnerable && !b.isClone) return;
+            Sound.play('hurt');
+
+            if (!b.isClone) {
+                lives--;
+                triggerParticleBurst(b.group.position, 0xbc002d, 20); // Vermillion blood splash
+                if (lives <= 0) {
+                    b.shouldRemove = true;
+                    spawnFloatingText(b.group.position, "TAMAHAGANE BROKEN", "text-red-600 font-bold");
+                } else {
+                    isInvulnerable = true;
+                    invulnerabilityTimer = 1.8;
+                    spawnFloatingText(b.group.position, "-1 LIFE", "text-red-700 font-bold");
+                }
+            } else {
+                b.lives--;
+                triggerParticleBurst(b.group.position, 0xe65c00, 15);
+                if (b.lives <= 0) {
+                    b.shouldRemove = true;
+                    spawnFloatingText(b.group.position, "CLONE DEACTIVATED", "text-amber-700 font-bold");
+                } else {
+                    spawnFloatingText(b.group.position, "-1 CLONE", "text-amber-600 font-bold");
+                }
+            }
+            updateHUD();
+        }
+
+        // --- COMBO COMPILING COIN COLLECTION ---
+        // FIXED: Displays each combo independently with screen-space pixel offsets to prevent overlapping.
+        // Base coin value, TAIKO multiplier, and STRIKE multiplier now float up in sync, offset cleanly.
+        function collectCoin(coinKey, ballPosition, b) {
+            const coinDef = COIN_TYPES[coinKey];
+            if (!coinDef) return;
+
+            // Mark collection on current interval to preserve combo inside standard landings
+            b.collectedOnThisSegment = true;
+
+            // Increment strike consecutive combo count
+            b.strikeCount = (b.strikeCount || 0) + 1;
+
+            // Assemble multipliers (Compounded together!)
+            let trampolineMultiplier = b.trampolineActive ? 2 : 1;
+            let strikeMultiplier = b.strikeCount;
+            let combinedMultiplier = trampolineMultiplier * strikeMultiplier;
+
+            let baseCents = coinDef.cents;
+            let totalAdded = baseCents * combinedMultiplier;
+            scoreCents += totalAdded; // Score Bank properly receives the multiplied payout!
+            Sound.play('coin');
+            
+            const animPosition = new THREE.Vector3().copy(ballPosition);
+            if (b.isClone) {
+                animPosition.x += 0.4;
+                animPosition.y += 0.2;
+            } else {
+                animPosition.x -= 0.4;
+                animPosition.y += 0.2;
+            }
+
+            // Burst particles corresponding directly to coin colors
+            let particleColor = 0xcd7f32;
+            if (coinDef.group === 'silver') particleColor = 0xe5e7eb;
+            else if (coinDef.group === 'gold') particleColor = 0xffd700;
+            else if (coinDef.group === 'emerald') particleColor = 0x10b981;
+            else if (coinDef.group === 'diamond') particleColor = 0x22d3ee;
+
+            triggerParticleBurst(animPosition, particleColor, 12);
+            
+            // Build dynamic text multiplier indicators
+            let comboText = "";
+            if (b.trampolineActive && b.strikeCount > 1) {
+                comboText = `x${combinedMultiplier} DRUM + STRIKE!`;
+            } else if (b.trampolineActive) {
+                comboText = `x2 TAIKO!`;
+            } else if (b.strikeCount > 1) {
+                comboText = `x${b.strikeCount} STRIKE!`;
+            }
+
+            // Assemble visual value label displaying the base coin collection amount (not the final multiplied score)
+            let baseValueLabel = "";
+            if (coinDef.group === 'gold' || coinDef.group === 'emerald' || coinDef.group === 'diamond') {
+                baseValueLabel = `+${(baseCents / 100).toFixed(1)} Koban`;
+            } else {
+                baseValueLabel = `+${baseCents} Sen`;
+            }
+            
+            let textColorClass = 'text-amber-500 font-black text-2xl';
+            if (coinDef.group === 'gold') textColorClass = 'text-yellow-500 font-black text-2xl';
+            else if (coinDef.group === 'emerald') textColorClass = 'text-emerald-500 font-black text-2xl';
+            else if (coinDef.group === 'diamond') textColorClass = 'text-cyan-400 font-black text-3xl filter drop-shadow-[0_2px_4px_rgba(34,211,238,0.4)]';
+            else if (coinDef.group === 'silver') textColorClass = 'text-stone-300 font-black text-2xl';
+            else textColorClass = 'text-amber-700 font-bold text-xl';
+
+            // 1) Spawn Base value directly centered above coin (Popping instantly at xOffset = 0, yOffset = 0)
+            spawnFloatingText(animPosition, baseValueLabel, textColorClass, 0, 0);
+            
+            // 2) Spawn Taiko Combo independently offset to the left (Popping instantly!)
+            if (b.trampolineActive) {
+                spawnFloatingText(
+                    animPosition, 
+                    `x2 TAIKO!`, 
+                    'text-red-500 font-black text-2xl',
+                    -95,  // Shuffled leftwards in pixels to ensure absolute clearance
+                    -35   // Shuffled slightly higher to create a beautiful staggered arch
+                );
+            }
+
+            // 3) Spawn Strike Combo independently offset to the right (Popping instantly!)
+            if (b.strikeCount > 1) {
+                spawnFloatingText(
+                    animPosition, 
+                    `x${b.strikeCount} STRIKE!`, 
+                    'text-yellow-400 font-black text-2xl',
+                    95,   // Shuffled rightwards in pixels to ensure absolute clearance
+                    15    // Shuffled slightly lower to guarantee zero horizontal or vertical overlapping
+                );
+            }
+
+            updateHUD();
+        }
+
+        // Modulate sakura cherry blossoms with text states instead of fixed colored emojis
+        function collectHeart(ballPosition, isClone) {
+            const animPosition = new THREE.Vector3().copy(ballPosition);
+            if (isClone) {
+                animPosition.x += 0.4;
+                animPosition.y += 0.2;
+            } else {
+                animPosition.x -= 0.4;
+                animPosition.y += 0.2;
+            }
+
+            if (isClone) {
+                const clone = activeBalls.find(b => b.isClone);
+                if (clone) {
+                    if (clone.lives < maxLives) {
+                        clone.lives++;
+                        Sound.play('heart');
+                        triggerParticleBurst(animPosition, 0xe65c00, 15);
+                        spawnFloatingText(animPosition, "+1 CLONE LIFE", "text-amber-600 font-black");
+                    } else {
+                        scoreCents += 200;
+                        Sound.play('coin');
+                        triggerParticleBurst(animPosition, 0xd4af37, 15);
+                        spawnFloatingText(animPosition, "KOBAN GIFT: +2 Koban", "text-yellow-600 font-black");
+                    }
+                }
+            } else {
+                if (lives < maxLives) {
+                    lives++;
+                    Sound.play('heart');
+                    triggerParticleBurst(animPosition, 0xd63351, 15);
+                    spawnFloatingText(animPosition, "+1 LIFE", "text-red-700 font-black");
+                } else {
+                    scoreCents += 200;
+                    Sound.play('coin');
+                    triggerParticleBurst(animPosition, 0xd4af37, 15);
+                    spawnFloatingText(animPosition, "MAX LIFE GIFT: +2 Koban", "text-yellow-600 font-black");
+                }
+            }
+            updateHUD();
+        }
+
+        function collectOrangeBall(collidingBall, worldItemPos, collectedLaneIdx) {
+            const currentIntervalIndex = Math.floor(globalZ / intervalLength);
+            const landedTile = trackData[currentIntervalIndex]?.[collectedLaneIdx];
+            const detail = landedTile ? landedTile.detail : 'spawn-center';
+
+            let cloneSpawnLane = 1;
+            if (detail === 'spawn-left') cloneSpawnLane = 0;
+            else if (detail === 'spawn-right') cloneSpawnLane = 2;
+            else if (detail === 'spawn-center') cloneSpawnLane = 1;
+
+            const clone = activeBalls.find(b => b.isClone);
+            if (clone) {
+                if (clone.lives < maxLives) {
+                    clone.lives++;
+                    Sound.play('heart');
+                    triggerParticleBurst(worldItemPos, 0xe65c00, 15);
+                    spawnFloatingText(worldItemPos, "+1 CLONE LIFE", "text-amber-600 font-black");
+                    updateHUD();
+                } else {
+                    scoreCents += 300;
+                    Sound.play('coin');
+                    triggerParticleBurst(worldItemPos, 0xd4af37, 15);
+                    spawnFloatingText(worldItemPos, "KOBAN BONUS +3 Koban", "text-yellow-600 font-black");
+                    updateHUD();
+                }
+                return;
+            }
+
+            Sound.play('heart');
+            triggerParticleBurst(worldItemPos, 0xe65c00, 18);
+
+            // Amber glass marble clone ball
+            const cloneBallGroup = new THREE.Group();
+            const cloneBallMesh = new THREE.Mesh(
+                new THREE.SphereGeometry(0.5, 32, 32),
+                new THREE.MeshStandardMaterial({
+                    color: 0xe65c00,
+                    roughness: 0.05,
+                    metalness: 0.2,
+                    transparent: true,
+                    opacity: 0.9,
+                    emissive: 0xff3300,
+                    emissiveIntensity: 0.3
+                })
+            );
+            cloneBallGroup.add(cloneBallMesh);
+            scene.add(cloneBallGroup);
+
+            const cloneLight = new THREE.PointLight(0xe65c00, 1.5, 12);
+            cloneBallGroup.add(cloneLight);
+
+            cloneBallGroup.position.set(getXFromLane(cloneSpawnLane), collidingBall.group.position.y, globalZ);
+
+            const cloneTrail = createTrailSpheres(0xe65c00);
+            cloneTrail.forEach(t => t.position.copy(cloneBallGroup.position));
+
+            activeBalls.push({
+                id: 'clone_' + Date.now(),
+                group: cloneBallGroup,
+                mesh: cloneBallMesh,
+                targetLane: cloneSpawnLane,
+                currentLane: cloneSpawnLane,
+                isClone: true,
+                trail: cloneTrail,
+                isHighBounce: collidingBall.isHighBounce,
+                isRolling: collidingBall.isRolling,
+                bounceStartIndex: collidingBall.bounceStartIndex,
+                squashTimer: 0,
+                shouldRemove: false,
+                lives: 1,
+                trampolineActive: collidingBall.trampolineActive || false,
+                strikeCount: collidingBall.strikeCount || 0,
+                collectedOnThisSegment: false
+            });
+
+            spawnFloatingText(worldItemPos, "ANCESTRAL CLONES AWOKEN!", "text-amber-600 font-black");
+            updateHUD();
+        }
+
+        // Active lives appear as rich vermillion florettes with drop shadows, while depleted lives fade out as ghosted grey florettes.
+        function updateHUD() {
+            document.getElementById('hud-score').innerText = `€${(scoreCents / 100).toFixed(2)}`;
+            document.getElementById('hud-distance').innerText = `${intervalsSurvived} m`;
+            document.getElementById('hud-speed').innerText = `${currentSpeedMultiplier.toFixed(1)}x`;
+
+            const livesDiv = document.getElementById('hud-lives');
+            livesDiv.innerHTML = '';
+            for (let i = 0; i < maxLives; i++) {
+                const heartSpan = document.createElement('span');
+                const primaryExists = activeBalls.some(b => !b.isClone);
+                const currentLives = primaryExists ? lives : 0;
+                
+                heartSpan.className = i < currentLives 
+                    ? 'text-red-600 font-black filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)] animate-pulse' 
+                    : 'text-stone-300 opacity-25';
+                heartSpan.innerText = '✿';
+                livesDiv.appendChild(heartSpan);
+            }
+
+            const clone = activeBalls.find(b => b.isClone);
+            const cloneContainer = document.getElementById('hud-clone-container');
+            const cloneLivesDiv = document.getElementById('hud-clone-lives');
+            
+            if (clone) {
+                cloneContainer.classList.remove('opacity-0', 'scale-90', 'pointer-events-none');
+                cloneContainer.classList.add('opacity-100', 'scale-100');
+                
+                cloneLivesDiv.innerHTML = '';
+                for (let i = 0; i < maxLives; i++) {
+                    const heartSpan = document.createElement('span');
+                    heartSpan.className = i < clone.lives 
+                        ? 'text-amber-600 font-black filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)] animate-pulse' 
+                        : 'text-stone-300 opacity-25';
+                    heartSpan.innerText = '✿';
+                    cloneLivesDiv.appendChild(heartSpan);
+                }
+            } else {
+                cloneContainer.classList.add('opacity-0', 'scale-90', 'pointer-events-none');
+                cloneContainer.classList.remove('opacity-100', 'scale-100');
+                cloneLivesDiv.innerHTML = '';
+            }
+        }
+
+        // --- COLLISION RESOLUTION AND PHYSICS JUMPS ---
+
+        // FIXED: Dynamically and unconditionally triggers generation based on the survived interval index,
+        // ensuring the track is always generated on time even if only the Clone Ball survives!
+        function handleIndividualBallLanding(b, landingIntervalIndex) {
+            // Unconditionally keep track of furthest intervals survived across all balls
+            intervalsSurvived = Math.max(intervalsSurvived, landingIntervalIndex);
+            updateHUD();
+
+            const purgeThreshold = landingIntervalIndex - 6;
+            for (let idxStr in activeSegments) {
+                const idx = parseInt(idxStr);
+                if (idx < purgeThreshold) {
+                    removeSegmentAtIndex(idx);
+                }
+            }
+
+            // Unconditionally generate more segments
+            const currentMaxGenerated = Math.max(...Object.keys(trackData).map(Number));
+            if (currentMaxGenerated - landingIntervalIndex < 120) { // Keep runway generated well ahead
+                for (let i = currentMaxGenerated + 1; i <= landingIntervalIndex + 150; i++) {
+                    generateSegment(i);
+                }
+            }
+
+            const landedTile = trackData[landingIntervalIndex]?.[b.targetLane];
+            const outOfBounds = (b.targetLane < 0 || b.targetLane > 2);
+            const hitHazard = !landedTile || landedTile.type === 'hole' || outOfBounds;
+
+            if (hitHazard) {
+                registerDamage(b);
+                if (!b.shouldRemove) {
+                    if (b.targetLane < 0) { b.targetLane = 0; b.currentLane = 0; }
+                    if (b.targetLane > 2) { b.targetLane = 2; b.currentLane = 2; }
+                    b.isHighBounce = false;
+                    b.isRolling = false;
+                    b.bounceStartIndex = landingIntervalIndex;
+                    b.trampolineActive = false; // hit edge/hazards breaks combos
+                    b.strikeCount = 0;
+                    b.collectedOnThisSegment = false;
+                }
+                return;
+            }
+
+            Sound.play('bounce');
+            b.squashTimer = 0.12;
+
+            if (landedTile.type === 'arrow-forward') {
+                b.isRolling = true;
+                b.isHighBounce = false;
+                b.bounceStartIndex = landingIntervalIndex;
+                triggerParticleBurst(b.group.position, 0xd4af37, 15);
+            } 
+            else if (landedTile.type === 'trampoline') {
+                b.isRolling = false;
+                Sound.play('trampoline');
+                triggerParticleBurst(b.group.position, 0x6e1b0d, 12);
+                
+                const segObj = activeSegments[landingIntervalIndex];
+                if (segObj) {
+                    const trampMesh = segObj.items.find(i => i.type === 'trampoline' && i.lane === b.targetLane)?.mesh;
+                    if (trampMesh) {
+                        trampMesh.scale.set(1.2, 0.4, 1.2);
+                        setTimeout(() => trampMesh.scale.set(1.0, 1.0, 1.0), 150);
+                    }
+                }
+
+                b.isHighBounce = true;
+                b.bounceStartIndex = landingIntervalIndex;
+                b.trampolineActive = true; // Trampoline combo active!
+            } 
+            else {
+                b.isRolling = false;
+                b.isHighBounce = false;
+                b.bounceStartIndex = landingIntervalIndex;
+                
+                // Breaking the trampoline multiplier on normal landing
+                b.trampolineActive = false;
+
+                // STRIKE LOGIC: Blank floor (no coin collected during this interval) resets strikeCount to 0!
+                if (!b.collectedOnThisSegment) {
+                    b.strikeCount = 0;
+                }
+                // Reset tracker for upcoming platform segment
+                b.collectedOnThisSegment = false;
+
+                if (landedTile.type === 'arrow-left') {
+                    b.targetLane = b.targetLane - 1;
+                } else if (landedTile.type === 'arrow-right') {
+                    b.targetLane = b.targetLane + 1;
+                }
+            }
+        }
+
+        // --- ENGINE LOOP TICK ---
+
+        let clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const deltaTime = Math.min(clock.getDelta(), 0.1);
+
+            if (gameActive && !isPaused) {
+                const config = DIFF_SETTINGS[difficulty];
+                currentSpeedMultiplier = 1.0 + Math.min(0.8, intervalsSurvived * config.speedGrowth);
+                const currentZSpeed = config.baseSpeed * currentSpeedMultiplier;
+
+                globalZ += currentZSpeed * deltaTime;
+                const currentIntervalIndex = Math.floor(globalZ / intervalLength);
+
+                if (activeBalls.length > 1) {
+                    const presentlyMerged = (activeBalls[0].targetLane === activeBalls[1].targetLane);
+                    if (presentlyMerged && !previouslyMerged) {
+                        const avgPos = new THREE.Vector3().addVectors(activeBalls[0].group.position, activeBalls[1].group.position).multiplyScalar(0.5);
+                        spawnFloatingText(avgPos, "MERGE!", "text-red-700 font-black");
+                        previouslyMerged = true;
+                    } else if (!presentlyMerged) {
+                        previouslyMerged = false;
+                    }
+                } else {
+                    previouslyMerged = false;
+                }
+
+                activeBalls.forEach(b => {
+                    b.group.position.z = globalZ;
+
+                    const totalBounceDistance = b.isHighBounce ? (intervalLength * 2) : intervalLength;
+                    const peakHeight = b.isHighBounce ? highPeakHeight : normalPeakHeight;
+
+                    const distSinceBounce = b.group.position.z - (b.bounceStartIndex * intervalLength);
+                    const progress = THREE.MathUtils.clamp(distSinceBounce / totalBounceDistance, 0, 1);
+
+                    let currentY;
+                    if (b.isRolling) {
+                        currentY = 0.0;
+                    } else {
+                        currentY = peakHeight * 4.0 * progress * (1.0 - progress);
+                    }
+                    
+                    if (isInvulnerable && !b.isClone && !b.isHighBounce && progress < 0.2) {
+                        currentY = Math.max(currentY, 1.0);
+                    }
+                    b.group.position.y = currentY;
+
+                    // Item Collision checks are evaluated prior to platform landing checks.
+                    // This prevents landing boundary evaluations from wiping active combo multipliers right before coins are registered!
+                    const currentSeg = activeSegments[currentIntervalIndex];
+                    if (currentSeg && currentSeg.items) {
+                        for (let i = currentSeg.items.length - 1; i >= 0; i--) {
+                            const item = currentSeg.items[i];
+                            // Check if item is in the same lane
+                            if (item.lane === Math.round(b.currentLane)) {
+                                const worldItemPos = new THREE.Vector3();
+                                item.mesh.getWorldPosition(worldItemPos);
+                                
+                                const dx = b.group.position.x - worldItemPos.x;
+                                const dz = b.group.position.z - worldItemPos.z;
+                                const horizontalDist = Math.sqrt(dx*dx + dz*dz);
+                                const verticalDist = Math.abs(b.group.position.y - worldItemPos.y);
+                                
+                                // Reduced vertical check threshold down to physical contact bounds (Y = 1.0).
+                                // This removes the unsolicited "vacuum" effect so coins must be physically touched by the marble.
+                                if (horizontalDist < 1.35 && verticalDist < 1.00) {
+                                    if (item.type === 'coin') {
+                                        collectCoin(item.coinDetail, b.group.position, b);
+                                    } else if (item.type === 'heart') {
+                                        collectHeart(b.group.position, b.isClone);
+                                    } else if (item.type === 'orange-ball') {
+                                        collectOrangeBall(b, worldItemPos, item.lane);
+                                    }
+                                    
+                                    // Remove collected item instantly from Three.js scene and arrays
+                                    currentSeg.group.remove(item.mesh);
+                                    currentSeg.items.splice(i, 1);
+                                }
+                            }
+                        }
+                    }
+
+                    // Platform landing boundary evaluation
+                    const projectedLandingIndex = b.isHighBounce ? (b.bounceStartIndex + 2) : (b.bounceStartIndex + 1);
+                    if (b.group.position.z >= projectedLandingIndex * intervalLength) {
+                        handleIndividualBallLanding(b, projectedLandingIndex);
+                    }
+
+                    b.currentLane = THREE.MathUtils.lerp(b.currentLane, b.targetLane, 0.16);
+                    b.group.position.x = getXFromLane(b.currentLane);
+
+                    const slideVelocity = (b.targetLane - b.currentLane);
+                    b.mesh.rotation.z = THREE.MathUtils.lerp(b.mesh.rotation.z, slideVelocity * 0.45, 0.1);
+
+                    if (b.isRolling) {
+                        b.mesh.scale.set(1.15, 0.76, 1.15);
+                        b.mesh.rotation.x += currentZSpeed * 0.25 * deltaTime;
+                    } else if (b.squashTimer > 0) {
+                        b.squashTimer -= deltaTime;
+                        b.mesh.scale.set(1.22, 0.68, 1.22);
+                        b.mesh.rotation.x += currentZSpeed * 0.1 * deltaTime;
+                    } else {
+                        const verticalVelocity = (b.isHighBounce ? 1 : 0.5) * (0.5 - progress);
+                        const stretchY = 1.0 + Math.abs(verticalVelocity) * 0.28;
+                        const squashXZ = 1.0 - Math.abs(verticalVelocity) * 0.14;
+                        b.mesh.scale.set(squashXZ, stretchY, squashXZ);
+                        b.mesh.rotation.x += currentZSpeed * 0.1 * deltaTime;
+                    }
+
+                    for (let i = b.trail.length - 1; i > 0; i--) {
+                        b.trail[i].position.copy(b.trail[i - 1].position);
+                    }
+                    b.trail[0].position.copy(b.group.position);
+                    const trailVisible = b.mesh.visible;
+                    b.trail.forEach(t => {
+                        t.visible = trailVisible;
+                        if (b.isRolling) {
+                            t.material.color.setHex(0xd4af37); // Gold speed trail
+                        } else {
+                            t.material.color.setHex(b.isClone ? 0xd4751c : 0xcccccc);
+                        }
+                    });
+                });
+
+                const survivors = [];
+                let listChanged = false;
+                activeBalls.forEach(b => {
+                    if (b.shouldRemove) {
+                        removeBall(b);
+                        listChanged = true;
+                    } else {
+                        survivors.push(b);
+                    }
+                });
+                activeBalls = survivors;
+                
+                if (listChanged) {
+                    if (survivors.length > 0) {
+                        ballGroup = survivors[0].group;
+                        ball = survivors[0].mesh;
+                    }
+                    updateHUD();
+                }
+
+                if (activeBalls.length === 0) {
+                    triggerGameOver();
+                    return;
+                }
+
+                if (steeringLockAlertTimer > 0) {
+                    steeringLockAlertTimer -= deltaTime;
+                    if (steeringLockAlertTimer <= 0) {
+                        const alertHUD = document.getElementById('hud-notification');
+                        alertHUD.classList.add('opacity-0', 'scale-90');
+                        alertHUD.classList.remove('opacity-100', 'scale-100');
+                    }
+                }
+
+                if (isInvulnerable) {
+                    invulnerabilityTimer -= deltaTime;
+                    activeBalls.forEach(b => {
+                        b.mesh.visible = Math.floor(Date.now() / 60) % 2 === 0;
+                    });
+                    if (invulnerabilityTimer <= 0) {
+                        isInvulnerable = false;
+                        activeBalls.forEach(b => { b.mesh.visible = true; });
+                    }
+                }
+
+                const mainBall = activeBalls[0];
+                if (mainBall) {
+                    camera.position.x = THREE.MathUtils.lerp(camera.position.x, THREE.MathUtils.clamp(mainBall.group.position.x * 0.7, -4.5, 4.5), 0.08);
+                    camera.position.y = THREE.MathUtils.lerp(camera.position.y, mainBall.group.position.y * 0.35 + 4.8, 0.08);
+                    camera.position.z = globalZ - 7.5;
+                    camera.lookAt(new THREE.Vector3(mainBall.group.position.x * 0.5, mainBall.group.position.y * 0.3 + 0.5, globalZ + 10.0));
+                }
+
+                // Smooth organic item floating and spinning updates
+                const activeIndices = Object.keys(activeSegments).map(Number);
+                const hoverOffset = Math.sin(Date.now() * 0.005) * 0.12;
+                for (let idx of activeIndices) {
+                    const seg = activeSegments[idx];
+                    if (seg && seg.items) {
+                        for (let item of seg.items) {
+                            if (item.type === 'coin' || item.type === 'heart' || item.type === 'orange-ball') {
+                                item.mesh.rotation.y += 1.8 * deltaTime;
+                                item.mesh.position.y = 0.45 + hoverOffset;
+                            }
+                        }
+                    }
+                }
+            } else if (isPaused) {
+                // Keep rendering but pause physics animations
+                renderer.render(scene, camera);
+                return;
+            } else {
+                // Passive screen rotation loop when not in level
+                const rotTime = Date.now() * 0.0001;
+                camera.position.set(Math.cos(rotTime) * 12.0, 7.0, -10.0);
+                camera.lookAt(new THREE.Vector3(0, 0, 15));
+            }
+
+            for (let p of particlePool) {
+                if (p.active) {
+                    p.mesh.position.addScaledVector(p.velocity, deltaTime);
+                    p.velocity.y -= 9.8 * deltaTime;
+                    p.life -= deltaTime;
+                    const ratio = p.life / 0.8;
+                    p.mesh.scale.set(ratio, ratio, ratio);
+                    if (p.life <= 0) {
+                        p.active = false;
+                        p.mesh.visible = false;
+                    }
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // --- UNIFIED TOUCH & CLICK ACTION STEERING HANDLERS ---
+
+        // Unified layout screen touch handler
+        function handleScreenTouch(clientX, clientY) {
+            if (!gameActive || isPaused) return;
+            // Ignore touches on top status bar and navigation panels
+            if (clientY < 110) return;
+
+            const isLeftHalf = clientX < (window.innerWidth / 2);
+            const moveDir = isLeftHalf ? -1 : 1;
+            moveLane(moveDir);
+
+            // Visual feedback flash triggers
+            const flashBtnId = isLeftHalf ? 'btn-mobile-left' : 'btn-mobile-right';
+            const flashBtn = document.getElementById(flashBtnId);
+            if (flashBtn) {
+                flashBtn.classList.add('scale-95', 'bg-white/45');
+                setTimeout(() => flashBtn.classList.remove('scale-95', 'bg-white/45'), 100);
+            }
+        }
+
+        // --- SCREEN ROUTING AND DOM BINDING ---
+
+        window.onload = function() {
+            initScene();
+            Sound.updateUI();
+
+            // Bind Setup segmented control difficulty buttons
+            const diffButtons = document.querySelectorAll('#difficulty-selectors button');
+            diffButtons.forEach(btn => {
+                btn.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    diffButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    difficulty = btn.dataset.diff;
+                    Sound.play('bounce');
+                });
+            });
+
+            const startBtn = document.getElementById('btn-start');
+            const handleStartTrigger = (e) => {
+                e.preventDefault();
+                startNewRun();
+            };
+            startBtn.addEventListener('click', handleStartTrigger);
+            startBtn.addEventListener('pointerdown', handleStartTrigger);
+
+            document.getElementById('btn-restart').addEventListener('click', () => {
+                if (!gameOverButtonsEnabled) return;
+                startNewRun();
+            });
+
+            document.getElementById('btn-menu').addEventListener('click', () => {
+                if (!gameOverButtonsEnabled) return;
+                document.getElementById('game-over-screen').classList.add('hidden');
+                document.getElementById('start-screen').classList.remove('hidden');
+                document.getElementById('start-screen').classList.remove('opacity-0');
+                document.getElementById('hud').classList.add('hidden');
+            });
+
+            // Interactive Physical Home Button click returning to menu
+            const homeBtn = document.getElementById('btn-home-physical');
+            homeBtn.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                if (gameActive) {
+                    returnToTerminalMenu();
+                } else if (!document.getElementById('game-over-screen').classList.contains('hidden') && gameOverButtonsEnabled) {
+                    document.getElementById('game-over-screen').classList.add('hidden');
+                    document.getElementById('start-screen').classList.remove('hidden');
+                    document.getElementById('start-screen').classList.remove('opacity-0');
+                    document.getElementById('hud').classList.add('hidden');
+                    Sound.play('hurt');
+                }
+            });
+
+            // Toggle skeuomorphic switch control on mute action
+            document.getElementById('btn-mute-switch').addEventListener('click', (e) => {
+                e.stopPropagation();
+                Sound.toggleMute();
+            });
+
+            // HUD discrete button listeners
+            const hudMenuBtn = document.getElementById('btn-hud-menu');
+            const handleHudMenuTrigger = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                returnToTerminalMenu();
+            };
+            hudMenuBtn.addEventListener('click', handleHudMenuTrigger);
+            hudMenuBtn.addEventListener('pointerdown', handleHudMenuTrigger);
+
+            const hudPauseBtn = document.getElementById('btn-hud-pause');
+            const handleHudPauseTrigger = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                togglePause();
+            };
+            hudPauseBtn.addEventListener('click', handleHudPauseTrigger);
+            hudPauseBtn.addEventListener('pointerdown', handleHudPauseTrigger);
+
+            const resumeBtn = document.getElementById('btn-pause-resume');
+            resumeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                togglePause();
+            });
+
+            const hudRestartBtn = document.getElementById('btn-hud-restart');
+            const handleHudRestartTrigger = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isPaused) togglePause(); // unpause first if paused
+                startNewRun();
+            };
+            hudRestartBtn.addEventListener('click', handleHudRestartTrigger);
+            hudRestartBtn.addEventListener('pointerdown', handleHudRestartTrigger);
+
+            // --- RE-ESTABLISHED MOBILE TAP AND CLICK GESTURE LISTENERS ---
+            // Desktop click pointer handler (ignoring mobile touch types to prevent double firing)
+            window.addEventListener('pointerdown', (e) => {
+                if (!gameActive || isPaused) return;
+                if (e.pointerType === 'touch') return; // let mobile touchstart handle it
+                
+                if (e.target.closest('#btn-mute-switch') || e.target.closest('.edo-switch')) return;
+                if (e.target.closest('#btn-hud-menu') || e.target.closest('#btn-hud-pause') || e.target.closest('#btn-hud-restart')) return;
+                if (e.target.closest('#btn-home-physical') || e.target.closest('#btn-pause-resume')) return;
+
+                handleScreenTouch(e.clientX, e.clientY);
+            });
+
+            // Mobile Touchstart handler (guarantees instantaneous response on mobile viewports)
+            window.addEventListener('touchstart', (e) => {
+                if (!gameActive || isPaused) return;
+                const touch = e.touches[0];
+                if (!touch) return;
+
+                if (e.target.closest('#btn-mute-switch') || e.target.closest('.edo-switch')) return;
+                if (e.target.closest('#btn-hud-menu') || e.target.closest('#btn-hud-pause') || e.target.closest('#btn-hud-restart')) return;
+                if (e.target.closest('#btn-home-physical') || e.target.closest('#btn-pause-resume')) return;
+
+                handleScreenTouch(touch.clientX, touch.clientY);
+            }, { passive: true });
+
+            animate();
+        };
+    </script>
+</body>
+</html>
