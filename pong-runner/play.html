@@ -411,7 +411,7 @@
                     </div>
 
                     <!-- Discrete Icon-based Navigation controls (Leave, Pause, Restart) -->
-                    <div class="flex items-center gap-1 bg-[#150f0c] p-1 rounded border border-[#5a3f17] shadow-inner">
+                    <div class="flex items-center gap-1 bg-[#150f0c] p-1 rounded border border-[#5a3f17] shadow-inner font-semibold">
                         <!-- Leave/Exit Button -->
                         <button id="btn-hud-menu" class="lacquer-btn-dark p-1.5 rounded flex items-center justify-center" title="Leave Shrine">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -574,12 +574,12 @@
                 </div>
             </div>
 
-            <!-- Touch control highlighting zones -->
-            <div id="mobile-controls" class="absolute inset-x-0 bottom-6 px-10 flex justify-between pointer-events-none z-10 hidden">
-                <div id="btn-mobile-left" class="w-11 h-11 transition-all duration-100 backdrop-blur-sm bg-black/40 border-2 border-[#d4af37] text-[#d4af37] rounded flex items-center justify-center text-md shadow-lg">
+            <!-- Elevated mobile control indicators comfort zones (clears toolbar blocks on iOS/Android perfectly) -->
+            <div id="mobile-controls" class="absolute inset-x-0 bottom-20 px-10 flex justify-between pointer-events-none z-10 hidden">
+                <div id="btn-mobile-left" class="w-12 h-12 transition-all duration-100 backdrop-blur-sm bg-black/40 border-2 border-[#d4af37] text-[#d4af37] rounded-lg flex items-center justify-center text-lg shadow-lg pointer-events-auto cursor-pointer">
                     ◀
                 </div>
-                <div id="btn-mobile-right" class="w-11 h-11 transition-all duration-100 backdrop-blur-sm bg-black/40 border-2 border-[#d4af37] text-[#d4af37] rounded flex items-center justify-center text-md shadow-lg">
+                <div id="btn-mobile-right" class="w-12 h-12 transition-all duration-100 backdrop-blur-sm bg-black/40 border-2 border-[#d4af37] text-[#d4af37] rounded-lg flex items-center justify-center text-lg shadow-lg pointer-events-auto cursor-pointer">
                     ▶
                 </div>
             </div>
@@ -804,6 +804,9 @@
         const maxTrailLength = 12;
         let steeringLockAlertTimer = 0;
 
+        // Dynamic 2D projected floating texts stack
+        const activeFloatingTexts = [];
+
         const DIFF_SETTINGS = {
             casual: { baseSpeed: 10, speedGrowth: 0.002, startLives: 4 },
             arcade: { baseSpeed: 12, speedGrowth: 0.004, startLives: 3 },
@@ -853,8 +856,8 @@
             // Shinto vermillion shrine planks
             matPlatform = new THREE.MeshStandardMaterial({ 
                 color: 0x3d0f0b, // Aged vermillion cedarwood
-                roughness: 0.35, 
-                metalness: 0.15 
+                roughness: 0.25, // Adjusted to catch more glossy highlights
+                metalness: 0.20 
             });
 
             // Polished lacquer gold leaf boundaries
@@ -863,7 +866,7 @@
                 roughness: 0.15, 
                 metalness: 0.95,
                 emissive: 0x3b2a00,
-                emissiveIntensity: 0.2
+                emissiveIntensity: 0.5 // Brightened gold boundaries
             });
 
             // Folded steel katana core marble
@@ -884,7 +887,7 @@
             matSakuraRuby = new THREE.MeshStandardMaterial({ 
                 color: 0xd63351, 
                 emissive: 0x5a040d, 
-                emissiveIntensity: 0.4,
+                emissiveIntensity: 0.85, // Brightened heart blossoms
                 roughness: 0.05,
                 metalness: 0.75,
                 transparent: true,
@@ -1115,17 +1118,19 @@
         }
 
         // --- VISUAL 3D BUILDERS FOR DISTINGUISHABLE TREASURES ---
-        // PERFORMANCE FIX: All dynamic PointLights have been completely removed from coin meshes. 
-        // Emissive properties, mirror specularity, and lightweight geometry halos are used instead to preserve gorgeous glow at a locked 60 FPS!
+        // PERFORMANCE FIX: All dynamic PointLights and sharp geometric Rings are removed.
+        // Instead, coins feature vibrant emissive materials wrapped inside a soft, glowing, additive-blending sphere.
         function createCoinMesh(config) {
             const coinGroup = new THREE.Group();
+            let glowColor = 0xffffff;
             
             if (config.group === 'diamond') {
-                // Highly distinct diamond double-pyramid crystal geometry with vibrant emissive ice glow
+                glowColor = 0x22d3ee;
+                // Highly distinct diamond double-pyramid crystal geometry with vibrant emissive ice glow (amplified)
                 const matDiamond = new THREE.MeshStandardMaterial({
                     color: 0xffffff,
                     emissive: 0x22d3ee,
-                    emissiveIntensity: 0.9,
+                    emissiveIntensity: 1.6, // Raised brightness
                     roughness: 0.01,
                     metalness: 0.1,
                     transparent: true,
@@ -1141,57 +1146,45 @@
                 const line = new THREE.LineSegments(wireframe);
                 line.material.color.setHex(0x22d3ee);
                 line.material.depthTest = false;
-                line.material.opacity = 0.5;
+                line.material.opacity = 0.65;
                 line.material.transparent = true;
                 line.scale.set(1, 1.8, 1);
                 coinGroup.add(line);
-
-                // High-performance light-weight flat halo ring
-                const haloGeom = new THREE.RingGeometry(0.4, 0.45, 12);
-                const haloMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee, side: THREE.DoubleSide, transparent: true, opacity: 0.4 });
-                const halo = new THREE.Mesh(haloGeom, haloMat);
-                halo.rotation.x = Math.PI / 2;
-                coinGroup.add(halo);
             }
             else if (config.group === 'emerald') {
-                // Faceted hexagonal emerald jade gemstone with deep green emissive glow
+                glowColor = 0x10b981;
+                // Faceted hexagonal emerald jade gemstone with deep green emissive glow (amplified)
                 const matEmerald = new THREE.MeshStandardMaterial({
                     color: 0x10b981,
                     roughness: 0.05,
                     metalness: 0.1,
                     emissive: 0x10b981,
-                    emissiveIntensity: 0.8,
+                    emissiveIntensity: 1.5, // Raised brightness
                     transparent: true,
                     opacity: 0.90
                 });
                 const geomGem = new THREE.OctahedronGeometry(0.28, 0);
                 const gemMesh = new THREE.Mesh(geomGem, matEmerald);
-                coinGroup.add(gemMesh);
+                coinGroup.add(gemMesh); // FIXED: Corrected reference from gemGem to gemMesh
 
                 // Delicate gold wire wrap
                 const wireframe = new THREE.WireframeGeometry(geomGem);
                 const line = new THREE.LineSegments(wireframe);
                 line.material.color.setHex(0xd4af37);
                 line.material.depthTest = false;
-                line.material.opacity = 0.55;
+                line.material.opacity = 0.65;
                 line.material.transparent = true;
                 coinGroup.add(line);
-
-                // High-performance light-weight flat halo ring
-                const haloGeom = new THREE.RingGeometry(0.38, 0.43, 12);
-                const haloMat = new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, transparent: true, opacity: 0.45 });
-                const halo = new THREE.Mesh(haloGeom, haloMat);
-                halo.rotation.x = Math.PI / 2;
-                coinGroup.add(halo);
             }
             else if (config.group === 'gold') {
-                // Oval pure gold Koban coin
+                glowColor = 0xff0033;
+                // Oval pure gold Koban coin (amplified)
                 const matGold = new THREE.MeshStandardMaterial({ 
                     color: 0xffd700, 
                     metalness: 0.98, 
                     roughness: 0.04,
-                    emissive: 0x4a3600,
-                    emissiveIntensity: 0.25
+                    emissive: 0xffaa00, // Rich gold emissive
+                    emissiveIntensity: 0.60 // Raised brightness
                 });
                 const geomBase = new THREE.CylinderGeometry(0.24, 0.24, 0.08, 16);
                 const baseMesh = new THREE.Mesh(geomBase, matGold);
@@ -1199,11 +1192,11 @@
                 baseMesh.scale.set(1, 1.6, 1); // Oval Koban stretch
                 coinGroup.add(baseMesh);
 
-                // Glistening crimson Ruby Core Gem
+                // Glistening crimson Ruby Core Gem (amplified)
                 const matRuby = new THREE.MeshStandardMaterial({
                     color: 0xff0033,
                     emissive: 0xff0033,
-                    emissiveIntensity: 0.9,
+                    emissiveIntensity: 1.8, // Raised ruby glow
                     roughness: 0.05,
                     metalness: 0.95
                 });
@@ -1215,22 +1208,16 @@
                 const rubyMesh2 = rubyMesh1.clone();
                 rubyMesh2.position.set(-0.05, 0, 0); 
                 coinGroup.add(rubyMesh2);
-
-                // High-performance light-weight flat ruby halo ring
-                const haloGeom = new THREE.RingGeometry(0.35, 0.40, 12);
-                const haloMat = new THREE.MeshBasicMaterial({ color: 0xff0033, side: THREE.DoubleSide, transparent: true, opacity: 0.4 });
-                const halo = new THREE.Mesh(haloGeom, haloMat);
-                halo.rotation.x = Math.PI / 2;
-                coinGroup.add(halo);
             }
             else if (config.group === 'silver') {
-                // Highly distinct mirror-polished shiny Silver Mon coin with a square center hole
+                glowColor = 0xffffff;
+                // Highly distinct mirror-polished shiny Silver Mon coin with a square center hole (amplified)
                 const matSilver = new THREE.MeshStandardMaterial({ 
-                    color: 0xe5e7eb, 
+                    color: 0xf3f4f6, 
                     metalness: 0.99, 
                     roughness: 0.03,
-                    emissive: 0x333333,
-                    emissiveIntensity: 0.2
+                    emissive: 0x888888, // Brighter silver emissive
+                    emissiveIntensity: 0.50 // Raised brightness
                 });
                 const geomBase = new THREE.CylinderGeometry(0.22, 0.22, 0.07, 16);
                 const baseMesh = new THREE.Mesh(geomBase, matSilver);
@@ -1249,13 +1236,14 @@
                 coinGroup.add(holeMesh);
             }
             else { 
-                // Shiny polished bronze/copper Sen coin (Low value)
+                glowColor = 0xcd7f32;
+                // Shiny polished bronze/copper Sen coin (Low value) (amplified)
                 const matBronze = new THREE.MeshStandardMaterial({ 
                     color: 0xcd7f32, // Classic rich copper-bronze
                     metalness: 0.95, 
                     roughness: 0.06,
-                    emissive: 0x3d1b00,
-                    emissiveIntensity: 0.15
+                    emissive: 0xb85c14, // Brighter orange-bronze emissive
+                    emissiveIntensity: 0.50 // Raised brightness
                 });
                 const geomCoin = new THREE.CylinderGeometry(0.2, 0.2, 0.06, 16);
                 const coinMesh = new THREE.Mesh(geomCoin, matBronze);
@@ -1264,6 +1252,17 @@
                 coinGroup.add(coinMesh);
             }
             
+            // Add soft glow sphere instead of sharp flat rings
+            const glowGeom = new THREE.SphereGeometry(0.38, 12, 12);
+            const glowMat = new THREE.MeshBasicMaterial({
+                color: glowColor,
+                transparent: true,
+                opacity: 0.28,
+                blending: THREE.AdditiveBlending
+            });
+            const glowSphere = new THREE.Mesh(glowGeom, glowMat);
+            coinGroup.add(glowSphere);
+
             // Unified scalar multiplier to scale diameter, thickness, and size proportionally!
             coinGroup.scale.set(config.scale, config.scale, config.scale);
             return coinGroup;
@@ -1298,14 +1297,15 @@
                 metalness: 0.2,
                 transparent: true,
                 opacity: 0.88,
-                emissive: 0x992200,
-                emissiveIntensity: 0.4
+                emissive: 0xff3a00,
+                emissiveIntensity: 0.6
             });
             const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), sphereMat);
             group.add(sphere);
             return group;
         }
 
+        // Arrow meshes
         function createArrowMesh(type) {
             const arrowGroup = new THREE.Group();
             
@@ -1490,12 +1490,14 @@
 
         // --- SCENE INITIALIZATION & SETUP ---
 
+        // GLOW BOOST: Scene general brightness raised by increasing Ambient and Directional light levels,
+        // and warm ambient sunset hues are highlighted. Background mist cleared slightly for crisp visual depth.
         function initScene() {
             const container = document.getElementById('canvas-container');
             
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0a0503); // Warm twilight amber-black
-            scene.fog = new THREE.FogExp2(0x0a0503, 0.013);
+            scene.background = new THREE.Color(0x140b08); // Slightly warmer sunset black
+            scene.fog = new THREE.FogExp2(0x140b08, 0.011); // Cleared background fog density slightly (0.013 -> 0.011)
 
             camera = new THREE.PerspectiveCamera(58, container.clientWidth / container.clientHeight, 0.1, 1500);
 
@@ -1504,19 +1506,19 @@
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            const ambientLight = new THREE.AmbientLight(0x2d1712, 1.1); // Warm ambient
+            const ambientLight = new THREE.AmbientLight(0x42261b, 1.4); // Raised general Ambient levels (1.1 -> 1.4)
             scene.add(ambientLight);
 
-            const dirLight1 = new THREE.DirectionalLight(0xd94b36, 1.4); 
+            const dirLight1 = new THREE.DirectionalLight(0xe05643, 1.8); // Raised primary red sun backlight (1.4 -> 1.8)
             dirLight1.position.set(-8, 15, -20);
             scene.add(dirLight1);
 
-            const dirLight2 = new THREE.DirectionalLight(0xffbe5c, 0.7); 
+            const dirLight2 = new THREE.DirectionalLight(0xffc673, 1.2); // Raised warm gold side-filling lantern (0.7 -> 1.2)
             dirLight2.position.set(10, 15, 10);
             scene.add(dirLight2);
 
             const moonGeom = new THREE.SphereGeometry(24, 32, 32);
-            const moonMat = new THREE.MeshBasicMaterial({ color: 0xd9381e });
+            const moonMat = new THREE.MeshBasicMaterial({ color: 0xff3b1e }); // Warmer harvest background moon
             const moonMesh = new THREE.Mesh(moonGeom, moonMat);
             moonMesh.position.set(-60, 45, 200);
             scene.add(moonMesh);
@@ -1736,7 +1738,8 @@
             cleanAllActiveSegments();
             currentReachableStates = [{ lane: 1, flyOver: false }];
 
-            for (let i = 0; i < 100; i++) {
+            // FIXED: Raised initial runway buffer to 150 segments to guarantee we never exhaust the lane generator
+            for (let i = 0; i < 150; i++) {
                 generateSegment(i);
             }
 
@@ -2131,24 +2134,26 @@
 
         // --- COLLISION RESOLUTION AND PHYSICS JUMPS ---
 
+        // FIXED: Dynamically and unconditionally triggers generation based on the survived interval index,
+        // ensuring the track is always generated on time even if only the Clone Ball survives!
         function handleIndividualBallLanding(b, landingIntervalIndex) {
-            if (!b.isClone) {
-                intervalsSurvived = landingIntervalIndex;
-                updateHUD();
+            // Unconditionally keep track of furthest intervals survived across all balls
+            intervalsSurvived = Math.max(intervalsSurvived, landingIntervalIndex);
+            updateHUD();
 
-                const purgeThreshold = landingIntervalIndex - 6;
-                for (let idxStr in activeSegments) {
-                    const idx = parseInt(idxStr);
-                    if (idx < purgeThreshold) {
-                        removeSegmentAtIndex(idx);
-                    }
+            const purgeThreshold = landingIntervalIndex - 6;
+            for (let idxStr in activeSegments) {
+                const idx = parseInt(idxStr);
+                if (idx < purgeThreshold) {
+                    removeSegmentAtIndex(idx);
                 }
+            }
 
-                const currentMaxGenerated = Math.max(...Object.keys(trackData).map(Number));
-                if (currentMaxGenerated - landingIntervalIndex < 80) {
-                    for (let i = currentMaxGenerated + 1; i <= landingIntervalIndex + 100; i++) {
-                        generateSegment(i);
-                    }
+            // Unconditionally generate more segments
+            const currentMaxGenerated = Math.max(...Object.keys(trackData).map(Number));
+            if (currentMaxGenerated - landingIntervalIndex < 120) { // Keep runway generated well ahead
+                for (let i = currentMaxGenerated + 1; i <= landingIntervalIndex + 150; i++) {
+                    generateSegment(i);
                 }
             }
 
@@ -2288,7 +2293,7 @@
                                 const horizontalDist = Math.sqrt(dx*dx + dz*dz);
                                 const verticalDist = Math.abs(b.group.position.y - worldItemPos.y);
                                 
-                                // FIXED: Reduced vertical check threshold down to physical contact bounds (Y = 1.0).
+                                // Reduced vertical check threshold down to physical contact bounds (Y = 1.0).
                                 // This removes the unsolicited "vacuum" effect so coins must be physically touched by the marble.
                                 if (horizontalDist < 1.35 && verticalDist < 1.00) {
                                     if (item.type === 'coin') {
@@ -2444,6 +2449,27 @@
             renderer.render(scene, camera);
         }
 
+        // --- UNIFIED TOUCH & CLICK ACTION STEERING HANDLERS ---
+
+        // Unified layout screen touch handler
+        function handleScreenTouch(clientX, clientY) {
+            if (!gameActive || isPaused) return;
+            // Ignore touches on top status bar and navigation panels
+            if (clientY < 110) return;
+
+            const isLeftHalf = clientX < (window.innerWidth / 2);
+            const moveDir = isLeftHalf ? -1 : 1;
+            moveLane(moveDir);
+
+            // Visual feedback flash triggers
+            const flashBtnId = isLeftHalf ? 'btn-mobile-left' : 'btn-mobile-right';
+            const flashBtn = document.getElementById(flashBtnId);
+            if (flashBtn) {
+                flashBtn.classList.add('scale-95', 'bg-white/45');
+                setTimeout(() => flashBtn.classList.remove('scale-95', 'bg-white/45'), 100);
+            }
+        }
+
         // --- SCREEN ROUTING AND DOM BINDING ---
 
         window.onload = function() {
@@ -2538,6 +2564,32 @@
             };
             hudRestartBtn.addEventListener('click', handleHudRestartTrigger);
             hudRestartBtn.addEventListener('pointerdown', handleHudRestartTrigger);
+
+            // --- RE-ESTABLISHED MOBILE TAP AND CLICK GESTURE LISTENERS ---
+            // Desktop click pointer handler (ignoring mobile touch types to prevent double firing)
+            window.addEventListener('pointerdown', (e) => {
+                if (!gameActive || isPaused) return;
+                if (e.pointerType === 'touch') return; // let mobile touchstart handle it
+                
+                if (e.target.closest('#btn-mute-switch') || e.target.closest('.edo-switch')) return;
+                if (e.target.closest('#btn-hud-menu') || e.target.closest('#btn-hud-pause') || e.target.closest('#btn-hud-restart')) return;
+                if (e.target.closest('#btn-home-physical') || e.target.closest('#btn-pause-resume')) return;
+
+                handleScreenTouch(e.clientX, e.clientY);
+            });
+
+            // Mobile Touchstart handler (guarantees instantaneous response on mobile viewports)
+            window.addEventListener('touchstart', (e) => {
+                if (!gameActive || isPaused) return;
+                const touch = e.touches[0];
+                if (!touch) return;
+
+                if (e.target.closest('#btn-mute-switch') || e.target.closest('.edo-switch')) return;
+                if (e.target.closest('#btn-hud-menu') || e.target.closest('#btn-hud-pause') || e.target.closest('#btn-hud-restart')) return;
+                if (e.target.closest('#btn-home-physical') || e.target.closest('#btn-pause-resume')) return;
+
+                handleScreenTouch(touch.clientX, touch.clientY);
+            }, { passive: true });
 
             animate();
         };
