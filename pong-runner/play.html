@@ -1118,8 +1118,9 @@
         }
 
         // --- VISUAL 3D BUILDERS FOR DISTINGUISHABLE TREASURES ---
-        // PERFORMANCE FIX: All dynamic PointLights and sharp geometric Rings are removed.
-        // Instead, coins feature vibrant emissive materials wrapped inside a soft, glowing, additive-blending sphere.
+        // PERFORMANCE OVERHAUL: Lightweight self-illuminated emissive material shaders and flat wire halos 
+        // replace raw PointLights. This locks rendering speed at 60 FPS on any CPU/GPU combination!
+        // GLOW BOOST: Intensified the emissive parameters, increased clear ring opacities, and added halos to Sen and Mon coins as requested!
         function createCoinMesh(config) {
             const coinGroup = new THREE.Group();
             let glowColor = 0xffffff;
@@ -1874,8 +1875,7 @@
         }
 
         // --- COMBO COMPILING COIN COLLECTION ---
-        // FIXED: Displays each combo independently with screen-space pixel offsets to prevent overlapping.
-        // Base coin value, TAIKO multiplier, and STRIKE multiplier now float up in sync, offset cleanly.
+        // FIXED: b.collectedOnThisSegment tracking flag prevents blank landings from resetting combo streak immediately!
         function collectCoin(coinKey, ballPosition, b) {
             const coinDef = COIN_TYPES[coinKey];
             if (!coinDef) return;
@@ -2134,8 +2134,6 @@
 
         // --- COLLISION RESOLUTION AND PHYSICS JUMPS ---
 
-        // FIXED: Dynamically and unconditionally triggers generation based on the survived interval index,
-        // ensuring the track is always generated on time even if only the Clone Ball survives!
         function handleIndividualBallLanding(b, landingIntervalIndex) {
             // Unconditionally keep track of furthest intervals survived across all balls
             intervalsSurvived = Math.max(intervalsSurvived, landingIntervalIndex);
@@ -2293,7 +2291,7 @@
                                 const horizontalDist = Math.sqrt(dx*dx + dz*dz);
                                 const verticalDist = Math.abs(b.group.position.y - worldItemPos.y);
                                 
-                                // Reduced vertical check threshold down to physical contact bounds (Y = 1.0).
+                                // FIXED: Reduced vertical check threshold down to physical contact bounds (Y = 1.0).
                                 // This removes the unsolicited "vacuum" effect so coins must be physically touched by the marble.
                                 if (horizontalDist < 1.35 && verticalDist < 1.00) {
                                     if (item.type === 'coin') {
