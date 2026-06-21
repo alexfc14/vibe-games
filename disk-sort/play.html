@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpiroSort 3D - Disc Sorting Puzzle</title>
+    <!-- Tailwind CSS for UI styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for premium look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti for Win Effect -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+            background: #0f1015;
+        }
+        canvas {
+            display: block;
+            outline: none;
+        }
+        /* Custom scrollbars for controls if needed */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        /* Glassmorphism utility classes */
+        .glass-panel {
+            background: rgba(20, 22, 30, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-button {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+        .glass-button:active {
+            transform: translateY(1px);
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative text-slate-100">
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#0d0e12] transition-opacity duration-500">
+        <div class="flex flex-col items-center">
+            <div class="relative w-24 h-24 mb-6">
+                <!-- Glowing geometric spinner -->
+                <div class="absolute inset-0 rounded-full border-4 border-t-indigo-500 border-r-pink-500 border-b-purple-500 border-l-transparent animate-spin"></div>
+                <div class="absolute inset-2 rounded-full border-4 border-t-teal-400 border-r-transparent border-b-cyan-400 border-l-transparent animate-spin" style="animation-direction: reverse; animation-duration: 1.5s;"></div>
+            </div>
+            <h1 class="text-3xl font-extrabold tracking-wider bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">SPIROSORT 3D</h1>
+            <p class="text-sm text-slate-400 mt-2 tracking-widest animate-pulse">CREATING STYLISED WOODLAND...</p>
+        </div>
+    </div>
+
+    <!-- Background WebGL Viewport -->
+    <div id="canvas-container" class="w-full h-full absolute inset-0"></div>
+
+    <!-- MAIN HUD LAYOUT -->
+    <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-6 z-10">
+        
+        <!-- Header / Stats Bar -->
+        <header class="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pointer-events-auto">
+            <!-- Brand -->
+            <div class="glass-panel px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-layer-group text-lg text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight leading-none bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">SPIROSORT 3D</h1>
+                    <span class="text-[10px] text-indigo-400 font-semibold tracking-wider uppercase">Chunky Sorting Challenge</span>
+                </div>
+            </div>
+
+            <!-- Global Live Counters -->
+            <div class="flex items-center gap-3">
+                <div class="glass-panel px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl min-w-[120px]">
+                    <i class="fa-regular fa-clock text-indigo-400 text-lg"></i>
+                    <div>
+                        <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">TIME</div>
+                        <div id="hud-timer" class="text-lg font-bold font-mono text-slate-100">00:00</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl min-w-[110px]">
+                    <i class="fa-solid fa-arrows-spin text-emerald-400 text-lg"></i>
+                    <div>
+                        <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">MOVES</div>
+                        <div id="hud-moves" class="text-lg font-bold font-mono text-slate-100">0</div>
+                    </div>
+                </div>
+
+                <!-- Reset / New Game Buttons -->
+                <button id="btn-quick-reset" class="glass-panel glass-button p-4 rounded-2xl flex items-center justify-center text-slate-200 hover:text-white shadow-2xl tooltip" title="Restart Level">
+                    <i class="fa-solid fa-rotate-left text-lg"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Right Side Panel: Settings & Configuration -->
+        <aside class="absolute top-24 right-4 md:right-6 bottom-24 w-80 pointer-events-auto flex flex-col gap-4 hidden lg:flex">
+            <!-- Game Rules Quick Tips -->
+            <div class="glass-panel p-5 rounded-2xl shadow-xl flex flex-col gap-3">
+                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-indigo-400"></i> How to Play
+                </h3>
+                <ul class="text-xs text-slate-400 space-y-2 leading-relaxed">
+                    <li class="flex gap-2">
+                        <span class="text-indigo-400 font-bold">1.</span> Click a stick to pick up its top disc.
+                    </li>
+                    <li class="flex gap-2">
+                        <span class="text-indigo-400 font-bold">2.</span> Click another stick to place it.
+                    </li>
+                    <li class="flex gap-2">
+                        <span class="text-indigo-400 font-bold">3.</span> Sort all identical colored discs together onto matching sticks to win!
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Configuration Form -->
+            <div class="glass-panel p-5 rounded-2xl shadow-xl flex-1 flex flex-col justify-between overflow-y-auto">
+                <div class="space-y-4">
+                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-widest border-b border-white/5 pb-2">
+                        <i class="fa-solid fa-sliders text-indigo-400 mr-1"></i> Board Configurator
+                    </h3>
+
+                    <!-- Difficulty Select -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Preset Difficulty</label>
+                        <div class="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5">
+                            <button onclick="setDifficultyPreset('easy')" id="preset-easy" class="py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">Easy</button>
+                            <button onclick="setDifficultyPreset('medium')" id="preset-medium" class="py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">Medium</button>
+                            <button onclick="setDifficultyPreset('hard')" id="preset-hard" class="py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">Hard</button>
+                        </div>
+                    </div>
+
+                    <!-- Custom parameters -->
+                    <div class="space-y-3 pt-2">
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                                <span>Pegs / Sticks</span>
+                                <span id="val-sticks" class="text-indigo-400 font-bold">5</span>
+                            </div>
+                            <input type="range" id="slider-sticks" min="4" max="12" step="1" value="5" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                                <span>Unique Colors</span>
+                                <span id="val-colors" class="text-indigo-400 font-bold">3</span>
+                            </div>
+                            <input type="range" id="slider-colors" min="2" max="10" step="1" value="3" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                                <span>Discs Per Peg</span>
+                                <span id="val-stack" class="text-indigo-400 font-bold">4</span>
+                            </div>
+                            <input type="range" id="slider-stack" min="3" max="6" step="1" value="4" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button id="btn-generate" class="w-full mt-6 py-3 px-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-gamepad"></i> Setup New Game
+                </button>
+            </div>
+        </aside>
+
+        <!-- Bottom Controls Bar (Mobile Controls Trigger & Camera Info) -->
+        <footer class="w-full flex items-center justify-between pointer-events-auto">
+            <div class="glass-panel px-4 py-2.5 rounded-xl text-[11px] text-slate-400 flex items-center gap-2">
+                <i class="fa-solid fa-arrows-up-down-left-right text-indigo-400"></i>
+                <span>Left Click + Drag to Orbit | Scroll to Zoom | Right Click to Pan</span>
+            </div>
+
+            <!-- Mobile Settings Trigger Button -->
+            <button id="btn-mobile-menu-trigger" class="lg:hidden glass-panel glass-button px-4 py-3 rounded-xl flex items-center gap-2 font-bold text-sm text-indigo-400">
+                <i class="fa-solid fa-gear"></i>
+                <span>Config Board</span>
+            </button>
+        </footer>
+    </div>
+
+    <!-- Mobile Configuration Overlay Drawer -->
+    <div id="mobile-menu" class="fixed inset-0 bg-black/80 backdrop-blur-md z-40 flex items-end justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-panel w-full max-w-md rounded-t-[2.5rem] p-6 space-y-6 transform translate-y-full transition-transform duration-300">
+            <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                <h3 class="text-lg font-extrabold text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-indigo-400"></i> Adjust Board
+                </h3>
+                <button id="btn-mobile-menu-close" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Mobile sliders -->
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Preset Difficulty</label>
+                    <div class="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5">
+                        <button onclick="setDifficultyPreset('easy')" id="m-preset-easy" class="py-2 text-xs font-semibold rounded-lg text-slate-400">Easy</button>
+                        <button onclick="setDifficultyPreset('medium')" id="m-preset-medium" class="py-2 text-xs font-semibold rounded-lg text-slate-400">Medium</button>
+                        <button onclick="setDifficultyPreset('hard')" id="m-preset-hard" class="py-2 text-xs font-semibold rounded-lg text-slate-400">Hard</button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                        <span>Pegs / Sticks</span>
+                        <span id="m-val-sticks" class="text-indigo-400 font-bold">5</span>
+                    </div>
+                    <input type="range" id="m-slider-sticks" min="4" max="12" step="1" value="5" class="w-full accent-indigo-500">
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                        <span>Unique Colors</span>
+                        <span id="m-val-colors" class="text-indigo-400 font-bold">3</span>
+                    </div>
+                    <input type="range" id="m-slider-colors" min="2" max="10" step="1" value="3" class="w-full accent-indigo-500">
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                        <span>Discs Per Peg</span>
+                        <span id="m-val-stack" class="text-indigo-400 font-bold">4</span>
+                    </div>
+                    <input type="range" id="m-slider-stack" min="3" max="6" step="1" value="4" class="w-full accent-indigo-500">
+                </div>
+            </div>
+
+            <button id="btn-mobile-generate" class="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold rounded-2xl shadow-xl">
+                APPLY & GEN NEW GAME
+            </button>
+        </div>
+    </div>
+
+    <!-- Win Modal Screen Overlay -->
+    <div id="win-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-panel p-8 rounded-[2rem] w-full max-w-sm text-center mx-4 scale-95 transform transition-transform duration-300 relative overflow-hidden">
+            <!-- Animated decorative glow backgrounds -->
+            <div class="absolute -top-12 -left-12 w-32 h-32 bg-indigo-500/25 rounded-full blur-2xl"></div>
+            <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-pink-500/25 rounded-full blur-2xl"></div>
+
+            <div class="relative z-10">
+                <!-- Glowing crown/trophy icon -->
+                <div class="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-amber-400 to-yellow-600 flex items-center justify-center shadow-lg shadow-yellow-500/20 mb-6 animate-bounce">
+                    <i class="fa-solid fa-trophy text-3xl text-white"></i>
+                </div>
+
+                <h2 class="text-3xl font-black tracking-tight text-white mb-2">VICTORY!</h2>
+                <p class="text-sm text-slate-400 px-3 mb-6 leading-relaxed">Splendid! You have sorted all colored discs onto their corresponding wooden pegs perfectly.</p>
+
+                <!-- Performance Panel -->
+                <div class="bg-black/30 rounded-2xl p-4 border border-white/5 space-y-3 mb-6">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-400">Time Taken</span>
+                        <span id="stat-time" class="font-bold text-slate-100 font-mono">00:00</span>
+                    </div>
+                    <div class="flex justify-between text-sm border-t border-white/5 pt-2">
+                        <span class="text-slate-400">Total Moves</span>
+                        <span id="stat-moves" class="font-bold text-slate-100 font-mono">0</span>
+                    </div>
+                    <div class="flex justify-between text-sm border-t border-white/5 pt-2">
+                        <span class="text-slate-400">Difficulty Level</span>
+                        <span id="stat-diff" class="font-bold text-indigo-400 uppercase tracking-wider">Custom</span>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <button id="btn-win-restart" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold rounded-xl shadow-lg transition-transform active:scale-[0.98]">
+                    Play Another Round
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Imports: Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- GAME PARAMETERS & GLOBAL STATES ---
+        const CONFIG = {
+            numSticks: 5,
+            numColors: 3,
+            maxHeight: 4,
+            difficulty: 'easy', // 'easy', 'medium', 'hard', 'custom'
+            scrambleMoves: 40
+        };
+
+        const STATE = {
+            moves: 0,
+            startTime: null,
+            timerInterval: null,
+            elapsedSeconds: 0,
+            selectedStickIndex: null, // Index of selected peg
+            sticks: [],               // Operational peg array [{mesh, collider, position, discs: []}]
+            discs: [],                // Active disc rendering objects [{mesh, colorId, material}]
+            isAnimating: false,       // Freeze interactions during active movement animations
+            isWon: false,
+            activeAnimations: []      // Smooth interactive transitions
+        };
+
+        // Disc color dictionary with optimized physical materials
+        const PALETTE = [
+            { id: 0, hex: '#FF3B30', rgb: [255, 59, 48] },    // Soft Neon Red
+            { id: 1, hex: '#007AFF', rgb: [0, 122, 255] },   // Electric Blue
+            { id: 2, hex: '#34C759', rgb: [52, 199, 89] },    // Vibrant Green
+            { id: 3, hex: '#FFCC00', rgb: [255, 204, 0] },    // Sunny Yellow
+            { id: 4, hex: '#FF9500', rgb: [255, 149, 0] },    // Orange Bloom
+            { id: 5, hex: '#AF52DE', rgb: [175, 82, 222] },   // Royal Violet
+            { id: 6, hex: '#FF2D55', rgb: [255, 45, 85] },    // Hot Magenta
+            { id: 7, hex: '#5AC8FA', rgb: [90, 200, 250] },   // Fresh Cyan
+            { id: 8, hex: '#5856D6', rgb: [88, 86, 214] },    // Night Indigo
+            { id: 9, hex: '#A7E92F', rgb: [167, 233, 47] }     // Lucid Lime
+        ];
+
+        // --- THREE.JS GRAPHICS SETUP ---
+        let scene, camera, renderer, controls;
+        let woodMaterial, woodStickMaterial;
+        let raycaster, mouse;
+        const loaderScreen = document.getElementById('loading-screen');
+
+        // Main Entrance
+        window.addEventListener('load', () => {
+            initThree();
+            setupGUI();
+            setDifficultyPreset('easy'); // initialize easy state
+            startNewGame();
+            
+            // Fade loader
+            setTimeout(() => {
+                loaderScreen.classList.add('opacity-0');
+                setTimeout(() => loaderScreen.style.display = 'none', 500);
+            }, 1000);
+        });
+
+        // Initialize Scene, Camera, Lights, Materials, and Orbit Controls
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            
+            // Create Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0e1014);
+            scene.fog = new THREE.FogExp2(0x0e1014, 0.035);
+
+            // Create Camera
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 12, 16);
+
+            // Create WebGL Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            container.appendChild(renderer.domElement);
+
+            // Create Interactive Camera Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2.1; // Block clipping below floor
+            controls.minDistance = 6;
+            controls.maxDistance = 30;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            // Directional Light with Soft Shadows
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            dirLight.position.set(10, 20, 12);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 40;
+            dirLight.shadow.camera.left = -15;
+            dirLight.shadow.camera.right = 15;
+            dirLight.shadow.camera.top = 15;
+            dirLight.shadow.camera.bottom = -15;
+            dirLight.shadow.bias = -0.0005;
+            scene.add(dirLight);
+
+            // Additional Warm Spot Light for highlights
+            const spotLight = new THREE.SpotLight(0xffe5cc, 1.5, 30, Math.PI / 4, 0.5, 1);
+            spotLight.position.set(-10, 15, -5);
+            scene.add(spotLight);
+
+            // Generate Stylized Procedural Materials
+            generateProceduralMaterials();
+
+            // Raycaster and Mouse vector for clicks
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            renderer.domElement.addEventListener('pointerdown', onDocumentPointerDown);
+
+            // Start Main Frame Loop
+            animate();
+        }
+
+        // Generate gorgeous high quality procedural textures in Canvas (Cross-Origin Block free!)
+        function generateProceduralMaterials() {
+            // Wood Grain Procedural Base Texture Canvas
+            const woodCanvas = document.createElement('canvas');
+            woodCanvas.width = 512;
+            woodCanvas.height = 512;
+            const woodCtx = woodCanvas.getContext('2d');
+
+            // Stylized rich wood layers
+            woodCtx.fillStyle = '#614126'; // Nice base brown
+            woodCtx.fillRect(0, 0, 512, 512);
+
+            woodCtx.strokeStyle = '#432a15'; // Darker rings
+            woodCtx.lineWidth = 3;
+            // Draw ring-like wood knots and stripes
+            for (let i = 0; i < 60; i++) {
+                woodCtx.beginPath();
+                let x = Math.random() * 512;
+                woodCtx.moveTo(x, 0);
+                for (let y = 0; y <= 512; y += 15) {
+                    let wave = Math.sin(y * 0.03) * 8 + Math.sin(y * 0.1) * 3 + (Math.random() - 0.5) * 2;
+                    woodCtx.lineTo(x + wave, y);
+                }
+                woodCtx.stroke();
+            }
+
+            // Draw micro wood fibers / noise
+            const imgData = woodCtx.getImageData(0, 0, 512, 512);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const noise = (Math.random() - 0.5) * 22;
+                data[i] = Math.min(255, Math.max(0, data[i] + noise));
+                data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + noise));
+                data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + noise));
+            }
+            woodCtx.putImageData(imgData, 0, 0);
+
+            // Setup textures with filtered scaling
+            const woodTexture = new THREE.CanvasTexture(woodCanvas);
+            woodTexture.wrapS = THREE.RepeatWrapping;
+            woodTexture.wrapT = THREE.RepeatWrapping;
+            woodTexture.repeat.set(1.5, 1.5);
+
+            // Physical wood textures for Base and Pegs
+            woodMaterial = new THREE.MeshStandardMaterial({
+                map: woodTexture,
+                roughness: 0.65,
+                metalness: 0.02,
+                bumpMap: woodTexture,
+                bumpScale: 0.025
+            });
+
+            const stickCanvas = document.createElement('canvas');
+            stickCanvas.width = 256;
+            stickCanvas.height = 512;
+            const stickCtx = stickCanvas.getContext('2d');
+            stickCtx.fillStyle = '#7a5130';
+            stickCtx.fillRect(0, 0, 256, 512);
+            stickCtx.strokeStyle = '#51331c';
+            stickCtx.lineWidth = 1.5;
+            for (let i = 0; i < 30; i++) {
+                stickCtx.beginPath();
+                let x = Math.random() * 256;
+                stickCtx.moveTo(x, 0);
+                for (let y = 0; y <= 512; y += 10) {
+                    stickCtx.lineTo(x + Math.sin(y * 0.05) * 2, y);
+                }
+                stickCtx.stroke();
+            }
+            
+            const stickTexture = new THREE.CanvasTexture(stickCanvas);
+            woodStickMaterial = new THREE.MeshStandardMaterial({
+                map: stickTexture,
+                roughness: 0.5,
+                metalness: 0.01,
+                bumpMap: stickTexture,
+                bumpScale: 0.015
+            });
+        }
+
+        // Responsive Resizer
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- GAME INSTANTIATION / SCRAMBLER STATE ENGINE ---
+
+        // Generates dynamic grids depending on sticks configuration
+        function generateSticksLayout(numSticks) {
+            const positions = [];
+            const spacingX = 2.4;
+            const spacingZ = 2.4;
+
+            if (numSticks <= 5) {
+                // Single linear row configuration
+                const startX = -((numSticks - 1) * spacingX) / 2;
+                for (let i = 0; i < numSticks; i++) {
+                    positions.push(new THREE.Vector3(startX + i * spacingX, 0, 0));
+                }
+            } else {
+                // Compact double row staggered grid
+                const cols = Math.ceil(numSticks / 2);
+                const startX = -((cols - 1) * spacingX) / 2;
+                const rowOffsetZ = spacingZ / 1.8;
+                for (let i = 0; i < numSticks; i++) {
+                    const row = Math.floor(i / cols);
+                    const col = i % cols;
+                    // Center the last row if odd number
+                    let adjustX = 0;
+                    if (row === 1 && numSticks % 2 !== 0) {
+                        const lastRowCols = numSticks - cols;
+                        const firstRowCols = cols;
+                        adjustX = (firstRowCols - lastRowCols) * spacingX / 2;
+                    }
+                    positions.push(new THREE.Vector3(startX + col * spacingX + adjustX, 0, (row - 0.5) * spacingZ));
+                }
+            }
+            return positions;
+        }
+
+        // Tear down old board, build fresh meshes and generate a mathematically solvable state
+        function startNewGame() {
+            // Stop timers & clean animation lists
+            clearInterval(STATE.timerInterval);
+            STATE.timerInterval = null;
+            STATE.elapsedSeconds = 0;
+            document.getElementById('hud-timer').innerText = "00:00";
+            STATE.moves = 0;
+            document.getElementById('hud-moves').innerText = "0";
+            STATE.isWon = false;
+            STATE.selectedStickIndex = null;
+            STATE.isAnimating = false;
+            STATE.activeAnimations = [];
+            document.getElementById('win-modal').classList.add('opacity-0', 'pointer-events-none');
+            document.getElementById('win-modal').querySelector('.scale-95')?.classList.add('scale-95');
+
+            // Remove previous active meshes from Scene
+            STATE.sticks.forEach(s => {
+                scene.remove(s.mesh);
+                scene.remove(s.collider);
+            });
+            STATE.discs.forEach(d => {
+                scene.remove(d.mesh);
+            });
+            // Clean up any remaining board or shadows
+            const itemsToRemove = [];
+            scene.traverse(node => {
+                if (node.isMesh && (node.name === "baseBoard" || node.name === "shadowReceiver")) {
+                    itemsToRemove.push(node);
+                }
+            });
+            itemsToRemove.forEach(i => scene.remove(i));
+
+            STATE.sticks = [];
+            STATE.discs = [];
+
+            // Calculate new spatial layout
+            const positions = generateSticksLayout(CONFIG.numSticks);
+
+            // Construct Board base mesh
+            let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+            positions.forEach(p => {
+                if (p.x < minX) minX = p.x;
+                if (p.x > maxX) maxX = p.x;
+                if (p.z < minZ) minZ = p.z;
+                if (p.z > maxZ) maxZ = p.z;
+            });
+
+            const marginX = 1.8;
+            const marginZ = 1.8;
+            const baseW = (maxX - minX) + marginX * 2;
+            const baseD = (maxZ - minZ) + marginZ * 2;
+            const baseH = 0.5;
+
+            // Soft-corner wood base
+            const baseGeom = new THREE.BoxGeometry(baseW, baseH, baseD);
+            const baseMesh = new THREE.Mesh(baseGeom, woodMaterial);
+            baseMesh.name = "baseBoard";
+            baseMesh.position.set((minX + maxX) / 2, baseH / 2, (minZ + maxZ) / 2);
+            baseMesh.receiveShadow = true;
+            baseMesh.castShadow = true;
+            scene.add(baseMesh);
+
+            // Build individual pegs & transparent, forgiving cylinder mouse target-colliders
+            const stickHeight = (CONFIG.maxHeight * 0.55) + 0.8;
+            const stickGeom = new THREE.CylinderGeometry(0.12, 0.16, stickHeight, 16);
+            stickGeom.translate(0, stickHeight / 2, 0); // anchor at bottom
+
+            const colliderGeom = new THREE.CylinderGeometry(1.0, 1.0, stickHeight + 1.0, 16);
+            colliderGeom.translate(0, (stickHeight + 1) / 2, 0);
+
+            for (let i = 0; i < CONFIG.numSticks; i++) {
+                // Peg Visual
+                const stickMesh = new THREE.Mesh(stickGeom, woodStickMaterial);
+                stickMesh.position.copy(positions[i]);
+                stickMesh.position.y += baseH; // sit on base
+                stickMesh.castShadow = true;
+                stickMesh.receiveShadow = true;
+                scene.add(stickMesh);
+
+                // Peg Click-collider (Invisible)
+                const colMat = new THREE.MeshBasicMaterial({ visible: false });
+                const colMesh = new THREE.Mesh(colliderGeom, colMat);
+                colMesh.position.copy(stickMesh.position);
+                colMesh.userData = { stickIndex: i };
+                scene.add(colMesh);
+
+                STATE.sticks.push({
+                    mesh: stickMesh,
+                    collider: colMesh,
+                    position: stickMesh.position.clone(),
+                    discs: [] // contains IDs or Disc Objects
+                });
+            }
+
+            // Create initial disc configuration mathematically solved, then perform valid scrambling moves back
+            const activeColors = PALETTE.slice(0, CONFIG.numColors);
+            const boardState = Array.from({ length: CONFIG.numSticks }, () => []);
+
+            // 1. Pack full stacks onto starting pegs to match color groupings (Solved Setup)
+            for (let colorIdx = 0; colorIdx < CONFIG.numColors; colorIdx++) {
+                for (let h = 0; h < CONFIG.maxHeight; h++) {
+                    boardState[colorIdx].push(activeColors[colorIdx].id);
+                }
+            }
+
+            // 2. Perform retro-grade scramble sequence of valid moves to preserve solvability
+            let scrambleCount = CONFIG.scrambleMoves;
+            let lastSrc = -1;
+            let lastDst = -1;
+
+            while (scrambleCount > 0) {
+                // Find all pegs with movable discs
+                const sourceCandidates = [];
+                for (let i = 0; i < CONFIG.numSticks; i++) {
+                    if (boardState[i].length > 0) sourceCandidates.push(i);
+                }
+
+                if (sourceCandidates.length === 0) break;
+
+                const src = sourceCandidates[Math.floor(Math.random() * sourceCandidates.length)];
+                
+                // Find valid dest targets (not full, and avoid undoing last move immediately for better scramble)
+                const destCandidates = [];
+                for (let j = 0; j < CONFIG.numSticks; j++) {
+                    if (j !== src && boardState[j].length < CONFIG.maxHeight) {
+                        if (!(src === lastDst && j === lastSrc)) {
+                            destCandidates.push(j);
+                        }
+                    }
+                }
+
+                if (destCandidates.length === 0) continue;
+
+                const dst = destCandidates[Math.floor(Math.random() * destCandidates.length)];
+
+                // Move top disc in simulated board
+                const discId = boardState[src].pop();
+                boardState[dst].push(discId);
+
+                lastSrc = src;
+                lastDst = dst;
+                scrambleCount--;
+            }
+
+            // Realise physical Disc meshes from simulated state
+            // Glossy plastic toroidal rings
+            const torusRadius = 0.55;
+            const torusTube = 0.22;
+            const discGeom = new THREE.TorusGeometry(torusRadius, torusTube, 16, 40);
+            discGeom.rotateX(Math.PI / 2); // Lay flat
+
+            for (let stickIdx = 0; stickIdx < CONFIG.numSticks; stickIdx++) {
+                const stack = boardState[stickIdx];
+                for (let h = 0; h < stack.length; h++) {
+                    const colorId = stack[h];
+                    const colorInfo = PALETTE.find(p => p.id === colorId);
+
+                    // Physical premium glossy finish material
+                    const discMat = new THREE.MeshPhysicalMaterial({
+                        color: new THREE.Color(colorInfo.hex),
+                        roughness: 0.12,
+                        metalness: 0.1,
+                        clearcoat: 1.0,
+                        clearcoatRoughness: 0.1,
+                        reflectivity: 0.9,
+                        flatShading: false
+                    });
+
+                    const discMesh = new THREE.Mesh(discGeom, discMat);
+                    discMesh.castShadow = true;
+                    discMesh.receiveShadow = true;
+
+                    // Set precise vertical stacking coordinates on peg
+                    const targetY = STATE.sticks[stickIdx].position.y + (h * 0.45) + 0.25;
+                    discMesh.position.set(
+                        STATE.sticks[stickIdx].position.x,
+                        targetY,
+                        STATE.sticks[stickIdx].position.z
+                    );
+
+                    scene.add(discMesh);
+
+                    const discObj = {
+                        mesh: discMesh,
+                        colorId: colorId,
+                        initialMat: discMat
+                    };
+
+                    STATE.sticks[stickIdx].discs.push(discObj);
+                    STATE.discs.push(discObj);
+                }
+            }
+
+            // Adjust OrbitControls target dynamically to center of board
+            const centerX = (minX + maxX) / 2;
+            const centerZ = (minZ + maxZ) / 2;
+            controls.target.set(centerX, baseH, centerZ);
+            controls.update();
+        }
+
+        // --- TIMER TRACKER ---
+        function startTimer() {
+            if (STATE.timerInterval) return;
+            STATE.startTime = Date.now() - (STATE.elapsedSeconds * 1000);
+            STATE.timerInterval = setInterval(() => {
+                STATE.elapsedSeconds = Math.floor((Date.now() - STATE.startTime) / 1000);
+                const mins = String(Math.floor(STATE.elapsedSeconds / 60)).padStart(2, '0');
+                const secs = String(STATE.elapsedSeconds % 60).padStart(2, '0');
+                document.getElementById('hud-timer').innerText = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            clearInterval(STATE.timerInterval);
+            STATE.timerInterval = null;
+        }
+
+        // --- PLAYER INTERACTION & RAYCASTING ---
+
+        function onDocumentPointerDown(event) {
+            // Reject input clicks during win transitions or ongoing physical moves
+            if (STATE.isWon || STATE.isAnimating) return;
+
+            // Get normalized pointer device position
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            // Fetch list of invisible peg-collider intersects
+            const raycastTargets = STATE.sticks.map(s => s.collider);
+            const intersects = raycaster.intersectObjects(raycastTargets);
+
+            if (intersects.length > 0) {
+                // Pinpoint matching stick
+                const hitCollider = intersects[0].object;
+                const hitStickIndex = hitCollider.userData.stickIndex;
+                handleStickSelection(hitStickIndex);
+            }
+        }
+
+        // Decides action between selecting top disc or transferring to another peg
+        function handleStickSelection(stickIdx) {
+            startTimer(); // Activate timer on player's first interaction
+
+            if (STATE.selectedStickIndex === null) {
+                // Selection phase
+                const targetStick = STATE.sticks[stickIdx];
+                if (targetStick.discs.length === 0) {
+                    // Empty peg can't provide disc
+                    shakePeg(stickIdx);
+                    return;
+                }
+
+                // Select and elevate top disc
+                STATE.selectedStickIndex = stickIdx;
+                const topDisc = targetStick.discs[targetStick.discs.length - 1];
+                
+                // Animate selected visual hover lifting
+                animateDiscHover(topDisc, true);
+            } else {
+                // Placement phase
+                const sourceIdx = STATE.selectedStickIndex;
+                
+                if (sourceIdx === stickIdx) {
+                    // Clicking same peg deselects and returns down
+                    const targetStick = STATE.sticks[sourceIdx];
+                    const topDisc = targetStick.discs[targetStick.discs.length - 1];
+                    animateDiscHover(topDisc, false);
+                    STATE.selectedStickIndex = null;
+                } else {
+                    // Attempt transfer
+                    const srcStick = STATE.sticks[sourceIdx];
+                    const dstStick = STATE.sticks[stickIdx];
+
+                    if (dstStick.discs.length >= CONFIG.maxHeight) {
+                        // Max capacity error
+                        shakePeg(stickIdx);
+                        const topDisc = srcStick.discs[srcStick.discs.length - 1];
+                        animateDiscHover(topDisc, false);
+                        STATE.selectedStickIndex = null;
+                        return;
+                    }
+
+                    // Approved move! Perform 3D curve translation animation
+                    STATE.selectedStickIndex = null; // reset lock
+                    executeDiscTransfer(sourceIdx, stickIdx);
+                }
+            }
+        }
+
+        // Shakes peg mesh laterally as negative response feedback
+        function shakePeg(stickIdx) {
+            const mesh = STATE.sticks[stickIdx].mesh;
+            const originalX = mesh.position.x;
+            const shakeAnim = {
+                mesh: mesh,
+                originalX: originalX,
+                time: 0,
+                duration: 0.35,
+                update: function(dt) {
+                    this.time += dt;
+                    const progress = this.time / this.duration;
+                    if (progress >= 1.0) {
+                        mesh.position.x = this.originalX;
+                        return false; // remove animation
+                    }
+                    const offset = Math.sin(progress * Math.PI * 8) * 0.15 * (1.0 - progress);
+                    mesh.position.x = this.originalX + offset;
+                    return true;
+                }
+            };
+            STATE.activeAnimations.push(shakeAnim);
+        }
+
+        // Lifts top disc into hover-glow when first chosen
+        function animateDiscHover(disc, hoverState) {
+            const mesh = disc.mesh;
+            const targetY = hoverState 
+                ? (STATE.sticks[disc.mesh.userData?.stickIdx || getDiscStickIndex(disc)].position.y + (CONFIG.maxHeight * 0.55) + 0.3)
+                : (STATE.sticks[getDiscStickIndex(disc)].position.y + ((STATE.sticks[getDiscStickIndex(disc)].discs.indexOf(disc)) * 0.45) + 0.25);
+
+            // Turn on slight emmissive glow if active
+            if (hoverState) {
+                mesh.material.emissive = new THREE.Color(0x333333);
+            } else {
+                mesh.material.emissive = new THREE.Color(0x000000);
+            }
+
+            const hoverAnim = {
+                mesh: mesh,
+                startY: mesh.position.y,
+                endY: targetY,
+                time: 0,
+                duration: 0.2,
+                update: function(dt) {
+                    this.time += dt;
+                    const progress = Math.min(1.0, this.time / this.duration);
+                    mesh.position.y = THREE.MathUtils.lerp(this.startY, this.endY, progress);
+                    return progress < 1.0;
+                }
+            };
+            STATE.activeAnimations.push(hoverAnim);
+        }
+
+        // Standard Utility to scan and locate containing peg
+        function getDiscStickIndex(disc) {
+            for (let i = 0; i < STATE.sticks.length; i++) {
+                if (STATE.sticks[i].discs.includes(disc)) return i;
+            }
+            return 0;
+        }
+
+        // Executes elegant 3-phase horizontal/vertical loop transition
+        function executeDiscTransfer(srcIdx, dstIdx) {
+            STATE.isAnimating = true;
+
+            const srcStick = STATE.sticks[srcIdx];
+            const dstStick = STATE.sticks[dstIdx];
+
+            const disc = srcStick.discs.pop(); // pull
+            
+            // Turn off hover glow state
+            disc.mesh.material.emissive = new THREE.Color(0x000000);
+
+            // Source position coordinates
+            const startPos = disc.mesh.position.clone();
+            
+            // Peak clearance height safely clearing all stacks
+            const peakHeight = Math.max(srcStick.position.y, dstStick.position.y) + (CONFIG.maxHeight * 0.55) + 1.2;
+            
+            const peakPos1 = new THREE.Vector3(startPos.x, peakHeight, startPos.z);
+            const peakPos2 = new THREE.Vector3(dstStick.position.x, peakHeight, dstStick.position.z);
+            
+            // Deep final slot target position
+            const finalHeight = dstStick.position.y + (dstStick.discs.length * 0.45) + 0.25;
+            const endPos = new THREE.Vector3(dstStick.position.x, finalHeight, dstStick.position.z);
+
+            // Phase based interpolation animator
+            const transferAnim = {
+                mesh: disc.mesh,
+                p0: startPos,
+                p1: peakPos1,
+                p2: peakPos2,
+                p3: endPos,
+                progress: 0,
+                speed: 3.5, // movement acceleration
+                update: function(dt) {
+                    this.progress += dt * this.speed;
+                    if (this.progress >= 3.0) {
+                        // Snap precisely in target slot
+                        this.mesh.position.copy(this.p3);
+                        
+                        // Push into target stack operational tracking
+                        dstStick.discs.push(disc);
+                        STATE.isAnimating = false;
+                        
+                        // Record user turn move
+                        STATE.moves++;
+                        document.getElementById('hud-moves').innerText = STATE.moves;
+
+                        // Game Over verification sweep
+                        checkWinCondition();
+                        return false; // remove animation
+                    }
+
+                    // Smooth step translations
+                    if (this.progress < 1.0) {
+                        // Phase 1: Straight up vertical ascent
+                        this.mesh.position.lerpVectors(this.p0, this.p1, this.progress);
+                    } else if (this.progress < 2.0) {
+                        // Phase 2: Transverse horizontal bridge slide
+                        this.mesh.position.lerpVectors(this.p1, this.p2, this.progress - 1.0);
+                    } else {
+                        // Phase 3: Plunge descent into receiving peg slot
+                        this.mesh.position.lerpVectors(this.p2, this.p3, this.progress - 2.0);
+                    }
+                    return true;
+                }
+            };
+
+            STATE.activeAnimations.push(transferAnim);
+        }
+
+        // --- WIN TRIGGER ENGINE ---
+        function checkWinCondition() {
+            let win = true;
+
+            // Rule: Every single peg must contain only discs of identical colors, or be completely empty.
+            // Additionally, one single unique color cannot be divided across separate pegs.
+            const colorHomePegs = {}; // Keeps track of which peg matches which color ID
+
+            for (let i = 0; i < CONFIG.numSticks; i++) {
+                const stack = STATE.sticks[i].discs;
+                if (stack.length === 0) continue;
+
+                const pegColorId = stack[0].colorId;
+
+                // If another peg already houses this color, rules are violated (no splits)
+                if (colorHomePegs[pegColorId] !== undefined) {
+                    win = false;
+                    break;
+                }
+                colorHomePegs[pegColorId] = i;
+
+                // Validate that all elements on this peg are unified to matching color ID
+                for (let d = 1; d < stack.length; d++) {
+                    if (stack[d].colorId !== pegColorId) {
+                        win = false;
+                        break;
+                    }
+                }
+
+                // If difficulty is medium or hard, full groups of a color must also be complete in count
+                // (E.g. can't leave 2 on stick and 2 on stick if stack height is 4)
+                if (win && stack.length !== CONFIG.maxHeight) {
+                    win = false;
+                }
+
+                if (!win) break;
+            }
+
+            if (win) {
+                handleWinSuccess();
+            }
+        }
+
+        function handleWinSuccess() {
+            STATE.isWon = true;
+            pauseTimer();
+
+            // Fire Canvas-Confetti burst
+            const duration = 2.5 * 1000;
+            const end = Date.now() + duration;
+
+            (function frame() {
+                confetti({
+                    particleCount: 5,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: ['#007AFF', '#AF52DE', '#FFCC00', '#FF3B30']
+                });
+                confetti({
+                    particleCount: 5,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: ['#007AFF', '#AF52DE', '#FFCC00', '#FF3B30']
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+
+            // Reveal win analytics recap panel
+            document.getElementById('stat-time').innerText = document.getElementById('hud-timer').innerText;
+            document.getElementById('stat-moves').innerText = STATE.moves;
+            document.getElementById('stat-diff').innerText = CONFIG.difficulty;
+
+            const modal = document.getElementById('win-modal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                modal.querySelector('.glass-panel').classList.remove('scale-95');
+            }, 50);
+        }
+
+        // --- GUI & CONFIGURATION PANELS SETUP ---
+
+        function setupGUI() {
+            // Desk sliders
+            const sliders = [
+                { slider: 'slider-sticks', val: 'val-sticks', key: 'numSticks' },
+                { slider: 'slider-colors', val: 'val-colors', key: 'numColors' },
+                { slider: 'slider-stack', val: 'val-stack', key: 'maxHeight' }
+            ];
+
+            // Mobile sliders
+            const mSliders = [
+                { slider: 'm-slider-sticks', val: 'm-val-sticks', key: 'numSticks' },
+                { slider: 'm-slider-colors', val: 'm-val-colors', key: 'numColors' },
+                { slider: 'm-slider-stack', val: 'm-val-stack', key: 'maxHeight' }
+            ];
+
+            function bindSlider(sInfo, isMobile) {
+                const elem = document.getElementById(sInfo.slider);
+                const valElem = document.getElementById(sInfo.val);
+                
+                elem.addEventListener('input', (e) => {
+                    let v = parseInt(e.target.value);
+                    
+                    // Integrity constraints: unique colors must strictly be less than pegs
+                    if (sInfo.key === 'numSticks') {
+                        const colSlider = isMobile ? document.getElementById('m-slider-colors') : document.getElementById('slider-colors');
+                        const colVal = isMobile ? document.getElementById('m-val-colors') : document.getElementById('val-colors');
+                        if (parseInt(colSlider.value) >= v) {
+                            colSlider.value = v - 1;
+                            colVal.innerText = v - 1;
+                            CONFIG.numColors = v - 1;
+                        }
+                        colSlider.max = v - 1;
+                    }
+                    if (sInfo.key === 'numColors') {
+                        const stSlider = isMobile ? document.getElementById('m-slider-sticks') : document.getElementById('slider-sticks');
+                        if (v >= parseInt(stSlider.value)) {
+                            v = parseInt(stSlider.value) - 1;
+                            elem.value = v;
+                        }
+                    }
+
+                    valElem.innerText = v;
+                    CONFIG[sInfo.key] = v;
+                    CONFIG.difficulty = 'custom';
+                    
+                    // Unselect buttons
+                    clearPresetButtonsHighlight();
+                });
+            }
+
+            sliders.forEach(s => bindSlider(s, false));
+            mSliders.forEach(s => bindSlider(s, true));
+
+            // Generate buttons triggers
+            document.getElementById('btn-generate').addEventListener('click', () => {
+                startNewGame();
+            });
+            document.getElementById('btn-mobile-generate').addEventListener('click', () => {
+                startNewGame();
+                toggleMobileMenu(false);
+            });
+            document.getElementById('btn-quick-reset').addEventListener('click', () => {
+                startNewGame();
+            });
+            document.getElementById('btn-win-restart').addEventListener('click', () => {
+                startNewGame();
+            });
+
+            // Mobile drawer action toggles
+            const mobileMenu = document.getElementById('mobile-menu');
+            const drawerPanel = mobileMenu.querySelector('.glass-panel');
+
+            function toggleMobileMenu(open) {
+                if (open) {
+                    mobileMenu.classList.remove('opacity-0', 'pointer-events-none');
+                    drawerPanel.classList.remove('translate-y-full');
+                } else {
+                    mobileMenu.classList.add('opacity-0', 'pointer-events-none');
+                    drawerPanel.classList.add('translate-y-full');
+                }
+            }
+
+            document.getElementById('btn-mobile-menu-trigger').addEventListener('click', () => toggleMobileMenu(true));
+            document.getElementById('btn-mobile-menu-close').addEventListener('click', () => toggleMobileMenu(false));
+            mobileMenu.addEventListener('click', (e) => {
+                if (e.target === mobileMenu) toggleMobileMenu(false);
+            });
+        }
+
+        // Sets config presets easily
+        function setDifficultyPreset(level) {
+            CONFIG.difficulty = level;
+            
+            if (level === 'easy') {
+                CONFIG.numSticks = 5;
+                CONFIG.numColors = 3;
+                CONFIG.maxHeight = 4;
+                CONFIG.scrambleMoves = 30;
+            } else if (level === 'medium') {
+                CONFIG.numSticks = 7;
+                CONFIG.numColors = 5;
+                CONFIG.maxHeight = 4;
+                CONFIG.scrambleMoves = 50;
+            } else if (level === 'hard') {
+                CONFIG.numSticks = 9;
+                CONFIG.numColors = 8;
+                CONFIG.maxHeight = 4;
+                CONFIG.scrambleMoves = 85;
+            }
+
+            // Sync visual sliders
+            const sync = (prefix) => {
+                document.getElementById(`${prefix}slider-sticks`).value = CONFIG.numSticks;
+                document.getElementById(`${prefix}slider-sticks`).max = 12;
+                document.getElementById(`${prefix}val-sticks`).innerText = CONFIG.numSticks;
+
+                document.getElementById(`${prefix}slider-colors`).value = CONFIG.numColors;
+                document.getElementById(`${prefix}slider-colors`).max = CONFIG.numSticks - 1;
+                document.getElementById(`${prefix}val-colors`).innerText = CONFIG.numColors;
+
+                document.getElementById(`${prefix}slider-stack`).value = CONFIG.maxHeight;
+                document.getElementById(`${prefix}val-stack`).innerText = CONFIG.maxHeight;
+            };
+
+            sync('');
+            sync('m-');
+
+            // Set button classes styling
+            clearPresetButtonsHighlight();
+            const btn = document.getElementById(`preset-${level}`);
+            const mBtn = document.getElementById(`m-preset-${level}`);
+            
+            [btn, mBtn].forEach(b => {
+                if (b) {
+                    b.classList.remove('text-slate-400');
+                    b.classList.add('bg-indigo-500', 'text-white', 'shadow-lg');
+                }
+            });
+        }
+
+        function clearPresetButtonsHighlight() {
+            const presets = ['easy', 'medium', 'hard'];
+            presets.forEach(p => {
+                const b = document.getElementById(`preset-${p}`);
+                const mb = document.getElementById(`m-preset-${p}`);
+                [b, mb].forEach(btn => {
+                    if (btn) {
+                        btn.classList.add('text-slate-400');
+                        btn.classList.remove('bg-indigo-500', 'text-white', 'shadow-lg');
+                    }
+                });
+            });
+        }
+
+        // --- FRAME UPDATE LOOP ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = clock.getDelta();
+
+            // Smoothly evaluate ongoing physics/translations
+            for (let i = STATE.activeAnimations.length - 1; i >= 0; i--) {
+                const anim = STATE.activeAnimations[i];
+                const active = anim.update(dt);
+                if (!active) {
+                    STATE.activeAnimations.splice(i, 1);
+                }
+            }
+
+            // Subtle bobbing animation on the chosen highlighted disc
+            if (STATE.selectedStickIndex !== null) {
+                const stick = STATE.sticks[STATE.selectedStickIndex];
+                if (stick.discs.length > 0) {
+                    const topDisc = stick.discs[stick.discs.length - 1];
+                    const time = Date.now() * 0.005;
+                    const hoverBaseY = stick.position.y + (CONFIG.maxHeight * 0.55) + 0.3;
+                    topDisc.mesh.position.y = hoverBaseY + Math.sin(time) * 0.08;
+                    topDisc.mesh.rotation.y += 0.01; // rotate ring slowly
+                }
+            }
+
+            // Required OrbitControls updates
+            controls.update();
+
+            // Render WebGL frame
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
