@@ -160,9 +160,9 @@
                         <div>
                             <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
                                 <span>Pegs / Sticks</span>
-                                <span id="val-sticks" class="text-indigo-400 font-bold">5</span>
+                                <span id="val-sticks" class="text-indigo-400 font-bold">4</span>
                             </div>
-                            <input type="range" id="slider-sticks" min="4" max="12" step="1" value="5" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                            <input type="range" id="slider-sticks" min="4" max="12" step="1" value="4" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
                         </div>
 
                         <div>
@@ -176,9 +176,9 @@
                         <div>
                             <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
                                 <span>Discs Per Peg</span>
-                                <span id="val-stack" class="text-indigo-400 font-bold">8</span>
+                                <span id="val-stack" class="text-indigo-400 font-bold">7</span>
                             </div>
-                            <input type="range" id="slider-stack" min="3" max="12" step="1" value="8" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                            <input type="range" id="slider-stack" min="3" max="16" step="1" value="7" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
                         </div>
                     </div>
                 </div>
@@ -231,9 +231,9 @@
                 <div>
                     <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
                         <span>Pegs / Sticks</span>
-                        <span id="m-val-sticks" class="text-indigo-400 font-bold">5</span>
+                        <span id="m-val-sticks" class="text-indigo-400 font-bold">4</span>
                     </div>
-                    <input type="range" id="m-slider-sticks" min="4" max="12" step="1" value="5" class="w-full accent-indigo-500">
+                    <input type="range" id="m-slider-sticks" min="4" max="12" step="1" value="4" class="w-full accent-indigo-500">
                 </div>
 
                 <div>
@@ -247,9 +247,9 @@
                 <div>
                     <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
                         <span>Discs Per Peg</span>
-                        <span id="m-val-stack" class="text-indigo-400 font-bold">8</span>
+                        <span id="m-val-stack" class="text-indigo-400 font-bold">7</span>
                     </div>
-                    <input type="range" id="m-slider-stack" min="3" max="12" step="1" value="8" class="w-full accent-indigo-500">
+                    <input type="range" id="m-slider-stack" min="3" max="16" step="1" value="7" class="w-full accent-indigo-500">
                 </div>
             </div>
 
@@ -306,11 +306,11 @@
     <script>
         // --- GAME PARAMETERS & GLOBAL STATES ---
         const CONFIG = {
-            numSticks: 5,
+            numSticks: 4,
             numColors: 3,
-            maxHeight: 8,       // Doubled default stack height
-            difficulty: 'easy', // 'easy', 'medium', 'hard', 'custom'
-            scrambleMoves: 10000 // Tens of thousands of scrambles
+            maxHeight: 7,        // Default stack height initialized to 7 (Easy baseline)
+            difficulty: 'easy',  // 'easy', 'medium', 'hard', 'custom'
+            scrambleMoves: 10000 // Multi-thousand move scramble loop
         };
 
         const STATE = {
@@ -323,7 +323,8 @@
             discs: [],                // Active disc rendering objects [{mesh, colorId, material}]
             isAnimating: false,       // Freeze interactions during active movement animations
             isWon: false,
-            activeAnimations: []      // Smooth interactive transitions
+            activeAnimations: [],     // Smooth interactive transitions
+            completedSticks: []       // Completed status of each stick to trigger completion burst
         };
 
         // Synthesised Wooden Sound Engine (Web Audio API)
@@ -355,7 +356,7 @@
                     gain.connect(audioCtx.destination);
                     
                     osc.start(now);
-                    osc.stop(now + 0.09);
+                    osc.stop(now + 0.08);
                 } else if (type === 'place') {
                     // Rich deep wood block sound upon slotting
                     const osc1 = audioCtx.createOscillator();
@@ -383,9 +384,9 @@
                     gain2.connect(audioCtx.destination);
                     
                     osc1.start(now);
-                    osc1.stop(now + 0.17);
+                    osc1.stop(now + 0.16);
                     osc2.start(now);
-                    osc2.stop(now + 0.13);
+                    osc2.stop(now + 0.12);
                 } else if (type === 'shake') {
                     // Double wooden click error feedback
                     for (let i = 0; i < 2; i++) {
@@ -404,11 +405,45 @@
                         gain.connect(audioCtx.destination);
                         
                         osc.start(now + delay);
-                        osc.stop(now + delay + 0.07);
+                        osc.stop(now + delay + 0.06);
                     }
                 }
             } catch (e) {
                 console.warn("Audio Context init/playback failed:", e);
+            }
+        }
+
+        // Ascending harmonic cascade of wooden block notes for a premium victory celebration
+        function playVictorySound() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const now = audioCtx.currentTime;
+                const notes = [220.00, 277.18, 329.63, 440.00, 554.37, 659.25, 880.00];
+                notes.forEach((freq, index) => {
+                    const time = now + index * 0.12;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, time);
+                    osc.frequency.exponentialRampToValueAtTime(freq * 0.5, time + 0.3);
+                    
+                    gain.gain.setValueAtTime(0.4, time);
+                    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start(time);
+                    osc.stop(time + 0.31);
+                });
+            } catch (e) {
+                console.warn("Victory sound execution error:", e);
             }
         }
 
@@ -601,36 +636,67 @@
 
         // --- GAME INSTANTIATION / SCRAMBLER STATE ENGINE ---
 
-        // Generates dynamic grids depending on sticks configuration
+        // Generates dynamic grids depending on sticks configuration (Linear Closer Spacing)
         function generateSticksLayout(numSticks) {
             const positions = [];
-            const spacingX = 2.5;
-            const spacingZ = 2.5;
-
-            if (numSticks <= 5) {
-                // Single linear row configuration
-                const startX = -((numSticks - 1) * spacingX) / 2;
-                for (let i = 0; i < numSticks; i++) {
-                    positions.push(new THREE.Vector3(startX + i * spacingX, 0, 0));
-                }
-            } else {
-                // Compact double row staggered grid
-                const cols = Math.ceil(numSticks / 2);
-                const startX = -((cols - 1) * spacingX) / 2;
-                for (let i = 0; i < numSticks; i++) {
-                    const row = Math.floor(i / cols);
-                    const col = i % cols;
-                    // Center the last row if odd number
-                    let adjustX = 0;
-                    if (row === 1 && numSticks % 2 !== 0) {
-                        const lastRowCols = numSticks - cols;
-                        const firstRowCols = cols;
-                        adjustX = (firstRowCols - lastRowCols) * spacingX / 2;
-                    }
-                    positions.push(new THREE.Vector3(startX + col * spacingX + adjustX, 0, (row - 0.5) * spacingZ));
-                }
+            // spacingX slightly larger than disc diameter of 1.3 to avoid touching
+            const spacingX = 1.45; 
+            const startX = -((numSticks - 1) * spacingX) / 2;
+            for (let i = 0; i < numSticks; i++) {
+                positions.push(new THREE.Vector3(startX + i * spacingX, 0, 0));
             }
             return positions;
+        }
+
+        // Dynamic status check to evaluate if a stick is filled completely with a unified color
+        function isStickCompleted(stickIdx) {
+            const stack = STATE.sticks[stickIdx].discs;
+            if (stack.length !== CONFIG.maxHeight) return false;
+            const firstColorId = stack[0].colorId;
+            for (let j = 1; j < stack.length; j++) {
+                if (stack[j].colorId !== firstColorId) return false;
+            }
+            return true;
+        }
+
+        // Trigger a cascading bounce animation for completed stacks, synced with audio burst taps
+        function triggerStickCompleteAnimation(stickIdx) {
+            const stick = STATE.sticks[stickIdx];
+            const totalDiscs = stick.discs.length;
+            
+            for (let h = 0; h < totalDiscs; h++) {
+                // Staggered play sound burst for the clicks
+                setTimeout(() => {
+                    playWoodSound('pick');
+                }, h * 75);
+                
+                const disc = stick.discs[h];
+                const originalY = stick.position.y + (h * 0.45) + 0.225;
+                
+                const hopAnim = {
+                    mesh: disc.mesh,
+                    originalY: originalY,
+                    time: 0,
+                    duration: 0.4,
+                    delay: h * 0.075, // cascade delay
+                    update: function(dt) {
+                        if (this.delay > 0) {
+                            this.delay -= dt;
+                            return true;
+                        }
+                        this.time += dt;
+                        const progress = this.time / this.duration;
+                        if (progress >= 1.0) {
+                            this.mesh.position.y = this.originalY;
+                            return false;
+                        }
+                        const bounceHeight = 0.35 * Math.sin(progress * Math.PI);
+                        this.mesh.position.y = this.originalY + bounceHeight;
+                        return true;
+                    }
+                };
+                STATE.activeAnimations.push(hopAnim);
+            }
         }
 
         // Tear down old board, build fresh meshes and generate a mathematically solvable state
@@ -716,14 +782,37 @@
                 });
             }
 
-            // Create initial disc configuration mathematically solved, then perform valid scrambling moves back
+            // Create initial starting state where S-1 sticks are full with identical colored stacks
             const activeColors = PALETTE.slice(0, CONFIG.numColors);
-            const boardState = Array.from({ length: CONFIG.numSticks }, () => []);
+            
+            // Build assigned color profiles for S - 1 filled sticks
+            const colorAssignments = [];
+            for (let i = 0; i < CONFIG.numColors; i++) {
+                colorAssignments.push(activeColors[i].id);
+            }
+            // Fill remaining stacks by cycling colors
+            const extraCount = (CONFIG.numSticks - 1) - CONFIG.numColors;
+            for (let i = 0; i < extraCount; i++) {
+                colorAssignments.push(activeColors[i % CONFIG.numColors].id);
+            }
+            // Shuffle color assignments
+            for (let i = colorAssignments.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [colorAssignments[i], colorAssignments[j]] = [colorAssignments[j], colorAssignments[i]];
+            }
 
-            // 1. Pack full stacks onto starting pegs to match color groupings (Solved Setup)
-            for (let colorIdx = 0; colorIdx < CONFIG.numColors; colorIdx++) {
+            // Determine one stick to be empty at the start
+            const emptyStickIdx = Math.floor(Math.random() * CONFIG.numSticks);
+
+            const boardState = Array.from({ length: CONFIG.numSticks }, () => []);
+            let assignmentIdx = 0;
+            for (let i = 0; i < CONFIG.numSticks; i++) {
+                if (i === emptyStickIdx) {
+                    continue; // Leave it empty
+                }
+                const assignedColorId = colorAssignments[assignmentIdx++];
                 for (let h = 0; h < CONFIG.maxHeight; h++) {
-                    boardState[colorIdx].push(activeColors[colorIdx].id);
+                    boardState[i].push(assignedColorId);
                 }
             }
 
@@ -813,6 +902,12 @@
                     STATE.sticks[stickIdx].discs.push(discObj);
                     STATE.discs.push(discObj);
                 }
+            }
+
+            // Track completed state vectors
+            STATE.completedSticks = Array(CONFIG.numSticks).fill(false);
+            for (let i = 0; i < CONFIG.numSticks; i++) {
+                STATE.completedSticks[i] = isStickCompleted(i);
             }
 
             // Adjust OrbitControls target dynamically to center of board, elevated slightly for tall pegs
@@ -1044,6 +1139,16 @@
                         // Play slot/thud sound effect
                         playWoodSound('place');
 
+                        // Evaluate if the destination stick has become filled with matching colors
+                        const wasCompleted = STATE.completedSticks[dstIdx];
+                        const nowCompleted = isStickCompleted(dstIdx);
+                        STATE.completedSticks[dstIdx] = nowCompleted;
+                        STATE.completedSticks[srcIdx] = isStickCompleted(srcIdx);
+
+                        if (nowCompleted && !wasCompleted) {
+                            triggerStickCompleteAnimation(dstIdx);
+                        }
+
                         // Game Over verification sweep
                         checkWinCondition();
                         return false; // remove animation
@@ -1097,7 +1202,6 @@
                 }
 
                 // If difficulty is medium or hard, full groups of a color must also be complete in count
-                // (E.g. can't leave 2 on stick and 2 on stick if stack height is 8)
                 if (win && stack.length !== CONFIG.maxHeight) {
                     win = false;
                 }
@@ -1113,6 +1217,9 @@
         function handleWinSuccess() {
             STATE.isWon = true;
             pauseTimer();
+
+            // Fire melodic celebration sound cascade
+            playVictorySound();
 
             // Fire Canvas-Confetti burst
             const duration = 2.5 * 1000;
@@ -1247,9 +1354,9 @@
             CONFIG.difficulty = level;
             
             if (level === 'easy') {
-                CONFIG.numSticks = 5;
+                CONFIG.numSticks = 4;
                 CONFIG.numColors = 3;
-                CONFIG.maxHeight = 8;
+                CONFIG.maxHeight = 7;
                 CONFIG.scrambleMoves = 10000;
             } else if (level === 'medium') {
                 CONFIG.numSticks = 7;
