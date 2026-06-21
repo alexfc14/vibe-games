@@ -176,9 +176,9 @@
                         <div>
                             <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
                                 <span>Discs Per Peg</span>
-                                <span id="val-stack" class="text-indigo-400 font-bold">4</span>
+                                <span id="val-stack" class="text-indigo-400 font-bold">8</span>
                             </div>
-                            <input type="range" id="slider-stack" min="3" max="6" step="1" value="4" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                            <input type="range" id="slider-stack" min="3" max="12" step="1" value="8" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
                         </div>
                     </div>
                 </div>
@@ -247,9 +247,9 @@
                 <div>
                     <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
                         <span>Discs Per Peg</span>
-                        <span id="m-val-stack" class="text-indigo-400 font-bold">4</span>
+                        <span id="m-val-stack" class="text-indigo-400 font-bold">8</span>
                     </div>
-                    <input type="range" id="m-slider-stack" min="3" max="6" step="1" value="4" class="w-full accent-indigo-500">
+                    <input type="range" id="m-slider-stack" min="3" max="12" step="1" value="8" class="w-full accent-indigo-500">
                 </div>
             </div>
 
@@ -308,9 +308,9 @@
         const CONFIG = {
             numSticks: 5,
             numColors: 3,
-            maxHeight: 4,
+            maxHeight: 8,       // Doubled default stack height
             difficulty: 'easy', // 'easy', 'medium', 'hard', 'custom'
-            scrambleMoves: 40
+            scrambleMoves: 10000 // Tens of thousands of scrambles
         };
 
         const STATE = {
@@ -319,25 +319,111 @@
             timerInterval: null,
             elapsedSeconds: 0,
             selectedStickIndex: null, // Index of selected peg
-            sticks: [],               // Operational peg array [{mesh, collider, position, discs: []}]
+            sticks: [],               // Operational peg array [{mesh, position, discs: []}]
             discs: [],                // Active disc rendering objects [{mesh, colorId, material}]
             isAnimating: false,       // Freeze interactions during active movement animations
             isWon: false,
             activeAnimations: []      // Smooth interactive transitions
         };
 
-        // Disc color dictionary with optimized physical materials
+        // Synthesised Wooden Sound Engine (Web Audio API)
+        let audioCtx = null;
+        function playWoodSound(type) {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                
+                const now = audioCtx.currentTime;
+                
+                if (type === 'pick') {
+                    // Short light wooden sound when selecting/lifting
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(240, now);
+                    osc.frequency.exponentialRampToValueAtTime(110, now + 0.08);
+                    
+                    gain.gain.setValueAtTime(0.35, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start(now);
+                    osc.stop(now + 0.09);
+                } else if (type === 'place') {
+                    // Rich deep wood block sound upon slotting
+                    const osc1 = audioCtx.createOscillator();
+                    const osc2 = audioCtx.createOscillator();
+                    const gain1 = audioCtx.createGain();
+                    const gain2 = audioCtx.createGain();
+                    
+                    osc1.type = 'triangle';
+                    osc1.frequency.setValueAtTime(140, now);
+                    osc1.frequency.exponentialRampToValueAtTime(55, now + 0.16);
+                    
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(210, now);
+                    osc2.frequency.exponentialRampToValueAtTime(75, now + 0.12);
+                    
+                    gain1.gain.setValueAtTime(0.5, now);
+                    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                    
+                    gain2.gain.setValueAtTime(0.25, now);
+                    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                    
+                    osc1.connect(gain1);
+                    osc2.connect(gain2);
+                    gain1.connect(audioCtx.destination);
+                    gain2.connect(audioCtx.destination);
+                    
+                    osc1.start(now);
+                    osc1.stop(now + 0.17);
+                    osc2.start(now);
+                    osc2.stop(now + 0.13);
+                } else if (type === 'shake') {
+                    // Double wooden click error feedback
+                    for (let i = 0; i < 2; i++) {
+                        const delay = i * 0.07;
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(100, now + delay);
+                        osc.frequency.exponentialRampToValueAtTime(35, now + delay + 0.06);
+                        
+                        gain.gain.setValueAtTime(0.3, now + delay);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.06);
+                        
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        
+                        osc.start(now + delay);
+                        osc.stop(now + delay + 0.07);
+                    }
+                }
+            } catch (e) {
+                console.warn("Audio Context init/playback failed:", e);
+            }
+        }
+
+        // Distinct, vivid and high-contrast colors (unambiguous Red, proper Orange)
         const PALETTE = [
-            { id: 0, hex: '#FF3B30', rgb: [255, 59, 48] },    // Soft Neon Red
-            { id: 1, hex: '#007AFF', rgb: [0, 122, 255] },   // Electric Blue
-            { id: 2, hex: '#34C759', rgb: [52, 199, 89] },    // Vibrant Green
-            { id: 3, hex: '#FFCC00', rgb: [255, 204, 0] },    // Sunny Yellow
-            { id: 4, hex: '#FF9500', rgb: [255, 149, 0] },    // Orange Bloom
-            { id: 5, hex: '#AF52DE', rgb: [175, 82, 222] },   // Royal Violet
-            { id: 6, hex: '#FF2D55', rgb: [255, 45, 85] },    // Hot Magenta
-            { id: 7, hex: '#5AC8FA', rgb: [90, 200, 250] },   // Fresh Cyan
-            { id: 8, hex: '#5856D6', rgb: [88, 86, 214] },    // Night Indigo
-            { id: 9, hex: '#A7E92F', rgb: [167, 233, 47] }     // Lucid Lime
+            { id: 0, hex: '#D6001C', rgb: [214, 0, 28] },     // Pure deep cherry Red (completely removed orange tints)
+            { id: 1, hex: '#0055FF', rgb: [0, 85, 255] },    // Electric Royal Blue
+            { id: 2, hex: '#10B981', rgb: [16, 185, 129] },  // Emerald Green
+            { id: 3, hex: '#FF7A00', rgb: [255, 122, 0] },   // Pure Vibrant Orange (replacing dark yellow)
+            { id: 4, hex: '#FFE600', rgb: [255, 230, 0] },   // Bright Lemon Yellow
+            { id: 5, hex: '#8B5CF6', rgb: [139, 92, 246] },  // Velvet Purple
+            { id: 6, hex: '#EC4899', rgb: [236, 72, 153] },  // Bright Hot Pink
+            { id: 7, hex: '#06B6D4', rgb: [6, 182, 212] },   // Ice Turquoise Cyan
+            { id: 8, hex: '#4F46E5', rgb: [79, 70, 229] },   // Deep Indigo Blue
+            { id: 9, hex: '#84CC16', rgb: [132, 204, 22] }   // Lucid Lime Green
         ];
 
         // --- THREE.JS GRAPHICS SETUP ---
@@ -371,7 +457,7 @@
 
             // Create Camera
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-            camera.position.set(0, 12, 16);
+            camera.position.set(0, 15, 19);
 
             // Create WebGL Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -389,7 +475,7 @@
             controls.dampingFactor = 0.05;
             controls.maxPolarAngle = Math.PI / 2.1; // Block clipping below floor
             controls.minDistance = 6;
-            controls.maxDistance = 30;
+            controls.maxDistance = 35;
 
             // Lights
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -397,7 +483,7 @@
 
             // Directional Light with Soft Shadows
             const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-            dirLight.position.set(10, 20, 12);
+            dirLight.position.set(10, 22, 12);
             dirLight.castShadow = true;
             dirLight.shadow.mapSize.width = 2048;
             dirLight.shadow.mapSize.height = 2048;
@@ -430,15 +516,13 @@
             animate();
         }
 
-        // Generate gorgeous high quality procedural textures in Canvas (Cross-Origin Block free!)
+        // Generate gorgeous high quality procedural textures in Canvas
         function generateProceduralMaterials() {
-            // Wood Grain Procedural Base Texture Canvas
             const woodCanvas = document.createElement('canvas');
             woodCanvas.width = 512;
             woodCanvas.height = 512;
             const woodCtx = woodCanvas.getContext('2d');
 
-            // Stylized rich wood layers
             woodCtx.fillStyle = '#614126'; // Nice base brown
             woodCtx.fillRect(0, 0, 512, 512);
 
@@ -467,13 +551,11 @@
             }
             woodCtx.putImageData(imgData, 0, 0);
 
-            // Setup textures with filtered scaling
             const woodTexture = new THREE.CanvasTexture(woodCanvas);
             woodTexture.wrapS = THREE.RepeatWrapping;
             woodTexture.wrapT = THREE.RepeatWrapping;
             woodTexture.repeat.set(1.5, 1.5);
 
-            // Physical wood textures for Base and Pegs
             woodMaterial = new THREE.MeshStandardMaterial({
                 map: woodTexture,
                 roughness: 0.65,
@@ -522,8 +604,8 @@
         // Generates dynamic grids depending on sticks configuration
         function generateSticksLayout(numSticks) {
             const positions = [];
-            const spacingX = 2.4;
-            const spacingZ = 2.4;
+            const spacingX = 2.5;
+            const spacingZ = 2.5;
 
             if (numSticks <= 5) {
                 // Single linear row configuration
@@ -535,7 +617,6 @@
                 // Compact double row staggered grid
                 const cols = Math.ceil(numSticks / 2);
                 const startX = -((cols - 1) * spacingX) / 2;
-                const rowOffsetZ = spacingZ / 1.8;
                 for (let i = 0; i < numSticks; i++) {
                     const row = Math.floor(i / cols);
                     const col = i % cols;
@@ -571,7 +652,6 @@
             // Remove previous active meshes from Scene
             STATE.sticks.forEach(s => {
                 scene.remove(s.mesh);
-                scene.remove(s.collider);
             });
             STATE.discs.forEach(d => {
                 scene.remove(d.mesh);
@@ -600,8 +680,8 @@
                 if (p.z > maxZ) maxZ = p.z;
             });
 
-            const marginX = 1.8;
-            const marginZ = 1.8;
+            const marginX = 2.0;
+            const marginZ = 2.0;
             const baseW = (maxX - minX) + marginX * 2;
             const baseD = (maxZ - minZ) + marginZ * 2;
             const baseH = 0.5;
@@ -615,13 +695,10 @@
             baseMesh.castShadow = true;
             scene.add(baseMesh);
 
-            // Build individual pegs & transparent, forgiving cylinder mouse target-colliders
-            const stickHeight = (CONFIG.maxHeight * 0.55) + 0.8;
-            const stickGeom = new THREE.CylinderGeometry(0.12, 0.16, stickHeight, 16);
+            // Peg height matches max discs perfectly (CONFIG.maxHeight * verticalStep)
+            const stickHeight = (CONFIG.maxHeight * 0.45);
+            const stickGeom = new THREE.CylinderGeometry(0.25, 0.25, stickHeight, 24);
             stickGeom.translate(0, stickHeight / 2, 0); // anchor at bottom
-
-            const colliderGeom = new THREE.CylinderGeometry(1.0, 1.0, stickHeight + 1.0, 16);
-            colliderGeom.translate(0, (stickHeight + 1) / 2, 0);
 
             for (let i = 0; i < CONFIG.numSticks; i++) {
                 // Peg Visual
@@ -632,16 +709,8 @@
                 stickMesh.receiveShadow = true;
                 scene.add(stickMesh);
 
-                // Peg Click-collider (Invisible)
-                const colMat = new THREE.MeshBasicMaterial({ visible: false });
-                const colMesh = new THREE.Mesh(colliderGeom, colMat);
-                colMesh.position.copy(stickMesh.position);
-                colMesh.userData = { stickIndex: i };
-                scene.add(colMesh);
-
                 STATE.sticks.push({
                     mesh: stickMesh,
-                    collider: colMesh,
                     position: stickMesh.position.clone(),
                     discs: [] // contains IDs or Disc Objects
                 });
@@ -658,7 +727,7 @@
                 }
             }
 
-            // 2. Perform retro-grade scramble sequence of valid moves to preserve solvability
+            // 2. Perform retro-grade scramble sequence of valid moves to preserve solvability (tens of thousands of moves)
             let scrambleCount = CONFIG.scrambleMoves;
             let lastSrc = -1;
             let lastDst = -1;
@@ -697,10 +766,10 @@
                 scrambleCount--;
             }
 
-            // Realise physical Disc meshes from simulated state
-            // Glossy plastic toroidal rings
-            const torusRadius = 0.55;
-            const torusTube = 0.22;
+            // Disc dimension matches peg dimensions exactly (inner radius 0.25)
+            // Torus tube = 0.2, inner radius = radius - tube = 0.45 - 0.2 = 0.25 (perfect snug fit)
+            const torusRadius = 0.45;
+            const torusTube = 0.2;
             const discGeom = new THREE.TorusGeometry(torusRadius, torusTube, 16, 40);
             discGeom.rotateX(Math.PI / 2); // Lay flat
 
@@ -726,7 +795,7 @@
                     discMesh.receiveShadow = true;
 
                     // Set precise vertical stacking coordinates on peg
-                    const targetY = STATE.sticks[stickIdx].position.y + (h * 0.45) + 0.25;
+                    const targetY = STATE.sticks[stickIdx].position.y + (h * 0.45) + 0.225;
                     discMesh.position.set(
                         STATE.sticks[stickIdx].position.x,
                         targetY,
@@ -746,10 +815,10 @@
                 }
             }
 
-            // Adjust OrbitControls target dynamically to center of board
+            // Adjust OrbitControls target dynamically to center of board, elevated slightly for tall pegs
             const centerX = (minX + maxX) / 2;
             const centerZ = (minZ + maxZ) / 2;
-            controls.target.set(centerX, baseH, centerZ);
+            controls.target.set(centerX, baseH + (CONFIG.maxHeight * 0.45) / 3, centerZ);
             controls.update();
         }
 
@@ -782,15 +851,29 @@
 
             raycaster.setFromCamera(mouse, camera);
 
-            // Fetch list of invisible peg-collider intersects
-            const raycastTargets = STATE.sticks.map(s => s.collider);
-            const intersects = raycaster.intersectObjects(raycastTargets);
+            // Fetch EXACT interactive targets (pegs and discs only) to completely prevent overlapping clicks
+            const targets = [];
+            STATE.sticks.forEach(s => targets.push(s.mesh));
+            STATE.discs.forEach(d => targets.push(d.mesh));
+
+            const intersects = raycaster.intersectObjects(targets);
 
             if (intersects.length > 0) {
-                // Pinpoint matching stick
-                const hitCollider = intersects[0].object;
-                const hitStickIndex = hitCollider.userData.stickIndex;
-                handleStickSelection(hitStickIndex);
+                const hitObject = intersects[0].object;
+                
+                // 1. Check if the player clicked a stick directly
+                const hitStickIndex = STATE.sticks.findIndex(s => s.mesh === hitObject);
+                if (hitStickIndex !== -1) {
+                    handleStickSelection(hitStickIndex);
+                    return;
+                }
+
+                // 2. Check if the player clicked a disc directly, resolve to its containing stick
+                const hitDisc = STATE.discs.find(d => d.mesh === hitObject);
+                if (hitDisc) {
+                    const hitStickIndexFromDisc = getDiscStickIndex(hitDisc);
+                    handleStickSelection(hitStickIndexFromDisc);
+                }
             }
         }
 
@@ -804,6 +887,7 @@
                 if (targetStick.discs.length === 0) {
                     // Empty peg can't provide disc
                     shakePeg(stickIdx);
+                    playWoodSound('shake');
                     return;
                 }
 
@@ -813,6 +897,7 @@
                 
                 // Animate selected visual hover lifting
                 animateDiscHover(topDisc, true);
+                playWoodSound('pick');
             } else {
                 // Placement phase
                 const sourceIdx = STATE.selectedStickIndex;
@@ -823,6 +908,7 @@
                     const topDisc = targetStick.discs[targetStick.discs.length - 1];
                     animateDiscHover(topDisc, false);
                     STATE.selectedStickIndex = null;
+                    playWoodSound('pick');
                 } else {
                     // Attempt transfer
                     const srcStick = STATE.sticks[sourceIdx];
@@ -831,6 +917,7 @@
                     if (dstStick.discs.length >= CONFIG.maxHeight) {
                         // Max capacity error
                         shakePeg(stickIdx);
+                        playWoodSound('shake');
                         const topDisc = srcStick.discs[srcStick.discs.length - 1];
                         animateDiscHover(topDisc, false);
                         STATE.selectedStickIndex = null;
@@ -872,10 +959,10 @@
         function animateDiscHover(disc, hoverState) {
             const mesh = disc.mesh;
             const targetY = hoverState 
-                ? (STATE.sticks[disc.mesh.userData?.stickIdx || getDiscStickIndex(disc)].position.y + (CONFIG.maxHeight * 0.55) + 0.3)
-                : (STATE.sticks[getDiscStickIndex(disc)].position.y + ((STATE.sticks[getDiscStickIndex(disc)].discs.indexOf(disc)) * 0.45) + 0.25);
+                ? (STATE.sticks[disc.mesh.userData?.stickIdx || getDiscStickIndex(disc)].position.y + (CONFIG.maxHeight * 0.45) + 0.8)
+                : (STATE.sticks[getDiscStickIndex(disc)].position.y + ((STATE.sticks[getDiscStickIndex(disc)].discs.indexOf(disc)) * 0.45) + 0.225);
 
-            // Turn on slight emmissive glow if active
+            // Turn on slight emissive glow if active
             if (hoverState) {
                 mesh.material.emissive = new THREE.Color(0x333333);
             } else {
@@ -922,13 +1009,13 @@
             const startPos = disc.mesh.position.clone();
             
             // Peak clearance height safely clearing all stacks
-            const peakHeight = Math.max(srcStick.position.y, dstStick.position.y) + (CONFIG.maxHeight * 0.55) + 1.2;
+            const peakHeight = Math.max(srcStick.position.y, dstStick.position.y) + (CONFIG.maxHeight * 0.45) + 0.8;
             
             const peakPos1 = new THREE.Vector3(startPos.x, peakHeight, startPos.z);
             const peakPos2 = new THREE.Vector3(dstStick.position.x, peakHeight, dstStick.position.z);
             
             // Deep final slot target position
-            const finalHeight = dstStick.position.y + (dstStick.discs.length * 0.45) + 0.25;
+            const finalHeight = dstStick.position.y + (dstStick.discs.length * 0.45) + 0.225;
             const endPos = new THREE.Vector3(dstStick.position.x, finalHeight, dstStick.position.z);
 
             // Phase based interpolation animator
@@ -953,6 +1040,9 @@
                         // Record user turn move
                         STATE.moves++;
                         document.getElementById('hud-moves').innerText = STATE.moves;
+
+                        // Play slot/thud sound effect
+                        playWoodSound('place');
 
                         // Game Over verification sweep
                         checkWinCondition();
@@ -1007,7 +1097,7 @@
                 }
 
                 // If difficulty is medium or hard, full groups of a color must also be complete in count
-                // (E.g. can't leave 2 on stick and 2 on stick if stack height is 4)
+                // (E.g. can't leave 2 on stick and 2 on stick if stack height is 8)
                 if (win && stack.length !== CONFIG.maxHeight) {
                     win = false;
                 }
@@ -1034,14 +1124,14 @@
                     angle: 60,
                     spread: 55,
                     origin: { x: 0 },
-                    colors: ['#007AFF', '#AF52DE', '#FFCC00', '#FF3B30']
+                    colors: ['#0055FF', '#8B5CF6', '#FFE600', '#D6001C']
                 });
                 confetti({
                     particleCount: 5,
                     angle: 120,
                     spread: 55,
                     origin: { x: 1 },
-                    colors: ['#007AFF', '#AF52DE', '#FFCC00', '#FF3B30']
+                    colors: ['#0055FF', '#8B5CF6', '#FFE600', '#D6001C']
                 });
 
                 if (Date.now() < end) {
@@ -1159,18 +1249,18 @@
             if (level === 'easy') {
                 CONFIG.numSticks = 5;
                 CONFIG.numColors = 3;
-                CONFIG.maxHeight = 4;
-                CONFIG.scrambleMoves = 30;
+                CONFIG.maxHeight = 8;
+                CONFIG.scrambleMoves = 10000;
             } else if (level === 'medium') {
                 CONFIG.numSticks = 7;
                 CONFIG.numColors = 5;
-                CONFIG.maxHeight = 4;
-                CONFIG.scrambleMoves = 50;
+                CONFIG.maxHeight = 8;
+                CONFIG.scrambleMoves = 20000;
             } else if (level === 'hard') {
                 CONFIG.numSticks = 9;
                 CONFIG.numColors = 8;
-                CONFIG.maxHeight = 4;
-                CONFIG.scrambleMoves = 85;
+                CONFIG.maxHeight = 8;
+                CONFIG.scrambleMoves = 30000;
             }
 
             // Sync visual sliders
@@ -1240,7 +1330,7 @@
                 if (stick.discs.length > 0) {
                     const topDisc = stick.discs[stick.discs.length - 1];
                     const time = Date.now() * 0.005;
-                    const hoverBaseY = stick.position.y + (CONFIG.maxHeight * 0.55) + 0.3;
+                    const hoverBaseY = stick.position.y + (CONFIG.maxHeight * 0.45) + 0.3;
                     topDisc.mesh.position.y = hoverBaseY + Math.sin(time) * 0.08;
                     topDisc.mesh.rotation.y += 0.01; // rotate ring slowly
                 }
