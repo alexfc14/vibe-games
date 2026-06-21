@@ -26,7 +26,7 @@
             display: block;
             outline: none;
         }
-        /* Custom scrollbars for controls if needed */
+        /* Custom scrollbars */
         ::-webkit-scrollbar {
             width: 6px;
         }
@@ -39,9 +39,9 @@
         }
         /* Glassmorphism utility classes */
         .glass-panel {
-            background: rgba(20, 22, 30, 0.75);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(20, 22, 30, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
         .glass-button {
@@ -115,149 +115,98 @@
                 <button id="btn-quick-reset" class="glass-panel glass-button p-4 rounded-2xl flex items-center justify-center text-slate-200 hover:text-white shadow-2xl tooltip" title="Restart Level">
                     <i class="fa-solid fa-rotate-left text-lg"></i>
                 </button>
+
+                <!-- Unified Configuration Toggle Button -->
+                <button id="btn-menu-trigger" class="glass-panel glass-button px-5 py-3 rounded-2xl flex items-center gap-2 font-bold text-sm text-indigo-400 shadow-2xl">
+                    <i class="fa-solid fa-gear text-lg"></i>
+                    <span class="hidden sm:inline">Configure</span>
+                </button>
             </div>
         </header>
 
-        <!-- Right Side Panel: Settings & Configuration -->
-        <aside class="absolute top-24 right-4 md:right-6 bottom-24 w-80 pointer-events-auto flex flex-col gap-4 hidden lg:flex">
-            <!-- Game Rules Quick Tips -->
-            <div class="glass-panel p-5 rounded-2xl shadow-xl flex flex-col gap-3">
-                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                    <i class="fa-solid fa-circle-info text-indigo-400"></i> How to Play
-                </h3>
-                <ul class="text-xs text-slate-400 space-y-2 leading-relaxed">
-                    <li class="flex gap-2">
-                        <span class="text-indigo-400 font-bold">1.</span> Click a stick to pick up its top disc.
-                    </li>
-                    <li class="flex gap-2">
-                        <span class="text-indigo-400 font-bold">2.</span> Click another stick to place it.
-                    </li>
-                    <li class="flex gap-2">
-                        <span class="text-indigo-400 font-bold">3.</span> Sort all identical colored discs together onto matching sticks to win!
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Configuration Form -->
-            <div class="glass-panel p-5 rounded-2xl shadow-xl flex-1 flex flex-col justify-between overflow-y-auto">
-                <div class="space-y-4">
-                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-widest border-b border-white/5 pb-2">
-                        <i class="fa-solid fa-sliders text-indigo-400 mr-1"></i> Board Configurator
-                    </h3>
-
-                    <!-- Difficulty Select -->
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Preset Difficulty</label>
-                        <div class="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5">
-                            <button onclick="setDifficultyPreset('easy')" id="preset-easy" class="py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">Easy</button>
-                            <button onclick="setDifficultyPreset('medium')" id="preset-medium" class="py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">Medium</button>
-                            <button onclick="setDifficultyPreset('hard')" id="preset-hard" class="py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">Hard</button>
-                        </div>
-                    </div>
-
-                    <!-- Custom parameters -->
-                    <div class="space-y-3 pt-2">
-                        <div>
-                            <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                                <span>Pegs / Sticks</span>
-                                <span id="val-sticks" class="text-indigo-400 font-bold">4</span>
-                            </div>
-                            <input type="range" id="slider-sticks" min="4" max="12" step="1" value="4" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
-                        </div>
-
-                        <div>
-                            <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                                <span>Unique Colors</span>
-                                <span id="val-colors" class="text-indigo-400 font-bold">3</span>
-                            </div>
-                            <input type="range" id="slider-colors" min="2" max="10" step="1" value="3" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
-                        </div>
-
-                        <div>
-                            <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                                <span>Discs Per Peg</span>
-                                <span id="val-stack" class="text-indigo-400 font-bold">7</span>
-                            </div>
-                            <input type="range" id="slider-stack" min="3" max="16" step="1" value="7" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Action Button -->
-                <button id="btn-generate" class="w-full mt-6 py-3 px-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-gamepad"></i> Setup New Game
-                </button>
-            </div>
-        </aside>
-
-        <!-- Bottom Controls Bar (Mobile Controls Trigger & Camera Info) -->
+        <!-- Bottom Controls Bar (Camera Info) -->
         <footer class="w-full flex items-center justify-between pointer-events-auto">
             <div class="glass-panel px-4 py-2.5 rounded-xl text-[11px] text-slate-400 flex items-center gap-2">
                 <i class="fa-solid fa-arrows-up-down-left-right text-indigo-400"></i>
                 <span>Left Click + Drag to Orbit | Scroll to Zoom | Right Click to Pan</span>
             </div>
-
-            <!-- Mobile Settings Trigger Button -->
-            <button id="btn-mobile-menu-trigger" class="lg:hidden glass-panel glass-button px-4 py-3 rounded-xl flex items-center gap-2 font-bold text-sm text-indigo-400">
-                <i class="fa-solid fa-gear"></i>
-                <span>Config Board</span>
-            </button>
+            <div class="glass-panel px-4 py-2.5 rounded-xl text-[11px] text-indigo-400 flex items-center gap-2 font-bold">
+                <i class="fa-solid fa-hand-pointer"></i>
+                <span>Pro Tip: Contiguous stacks of matching colors move together!</span>
+            </div>
         </footer>
     </div>
 
-    <!-- Mobile Configuration Overlay Drawer -->
-    <div id="mobile-menu" class="fixed inset-0 bg-black/80 backdrop-blur-md z-40 flex items-end justify-center opacity-0 pointer-events-none transition-opacity duration-300">
-        <div class="glass-panel w-full max-w-md rounded-t-[2.5rem] p-6 space-y-6 transform translate-y-full transition-transform duration-300">
-            <div class="flex justify-between items-center border-b border-white/5 pb-3">
-                <h3 class="text-lg font-extrabold text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-indigo-400"></i> Adjust Board
-                </h3>
-                <button id="btn-mobile-menu-close" class="text-slate-400 hover:text-white p-1">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
+    <!-- Collapsible Universal Drawer Configuration Panel (Sliding from Right) -->
+    <div id="config-drawer" class="fixed inset-y-0 right-0 w-full max-w-sm z-40 transform translate-x-full transition-transform duration-300 ease-out flex pointer-events-auto">
+        <div class="glass-panel w-full h-full flex flex-col justify-between p-6 shadow-2xl rounded-l-[2rem]">
+            <div class="space-y-6">
+                <!-- Header -->
+                <div class="flex justify-between items-center border-b border-white/5 pb-4">
+                    <h3 class="text-lg font-extrabold text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-indigo-400"></i> Board Settings
+                    </h3>
+                    <button id="btn-menu-close" class="text-slate-400 hover:text-white p-2 hover:bg-white/5 rounded-xl transition-colors">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- How to Play Quick Cards -->
+                <div class="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl space-y-2">
+                    <h4 class="text-xs font-bold text-indigo-300 uppercase tracking-widest flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-question"></i> Dynamic Moves
+                    </h4>
+                    <p class="text-[11px] text-slate-300 leading-relaxed">
+                        Click a stick to highlight all consecutive top discs of the *same* color. Click another stick to transfer them as a single bulk stack instantly!
+                    </p>
+                </div>
+
+                <!-- Controls sliders -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Preset Difficulty</label>
+                        <div class="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5">
+                            <button onclick="setDifficultyPreset('easy')" id="preset-easy" class="py-2 text-xs font-semibold rounded-lg text-slate-400">Easy</button>
+                            <button onclick="setDifficultyPreset('medium')" id="preset-medium" class="py-2 text-xs font-semibold rounded-lg text-slate-400">Medium</button>
+                            <button onclick="setDifficultyPreset('hard')" id="preset-hard" class="py-2 text-xs font-semibold rounded-lg text-slate-400">Hard</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                            <span>Pegs / Sticks</span>
+                            <span id="val-sticks" class="text-indigo-400 font-bold">4</span>
+                        </div>
+                        <input type="range" id="slider-sticks" min="4" max="12" step="1" value="4" class="w-full accent-indigo-500">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                            <span>Unique Colors</span>
+                            <span id="val-colors" class="text-indigo-400 font-bold">3</span>
+                        </div>
+                        <input type="range" id="slider-colors" min="2" max="10" step="1" value="3" class="w-full accent-indigo-500">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                            <span>Max Discs Per Peg</span>
+                            <span id="val-stack" class="text-indigo-400 font-bold">7</span>
+                        </div>
+                        <input type="range" id="slider-stack" min="3" max="16" step="1" value="7" class="w-full accent-indigo-500">
+                    </div>
+                </div>
             </div>
 
-            <!-- Mobile sliders -->
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Preset Difficulty</label>
-                    <div class="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5">
-                        <button onclick="setDifficultyPreset('easy')" id="m-preset-easy" class="py-2 text-xs font-semibold rounded-lg text-slate-400">Easy</button>
-                        <button onclick="setDifficultyPreset('medium')" id="m-preset-medium" class="py-2 text-xs font-semibold rounded-lg text-slate-400">Medium</button>
-                        <button onclick="setDifficultyPreset('hard')" id="m-preset-hard" class="py-2 text-xs font-semibold rounded-lg text-slate-400">Hard</button>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                        <span>Pegs / Sticks</span>
-                        <span id="m-val-sticks" class="text-indigo-400 font-bold">4</span>
-                    </div>
-                    <input type="range" id="m-slider-sticks" min="4" max="12" step="1" value="4" class="w-full accent-indigo-500">
-                </div>
-
-                <div>
-                    <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                        <span>Unique Colors</span>
-                        <span id="m-val-colors" class="text-indigo-400 font-bold">3</span>
-                    </div>
-                    <input type="range" id="m-slider-colors" min="2" max="10" step="1" value="3" class="w-full accent-indigo-500">
-                </div>
-
-                <div>
-                    <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                        <span>Discs Per Peg</span>
-                        <span id="m-val-stack" class="text-indigo-400 font-bold">7</span>
-                    </div>
-                    <input type="range" id="m-slider-stack" min="3" max="16" step="1" value="7" class="w-full accent-indigo-500">
-                </div>
-            </div>
-
-            <button id="btn-mobile-generate" class="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold rounded-2xl shadow-xl">
-                APPLY & GEN NEW GAME
+            <!-- Generate Game Trigger -->
+            <button id="btn-generate" class="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold rounded-2xl shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                <i class="fa-solid fa-gamepad"></i> Setup New Game
             </button>
         </div>
     </div>
+
+    <!-- Backdrop for Drawer Configuration Overlay -->
+    <div id="drawer-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-35 opacity-0 pointer-events-none transition-opacity duration-300"></div>
 
     <!-- Win Modal Screen Overlay -->
     <div id="win-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
@@ -319,6 +268,7 @@
             timerInterval: null,
             elapsedSeconds: 0,
             selectedStickIndex: null, // Index of selected peg
+            selectedCount: 0,         // How many contiguous matching color discs are selected
             sticks: [],               // Operational peg array [{mesh, position, discs: []}]
             discs: [],                // Active disc rendering objects [{mesh, colorId, material}]
             isAnimating: false,       // Freeze interactions during active movement animations
@@ -341,7 +291,6 @@
                 const now = audioCtx.currentTime;
                 
                 if (type === 'pick') {
-                    // Short light wooden sound when selecting/lifting
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     
@@ -358,7 +307,6 @@
                     osc.start(now);
                     osc.stop(now + 0.08);
                 } else if (type === 'place') {
-                    // Rich deep wood block sound upon slotting
                     const osc1 = audioCtx.createOscillator();
                     const osc2 = audioCtx.createOscillator();
                     const gain1 = audioCtx.createGain();
@@ -388,7 +336,6 @@
                     osc2.start(now);
                     osc2.stop(now + 0.12);
                 } else if (type === 'shake') {
-                    // Double wooden click error feedback
                     for (let i = 0; i < 2; i++) {
                         const delay = i * 0.07;
                         const osc = audioCtx.createOscillator();
@@ -447,18 +394,18 @@
             }
         }
 
-        // Distinct, vivid and high-contrast colors (unambiguous Red, proper Orange)
+        // Distinct, vivid and high-contrast colors (100% Unique - no similar tones)
         const PALETTE = [
-            { id: 0, hex: '#D6001C', rgb: [214, 0, 28] },     // Pure deep cherry Red (completely removed orange tints)
-            { id: 1, hex: '#0055FF', rgb: [0, 85, 255] },    // Electric Royal Blue
-            { id: 2, hex: '#10B981', rgb: [16, 185, 129] },  // Emerald Green
-            { id: 3, hex: '#FF7A00', rgb: [255, 122, 0] },   // Pure Vibrant Orange (replacing dark yellow)
-            { id: 4, hex: '#FFE600', rgb: [255, 230, 0] },   // Bright Lemon Yellow
-            { id: 5, hex: '#8B5CF6', rgb: [139, 92, 246] },  // Velvet Purple
-            { id: 6, hex: '#EC4899', rgb: [236, 72, 153] },  // Bright Hot Pink
-            { id: 7, hex: '#06B6D4', rgb: [6, 182, 212] },   // Ice Turquoise Cyan
-            { id: 8, hex: '#4F46E5', rgb: [79, 70, 229] },   // Deep Indigo Blue
-            { id: 9, hex: '#84CC16', rgb: [132, 204, 22] }   // Lucid Lime Green
+            { id: 0, hex: '#E11D48', rgb: [225, 29, 72] },   // Ruby Rose Red
+            { id: 1, hex: '#2563EB', rgb: [37, 99, 235] },   // Electric Royal Blue
+            { id: 2, hex: '#065F46', rgb: [6, 95, 70] },     // Rich Dark Forest Green
+            { id: 3, hex: '#EA580C', rgb: [234, 88, 12] },   // Vibrant Tangerine Orange
+            { id: 4, hex: '#FFE600', rgb: [255, 230, 0] },   // Sunny Lemon Yellow
+            { id: 5, hex: '#6D28D9', rgb: [109, 40, 217] },  // Velvet Deep Purple
+            { id: 6, hex: '#DB2777', rgb: [219, 39, 119] },  // Bright Pink Magenta
+            { id: 7, hex: '#06B6D4', rgb: [6, 182, 212] },   // Fresh Ice Cyan
+            { id: 8, hex: '#F8FAFC', rgb: [248, 250, 252] }, // Glossy Snow White
+            { id: 9, hex: '#78350F', rgb: [120, 53, 15] }    // Earth Cocoa Brown
         ];
 
         // --- THREE.JS GRAPHICS SETUP ---
@@ -509,7 +456,7 @@
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
             controls.maxPolarAngle = Math.PI / 2.1; // Block clipping below floor
-            controls.minDistance = 6;
+            controls.minDistance = 4;
             controls.maxDistance = 35;
 
             // Lights
@@ -563,7 +510,6 @@
 
             woodCtx.strokeStyle = '#432a15'; // Darker rings
             woodCtx.lineWidth = 3;
-            // Draw ring-like wood knots and stripes
             for (let i = 0; i < 60; i++) {
                 woodCtx.beginPath();
                 let x = Math.random() * 512;
@@ -636,11 +582,9 @@
 
         // --- GAME INSTANTIATION / SCRAMBLER STATE ENGINE ---
 
-        // Generates dynamic grids depending on sticks configuration (Linear Closer Spacing)
         function generateSticksLayout(numSticks) {
             const positions = [];
-            // spacingX slightly larger than disc diameter of 1.3 to avoid touching
-            const spacingX = 1.45; 
+            const spacingX = 1.45; // Close but safe distance (Discs diameter is ~1.3)
             const startX = -((numSticks - 1) * spacingX) / 2;
             for (let i = 0; i < numSticks; i++) {
                 positions.push(new THREE.Vector3(startX + i * spacingX, 0, 0));
@@ -648,7 +592,7 @@
             return positions;
         }
 
-        // Dynamic status check to evaluate if a stick is filled completely with a unified color
+        // Check if a stick is filled completely with a unified color
         function isStickCompleted(stickIdx) {
             const stack = STATE.sticks[stickIdx].discs;
             if (stack.length !== CONFIG.maxHeight) return false;
@@ -659,13 +603,12 @@
             return true;
         }
 
-        // Trigger a cascading bounce animation for completed stacks, synced with audio burst taps
+        // Sequential wave bounce cascade
         function triggerStickCompleteAnimation(stickIdx) {
             const stick = STATE.sticks[stickIdx];
             const totalDiscs = stick.discs.length;
             
             for (let h = 0; h < totalDiscs; h++) {
-                // Staggered play sound burst for the clicks
                 setTimeout(() => {
                     playWoodSound('pick');
                 }, h * 75);
@@ -678,7 +621,7 @@
                     originalY: originalY,
                     time: 0,
                     duration: 0.4,
-                    delay: h * 0.075, // cascade delay
+                    delay: h * 0.075,
                     update: function(dt) {
                         if (this.delay > 0) {
                             this.delay -= dt;
@@ -710,6 +653,7 @@
             document.getElementById('hud-moves').innerText = "0";
             STATE.isWon = false;
             STATE.selectedStickIndex = null;
+            STATE.selectedCount = 0;
             STATE.isAnimating = false;
             STATE.activeAnimations = [];
             document.getElementById('win-modal').classList.add('opacity-0', 'pointer-events-none');
@@ -722,7 +666,6 @@
             STATE.discs.forEach(d => {
                 scene.remove(d.mesh);
             });
-            // Clean up any remaining board or shadows
             const itemsToRemove = [];
             scene.traverse(node => {
                 if (node.isMesh && (node.name === "baseBoard" || node.name === "shadowReceiver")) {
@@ -746,8 +689,8 @@
                 if (p.z > maxZ) maxZ = p.z;
             });
 
-            const marginX = 2.0;
-            const marginZ = 2.0;
+            const marginX = 1.4;
+            const marginZ = 1.4;
             const baseW = (maxX - minX) + marginX * 2;
             const baseD = (maxZ - minZ) + marginZ * 2;
             const baseH = 0.5;
@@ -767,7 +710,6 @@
             stickGeom.translate(0, stickHeight / 2, 0); // anchor at bottom
 
             for (let i = 0; i < CONFIG.numSticks; i++) {
-                // Peg Visual
                 const stickMesh = new THREE.Mesh(stickGeom, woodStickMaterial);
                 stickMesh.position.copy(positions[i]);
                 stickMesh.position.y += baseH; // sit on base
@@ -778,61 +720,54 @@
                 STATE.sticks.push({
                     mesh: stickMesh,
                     position: stickMesh.position.clone(),
-                    discs: [] // contains IDs or Disc Objects
+                    discs: [] 
                 });
             }
 
             // Create initial starting state where S-1 sticks are full with identical colored stacks
             const activeColors = PALETTE.slice(0, CONFIG.numColors);
             
-            // Build assigned color profiles for S - 1 filled sticks
             const colorAssignments = [];
             for (let i = 0; i < CONFIG.numColors; i++) {
                 colorAssignments.push(activeColors[i].id);
             }
-            // Fill remaining stacks by cycling colors
             const extraCount = (CONFIG.numSticks - 1) - CONFIG.numColors;
             for (let i = 0; i < extraCount; i++) {
                 colorAssignments.push(activeColors[i % CONFIG.numColors].id);
             }
-            // Shuffle color assignments
+            // Shuffle
             for (let i = colorAssignments.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [colorAssignments[i], colorAssignments[j]] = [colorAssignments[j], colorAssignments[i]];
             }
 
-            // Determine one stick to be empty at the start
+            // Exactly one stick empty
             const emptyStickIdx = Math.floor(Math.random() * CONFIG.numSticks);
 
             const boardState = Array.from({ length: CONFIG.numSticks }, () => []);
             let assignmentIdx = 0;
             for (let i = 0; i < CONFIG.numSticks; i++) {
-                if (i === emptyStickIdx) {
-                    continue; // Leave it empty
-                }
+                if (i === emptyStickIdx) continue;
                 const assignedColorId = colorAssignments[assignmentIdx++];
                 for (let h = 0; h < CONFIG.maxHeight; h++) {
                     boardState[i].push(assignedColorId);
                 }
             }
 
-            // 2. Perform retro-grade scramble sequence of valid moves to preserve solvability (tens of thousands of moves)
+            // Perform solvable backward scramble loop
             let scrambleCount = CONFIG.scrambleMoves;
             let lastSrc = -1;
             let lastDst = -1;
 
             while (scrambleCount > 0) {
-                // Find all pegs with movable discs
                 const sourceCandidates = [];
                 for (let i = 0; i < CONFIG.numSticks; i++) {
                     if (boardState[i].length > 0) sourceCandidates.push(i);
                 }
 
                 if (sourceCandidates.length === 0) break;
-
                 const src = sourceCandidates[Math.floor(Math.random() * sourceCandidates.length)];
                 
-                // Find valid dest targets (not full, and avoid undoing last move immediately for better scramble)
                 const destCandidates = [];
                 for (let j = 0; j < CONFIG.numSticks; j++) {
                     if (j !== src && boardState[j].length < CONFIG.maxHeight) {
@@ -843,10 +778,8 @@
                 }
 
                 if (destCandidates.length === 0) continue;
-
                 const dst = destCandidates[Math.floor(Math.random() * destCandidates.length)];
 
-                // Move top disc in simulated board
                 const discId = boardState[src].pop();
                 boardState[dst].push(discId);
 
@@ -855,8 +788,7 @@
                 scrambleCount--;
             }
 
-            // Disc dimension matches peg dimensions exactly (inner radius 0.25)
-            // Torus tube = 0.2, inner radius = radius - tube = 0.45 - 0.2 = 0.25 (perfect snug fit)
+            // snugs flat torus setup
             const torusRadius = 0.45;
             const torusTube = 0.2;
             const discGeom = new THREE.TorusGeometry(torusRadius, torusTube, 16, 40);
@@ -868,7 +800,6 @@
                     const colorId = stack[h];
                     const colorInfo = PALETTE.find(p => p.id === colorId);
 
-                    // Physical premium glossy finish material
                     const discMat = new THREE.MeshPhysicalMaterial({
                         color: new THREE.Color(colorInfo.hex),
                         roughness: 0.12,
@@ -883,7 +814,6 @@
                     discMesh.castShadow = true;
                     discMesh.receiveShadow = true;
 
-                    // Set precise vertical stacking coordinates on peg
                     const targetY = STATE.sticks[stickIdx].position.y + (h * 0.45) + 0.225;
                     discMesh.position.set(
                         STATE.sticks[stickIdx].position.x,
@@ -904,16 +834,20 @@
                 }
             }
 
-            // Track completed state vectors
             STATE.completedSticks = Array(CONFIG.numSticks).fill(false);
             for (let i = 0; i < CONFIG.numSticks; i++) {
                 STATE.completedSticks[i] = isStickCompleted(i);
             }
 
-            // Adjust OrbitControls target dynamically to center of board, elevated slightly for tall pegs
+            // Adjust target and calculate PERFECT zoom to nicely frame components
             const centerX = (minX + maxX) / 2;
             const centerZ = (minZ + maxZ) / 2;
             controls.target.set(centerX, baseH + (CONFIG.maxHeight * 0.45) / 3, centerZ);
+
+            // Proportional framing calculation
+            const boardWidth = (maxX - minX) + 4.0;
+            const cameraDistance = Math.max(boardWidth * 1.2, stickHeight * 2.2);
+            camera.position.set(centerX, baseH + stickHeight * 1.3, centerZ + cameraDistance);
             controls.update();
         }
 
@@ -937,16 +871,14 @@
         // --- PLAYER INTERACTION & RAYCASTING ---
 
         function onDocumentPointerDown(event) {
-            // Reject input clicks during win transitions or ongoing physical moves
             if (STATE.isWon || STATE.isAnimating) return;
 
-            // Get normalized pointer device position
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
 
-            // Fetch EXACT interactive targets (pegs and discs only) to completely prevent overlapping clicks
+            // Raycast only visual elements for maximum selection accuracy
             const targets = [];
             STATE.sticks.forEach(s => targets.push(s.mesh));
             STATE.discs.forEach(d => targets.push(d.mesh));
@@ -956,14 +888,12 @@
             if (intersects.length > 0) {
                 const hitObject = intersects[0].object;
                 
-                // 1. Check if the player clicked a stick directly
                 const hitStickIndex = STATE.sticks.findIndex(s => s.mesh === hitObject);
                 if (hitStickIndex !== -1) {
                     handleStickSelection(hitStickIndex);
                     return;
                 }
 
-                // 2. Check if the player clicked a disc directly, resolve to its containing stick
                 const hitDisc = STATE.discs.find(d => d.mesh === hitObject);
                 if (hitDisc) {
                     const hitStickIndexFromDisc = getDiscStickIndex(hitDisc);
@@ -972,61 +902,145 @@
             }
         }
 
-        // Decides action between selecting top disc or transferring to another peg
+        // Lift/Drop entire contiguous same-color stack at once
+        function animateDiscsHoverGroup(stickIdx, hoverState) {
+            const stick = STATE.sticks[stickIdx];
+            const discs = stick.discs;
+            const count = STATE.selectedCount;
+            if (discs.length === 0 || count <= 0) return;
+
+            const hoverBaseY = stick.position.y + (CONFIG.maxHeight * 0.45) + 0.8;
+
+            for (let i = 0; i < count; i++) {
+                const discIdx = discs.length - count + i;
+                const disc = discs[discIdx];
+                if (!disc) continue;
+
+                const targetY = hoverState 
+                    ? (hoverBaseY + (i * 0.45))
+                    : (stick.position.y + (discIdx * 0.45) + 0.225);
+
+                if (hoverState) {
+                    disc.mesh.material.emissive = new THREE.Color(0x333333);
+                } else {
+                    disc.mesh.material.emissive = new THREE.Color(0x000000);
+                }
+
+                const anim = {
+                    mesh: disc.mesh,
+                    startY: disc.mesh.position.y,
+                    endY: targetY,
+                    time: 0,
+                    duration: 0.2,
+                    update: function(dt) {
+                        this.time += dt;
+                        const progress = Math.min(1.0, this.time / this.duration);
+                        disc.mesh.position.y = THREE.MathUtils.lerp(this.startY, this.endY, progress);
+                        return progress < 1.0;
+                    }
+                };
+                STATE.activeAnimations.push(anim);
+            }
+        }
+
         function handleStickSelection(stickIdx) {
-            startTimer(); // Activate timer on player's first interaction
+            startTimer();
 
             if (STATE.selectedStickIndex === null) {
-                // Selection phase
+                // Selection Phase
                 const targetStick = STATE.sticks[stickIdx];
                 if (targetStick.discs.length === 0) {
-                    // Empty peg can't provide disc
                     shakePeg(stickIdx);
                     playWoodSound('shake');
                     return;
                 }
 
-                // Select and elevate top disc
+                // Analyze contiguous same-colored stacks at the top
+                const discs = targetStick.discs;
+                const topColorId = discs[discs.length - 1].colorId;
+                let count = 0;
+                for (let i = discs.length - 1; i >= 0; i--) {
+                    if (discs[i].colorId === topColorId) {
+                        count++;
+                    } else {
+                        break;
+                    }
+                }
+
                 STATE.selectedStickIndex = stickIdx;
-                const topDisc = targetStick.discs[targetStick.discs.length - 1];
+                STATE.selectedCount = count;
                 
-                // Animate selected visual hover lifting
-                animateDiscHover(topDisc, true);
+                animateDiscsHoverGroup(stickIdx, true);
                 playWoodSound('pick');
             } else {
-                // Placement phase
+                // Placement Phase
                 const sourceIdx = STATE.selectedStickIndex;
                 
                 if (sourceIdx === stickIdx) {
-                    // Clicking same peg deselects and returns down
-                    const targetStick = STATE.sticks[sourceIdx];
-                    const topDisc = targetStick.discs[targetStick.discs.length - 1];
-                    animateDiscHover(topDisc, false);
+                    // Cancel selection
+                    animateDiscsHoverGroup(sourceIdx, false);
                     STATE.selectedStickIndex = null;
+                    STATE.selectedCount = 0;
                     playWoodSound('pick');
                 } else {
-                    // Attempt transfer
                     const srcStick = STATE.sticks[sourceIdx];
                     const dstStick = STATE.sticks[stickIdx];
 
-                    if (dstStick.discs.length >= CONFIG.maxHeight) {
-                        // Max capacity error
+                    const available = CONFIG.maxHeight - dstStick.discs.length;
+                    if (available <= 0) {
                         shakePeg(stickIdx);
                         playWoodSound('shake');
-                        const topDisc = srcStick.discs[srcStick.discs.length - 1];
-                        animateDiscHover(topDisc, false);
+                        
+                        // Return selected stack down
+                        animateDiscsHoverGroup(sourceIdx, false);
                         STATE.selectedStickIndex = null;
+                        STATE.selectedCount = 0;
                         return;
                     }
 
-                    // Approved move! Perform 3D curve translation animation
-                    STATE.selectedStickIndex = null; // reset lock
-                    executeDiscTransfer(sourceIdx, stickIdx);
+                    // Approved Move: calculate exact number to slide
+                    const countToMove = Math.min(STATE.selectedCount, available);
+                    const leftoverCount = STATE.selectedCount - countToMove;
+
+                    // If we have leftovers that cannot fit, animate them cleanly down immediately
+                    if (leftoverCount > 0) {
+                        const discs = srcStick.discs;
+                        for (let i = 0; i < leftoverCount; i++) {
+                            // Leftovers reside at the base of our active selection stack
+                            const discIdx = discs.length - STATE.selectedCount + i;
+                            const disc = discs[discIdx];
+                            if (disc) {
+                                disc.mesh.material.emissive = new THREE.Color(0x000000);
+                                const targetY = srcStick.position.y + (discIdx * 0.45) + 0.225;
+                                const anim = {
+                                    mesh: disc.mesh,
+                                    startY: disc.mesh.position.y,
+                                    endY: targetY,
+                                    time: 0,
+                                    duration: 0.2,
+                                    update: function(dt) {
+                                        this.time += dt;
+                                        const progress = Math.min(1.0, this.time / this.duration);
+                                        this.mesh.position.y = THREE.MathUtils.lerp(this.startY, this.endY, progress);
+                                        return progress < 1.0;
+                                    }
+                                };
+                                STATE.activeAnimations.push(anim);
+                            }
+                        }
+                    }
+
+                    // Reset selected variables
+                    STATE.selectedStickIndex = null; 
+                    STATE.selectedCount = 0;
+
+                    // Execute the precise transfer for the fitting subset of discs
+                    executeGroupDiscTransfer(sourceIdx, stickIdx, countToMove);
                 }
             }
         }
 
-        // Shakes peg mesh laterally as negative response feedback
+        // Shakes peg mesh laterally
         function shakePeg(stickIdx) {
             const mesh = STATE.sticks[stickIdx].mesh;
             const originalX = mesh.position.x;
@@ -1040,7 +1054,7 @@
                     const progress = this.time / this.duration;
                     if (progress >= 1.0) {
                         mesh.position.x = this.originalX;
-                        return false; // remove animation
+                        return false;
                     }
                     const offset = Math.sin(progress * Math.PI * 8) * 0.15 * (1.0 - progress);
                     mesh.position.x = this.originalX + offset;
@@ -1050,37 +1064,6 @@
             STATE.activeAnimations.push(shakeAnim);
         }
 
-        // Lifts top disc into hover-glow when first chosen
-        function animateDiscHover(disc, hoverState) {
-            const mesh = disc.mesh;
-            const targetY = hoverState 
-                ? (STATE.sticks[disc.mesh.userData?.stickIdx || getDiscStickIndex(disc)].position.y + (CONFIG.maxHeight * 0.45) + 0.8)
-                : (STATE.sticks[getDiscStickIndex(disc)].position.y + ((STATE.sticks[getDiscStickIndex(disc)].discs.indexOf(disc)) * 0.45) + 0.225);
-
-            // Turn on slight emissive glow if active
-            if (hoverState) {
-                mesh.material.emissive = new THREE.Color(0x333333);
-            } else {
-                mesh.material.emissive = new THREE.Color(0x000000);
-            }
-
-            const hoverAnim = {
-                mesh: mesh,
-                startY: mesh.position.y,
-                endY: targetY,
-                time: 0,
-                duration: 0.2,
-                update: function(dt) {
-                    this.time += dt;
-                    const progress = Math.min(1.0, this.time / this.duration);
-                    mesh.position.y = THREE.MathUtils.lerp(this.startY, this.endY, progress);
-                    return progress < 1.0;
-                }
-            };
-            STATE.activeAnimations.push(hoverAnim);
-        }
-
-        // Standard Utility to scan and locate containing peg
         function getDiscStickIndex(disc) {
             for (let i = 0; i < STATE.sticks.length; i++) {
                 if (STATE.sticks[i].discs.includes(disc)) return i;
@@ -1088,97 +1071,89 @@
             return 0;
         }
 
-        // Executes elegant 3-phase horizontal/vertical loop transition
-        function executeDiscTransfer(srcIdx, dstIdx) {
+        // Translocate a group of discs together
+        function executeGroupDiscTransfer(srcIdx, dstIdx, numToMove) {
             STATE.isAnimating = true;
 
             const srcStick = STATE.sticks[srcIdx];
             const dstStick = STATE.sticks[dstIdx];
 
-            const disc = srcStick.discs.pop(); // pull
-            
-            // Turn off hover glow state
-            disc.mesh.material.emissive = new THREE.Color(0x000000);
+            const movingDiscs = [];
+            for (let i = 0; i < numToMove; i++) {
+                movingDiscs.push(srcStick.discs.pop());
+            }
+            movingDiscs.reverse(); // Order bottom to top of group
 
-            // Source position coordinates
-            const startPos = disc.mesh.position.clone();
-            
-            // Peak clearance height safely clearing all stacks
+            let completedCount = 0;
             const peakHeight = Math.max(srcStick.position.y, dstStick.position.y) + (CONFIG.maxHeight * 0.45) + 0.8;
-            
-            const peakPos1 = new THREE.Vector3(startPos.x, peakHeight, startPos.z);
-            const peakPos2 = new THREE.Vector3(dstStick.position.x, peakHeight, dstStick.position.z);
-            
-            // Deep final slot target position
-            const finalHeight = dstStick.position.y + (dstStick.discs.length * 0.45) + 0.225;
-            const endPos = new THREE.Vector3(dstStick.position.x, finalHeight, dstStick.position.z);
 
-            // Phase based interpolation animator
-            const transferAnim = {
-                mesh: disc.mesh,
-                p0: startPos,
-                p1: peakPos1,
-                p2: peakPos2,
-                p3: endPos,
-                progress: 0,
-                speed: 3.5, // movement acceleration
-                update: function(dt) {
-                    this.progress += dt * this.speed;
-                    if (this.progress >= 3.0) {
-                        // Snap precisely in target slot
-                        this.mesh.position.copy(this.p3);
-                        
-                        // Push into target stack operational tracking
-                        dstStick.discs.push(disc);
-                        STATE.isAnimating = false;
-                        
-                        // Record user turn move
-                        STATE.moves++;
-                        document.getElementById('hud-moves').innerText = STATE.moves;
+            movingDiscs.forEach((disc, i) => {
+                disc.mesh.material.emissive = new THREE.Color(0x000000);
 
-                        // Play slot/thud sound effect
-                        playWoodSound('place');
+                const startPos = disc.mesh.position.clone();
+                const peakY = peakHeight + (i * 0.45);
+                const peakPos1 = new THREE.Vector3(startPos.x, peakY, startPos.z);
+                const peakPos2 = new THREE.Vector3(dstStick.position.x, peakY, dstStick.position.z);
+                
+                const finalHeight = dstStick.position.y + ((dstStick.discs.length + i) * 0.45) + 0.225;
+                const endPos = new THREE.Vector3(dstStick.position.x, finalHeight, dstStick.position.z);
 
-                        // Evaluate if the destination stick has become filled with matching colors
-                        const wasCompleted = STATE.completedSticks[dstIdx];
-                        const nowCompleted = isStickCompleted(dstIdx);
-                        STATE.completedSticks[dstIdx] = nowCompleted;
-                        STATE.completedSticks[srcIdx] = isStickCompleted(srcIdx);
+                const transferAnim = {
+                    mesh: disc.mesh,
+                    p0: startPos,
+                    p1: peakPos1,
+                    p2: peakPos2,
+                    p3: endPos,
+                    progress: 0,
+                    speed: 3.5,
+                    update: function(dt) {
+                        this.progress += dt * this.speed;
+                        if (this.progress >= 3.0) {
+                            this.mesh.position.copy(this.p3);
+                            
+                            completedCount++;
+                            if (completedCount === numToMove) {
+                                // Group complete
+                                movingDiscs.forEach(d => dstStick.discs.push(d));
+                                STATE.isAnimating = false;
+                                
+                                STATE.moves++;
+                                document.getElementById('hud-moves').innerText = STATE.moves;
+                                playWoodSound('place');
 
-                        if (nowCompleted && !wasCompleted) {
-                            triggerStickCompleteAnimation(dstIdx);
+                                // Evaluate completed state
+                                const wasCompleted = STATE.completedSticks[dstIdx];
+                                const nowCompleted = isStickCompleted(dstIdx);
+                                STATE.completedSticks[dstIdx] = nowCompleted;
+                                STATE.completedSticks[srcIdx] = isStickCompleted(srcIdx);
+
+                                if (nowCompleted && !wasCompleted) {
+                                    triggerStickCompleteAnimation(dstIdx);
+                                }
+
+                                checkWinCondition();
+                            }
+                            return false;
                         }
 
-                        // Game Over verification sweep
-                        checkWinCondition();
-                        return false; // remove animation
+                        if (this.progress < 1.0) {
+                            this.mesh.position.lerpVectors(this.p0, this.p1, this.progress);
+                        } else if (this.progress < 2.0) {
+                            this.mesh.position.lerpVectors(this.p1, this.p2, this.progress - 1.0);
+                        } else {
+                            this.mesh.position.lerpVectors(this.p2, this.p3, this.progress - 2.0);
+                        }
+                        return true;
                     }
-
-                    // Smooth step translations
-                    if (this.progress < 1.0) {
-                        // Phase 1: Straight up vertical ascent
-                        this.mesh.position.lerpVectors(this.p0, this.p1, this.progress);
-                    } else if (this.progress < 2.0) {
-                        // Phase 2: Transverse horizontal bridge slide
-                        this.mesh.position.lerpVectors(this.p1, this.p2, this.progress - 1.0);
-                    } else {
-                        // Phase 3: Plunge descent into receiving peg slot
-                        this.mesh.position.lerpVectors(this.p2, this.p3, this.progress - 2.0);
-                    }
-                    return true;
-                }
-            };
-
-            STATE.activeAnimations.push(transferAnim);
+                };
+                STATE.activeAnimations.push(transferAnim);
+            });
         }
 
         // --- WIN TRIGGER ENGINE ---
         function checkWinCondition() {
             let win = true;
-
-            // Rule: Every single peg must contain only discs of identical colors, or be completely empty.
-            // Additionally, one single unique color cannot be divided across separate pegs.
-            const colorHomePegs = {}; // Keeps track of which peg matches which color ID
+            const colorHomePegs = {}; 
 
             for (let i = 0; i < CONFIG.numSticks; i++) {
                 const stack = STATE.sticks[i].discs;
@@ -1186,14 +1161,12 @@
 
                 const pegColorId = stack[0].colorId;
 
-                // If another peg already houses this color, rules are violated (no splits)
                 if (colorHomePegs[pegColorId] !== undefined) {
                     win = false;
                     break;
                 }
                 colorHomePegs[pegColorId] = i;
 
-                // Validate that all elements on this peg are unified to matching color ID
                 for (let d = 1; d < stack.length; d++) {
                     if (stack[d].colorId !== pegColorId) {
                         win = false;
@@ -1201,7 +1174,6 @@
                     }
                 }
 
-                // If difficulty is medium or hard, full groups of a color must also be complete in count
                 if (win && stack.length !== CONFIG.maxHeight) {
                     win = false;
                 }
@@ -1218,10 +1190,8 @@
             STATE.isWon = true;
             pauseTimer();
 
-            // Fire melodic celebration sound cascade
             playVictorySound();
 
-            // Fire Canvas-Confetti burst
             const duration = 2.5 * 1000;
             const end = Date.now() + duration;
 
@@ -1231,14 +1201,14 @@
                     angle: 60,
                     spread: 55,
                     origin: { x: 0 },
-                    colors: ['#0055FF', '#8B5CF6', '#FFE600', '#D6001C']
+                    colors: ['#2563EB', '#6D28D9', '#FFE600', '#E11D48']
                 });
                 confetti({
                     particleCount: 5,
                     angle: 120,
                     spread: 55,
                     origin: { x: 1 },
-                    colors: ['#0055FF', '#8B5CF6', '#FFE600', '#D6001C']
+                    colors: ['#2563EB', '#6D28D9', '#FFE600', '#E11D48']
                 });
 
                 if (Date.now() < end) {
@@ -1246,7 +1216,6 @@
                 }
             }());
 
-            // Reveal win analytics recap panel
             document.getElementById('stat-time').innerText = document.getElementById('hud-timer').innerText;
             document.getElementById('stat-moves').innerText = STATE.moves;
             document.getElementById('stat-diff').innerText = CONFIG.difficulty;
@@ -1261,31 +1230,41 @@
         // --- GUI & CONFIGURATION PANELS SETUP ---
 
         function setupGUI() {
-            // Desk sliders
+            // Configuration Slide-out Drawer Actions
+            const configDrawer = document.getElementById('config-drawer');
+            const drawerBackdrop = document.getElementById('drawer-backdrop');
+            
+            function openDrawer() {
+                configDrawer.classList.remove('translate-x-full');
+                drawerBackdrop.classList.remove('opacity-0', 'pointer-events-none');
+            }
+
+            function closeDrawer() {
+                configDrawer.classList.add('translate-x-full');
+                drawerBackdrop.classList.add('opacity-0', 'pointer-events-none');
+            }
+
+            document.getElementById('btn-menu-trigger').addEventListener('click', openDrawer);
+            document.getElementById('btn-menu-close').addEventListener('click', closeDrawer);
+            drawerBackdrop.addEventListener('click', closeDrawer);
+
+            // Bind Unified Configuration sliders
             const sliders = [
                 { slider: 'slider-sticks', val: 'val-sticks', key: 'numSticks' },
                 { slider: 'slider-colors', val: 'val-colors', key: 'numColors' },
                 { slider: 'slider-stack', val: 'val-stack', key: 'maxHeight' }
             ];
 
-            // Mobile sliders
-            const mSliders = [
-                { slider: 'm-slider-sticks', val: 'm-val-sticks', key: 'numSticks' },
-                { slider: 'm-slider-colors', val: 'm-val-colors', key: 'numColors' },
-                { slider: 'm-slider-stack', val: 'm-val-stack', key: 'maxHeight' }
-            ];
-
-            function bindSlider(sInfo, isMobile) {
+            sliders.forEach(sInfo => {
                 const elem = document.getElementById(sInfo.slider);
                 const valElem = document.getElementById(sInfo.val);
                 
                 elem.addEventListener('input', (e) => {
                     let v = parseInt(e.target.value);
                     
-                    // Integrity constraints: unique colors must strictly be less than pegs
                     if (sInfo.key === 'numSticks') {
-                        const colSlider = isMobile ? document.getElementById('m-slider-colors') : document.getElementById('slider-colors');
-                        const colVal = isMobile ? document.getElementById('m-val-colors') : document.getElementById('val-colors');
+                        const colSlider = document.getElementById('slider-colors');
+                        const colVal = document.getElementById('val-colors');
                         if (parseInt(colSlider.value) >= v) {
                             colSlider.value = v - 1;
                             colVal.innerText = v - 1;
@@ -1294,7 +1273,7 @@
                         colSlider.max = v - 1;
                     }
                     if (sInfo.key === 'numColors') {
-                        const stSlider = isMobile ? document.getElementById('m-slider-sticks') : document.getElementById('slider-sticks');
+                        const stSlider = document.getElementById('slider-sticks');
                         if (v >= parseInt(stSlider.value)) {
                             v = parseInt(stSlider.value) - 1;
                             elem.value = v;
@@ -1305,47 +1284,20 @@
                     CONFIG[sInfo.key] = v;
                     CONFIG.difficulty = 'custom';
                     
-                    // Unselect buttons
                     clearPresetButtonsHighlight();
                 });
-            }
-
-            sliders.forEach(s => bindSlider(s, false));
-            mSliders.forEach(s => bindSlider(s, true));
+            });
 
             // Generate buttons triggers
             document.getElementById('btn-generate').addEventListener('click', () => {
                 startNewGame();
-            });
-            document.getElementById('btn-mobile-generate').addEventListener('click', () => {
-                startNewGame();
-                toggleMobileMenu(false);
+                closeDrawer();
             });
             document.getElementById('btn-quick-reset').addEventListener('click', () => {
                 startNewGame();
             });
             document.getElementById('btn-win-restart').addEventListener('click', () => {
                 startNewGame();
-            });
-
-            // Mobile drawer action toggles
-            const mobileMenu = document.getElementById('mobile-menu');
-            const drawerPanel = mobileMenu.querySelector('.glass-panel');
-
-            function toggleMobileMenu(open) {
-                if (open) {
-                    mobileMenu.classList.remove('opacity-0', 'pointer-events-none');
-                    drawerPanel.classList.remove('translate-y-full');
-                } else {
-                    mobileMenu.classList.add('opacity-0', 'pointer-events-none');
-                    drawerPanel.classList.add('translate-y-full');
-                }
-            }
-
-            document.getElementById('btn-mobile-menu-trigger').addEventListener('click', () => toggleMobileMenu(true));
-            document.getElementById('btn-mobile-menu-close').addEventListener('click', () => toggleMobileMenu(false));
-            mobileMenu.addEventListener('click', (e) => {
-                if (e.target === mobileMenu) toggleMobileMenu(false);
             });
         }
 
@@ -1371,46 +1323,33 @@
             }
 
             // Sync visual sliders
-            const sync = (prefix) => {
-                document.getElementById(`${prefix}slider-sticks`).value = CONFIG.numSticks;
-                document.getElementById(`${prefix}slider-sticks`).max = 12;
-                document.getElementById(`${prefix}val-sticks`).innerText = CONFIG.numSticks;
+            document.getElementById(`slider-sticks`).value = CONFIG.numSticks;
+            document.getElementById(`slider-sticks`).max = 12;
+            document.getElementById(`val-sticks`).innerText = CONFIG.numSticks;
 
-                document.getElementById(`${prefix}slider-colors`).value = CONFIG.numColors;
-                document.getElementById(`${prefix}slider-colors`).max = CONFIG.numSticks - 1;
-                document.getElementById(`${prefix}val-colors`).innerText = CONFIG.numColors;
+            document.getElementById(`slider-colors`).value = CONFIG.numColors;
+            document.getElementById(`slider-colors`).max = CONFIG.numSticks - 1;
+            document.getElementById(`val-colors`).innerText = CONFIG.numColors;
 
-                document.getElementById(`${prefix}slider-stack`).value = CONFIG.maxHeight;
-                document.getElementById(`${prefix}val-stack`).innerText = CONFIG.maxHeight;
-            };
+            document.getElementById(`slider-stack`).value = CONFIG.maxHeight;
+            document.getElementById(`val-stack`).innerText = CONFIG.maxHeight;
 
-            sync('');
-            sync('m-');
-
-            // Set button classes styling
             clearPresetButtonsHighlight();
             const btn = document.getElementById(`preset-${level}`);
-            const mBtn = document.getElementById(`m-preset-${level}`);
-            
-            [btn, mBtn].forEach(b => {
-                if (b) {
-                    b.classList.remove('text-slate-400');
-                    b.classList.add('bg-indigo-500', 'text-white', 'shadow-lg');
-                }
-            });
+            if (btn) {
+                btn.classList.remove('text-slate-400');
+                btn.classList.add('bg-indigo-500', 'text-white', 'shadow-lg');
+            }
         }
 
         function clearPresetButtonsHighlight() {
             const presets = ['easy', 'medium', 'hard'];
             presets.forEach(p => {
                 const b = document.getElementById(`preset-${p}`);
-                const mb = document.getElementById(`m-preset-${p}`);
-                [b, mb].forEach(btn => {
-                    if (btn) {
-                        btn.classList.add('text-slate-400');
-                        btn.classList.remove('bg-indigo-500', 'text-white', 'shadow-lg');
-                    }
-                });
+                if (b) {
+                    b.classList.add('text-slate-400');
+                    b.classList.remove('bg-indigo-500', 'text-white', 'shadow-lg');
+                }
             });
         }
 
@@ -1422,7 +1361,7 @@
 
             const dt = clock.getDelta();
 
-            // Smoothly evaluate ongoing physics/translations
+            // Evaluate ongoing physics animations
             for (let i = STATE.activeAnimations.length - 1; i >= 0; i--) {
                 const anim = STATE.activeAnimations[i];
                 const active = anim.update(dt);
@@ -1431,22 +1370,27 @@
                 }
             }
 
-            // Subtle bobbing animation on the chosen highlighted disc
-            if (STATE.selectedStickIndex !== null) {
+            // Synchronized group bobbing animation on highlighted active discs
+            if (STATE.selectedStickIndex !== null && !STATE.isAnimating) {
                 const stick = STATE.sticks[STATE.selectedStickIndex];
-                if (stick.discs.length > 0) {
-                    const topDisc = stick.discs[stick.discs.length - 1];
+                const discs = stick.discs;
+                const count = STATE.selectedCount;
+                if (discs.length > 0 && count > 0) {
                     const time = Date.now() * 0.005;
-                    const hoverBaseY = stick.position.y + (CONFIG.maxHeight * 0.45) + 0.3;
-                    topDisc.mesh.position.y = hoverBaseY + Math.sin(time) * 0.08;
-                    topDisc.mesh.rotation.y += 0.01; // rotate ring slowly
+                    const hoverBaseY = stick.position.y + (CONFIG.maxHeight * 0.45) + 0.8;
+                    for (let i = 0; i < count; i++) {
+                        const discIdx = discs.length - count + i;
+                        const disc = discs[discIdx];
+                        if (disc) {
+                            const targetY = hoverBaseY + (i * 0.45) + Math.sin(time) * 0.08;
+                            disc.mesh.position.y = targetY;
+                            disc.mesh.rotation.y += 0.01;
+                        }
+                    }
                 }
             }
 
-            // Required OrbitControls updates
             controls.update();
-
-            // Render WebGL frame
             renderer.render(scene, camera);
         }
     </script>
