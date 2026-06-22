@@ -49,12 +49,12 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .glass-button:hover {
+        .glass-button:hover:not(:disabled) {
             background: rgba(255, 255, 255, 0.15);
             border-color: rgba(255, 255, 255, 0.25);
             transform: translateY(-1px);
         }
-        .glass-button:active {
+        .glass-button:active:not(:disabled) {
             transform: translateY(1px);
         }
     </style>
@@ -111,10 +111,18 @@
                     </div>
                 </div>
 
-                <!-- Reset / New Game Buttons -->
-                <button id="btn-quick-reset" class="glass-panel glass-button p-4 rounded-2xl flex items-center justify-center text-slate-200 hover:text-white shadow-2xl tooltip" title="Restart Level">
-                    <i class="fa-solid fa-rotate-left text-lg"></i>
-                </button>
+                <!-- Action Controls (Undo & Reset) -->
+                <div class="flex items-center gap-2">
+                    <!-- Left Arrow Undo Button -->
+                    <button id="btn-undo" class="glass-panel glass-button p-4 rounded-2xl flex items-center justify-center text-slate-400 shadow-2xl opacity-50 cursor-not-allowed transition-all" title="Undo Last Move" disabled>
+                        <i class="fa-solid fa-arrow-left text-lg"></i>
+                    </button>
+
+                    <!-- Reset Button -->
+                    <button id="btn-quick-reset" class="glass-panel glass-button p-4 rounded-2xl flex items-center justify-center text-slate-200 hover:text-white shadow-2xl" title="Restart Level">
+                        <i class="fa-solid fa-rotate-left text-lg"></i>
+                    </button>
+                </div>
 
                 <!-- Unified Configuration Toggle Button -->
                 <button id="btn-menu-trigger" class="glass-panel glass-button px-5 py-3 rounded-2xl flex items-center gap-2 font-bold text-sm text-indigo-400 shadow-2xl">
@@ -208,6 +216,29 @@
     <!-- Backdrop for Drawer Configuration Overlay -->
     <div id="drawer-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-35 opacity-0 pointer-events-none transition-opacity duration-300"></div>
 
+    <!-- Sleek, non-intrusive floating media Recap Control Bar (No blocked screens!) -->
+    <div id="replay-panel" class="fixed bottom-24 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-2xl flex items-center gap-4 shadow-2xl pointer-events-auto hidden opacity-0 transition-opacity duration-300 z-30">
+        <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse hidden" id="replay-rec-indicator"></span>
+            <span class="text-xs font-extrabold text-indigo-400 uppercase tracking-wider" id="replay-mode-label">REPLAY</span>
+        </div>
+        <div class="h-4 w-px bg-white/10"></div>
+        <div class="text-sm font-bold font-mono text-slate-100" id="replay-counter">Move 0 / 0 | Time: 00:00</div>
+        <div class="h-4 w-px bg-white/10"></div>
+        <!-- Replay Controls: Play/Pause, Floppy Diskette Save and Stop next to each other -->
+        <div class="flex items-center gap-1.5">
+            <button id="btn-replay-toggle" class="p-2 bg-white/5 hover:bg-indigo-500/20 text-slate-200 rounded-xl transition-all tooltip" title="Pause / Resume">
+                <i class="fa-solid fa-pause text-xs" id="icon-replay-toggle"></i>
+            </button>
+            <button id="btn-replay-record" class="p-2 bg-white/5 hover:bg-pink-500/20 hover:text-pink-400 text-slate-200 rounded-xl transition-all tooltip" title="Record Recap MP4">
+                <i class="fa-solid fa-floppy-disk text-xs"></i>
+            </button>
+            <button id="btn-replay-stop" class="p-2 bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-slate-200 rounded-xl transition-all tooltip" title="Stop & Exit">
+                <i class="fa-solid fa-square text-xs"></i>
+            </button>
+        </div>
+    </div>
+
     <!-- Win Modal Screen Overlay -->
     <div id="win-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="glass-panel p-8 rounded-[2rem] w-full max-w-sm text-center mx-4 scale-95 transform transition-transform duration-300 relative overflow-hidden">
@@ -284,9 +315,12 @@
             activeAnimations: [],     // Smooth interactive transitions
             completedSticks: [],      // Completed status of each stick to trigger completion burst
             initialBoardState: null,  // Holds scrambled setup for Speed Recap
-            moveHistory: [],          // Stores sequence of moves {srcIdx, dstIdx, numToMove} for replaying
+            moveHistory: [],          // Stores sequence of moves {srcIdx, dstIdx, numToMove, elapsedSeconds}
+            lastMoveForUndo: null,    // Tracks immediate previous move for single-step undo
             isReplaying: false,       // If the speed replay sequence is currently active
-            replaySpeedMultiplier: 1.0 // Accelerates visual transitions during speed replay
+            isReplayPaused: false,    // Pauses playback
+            replayMoveIndex: 0,       // Tracks position in replay timeline
+            isRecording: false        // True if recording the WebGL context as a high-speed video
         };
 
         // Synthesised Wooden Sound Engine (Web Audio API)
@@ -368,7 +402,7 @@
                     }
                 }
             } catch (e) {
-                console.warn("Audio Context init failed:", e);
+                console.warn("Audio Context init/playback failed:", e);
             }
         }
 
@@ -431,6 +465,10 @@
         let raycaster, mouse;
         const loaderScreen = document.getElementById('loading-screen');
 
+        // MediaRecorder variables
+        let mediaRecorder;
+        let recordedChunks = [];
+
         // Main Entrance
         window.addEventListener('load', () => {
             initThree();
@@ -452,14 +490,13 @@
             // Create Scene
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x0e1014);
-            // No fog - completely removed to ensure pieces remain 100% vibrant when zoomed out!
 
             // Create Camera
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
             camera.position.set(0, 15, 19);
 
             // Create WebGL Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, preserveDrawingBuffer: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.shadowMap.enabled = true;
@@ -610,7 +647,6 @@
         }
 
         // Check if a stick is filled completely with a unified color
-        // Correct completion logic: A peg is completed only if it is completely full of identical colored discs
         function isStickCompleted(stickIdx) {
             const stack = STATE.sticks[stickIdx].discs;
             if (stack.length !== CONFIG.maxHeight) return false;
@@ -657,6 +693,20 @@
                     }
                 };
                 STATE.activeAnimations.push(hopAnim);
+            }
+        }
+
+        // Dynamic undo logic to safely check if button can be enabled
+        function updateUndoButtonState() {
+            const undoBtn = document.getElementById('btn-undo');
+            if (STATE.lastMoveForUndo && !STATE.isAnimating && !STATE.isWon && !STATE.isReplaying) {
+                undoBtn.removeAttribute('disabled');
+                undoBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'text-slate-400');
+                undoBtn.classList.add('text-indigo-400', 'hover:text-indigo-300');
+            } else {
+                undoBtn.setAttribute('disabled', 'true');
+                undoBtn.classList.add('opacity-50', 'cursor-not-allowed', 'text-slate-400');
+                undoBtn.classList.remove('text-indigo-400', 'hover:text-indigo-300');
             }
         }
 
@@ -735,9 +785,18 @@
             STATE.selectedCount = 0;
             STATE.isAnimating = false;
             STATE.isReplaying = false;
-            STATE.replaySpeedMultiplier = 1.0;
+            STATE.isReplayPaused = false;
+            STATE.isRecording = false;
             STATE.activeAnimations = [];
             STATE.moveHistory = [];
+            STATE.lastMoveForUndo = null;
+            updateUndoButtonState();
+
+            // Hide Replay panel HUD
+            const replayPanel = document.getElementById('replay-panel');
+            replayPanel.classList.add('opacity-0');
+            setTimeout(() => replayPanel.classList.add('hidden'), 300);
+
             document.getElementById('win-modal').classList.add('opacity-0', 'pointer-events-none');
             document.getElementById('win-modal').querySelector('.scale-95')?.classList.add('scale-95');
 
@@ -834,19 +893,16 @@
             }
 
             // Distribute the shuffled discs organically across ALL sticks, leaving empty space distributed.
-            // There are exactly CONFIG.maxHeight total empty slots across all sticks, which acts as the sorting buffer.
             const totalDiscs = allDiscsPool.length;
             const stickCounts = Array(CONFIG.numSticks).fill(0);
             
             for (let d = 0; d < totalDiscs; d++) {
-                // Find all sticks that still have available space
                 const availableSticks = [];
                 for (let i = 0; i < CONFIG.numSticks; i++) {
                     if (stickCounts[i] < CONFIG.maxHeight) {
                         availableSticks.push(i);
                     }
                 }
-                // Pick one randomly and add a disc
                 const chosenStick = availableSticks[Math.floor(Math.random() * availableSticks.length)];
                 stickCounts[chosenStick]++;
             }
@@ -943,6 +999,57 @@
         function pauseTimer() {
             clearInterval(STATE.timerInterval);
             STATE.timerInterval = null;
+        }
+
+        // --- WEB AUDIO RECORDER SETUP (VIDEO OUTPUT PRESERVING EXACT EXTENSION) ---
+        function startRecording() {
+            recordedChunks = [];
+            const stream = renderer.domElement.captureStream(30); // 30 fps high quality WebGL stream
+            
+            // Check best container formats supported natively to prevent playback corruption
+            let options = { mimeType: 'video/mp4;codecs=h264' };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options = { mimeType: 'video/webm;codecs=vp9' };
+            }
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options = { mimeType: 'video/webm' };
+            }
+            
+            try {
+                mediaRecorder = new MediaRecorder(stream, options);
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) {
+                        recordedChunks.push(e.data);
+                    }
+                };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: options.mimeType });
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Safely choose matching file extension to avoid raw WebGL container errors
+                    let extension = 'webm';
+                    if (options.mimeType.includes('mp4')) {
+                        extension = 'mp4';
+                    }
+                    
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `SpiroSort_Recap.${extension}`; // Opens perfectly natively
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                };
+                mediaRecorder.start();
+            } catch (err) {
+                console.error("Failed to start MediaRecorder stream:", err);
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
         }
 
         // --- PLAYER INTERACTION & RAYCASTING ---
@@ -1107,11 +1214,20 @@
                         }
                     }
 
+                    // Save this action for the single-step undo slot
+                    STATE.lastMoveForUndo = {
+                        srcIdx: sourceIdx,
+                        dstIdx: stickIdx,
+                        numToMove: countToMove,
+                        prevMovesCount: STATE.moves
+                    };
+
                     // Log this move to history for replaying
                     STATE.moveHistory.push({
                         srcIdx: sourceIdx,
                         dstIdx: stickIdx,
-                        numToMove: countToMove
+                        numToMove: countToMove,
+                        elapsedSeconds: STATE.elapsedSeconds
                     });
 
                     // Reset selected variables
@@ -1156,7 +1272,7 @@
         }
 
         // Translocate a group of discs together
-        function executeGroupDiscTransfer(srcIdx, dstIdx, numToMove) {
+        function executeGroupDiscTransfer(srcIdx, dstIdx, numToMove, isUndo = false) {
             STATE.isAnimating = true;
 
             const srcStick = STATE.sticks[srcIdx];
@@ -1204,7 +1320,7 @@
                                 movingDiscs.forEach(d => dstStick.discs.push(d));
                                 STATE.isAnimating = false;
                                 
-                                if (!STATE.isReplaying) {
+                                if (!STATE.isReplaying && !isUndo) {
                                     STATE.moves++;
                                     document.getElementById('hud-moves').innerText = STATE.moves;
                                 }
@@ -1216,13 +1332,21 @@
                                 STATE.completedSticks[dstIdx] = nowCompleted;
                                 STATE.completedSticks[srcIdx] = isStickCompleted(srcIdx);
 
-                                if (nowCompleted && !wasCompleted && !STATE.isReplaying) {
+                                if (nowCompleted && !wasCompleted && !STATE.isReplaying && !isUndo) {
                                     triggerStickCompleteAnimation(dstIdx);
                                 }
 
                                 if (STATE.isReplaying && typeof STATE.playNextReplayMove === 'function') {
-                                    setTimeout(STATE.playNextReplayMove, 45); // rapid-fire rapid progression
+                                    // Slight delay between movements
+                                    setTimeout(() => {
+                                        if (STATE.playNextReplayMove) {
+                                            STATE.playNextReplayMove();
+                                        }
+                                    }, 45); 
                                 } else {
+                                    if (!isUndo) {
+                                        updateUndoButtonState();
+                                    }
                                     checkWinCondition();
                                 }
                             }
@@ -1244,10 +1368,6 @@
         }
 
         // --- WIN TRIGGER ENGINE ---
-        // Enhanced condition logic:
-        // Every single stick must be completely empty (0 discs) OR completely full (CONFIG.maxHeight discs).
-        // For every filled stick, all stacked discs must share the exact same colorId.
-        // Duplicated colors on multiple sticks are fully permitted and supported for victory calculation!
         function checkWinCondition() {
             let win = true;
 
@@ -1317,7 +1437,6 @@
 
             // Delayed Display of the Victory Panel Modal by 1 Second to let user enjoy the solved board
             setTimeout(() => {
-                // If they restarted the game during this 1 second delay, do not show the old victory modal
                 if (!STATE.isWon) return;
 
                 const modal = document.getElementById('win-modal');
@@ -1325,6 +1444,113 @@
                 setTimeout(() => {
                     modal.querySelector('.glass-panel').classList.remove('scale-95');
                 }, 50);
+            }, 1000);
+        }
+
+        // --- SPEED REPLAY LOGIC & EXPORTS ---
+        let originalReplayIndex = 0;
+
+        function startSpeedReplayFlow(isRecordRun = false) {
+            const modal = document.getElementById('win-modal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+
+            STATE.isReplaying = true;
+            STATE.isReplayPaused = false;
+            STATE.isRecording = isRecordRun;
+            STATE.replayMoveIndex = 0;
+
+            // Setup Floating Recap Textbox Bar
+            const replayPanel = document.getElementById('replay-panel');
+            replayPanel.classList.remove('hidden');
+            setTimeout(() => replayPanel.classList.remove('opacity-0'), 50);
+
+            // Set styling depending on recording mode
+            const recIndicator = document.getElementById('replay-rec-indicator');
+            const modeLabel = document.getElementById('replay-mode-label');
+            const toggleIcon = document.getElementById('icon-replay-toggle');
+
+            toggleIcon.className = "fa-solid fa-pause text-xs"; // Start in playing state
+
+            if (isRecordRun) {
+                recIndicator.classList.remove('hidden');
+                modeLabel.innerText = "RECORDING";
+            } else {
+                recIndicator.classList.add('hidden');
+                modeLabel.innerText = "REPLAY";
+            }
+
+            prepareBoardForReplay();
+
+            // Clear HUD display values to start from 0
+            document.getElementById('hud-moves').innerText = "0";
+            document.getElementById('hud-timer').innerText = "00:00";
+            document.getElementById('replay-counter').innerText = `Move 0 / ${STATE.moveHistory.length} | Time: 00:00`;
+
+            if (isRecordRun) {
+                startRecording();
+            }
+
+            // Define iterative play step
+            STATE.playNextReplayMove = function() {
+                if (!STATE.isReplaying) return;
+                if (STATE.isReplayPaused) return;
+
+                if (STATE.replayMoveIndex < STATE.moveHistory.length) {
+                    const move = STATE.moveHistory[STATE.replayMoveIndex];
+                    
+                    // Increment and update actual HUD counters
+                    document.getElementById('hud-moves').innerText = STATE.replayMoveIndex + 1;
+                    
+                    const pad = (num) => String(num).padStart(2, '0');
+                    const mins = pad(Math.floor(move.elapsedSeconds / 60));
+                    const secs = pad(move.elapsedSeconds % 60);
+                    document.getElementById('hud-timer').innerText = `${mins}:${secs}`;
+
+                    // Update floating Recap Textbox display
+                    document.getElementById('replay-counter').innerText = `Move ${STATE.replayMoveIndex + 1} / ${STATE.moveHistory.length} | Time: ${mins}:${secs}`;
+
+                    STATE.replayMoveIndex++;
+                    executeGroupDiscTransfer(move.srcIdx, move.dstIdx, move.numToMove);
+                } else {
+                    // Replay finishes!
+                    finishReplay();
+                }
+            };
+
+            // Start first move
+            setTimeout(() => {
+                STATE.playNextReplayMove();
+            }, 300);
+        }
+
+        function finishReplay() {
+            STATE.isReplaying = false;
+
+            if (STATE.isRecording) {
+                stopRecording();
+                STATE.isRecording = false;
+            }
+
+            // Hide overlay
+            const replayPanel = document.getElementById('replay-panel');
+            replayPanel.classList.add('opacity-0');
+            setTimeout(() => replayPanel.classList.add('hidden'), 300);
+
+            // Re-sync final HUD display
+            document.getElementById('hud-moves').innerText = STATE.moveHistory.length;
+            const finalMove = STATE.moveHistory[STATE.moveHistory.length - 1];
+            if (finalMove) {
+                const pad = (num) => String(num).padStart(2, '0');
+                const mins = pad(Math.floor(finalMove.elapsedSeconds / 60));
+                const secs = pad(finalMove.elapsedSeconds % 60);
+                document.getElementById('hud-timer').innerText = `${mins}:${secs}`;
+            }
+
+            // Return to victory modal after 1 second delay
+            setTimeout(() => {
+                const modal = document.getElementById('win-modal');
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                modal.querySelector('.glass-panel').classList.remove('scale-95');
             }, 1000);
         }
 
@@ -1401,33 +1627,58 @@
                 startNewGame();
             });
 
+            // Left Arrow Undo Action Trigger
+            document.getElementById('btn-undo').addEventListener('click', () => {
+                if (!STATE.lastMoveForUndo || STATE.isAnimating || STATE.isWon || STATE.isReplaying) return;
+
+                const undoMove = STATE.lastMoveForUndo;
+                STATE.lastMoveForUndo = null; // consume undo slot
+                updateUndoButtonState();
+
+                // Remove the move from the history list so the replay remains true to actual final state
+                STATE.moveHistory.pop();
+
+                // Roll moves count back
+                STATE.moves = undoMove.prevMovesCount;
+                document.getElementById('hud-moves').innerText = STATE.moves;
+
+                playWoodSound('pick');
+                
+                // Execute reverse transfer animation cleanly
+                executeGroupDiscTransfer(undoMove.dstIdx, undoMove.srcIdx, undoMove.numToMove, true);
+            });
+
             // Speed Recap Action Button Trigger
             document.getElementById('btn-speed-recap').addEventListener('click', () => {
-                // Hide Win Modal
-                const modal = document.getElementById('win-modal');
-                modal.classList.add('opacity-0', 'pointer-events-none');
+                startSpeedReplayFlow(false); // Dry replay
+            });
 
-                // Prepare Replay setup
-                STATE.isReplaying = true;
-                prepareBoardForReplay();
+            // Recap Floppy Diskette Action (Inside Replay Controls Textbox)
+            document.getElementById('btn-replay-record').addEventListener('click', () => {
+                // If already replaying, we stop the current dry run and restart as a recorded MP4 capture run
+                startSpeedReplayFlow(true); 
+            });
 
-                let moveIndex = 0;
-                function playNext() {
-                    if (!STATE.isReplaying) return; // cancel guard if user restarts level mid-replay
-                    if (moveIndex < STATE.moveHistory.length) {
-                        const move = STATE.moveHistory[moveIndex++];
-                        executeGroupDiscTransfer(move.srcIdx, move.dstIdx, move.numToMove);
-                    } else {
-                        // Replay complete! Wait a second and re-display victory panel modal
-                        STATE.isReplaying = false;
-                        setTimeout(() => {
-                            modal.classList.remove('opacity-0', 'pointer-events-none');
-                            modal.querySelector('.glass-panel').classList.remove('scale-95');
-                        }, 1000);
+            // Play/Pause Action Toggle
+            document.getElementById('btn-replay-toggle').addEventListener('click', () => {
+                if (!STATE.isReplaying) return;
+                STATE.isReplayPaused = !STATE.isReplayPaused;
+                
+                const toggleIcon = document.getElementById('icon-replay-toggle');
+                if (STATE.isReplayPaused) {
+                    toggleIcon.className = "fa-solid fa-play text-xs";
+                } else {
+                    toggleIcon.className = "fa-solid fa-pause text-xs";
+                    // Resume execution
+                    if (STATE.playNextReplayMove) {
+                        STATE.playNextReplayMove();
                     }
                 }
-                STATE.playNextReplayMove = playNext;
-                playNext();
+            });
+
+            // Stop Replay Early
+            document.getElementById('btn-replay-stop').addEventListener('click', () => {
+                finishReplay();
             });
         }
 
@@ -1442,11 +1693,11 @@
             } else if (level === 'medium') {
                 CONFIG.numSticks = 5;
                 CONFIG.numColors = 4;
-                CONFIG.maxHeight = 12; // 5 sticks, 4 colors, 12 height as requested
+                CONFIG.maxHeight = 12; // 5 sticks, 4 colors, 12 height
             } else if (level === 'hard') {
                 CONFIG.numSticks = 7;
                 CONFIG.numColors = 6;
-                CONFIG.maxHeight = 16; // 7 sticks, 6 colors, 16 height as requested
+                CONFIG.maxHeight = 16; // 7 sticks, 6 colors, 16 height
             }
 
             // Sync visual sliders
@@ -1459,7 +1710,7 @@
             document.getElementById(`val-colors`).innerText = CONFIG.numColors;
 
             document.getElementById(`slider-stack`).value = CONFIG.maxHeight;
-            document.getElementById(`slider-stack`).max = 20; // Support values up to 20 as requested
+            document.getElementById(`slider-stack`).max = 20; // Support values up to 20
             document.getElementById(`val-stack`).innerText = CONFIG.maxHeight;
 
             clearPresetButtonsHighlight();
