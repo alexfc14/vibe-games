@@ -225,7 +225,7 @@
                 <p class="text-sm text-slate-400 px-3 mb-6 leading-relaxed">Splendid! You have sorted all colored discs onto their corresponding wooden pegs perfectly.</p>
 
                 <!-- Performance Panel -->
-                <div class="bg-black/30 rounded-2xl p-4 border border-white/5 space-y-3 mb-6">
+                <div class="bg-black/30 rounded-2xl p-4 border border-white/5 space-y-3 mb-6 text-left">
                     <div class="flex justify-between text-sm">
                         <span class="text-slate-400">Time Taken</span>
                         <span id="stat-time" class="font-bold text-slate-100 font-mono">00:00</span>
@@ -235,15 +235,24 @@
                         <span id="stat-moves" class="font-bold text-slate-100 font-mono">0</span>
                     </div>
                     <div class="flex justify-between text-sm border-t border-white/5 pt-2">
+                        <span class="text-slate-400">Board Setup</span>
+                        <span id="stat-config" class="font-bold text-indigo-400 uppercase tracking-wider text-xs">Custom</span>
+                    </div>
+                    <div class="flex justify-between text-sm border-t border-white/5 pt-2">
                         <span class="text-slate-400">Difficulty Level</span>
-                        <span id="stat-diff" class="font-bold text-indigo-400 uppercase tracking-wider">Custom</span>
+                        <span id="stat-diff" class="font-bold text-indigo-400 uppercase tracking-wider text-xs">Custom</span>
                     </div>
                 </div>
 
-                <!-- Buttons -->
-                <button id="btn-win-restart" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold rounded-xl shadow-lg transition-transform active:scale-[0.98]">
-                    Play Another Round
-                </button>
+                <!-- Action buttons inside victory panel -->
+                <div class="flex flex-col gap-2">
+                    <button id="btn-speed-recap" class="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold rounded-xl shadow-lg transition-transform active:scale-[0.98] flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play"></i> Speed Recap
+                    </button>
+                    <button id="btn-win-restart" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold rounded-xl shadow-lg transition-transform active:scale-[0.98]">
+                        Play Another Round
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -273,7 +282,11 @@
             isAnimating: false,       // Freeze interactions during active movement animations
             isWon: false,
             activeAnimations: [],     // Smooth interactive transitions
-            completedSticks: []       // Completed status of each stick to trigger completion burst
+            completedSticks: [],      // Completed status of each stick to trigger completion burst
+            initialBoardState: null,  // Holds scrambled setup for Speed Recap
+            moveHistory: [],          // Stores sequence of moves {srcIdx, dstIdx, numToMove} for replaying
+            isReplaying: false,       // If the speed replay sequence is currently active
+            replaySpeedMultiplier: 1.0 // Accelerates visual transitions during speed replay
         };
 
         // Synthesised Wooden Sound Engine (Web Audio API)
@@ -355,7 +368,7 @@
                     }
                 }
             } catch (e) {
-                console.warn("Audio Context init/playback failed:", e);
+                console.warn("Audio Context init failed:", e);
             }
         }
 
@@ -439,7 +452,7 @@
             // Create Scene
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x0e1014);
-            scene.fog = new THREE.FogExp2(0x0e1014, 0.035);
+            // No fog - completely removed to ensure pieces remain 100% vibrant when zoomed out!
 
             // Create Camera
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -647,6 +660,67 @@
             }
         }
 
+        // Re-populates the board to the initial scrambled state without generating a new shuffle
+        function prepareBoardForReplay() {
+            // Remove previous active meshes from Scene
+            STATE.discs.forEach(d => {
+                scene.remove(d.mesh);
+            });
+            STATE.sticks.forEach(s => {
+                s.discs = [];
+            });
+            STATE.discs = [];
+
+            const torusRadius = 0.45;
+            const torusTube = 0.2;
+            const discGeom = new THREE.TorusGeometry(torusRadius, torusTube, 16, 40);
+            discGeom.rotateX(Math.PI / 2); // Lay flat
+
+            for (let stickIdx = 0; stickIdx < CONFIG.numSticks; stickIdx++) {
+                const stack = STATE.initialBoardState[stickIdx];
+                for (let h = 0; h < stack.length; h++) {
+                    const colorId = stack[h];
+                    const colorInfo = PALETTE.find(p => p.id === colorId);
+
+                    const discMat = new THREE.MeshPhysicalMaterial({
+                        color: new THREE.Color(colorInfo.hex),
+                        roughness: 0.12,
+                        metalness: 0.1,
+                        clearcoat: 1.0,
+                        clearcoatRoughness: 0.1,
+                        reflectivity: 0.9,
+                        flatShading: false
+                    });
+
+                    const discMesh = new THREE.Mesh(discGeom, discMat);
+                    discMesh.castShadow = true;
+                    discMesh.receiveShadow = true;
+
+                    const targetY = STATE.sticks[stickIdx].position.y + (h * 0.45) + 0.225;
+                    discMesh.position.set(
+                        STATE.sticks[stickIdx].position.x,
+                        targetY,
+                        STATE.sticks[stickIdx].position.z
+                    );
+
+                    scene.add(discMesh);
+
+                    const discObj = {
+                        mesh: discMesh,
+                        colorId: colorId,
+                        initialMat: discMat
+                    };
+
+                    STATE.sticks[stickIdx].discs.push(discObj);
+                    STATE.discs.push(discObj);
+                }
+            }
+
+            // Flush running animations & lock state
+            STATE.activeAnimations = [];
+            STATE.isAnimating = false;
+        }
+
         // Tear down old board, build fresh meshes and generate a mathematically solvable state
         function startNewGame() {
             // Stop timers & clean animation lists
@@ -660,7 +734,10 @@
             STATE.selectedStickIndex = null;
             STATE.selectedCount = 0;
             STATE.isAnimating = false;
+            STATE.isReplaying = false;
+            STATE.replaySpeedMultiplier = 1.0;
             STATE.activeAnimations = [];
+            STATE.moveHistory = [];
             document.getElementById('win-modal').classList.add('opacity-0', 'pointer-events-none');
             document.getElementById('win-modal').querySelector('.scale-95')?.classList.add('scale-95');
 
@@ -784,6 +861,9 @@
                 }
             }
 
+            // Record initial configuration state deeply so speed recap can restore it
+            STATE.initialBoardState = JSON.parse(JSON.stringify(boardState));
+
             // snugs flat torus setup
             const torusRadius = 0.45;
             const torusTube = 0.2;
@@ -868,7 +948,7 @@
         // --- PLAYER INTERACTION & RAYCASTING ---
 
         function onDocumentPointerDown(event) {
-            if (STATE.isWon || STATE.isAnimating) return;
+            if (STATE.isWon || STATE.isAnimating || STATE.isReplaying) return;
 
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -1027,6 +1107,13 @@
                         }
                     }
 
+                    // Log this move to history for replaying
+                    STATE.moveHistory.push({
+                        srcIdx: sourceIdx,
+                        dstIdx: stickIdx,
+                        numToMove: countToMove
+                    });
+
                     // Reset selected variables
                     STATE.selectedStickIndex = null; 
                     STATE.selectedCount = 0;
@@ -1084,6 +1171,9 @@
             let completedCount = 0;
             const peakHeight = Math.max(srcStick.position.y, dstStick.position.y) + (CONFIG.maxHeight * 0.45) + 0.8;
 
+            // Transition speed accelerated (6.5 norm, 14.5 for rapid recap speed replays)
+            const speedScale = STATE.isReplaying ? 14.5 : 6.5;
+
             movingDiscs.forEach((disc, i) => {
                 disc.mesh.material.emissive = new THREE.Color(0x000000);
 
@@ -1102,7 +1192,7 @@
                     p2: peakPos2,
                     p3: endPos,
                     progress: 0,
-                    speed: 3.5,
+                    speed: speedScale,
                     update: function(dt) {
                         this.progress += dt * this.speed;
                         if (this.progress >= 3.0) {
@@ -1114,8 +1204,10 @@
                                 movingDiscs.forEach(d => dstStick.discs.push(d));
                                 STATE.isAnimating = false;
                                 
-                                STATE.moves++;
-                                document.getElementById('hud-moves').innerText = STATE.moves;
+                                if (!STATE.isReplaying) {
+                                    STATE.moves++;
+                                    document.getElementById('hud-moves').innerText = STATE.moves;
+                                }
                                 playWoodSound('place');
 
                                 // Evaluate completed state
@@ -1124,11 +1216,15 @@
                                 STATE.completedSticks[dstIdx] = nowCompleted;
                                 STATE.completedSticks[srcIdx] = isStickCompleted(srcIdx);
 
-                                if (nowCompleted && !wasCompleted) {
+                                if (nowCompleted && !wasCompleted && !STATE.isReplaying) {
                                     triggerStickCompleteAnimation(dstIdx);
                                 }
 
-                                checkWinCondition();
+                                if (STATE.isReplaying && typeof STATE.playNextReplayMove === 'function') {
+                                    setTimeout(STATE.playNextReplayMove, 45); // rapid-fire rapid progression
+                                } else {
+                                    checkWinCondition();
+                                }
                             }
                             return false;
                         }
@@ -1186,6 +1282,7 @@
             STATE.isWon = true;
             pauseTimer();
 
+            // Serpentine confetti particles trigger INSTANTLY so you enjoy success on the spot!
             playVictorySound();
 
             const duration = 2.5 * 1000;
@@ -1212,15 +1309,23 @@
                 }
             }());
 
+            // Gather analytics details
             document.getElementById('stat-time').innerText = document.getElementById('hud-timer').innerText;
             document.getElementById('stat-moves').innerText = STATE.moves;
+            document.getElementById('stat-config').innerText = `${CONFIG.numSticks} Sticks | ${CONFIG.numColors} Colors | ${CONFIG.maxHeight} H`;
             document.getElementById('stat-diff').innerText = CONFIG.difficulty;
 
-            const modal = document.getElementById('win-modal');
-            modal.classList.remove('opacity-0', 'pointer-events-none');
+            // Delayed Display of the Victory Panel Modal by 1 Second to let user enjoy the solved board
             setTimeout(() => {
-                modal.querySelector('.glass-panel').classList.remove('scale-95');
-            }, 50);
+                // If they restarted the game during this 1 second delay, do not show the old victory modal
+                if (!STATE.isWon) return;
+
+                const modal = document.getElementById('win-modal');
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    modal.querySelector('.glass-panel').classList.remove('scale-95');
+                }, 50);
+            }, 1000);
         }
 
         // --- GUI & CONFIGURATION PANELS SETUP ---
@@ -1295,6 +1400,35 @@
             document.getElementById('btn-win-restart').addEventListener('click', () => {
                 startNewGame();
             });
+
+            // Speed Recap Action Button Trigger
+            document.getElementById('btn-speed-recap').addEventListener('click', () => {
+                // Hide Win Modal
+                const modal = document.getElementById('win-modal');
+                modal.classList.add('opacity-0', 'pointer-events-none');
+
+                // Prepare Replay setup
+                STATE.isReplaying = true;
+                prepareBoardForReplay();
+
+                let moveIndex = 0;
+                function playNext() {
+                    if (!STATE.isReplaying) return; // cancel guard if user restarts level mid-replay
+                    if (moveIndex < STATE.moveHistory.length) {
+                        const move = STATE.moveHistory[moveIndex++];
+                        executeGroupDiscTransfer(move.srcIdx, move.dstIdx, move.numToMove);
+                    } else {
+                        // Replay complete! Wait a second and re-display victory panel modal
+                        STATE.isReplaying = false;
+                        setTimeout(() => {
+                            modal.classList.remove('opacity-0', 'pointer-events-none');
+                            modal.querySelector('.glass-panel').classList.remove('scale-95');
+                        }, 1000);
+                    }
+                }
+                STATE.playNextReplayMove = playNext;
+                playNext();
+            });
         }
 
         // Sets config presets easily
@@ -1306,13 +1440,13 @@
                 CONFIG.numColors = 3;
                 CONFIG.maxHeight = 7;
             } else if (level === 'medium') {
-                CONFIG.numSticks = 7;
-                CONFIG.numColors = 5;
-                CONFIG.maxHeight = 8;
+                CONFIG.numSticks = 5;
+                CONFIG.numColors = 4;
+                CONFIG.maxHeight = 12; // 5 sticks, 4 colors, 12 height as requested
             } else if (level === 'hard') {
-                CONFIG.numSticks = 9;
-                CONFIG.numColors = 8;
-                CONFIG.maxHeight = 12; // Configured to 12
+                CONFIG.numSticks = 7;
+                CONFIG.numColors = 6;
+                CONFIG.maxHeight = 16; // 7 sticks, 6 colors, 16 height as requested
             }
 
             // Sync visual sliders
@@ -1325,7 +1459,7 @@
             document.getElementById(`val-colors`).innerText = CONFIG.numColors;
 
             document.getElementById(`slider-stack`).value = CONFIG.maxHeight;
-            document.getElementById(`slider-stack`).max = 20; // Support values up to 20
+            document.getElementById(`slider-stack`).max = 20; // Support values up to 20 as requested
             document.getElementById(`val-stack`).innerText = CONFIG.maxHeight;
 
             clearPresetButtonsHighlight();
@@ -1365,7 +1499,7 @@
             }
 
             // Synchronized group bobbing animation on highlighted active discs
-            if (STATE.selectedStickIndex !== null && !STATE.isAnimating) {
+            if (STATE.selectedStickIndex !== null && !STATE.isAnimating && !STATE.isReplaying) {
                 const stick = STATE.sticks[STATE.selectedStickIndex];
                 const discs = stick.discs;
                 const count = STATE.selectedCount;
