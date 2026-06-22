@@ -395,7 +395,6 @@
 
         // Distinct, vivid and high-contrast colors (14 fully unique colors to support 12 pegs)
         // Red is made very deep and solid, Pink is soft light pastel, so they never clash or look similar.
-        // Replaced washed out lavender-white colors with high contrast saturated colors to prevent lighting overexposure issues.
         const PALETTE = [
             { id: 0, hex: '#B91C1C', rgb: [185, 28, 28] },     // 0: Deep Solid Crimson Red
             { id: 1, hex: '#1D4ED8', rgb: [29, 78, 216] },     // 1: Royal Blue
@@ -730,7 +729,7 @@
                 });
             }
 
-            // Create initial starting state where S-1 sticks are full with identical colored stacks
+            // Create initial starting state: calculate total count of active colored discs
             const activeColors = PALETTE.slice(0, CONFIG.numColors);
             
             const colorAssignments = [];
@@ -751,23 +750,36 @@
                 }
             }
 
-            // Perform a mathematically perfect uniform Fisher-Yates shuffle on the entire pool
-            // This guarantees absolutely perfect randomization of every single layer (including the bottom ones)
-            // while mathematically preserving total solvability
+            // Perform a mathematically perfect uniform Fisher-Yates shuffle on all discs
             for (let i = allDiscsPool.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [allDiscsPool[i], allDiscsPool[j]] = [allDiscsPool[j], allDiscsPool[i]];
             }
 
-            // Choose exactly one stick to start completely empty
-            const emptyStickIdx = Math.floor(Math.random() * CONFIG.numSticks);
+            // Distribute the shuffled discs organically across ALL sticks, leaving empty space distributed.
+            // There are exactly CONFIG.maxHeight total empty slots across all sticks, which acts as the sorting buffer.
+            const totalDiscs = allDiscsPool.length;
+            const stickCounts = Array(CONFIG.numSticks).fill(0);
+            
+            for (let d = 0; d < totalDiscs; d++) {
+                // Find all sticks that still have available space
+                const availableSticks = [];
+                for (let i = 0; i < CONFIG.numSticks; i++) {
+                    if (stickCounts[i] < CONFIG.maxHeight) {
+                        availableSticks.push(i);
+                    }
+                }
+                // Pick one randomly and add a disc
+                const chosenStick = availableSticks[Math.floor(Math.random() * availableSticks.length)];
+                stickCounts[chosenStick]++;
+            }
 
-            // Distribute the perfectly scrambled discs into the other S-1 sticks
+            // Populate the logical board state based on the generated organic heights
             const boardState = Array.from({ length: CONFIG.numSticks }, () => []);
             let poolPointer = 0;
             for (let i = 0; i < CONFIG.numSticks; i++) {
-                if (i === emptyStickIdx) continue;
-                for (let h = 0; h < CONFIG.maxHeight; h++) {
+                const count = stickCounts[i];
+                for (let h = 0; h < count; h++) {
                     boardState[i].push(allDiscsPool[poolPointer++]);
                 }
             }
