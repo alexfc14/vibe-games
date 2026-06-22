@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpiroSort 3D - Disc Sorting Puzzle</title>
+    <!-- Tailwind CSS for UI styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for premium look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti for Win Effect -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+            background: #0f1015;
+        }
+        canvas {
+            display: block;
+            outline: none;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        /* Glassmorphism utility classes */
+        .glass-panel {
+            background: rgba(20, 22, 30, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-button {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+        .glass-button:active {
+            transform: translateY(1px);
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative text-slate-100">
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#0d0e12] transition-opacity duration-500">
+        <div class="flex flex-col items-center">
+            <div class="relative w-24 h-24 mb-6">
+                <!-- Glowing geometric spinner -->
+                <div class="absolute inset-0 rounded-full border-4 border-t-indigo-500 border-r-pink-500 border-b-purple-500 border-l-transparent animate-spin"></div>
+                <div class="absolute inset-2 rounded-full border-4 border-t-teal-400 border-r-transparent border-b-cyan-400 border-l-transparent animate-spin" style="animation-direction: reverse; animation-duration: 1.5s;"></div>
+            </div>
+            <h1 class="text-3xl font-extrabold tracking-wider bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">SPIROSORT 3D</h1>
+            <p class="text-sm text-slate-400 mt-2 tracking-widest animate-pulse">CREATING STYLISED WOODLAND...</p>
+        </div>
+    </div>
+
+    <!-- Background WebGL Viewport -->
+    <div id="canvas-container" class="w-full h-full absolute inset-0"></div>
+
+    <!-- MAIN HUD LAYOUT -->
+    <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-6 z-10">
+        
+        <!-- Header / Stats Bar -->
+        <header class="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pointer-events-auto">
+            <!-- Brand -->
+            <div class="glass-panel px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-layer-group text-lg text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight leading-none bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">SPIROSORT 3D</h1>
+                    <span class="text-[10px] text-indigo-400 font-semibold tracking-wider uppercase">Chunky Sorting Challenge</span>
+                </div>
+            </div>
+
+            <!-- Global Live Counters -->
+            <div class="flex items-center gap-3">
+                <div class="glass-panel px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl min-w-[120px]">
+                    <i class="fa-regular fa-clock text-indigo-400 text-lg"></i>
+                    <div>
+                        <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">TIME</div>
+                        <div id="hud-timer" class="text-lg font-bold font-mono text-slate-100">00:00</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl min-w-[110px]">
+                    <i class="fa-solid fa-arrows-spin text-emerald-400 text-lg"></i>
+                    <div>
+                        <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">MOVES</div>
+                        <div id="hud-moves" class="text-lg font-bold font-mono text-slate-100">0</div>
+                    </div>
+                </div>
+
+                <!-- Reset / New Game Buttons -->
+                <button id="btn-quick-reset" class="glass-panel glass-button p-4 rounded-2xl flex items-center justify-center text-slate-200 hover:text-white shadow-2xl tooltip" title="Restart Level">
+                    <i class="fa-solid fa-rotate-left text-lg"></i>
+                </button>
+
+                <!-- Unified Configuration Toggle Button -->
+                <button id="btn-menu-trigger" class="glass-panel glass-button px-5 py-3 rounded-2xl flex items-center gap-2 font-bold text-sm text-indigo-400 shadow-2xl">
+                    <i class="fa-solid fa-gear text-lg"></i>
+                    <span class="hidden sm:inline">Configure</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Bottom Controls Bar (Camera Info) -->
+        <footer class="w-full flex items-center justify-between pointer-events-auto">
+            <div class="glass-panel px-4 py-2.5 rounded-xl text-[11px] text-slate-400 flex items-center gap-2">
+                <i class="fa-solid fa-arrows-up-down-left-right text-indigo-400"></i>
+                <span>Left Click + Drag to Orbit | Scroll to Zoom | Right Click to Pan</span>
+            </div>
+            <div class="glass-panel px-4 py-2.5 rounded-xl text-[11px] text-indigo-400 flex items-center gap-2 font-bold">
+                <i class="fa-solid fa-hand-pointer"></i>
+                <span>Pro Tip: Contiguous stacks of matching colors move together!</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Collapsible Universal Drawer Configuration Panel (Sliding from Right) -->
+    <div id="config-drawer" class="fixed inset-y-0 right-0 w-full max-w-sm z-40 transform translate-x-full transition-transform duration-300 ease-out flex pointer-events-auto">
+        <div class="glass-panel w-full h-full flex flex-col justify-between p-6 shadow-2xl rounded-l-[2rem]">
+            <div class="space-y-6">
+                <!-- Header -->
+                <div class="flex justify-between items-center border-b border-white/5 pb-4">
+                    <h3 class="text-lg font-extrabold text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-indigo-400"></i> Board Settings
+                    </h3>
+                    <button id="btn-menu-close" class="text-slate-400 hover:text-white p-2 hover:bg-white/5 rounded-xl transition-colors">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- How to Play Quick Cards -->
+                <div class="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl space-y-2">
+                    <h4 class="text-xs font-bold text-indigo-300 uppercase tracking-widest flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-question"></i> Dynamic Moves
+                    </h4>
+                    <p class="text-[11px] text-slate-300 leading-relaxed">
+                        Click a stick to highlight all consecutive top discs of the *same* color. Click another stick to transfer them as a single bulk stack instantly!
+                    </p>
+                </div>
+
+                <!-- Controls sliders -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Preset Difficulty</label>
+                        <div class="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5">
+                            <button onclick="setDifficultyPreset('easy')" id="preset-easy" class="py-2 text-xs font-semibold rounded-lg text-slate-400">Easy</button>
+                            <button onclick="setDifficultyPreset('medium')" id="preset-medium" class="py-2 text-xs font-semibold rounded-lg text-slate-400">Medium</button>
+                            <button onclick="setDifficultyPreset('hard')" id="preset-hard" class="py-2 text-xs font-semibold rounded-lg text-slate-400">Hard</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                            <span>Pegs / Sticks</span>
+                            <span id="val-sticks" class="text-indigo-400 font-bold">4</span>
+                        </div>
+                        <input type="range" id="slider-sticks" min="4" max="12" step="1" value="4" class="w-full accent-indigo-500">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                            <span>Unique Colors</span>
+                            <span id="val-colors" class="text-indigo-400 font-bold">3</span>
+                        </div>
+                        <input type="range" id="slider-colors" min="2" max="11" step="1" value="3" class="w-full accent-indigo-500">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                            <span>Max Discs Per Peg</span>
+                            <span id="val-stack" class="text-indigo-400 font-bold">7</span>
+                        </div>
+                        <input type="range" id="slider-stack" min="3" max="20" step="1" value="7" class="w-full accent-indigo-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generate Game Trigger -->
+            <button id="btn-generate" class="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold rounded-2xl shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                <i class="fa-solid fa-gamepad"></i> Setup New Game
+            </button>
+        </div>
+    </div>
+
+    <!-- Backdrop for Drawer Configuration Overlay -->
+    <div id="drawer-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-35 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+    <!-- Win Modal Screen Overlay -->
+    <div id="win-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-panel p-8 rounded-[2rem] w-full max-w-sm text-center mx-4 scale-95 transform transition-transform duration-300 relative overflow-hidden">
+            <!-- Animated decorative glow backgrounds -->
+            <div class="absolute -top-12 -left-12 w-32 h-32 bg-indigo-500/25 rounded-full blur-2xl"></div>
+            <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-pink-500/25 rounded-full blur-2xl"></div>
+
+            <div class="relative z-10">
+                <!-- Glowing crown/trophy icon -->
+                <div class="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-amber-400 to-yellow-600 flex items-center justify-center shadow-lg shadow-yellow-500/20 mb-6 animate-bounce">
+                    <i class="fa-solid fa-trophy text-3xl text-white"></i>
+                </div>
+
+                <h2 class="text-3xl font-black tracking-tight text-white mb-2">VICTORY!</h2>
+                <p class="text-sm text-slate-400 px-3 mb-6 leading-relaxed">Splendid! You have sorted all colored discs onto their corresponding wooden pegs perfectly.</p>
+
+                <!-- Performance Panel -->
+                <div class="bg-black/30 rounded-2xl p-4 border border-white/5 space-y-3 mb-6">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-400">Time Taken</span>
+                        <span id="stat-time" class="font-bold text-slate-100 font-mono">00:00</span>
+                    </div>
+                    <div class="flex justify-between text-sm border-t border-white/5 pt-2">
+                        <span class="text-slate-400">Total Moves</span>
+                        <span id="stat-moves" class="font-bold text-slate-100 font-mono">0</span>
+                    </div>
+                    <div class="flex justify-between text-sm border-t border-white/5 pt-2">
+                        <span class="text-slate-400">Difficulty Level</span>
+                        <span id="stat-diff" class="font-bold text-indigo-400 uppercase tracking-wider">Custom</span>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <button id="btn-win-restart" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold rounded-xl shadow-lg transition-transform active:scale-[0.98]">
+                    Play Another Round
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Imports: Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- GAME PARAMETERS & GLOBAL STATES ---
+        const CONFIG = {
+            numSticks: 4,
+            numColors: 3,
+            maxHeight: 7,        // Default stack height initialized to 7 (Easy baseline)
+            difficulty: 'easy'
+        };
+
+        const STATE = {
+            moves: 0,
+            startTime: null,
+            timerInterval: null,
+            elapsedSeconds: 0,
+            selectedStickIndex: null, // Index of selected peg
+            selectedCount: 0,         // How many contiguous matching color discs are selected
+            sticks: [],               // Operational peg array [{mesh, position, discs: []}]
+            discs: [],                // Active disc rendering objects [{mesh, colorId, material}]
+            isAnimating: false,       // Freeze interactions during active movement animations
+            isWon: false,
+            activeAnimations: [],     // Smooth interactive transitions
+            completedSticks: []       // Completed status of each stick to trigger completion burst
+        };
+
+        // Synthesised Wooden Sound Engine (Web Audio API)
+        let audioCtx = null;
+        function playWoodSound(type) {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                
+                const now = audioCtx.currentTime;
+                
+                if (type === 'pick') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(240, now);
+                    osc.frequency.exponentialRampToValueAtTime(110, now + 0.08);
+                    
+                    gain.gain.setValueAtTime(0.35, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'place') {
+                    const osc1 = audioCtx.createOscillator();
+                    const osc2 = audioCtx.createOscillator();
+                    const gain1 = audioCtx.createGain();
+                    const gain2 = audioCtx.createGain();
+                    
+                    osc1.type = 'triangle';
+                    osc1.frequency.setValueAtTime(140, now);
+                    osc1.frequency.exponentialRampToValueAtTime(55, now + 0.16);
+                    
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(210, now);
+                    osc2.frequency.exponentialRampToValueAtTime(75, now + 0.12);
+                    
+                    gain1.gain.setValueAtTime(0.5, now);
+                    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                    
+                    gain2.gain.setValueAtTime(0.25, now);
+                    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                    
+                    osc1.connect(gain1);
+                    osc2.connect(gain2);
+                    gain1.connect(audioCtx.destination);
+                    gain2.connect(audioCtx.destination);
+                    
+                    osc1.start(now);
+                    osc1.stop(now + 0.16);
+                    osc2.start(now);
+                    osc2.stop(now + 0.12);
+                } else if (type === 'shake') {
+                    for (let i = 0; i < 2; i++) {
+                        const delay = i * 0.07;
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(100, now + delay);
+                        osc.frequency.exponentialRampToValueAtTime(35, now + delay + 0.06);
+                        
+                        gain.gain.setValueAtTime(0.3, now + delay);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.06);
+                        
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        
+                        osc.start(now + delay);
+                        osc.stop(now + delay + 0.06);
+                    }
+                }
+            } catch (e) {
+                console.warn("Audio Context init/playback failed:", e);
+            }
+        }
+
+        // Ascending harmonic cascade of wooden block notes for a premium victory celebration
+        function playVictorySound() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const now = audioCtx.currentTime;
+                const notes = [220.00, 277.18, 329.63, 440.00, 554.37, 659.25, 880.00];
+                notes.forEach((freq, index) => {
+                    const time = now + index * 0.12;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, time);
+                    osc.frequency.exponentialRampToValueAtTime(freq * 0.5, time + 0.3);
+                    
+                    gain.gain.setValueAtTime(0.4, time);
+                    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start(time);
+                    osc.stop(time + 0.31);
+                });
+            } catch (e) {
+                console.warn("Victory sound execution error:", e);
+            }
+        }
+
+        // Distinct, vivid and high-contrast colors (14 fully unique colors to support 12 pegs)
+        // Red is made very deep and solid, Pink is soft light pastel, so they never clash or look similar.
+        const PALETTE = [
+            { id: 0, hex: '#B91C1C', rgb: [185, 28, 28] },     // 0: Deep Solid Crimson Red
+            { id: 1, hex: '#1D4ED8', rgb: [29, 78, 216] },     // 1: Royal Blue
+            { id: 2, hex: '#047857', rgb: [4, 120, 87] },      // 2: Rich Dark Forest Green
+            { id: 3, hex: '#F97316', rgb: [249, 115, 22] },    // 3: Vibrant Orange
+            { id: 4, hex: '#FACC15', rgb: [250, 204, 21] },    // 4: Bright Golden Yellow
+            { id: 5, hex: '#6D28D9', rgb: [109, 40, 217] },    // 5: Deep Purple
+            { id: 6, hex: '#A21CAF', rgb: [162, 28, 175] },    // 6: Vivid Saturated Magenta (replaces pale lavender)
+            { id: 7, hex: '#06B6D4', rgb: [6, 182, 212] },     // 7: Bright Turquoise/Cyan
+            { id: 8, hex: '#FFFFFF', rgb: [255, 255, 255] },   // 8: Pure Glossy White (no gray undertone)
+            { id: 9, hex: '#451A03', rgb: [69, 26, 3] },       // 9: Deep Earth Brown
+            { id: 10, hex: '#84CC16', rgb: [132, 204, 22] },   // 10: Lucid Lime Green
+            { id: 11, hex: '#EC4899', rgb: [236, 72, 153] },   // 11: Electric Hot Pink
+            { id: 12, hex: '#334155', rgb: [51, 65, 85] },     // 12: Deep Charcoal Gray (never washed out or identical to white)
+            { id: 13, hex: '#1E1B4B', rgb: [30, 27, 75] }      // 13: Midnight Navy Blue
+        ];
+
+        // --- THREE.JS GRAPHICS SETUP ---
+        let scene, camera, renderer, controls;
+        let woodMaterial, woodStickMaterial;
+        let raycaster, mouse;
+        const loaderScreen = document.getElementById('loading-screen');
+
+        // Main Entrance
+        window.addEventListener('load', () => {
+            initThree();
+            setupGUI();
+            setDifficultyPreset('easy'); // initialize easy state
+            startNewGame();
+            
+            // Fade loader
+            setTimeout(() => {
+                loaderScreen.classList.add('opacity-0');
+                setTimeout(() => loaderScreen.style.display = 'none', 500);
+            }, 1000);
+        });
+
+        // Initialize Scene, Camera, Lights, Materials, and Orbit Controls
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            
+            // Create Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0e1014);
+            scene.fog = new THREE.FogExp2(0x0e1014, 0.035);
+
+            // Create Camera
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 15, 19);
+
+            // Create WebGL Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            container.appendChild(renderer.domElement);
+
+            // Create Interactive Camera Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2.1; // Block clipping below floor
+            controls.minDistance = 4;
+            controls.maxDistance = 35;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            // Directional Light with Soft Shadows
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            dirLight.position.set(10, 22, 12);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 40;
+            dirLight.shadow.camera.left = -15;
+            dirLight.shadow.camera.right = 15;
+            dirLight.shadow.camera.top = 15;
+            dirLight.shadow.camera.bottom = -15;
+            dirLight.shadow.bias = -0.0005;
+            scene.add(dirLight);
+
+            // Additional Warm Spot Light for highlights
+            const spotLight = new THREE.SpotLight(0xffe5cc, 1.5, 30, Math.PI / 4, 0.5, 1);
+            spotLight.position.set(-10, 15, -5);
+            scene.add(spotLight);
+
+            // Generate Stylized Procedural Materials
+            generateProceduralMaterials();
+
+            // Raycaster and Mouse vector for clicks
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            renderer.domElement.addEventListener('pointerdown', onDocumentPointerDown);
+
+            // Start Main Frame Loop
+            animate();
+        }
+
+        // Generate gorgeous high quality procedural textures in Canvas
+        function generateProceduralMaterials() {
+            const woodCanvas = document.createElement('canvas');
+            woodCanvas.width = 512;
+            woodCanvas.height = 512;
+            const woodCtx = woodCanvas.getContext('2d');
+
+            woodCtx.fillStyle = '#614126'; // Nice base brown
+            woodCtx.fillRect(0, 0, 512, 512);
+
+            woodCtx.strokeStyle = '#432a15'; // Darker rings
+            woodCtx.lineWidth = 3;
+            for (let i = 0; i < 60; i++) {
+                woodCtx.beginPath();
+                let x = Math.random() * 512;
+                woodCtx.moveTo(x, 0);
+                for (let y = 0; y <= 512; y += 15) {
+                    let wave = Math.sin(y * 0.03) * 8 + Math.sin(y * 0.1) * 3 + (Math.random() - 0.5) * 2;
+                    woodCtx.lineTo(x + wave, y);
+                }
+                woodCtx.stroke();
+            }
+
+            // Draw micro wood fibers / noise
+            const imgData = woodCtx.getImageData(0, 0, 512, 512);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const noise = (Math.random() - 0.5) * 22;
+                data[i] = Math.min(255, Math.max(0, data[i] + noise));
+                data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + noise));
+                data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + noise));
+            }
+            woodCtx.putImageData(imgData, 0, 0);
+
+            const woodTexture = new THREE.CanvasTexture(woodCanvas);
+            woodTexture.wrapS = THREE.RepeatWrapping;
+            woodTexture.wrapT = THREE.RepeatWrapping;
+            woodTexture.repeat.set(1.5, 1.5);
+
+            woodMaterial = new THREE.MeshStandardMaterial({
+                map: woodTexture,
+                roughness: 0.65,
+                metalness: 0.02,
+                bumpMap: woodTexture,
+                bumpScale: 0.025
+            });
+
+            const stickCanvas = document.createElement('canvas');
+            stickCanvas.width = 256;
+            stickCanvas.height = 512;
+            const stickCtx = stickCanvas.getContext('2d');
+            stickCtx.fillStyle = '#7a5130';
+            stickCtx.fillRect(0, 0, 256, 512);
+            stickCtx.strokeStyle = '#51331c';
+            stickCtx.lineWidth = 1.5;
+            for (let i = 0; i < 30; i++) {
+                stickCtx.beginPath();
+                let x = Math.random() * 256;
+                stickCtx.moveTo(x, 0);
+                for (let y = 0; y <= 512; y += 10) {
+                    stickCtx.lineTo(x + Math.sin(y * 0.05) * 2, y);
+                }
+                stickCtx.stroke();
+            }
+            
+            const stickTexture = new THREE.CanvasTexture(stickCanvas);
+            woodStickMaterial = new THREE.MeshStandardMaterial({
+                map: stickTexture,
+                roughness: 0.5,
+                metalness: 0.01,
+                bumpMap: stickTexture,
+                bumpScale: 0.015
+            });
+        }
+
+        // Responsive Resizer
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- GAME INSTANTIATION / SCRAMBLER STATE ENGINE ---
+
+        function generateSticksLayout(numSticks) {
+            const positions = [];
+            const spacingX = 1.45; // Close but safe distance (Discs diameter is ~1.3)
+            const startX = -((numSticks - 1) * spacingX) / 2;
+            for (let i = 0; i < numSticks; i++) {
+                positions.push(new THREE.Vector3(startX + i * spacingX, 0, 0));
+            }
+            return positions;
+        }
+
+        // Check if a stick is filled completely with a unified color
+        // Correct completion logic: A peg is completed only if it is completely full of identical colored discs
+        function isStickCompleted(stickIdx) {
+            const stack = STATE.sticks[stickIdx].discs;
+            if (stack.length !== CONFIG.maxHeight) return false;
+            const firstColorId = stack[0].colorId;
+            for (let j = 1; j < stack.length; j++) {
+                if (stack[j].colorId !== firstColorId) return false;
+            }
+            return true;
+        }
+
+        // Sequential wave bounce cascade
+        function triggerStickCompleteAnimation(stickIdx) {
+            const stick = STATE.sticks[stickIdx];
+            const totalDiscs = stick.discs.length;
+            
+            for (let h = 0; h < totalDiscs; h++) {
+                setTimeout(() => {
+                    playWoodSound('pick');
+                }, h * 75);
+                
+                const disc = stick.discs[h];
+                const originalY = stick.position.y + (h * 0.45) + 0.225;
+                
+                const hopAnim = {
+                    mesh: disc.mesh,
+                    originalY: originalY,
+                    time: 0,
+                    duration: 0.4,
+                    delay: h * 0.075,
+                    update: function(dt) {
+                        if (this.delay > 0) {
+                            this.delay -= dt;
+                            return true;
+                        }
+                        this.time += dt;
+                        const progress = this.time / this.duration;
+                        if (progress >= 1.0) {
+                            this.mesh.position.y = this.originalY;
+                            return false;
+                        }
+                        const bounceHeight = 0.35 * Math.sin(progress * Math.PI);
+                        this.mesh.position.y = this.originalY + bounceHeight;
+                        return true;
+                    }
+                };
+                STATE.activeAnimations.push(hopAnim);
+            }
+        }
+
+        // Tear down old board, build fresh meshes and generate a mathematically solvable state
+        function startNewGame() {
+            // Stop timers & clean animation lists
+            clearInterval(STATE.timerInterval);
+            STATE.timerInterval = null;
+            STATE.elapsedSeconds = 0;
+            document.getElementById('hud-timer').innerText = "00:00";
+            STATE.moves = 0;
+            document.getElementById('hud-moves').innerText = "0";
+            STATE.isWon = false;
+            STATE.selectedStickIndex = null;
+            STATE.selectedCount = 0;
+            STATE.isAnimating = false;
+            STATE.activeAnimations = [];
+            document.getElementById('win-modal').classList.add('opacity-0', 'pointer-events-none');
+            document.getElementById('win-modal').querySelector('.scale-95')?.classList.add('scale-95');
+
+            // Remove previous active meshes from Scene
+            STATE.sticks.forEach(s => {
+                scene.remove(s.mesh);
+            });
+            STATE.discs.forEach(d => {
+                scene.remove(d.mesh);
+            });
+            const itemsToRemove = [];
+            scene.traverse(node => {
+                if (node.isMesh && (node.name === "baseBoard" || node.name === "shadowReceiver")) {
+                    itemsToRemove.push(node);
+                }
+            });
+            itemsToRemove.forEach(i => scene.remove(i));
+
+            STATE.sticks = [];
+            STATE.discs = [];
+
+            // Calculate new spatial layout
+            const positions = generateSticksLayout(CONFIG.numSticks);
+
+            // Construct Board base mesh
+            let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+            positions.forEach(p => {
+                if (p.x < minX) minX = p.x;
+                if (p.x > maxX) maxX = p.x;
+                if (p.z < minZ) minZ = p.z;
+                if (p.z > maxZ) maxZ = p.z;
+            });
+
+            const marginX = 1.4;
+            const marginZ = 1.4;
+            const baseW = (maxX - minX) + marginX * 2;
+            const baseD = (maxZ - minZ) + marginZ * 2;
+            const baseH = 0.5;
+
+            // Soft-corner wood base
+            const baseGeom = new THREE.BoxGeometry(baseW, baseH, baseD);
+            const baseMesh = new THREE.Mesh(baseGeom, woodMaterial);
+            baseMesh.name = "baseBoard";
+            baseMesh.position.set((minX + maxX) / 2, baseH / 2, (minZ + maxZ) / 2);
+            baseMesh.receiveShadow = true;
+            baseMesh.castShadow = true;
+            scene.add(baseMesh);
+
+            // Peg height matches max discs perfectly (CONFIG.maxHeight * verticalStep)
+            const stickHeight = (CONFIG.maxHeight * 0.45);
+            const stickGeom = new THREE.CylinderGeometry(0.25, 0.25, stickHeight, 24);
+            stickGeom.translate(0, stickHeight / 2, 0); // anchor at bottom
+
+            for (let i = 0; i < CONFIG.numSticks; i++) {
+                const stickMesh = new THREE.Mesh(stickGeom, woodStickMaterial);
+                stickMesh.position.copy(positions[i]);
+                stickMesh.position.y += baseH; // sit on base
+                stickMesh.castShadow = true;
+                stickMesh.receiveShadow = true;
+                scene.add(stickMesh);
+
+                STATE.sticks.push({
+                    mesh: stickMesh,
+                    position: stickMesh.position.clone(),
+                    discs: [] 
+                });
+            }
+
+            // Create initial starting state: calculate total count of active colored discs
+            const activeColors = PALETTE.slice(0, CONFIG.numColors);
+            
+            const colorAssignments = [];
+            for (let i = 0; i < CONFIG.numColors; i++) {
+                colorAssignments.push(activeColors[i].id);
+            }
+            const extraCount = (CONFIG.numSticks - 1) - CONFIG.numColors;
+            for (let i = 0; i < extraCount; i++) {
+                colorAssignments.push(activeColors[i % CONFIG.numColors].id);
+            }
+
+            // Put all sorted discs into a single flat array pool
+            const allDiscsPool = [];
+            for (let i = 0; i < colorAssignments.length; i++) {
+                const colorId = colorAssignments[i];
+                for (let h = 0; h < CONFIG.maxHeight; h++) {
+                    allDiscsPool.push(colorId);
+                }
+            }
+
+            // Perform a mathematically perfect uniform Fisher-Yates shuffle on all discs
+            for (let i = allDiscsPool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [allDiscsPool[i], allDiscsPool[j]] = [allDiscsPool[j], allDiscsPool[i]];
+            }
+
+            // Distribute the shuffled discs organically across ALL sticks, leaving empty space distributed.
+            // There are exactly CONFIG.maxHeight total empty slots across all sticks, which acts as the sorting buffer.
+            const totalDiscs = allDiscsPool.length;
+            const stickCounts = Array(CONFIG.numSticks).fill(0);
+            
+            for (let d = 0; d < totalDiscs; d++) {
+                // Find all sticks that still have available space
+                const availableSticks = [];
+                for (let i = 0; i < CONFIG.numSticks; i++) {
+                    if (stickCounts[i] < CONFIG.maxHeight) {
+                        availableSticks.push(i);
+                    }
+                }
+                // Pick one randomly and add a disc
+                const chosenStick = availableSticks[Math.floor(Math.random() * availableSticks.length)];
+                stickCounts[chosenStick]++;
+            }
+
+            // Populate the logical board state based on the generated organic heights
+            const boardState = Array.from({ length: CONFIG.numSticks }, () => []);
+            let poolPointer = 0;
+            for (let i = 0; i < CONFIG.numSticks; i++) {
+                const count = stickCounts[i];
+                for (let h = 0; h < count; h++) {
+                    boardState[i].push(allDiscsPool[poolPointer++]);
+                }
+            }
+
+            // snugs flat torus setup
+            const torusRadius = 0.45;
+            const torusTube = 0.2;
+            const discGeom = new THREE.TorusGeometry(torusRadius, torusTube, 16, 40);
+            discGeom.rotateX(Math.PI / 2); // Lay flat
+
+            for (let stickIdx = 0; stickIdx < CONFIG.numSticks; stickIdx++) {
+                const stack = boardState[stickIdx];
+                for (let h = 0; h < stack.length; h++) {
+                    const colorId = stack[h];
+                    const colorInfo = PALETTE.find(p => p.id === colorId);
+
+                    const discMat = new THREE.MeshPhysicalMaterial({
+                        color: new THREE.Color(colorInfo.hex),
+                        roughness: 0.12,
+                        metalness: 0.1,
+                        clearcoat: 1.0,
+                        clearcoatRoughness: 0.1,
+                        reflectivity: 0.9,
+                        flatShading: false
+                    });
+
+                    const discMesh = new THREE.Mesh(discGeom, discMat);
+                    discMesh.castShadow = true;
+                    discMesh.receiveShadow = true;
+
+                    const targetY = STATE.sticks[stickIdx].position.y + (h * 0.45) + 0.225;
+                    discMesh.position.set(
+                        STATE.sticks[stickIdx].position.x,
+                        targetY,
+                        STATE.sticks[stickIdx].position.z
+                    );
+
+                    scene.add(discMesh);
+
+                    const discObj = {
+                        mesh: discMesh,
+                        colorId: colorId,
+                        initialMat: discMat
+                    };
+
+                    STATE.sticks[stickIdx].discs.push(discObj);
+                    STATE.discs.push(discObj);
+                }
+            }
+
+            STATE.completedSticks = Array(CONFIG.numSticks).fill(false);
+            for (let i = 0; i < CONFIG.numSticks; i++) {
+                STATE.completedSticks[i] = isStickCompleted(i);
+            }
+
+            // Adjust target and calculate PERFECT zoom to nicely frame components
+            const centerX = (minX + maxX) / 2;
+            const centerZ = (minZ + maxZ) / 2;
+            controls.target.set(centerX, baseH + (CONFIG.maxHeight * 0.45) / 3, centerZ);
+
+            // Proportional framing calculation
+            const boardWidth = (maxX - minX) + 4.0;
+            const cameraDistance = Math.max(boardWidth * 1.2, stickHeight * 2.2);
+            camera.position.set(centerX, baseH + stickHeight * 1.3, centerZ + cameraDistance);
+            controls.update();
+        }
+
+        // --- TIMER TRACKER ---
+        function startTimer() {
+            if (STATE.timerInterval) return;
+            STATE.startTime = Date.now() - (STATE.elapsedSeconds * 1000);
+            STATE.timerInterval = setInterval(() => {
+                STATE.elapsedSeconds = Math.floor((Date.now() - STATE.startTime) / 1000);
+                const mins = String(Math.floor(STATE.elapsedSeconds / 60)).padStart(2, '0');
+                const secs = String(STATE.elapsedSeconds % 60).padStart(2, '0');
+                document.getElementById('hud-timer').innerText = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        // Stop live counter
+        function pauseTimer() {
+            clearInterval(STATE.timerInterval);
+            STATE.timerInterval = null;
+        }
+
+        // --- PLAYER INTERACTION & RAYCASTING ---
+
+        function onDocumentPointerDown(event) {
+            if (STATE.isWon || STATE.isAnimating) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            // Raycast only visual elements for maximum selection accuracy
+            const targets = [];
+            STATE.sticks.forEach(s => targets.push(s.mesh));
+            STATE.discs.forEach(d => targets.push(d.mesh));
+
+            const intersects = raycaster.intersectObjects(targets);
+
+            if (intersects.length > 0) {
+                const hitObject = intersects[0].object;
+                
+                const hitStickIndex = STATE.sticks.findIndex(s => s.mesh === hitObject);
+                if (hitStickIndex !== -1) {
+                    handleStickSelection(hitStickIndex);
+                    return;
+                }
+
+                const hitDisc = STATE.discs.find(d => d.mesh === hitObject);
+                if (hitDisc) {
+                    const hitStickIndexFromDisc = getDiscStickIndex(hitDisc);
+                    handleStickSelection(hitStickIndexFromDisc);
+                }
+            }
+        }
+
+        // Lift/Drop entire contiguous same-color stack at once
+        function animateDiscsHoverGroup(stickIdx, hoverState) {
+            const stick = STATE.sticks[stickIdx];
+            const discs = stick.discs;
+            const count = STATE.selectedCount;
+            if (discs.length === 0 || count <= 0) return;
+
+            const hoverBaseY = stick.position.y + (CONFIG.maxHeight * 0.45) + 0.8;
+
+            for (let i = 0; i < count; i++) {
+                const discIdx = discs.length - count + i;
+                const disc = discs[discIdx];
+                if (!disc) continue;
+
+                const targetY = hoverState 
+                    ? (hoverBaseY + (i * 0.45))
+                    : (stick.position.y + (discIdx * 0.45) + 0.225);
+
+                if (hoverState) {
+                    disc.mesh.material.emissive = new THREE.Color(0x333333);
+                } else {
+                    disc.mesh.material.emissive = new THREE.Color(0x000000);
+                }
+
+                const anim = {
+                    mesh: disc.mesh,
+                    startY: disc.mesh.position.y,
+                    endY: targetY,
+                    time: 0,
+                    duration: 0.2,
+                    update: function(dt) {
+                        this.time += dt;
+                        const progress = Math.min(1.0, this.time / this.duration);
+                        disc.mesh.position.y = THREE.MathUtils.lerp(this.startY, this.endY, progress);
+                        return progress < 1.0;
+                    }
+                };
+                STATE.activeAnimations.push(anim);
+            }
+        }
+
+        function handleStickSelection(stickIdx) {
+            startTimer();
+
+            if (STATE.selectedStickIndex === null) {
+                // Selection Phase
+                const targetStick = STATE.sticks[stickIdx];
+                if (targetStick.discs.length === 0) {
+                    shakePeg(stickIdx);
+                    playWoodSound('shake');
+                    return;
+                }
+
+                // Analyze contiguous same-colored stacks at the top
+                const discs = targetStick.discs;
+                const topColorId = discs[discs.length - 1].colorId;
+                let count = 0;
+                for (let i = discs.length - 1; i >= 0; i--) {
+                    if (discs[i].colorId === topColorId) {
+                        count++;
+                    } else {
+                        break;
+                    }
+                }
+
+                STATE.selectedStickIndex = stickIdx;
+                STATE.selectedCount = count;
+                
+                animateDiscsHoverGroup(stickIdx, true);
+                playWoodSound('pick');
+            } else {
+                // Placement Phase
+                const sourceIdx = STATE.selectedStickIndex;
+                
+                if (sourceIdx === stickIdx) {
+                    // Cancel selection
+                    animateDiscsHoverGroup(sourceIdx, false);
+                    STATE.selectedStickIndex = null;
+                    STATE.selectedCount = 0;
+                    playWoodSound('pick');
+                } else {
+                    const srcStick = STATE.sticks[sourceIdx];
+                    const dstStick = STATE.sticks[stickIdx];
+
+                    const available = CONFIG.maxHeight - dstStick.discs.length;
+                    if (available <= 0) {
+                        shakePeg(stickIdx);
+                        playWoodSound('shake');
+                        
+                        // Return selected stack down
+                        animateDiscsHoverGroup(sourceIdx, false);
+                        STATE.selectedStickIndex = null;
+                        STATE.selectedCount = 0;
+                        return;
+                    }
+
+                    // Approved Move: calculate exact number to slide
+                    const countToMove = Math.min(STATE.selectedCount, available);
+                    const leftoverCount = STATE.selectedCount - countToMove;
+
+                    // If we have leftovers that cannot fit, animate them cleanly down immediately
+                    if (leftoverCount > 0) {
+                        const discs = srcStick.discs;
+                        for (let i = 0; i < leftoverCount; i++) {
+                            // Leftovers reside at the base of our active selection stack
+                            const discIdx = discs.length - STATE.selectedCount + i;
+                            const disc = discs[discIdx];
+                            if (disc) {
+                                disc.mesh.material.emissive = new THREE.Color(0x000000);
+                                const targetY = srcStick.position.y + (discIdx * 0.45) + 0.225;
+                                const anim = {
+                                    mesh: disc.mesh,
+                                    startY: disc.mesh.position.y,
+                                    endY: targetY,
+                                    time: 0,
+                                    duration: 0.2,
+                                    update: function(dt) {
+                                        this.time += dt;
+                                        const progress = Math.min(1.0, this.time / this.duration);
+                                        this.mesh.position.y = THREE.MathUtils.lerp(this.startY, this.endY, progress);
+                                        return progress < 1.0;
+                                    }
+                                };
+                                STATE.activeAnimations.push(anim);
+                            }
+                        }
+                    }
+
+                    // Reset selected variables
+                    STATE.selectedStickIndex = null; 
+                    STATE.selectedCount = 0;
+
+                    // Execute the precise transfer for the fitting subset of discs
+                    executeGroupDiscTransfer(sourceIdx, stickIdx, countToMove);
+                }
+            }
+        }
+
+        // Shakes peg mesh laterally
+        function shakePeg(stickIdx) {
+            const mesh = STATE.sticks[stickIdx].mesh;
+            const originalX = mesh.position.x;
+            const shakeAnim = {
+                mesh: mesh,
+                originalX: originalX,
+                time: 0,
+                duration: 0.35,
+                update: function(dt) {
+                    this.time += dt;
+                    const progress = this.time / this.duration;
+                    if (progress >= 1.0) {
+                        mesh.position.x = this.originalX;
+                        return false;
+                    }
+                    const offset = Math.sin(progress * Math.PI * 8) * 0.15 * (1.0 - progress);
+                    mesh.position.x = this.originalX + offset;
+                    return true;
+                }
+            };
+            STATE.activeAnimations.push(shakeAnim);
+        }
+
+        function getDiscStickIndex(disc) {
+            for (let i = 0; i < STATE.sticks.length; i++) {
+                if (STATE.sticks[i].discs.includes(disc)) return i;
+            }
+            return 0;
+        }
+
+        // Translocate a group of discs together
+        function executeGroupDiscTransfer(srcIdx, dstIdx, numToMove) {
+            STATE.isAnimating = true;
+
+            const srcStick = STATE.sticks[srcIdx];
+            const dstStick = STATE.sticks[dstIdx];
+
+            const movingDiscs = [];
+            for (let i = 0; i < numToMove; i++) {
+                movingDiscs.push(srcStick.discs.pop());
+            }
+            movingDiscs.reverse(); // Order bottom to top of group
+
+            let completedCount = 0;
+            const peakHeight = Math.max(srcStick.position.y, dstStick.position.y) + (CONFIG.maxHeight * 0.45) + 0.8;
+
+            movingDiscs.forEach((disc, i) => {
+                disc.mesh.material.emissive = new THREE.Color(0x000000);
+
+                const startPos = disc.mesh.position.clone();
+                const peakY = peakHeight + (i * 0.45);
+                const peakPos1 = new THREE.Vector3(startPos.x, peakY, startPos.z);
+                const peakPos2 = new THREE.Vector3(dstStick.position.x, peakY, dstStick.position.z);
+                
+                const finalHeight = dstStick.position.y + ((dstStick.discs.length + i) * 0.45) + 0.225;
+                const endPos = new THREE.Vector3(dstStick.position.x, finalHeight, dstStick.position.z);
+
+                const transferAnim = {
+                    mesh: disc.mesh,
+                    p0: startPos,
+                    p1: peakPos1,
+                    p2: peakPos2,
+                    p3: endPos,
+                    progress: 0,
+                    speed: 3.5,
+                    update: function(dt) {
+                        this.progress += dt * this.speed;
+                        if (this.progress >= 3.0) {
+                            this.mesh.position.copy(this.p3);
+                            
+                            completedCount++;
+                            if (completedCount === numToMove) {
+                                // Group complete
+                                movingDiscs.forEach(d => dstStick.discs.push(d));
+                                STATE.isAnimating = false;
+                                
+                                STATE.moves++;
+                                document.getElementById('hud-moves').innerText = STATE.moves;
+                                playWoodSound('place');
+
+                                // Evaluate completed state
+                                const wasCompleted = STATE.completedSticks[dstIdx];
+                                const nowCompleted = isStickCompleted(dstIdx);
+                                STATE.completedSticks[dstIdx] = nowCompleted;
+                                STATE.completedSticks[srcIdx] = isStickCompleted(srcIdx);
+
+                                if (nowCompleted && !wasCompleted) {
+                                    triggerStickCompleteAnimation(dstIdx);
+                                }
+
+                                checkWinCondition();
+                            }
+                            return false;
+                        }
+
+                        if (this.progress < 1.0) {
+                            this.mesh.position.lerpVectors(this.p0, this.p1, this.progress);
+                        } else if (this.progress < 2.0) {
+                            this.mesh.position.lerpVectors(this.p1, this.p2, this.progress - 1.0);
+                        } else {
+                            this.mesh.position.lerpVectors(this.p2, this.p3, this.progress - 2.0);
+                        }
+                        return true;
+                    }
+                };
+                STATE.activeAnimations.push(transferAnim);
+            });
+        }
+
+        // --- WIN TRIGGER ENGINE ---
+        // Enhanced condition logic:
+        // Every single stick must be completely empty (0 discs) OR completely full (CONFIG.maxHeight discs).
+        // For every filled stick, all stacked discs must share the exact same colorId.
+        // Duplicated colors on multiple sticks are fully permitted and supported for victory calculation!
+        function checkWinCondition() {
+            let win = true;
+
+            for (let i = 0; i < CONFIG.numSticks; i++) {
+                const stack = STATE.sticks[i].discs;
+                if (stack.length === 0) continue; // Empty stick is valid
+
+                // A filled stick must strictly match the maximum configuration height
+                if (stack.length !== CONFIG.maxHeight) {
+                    win = false;
+                    break;
+                }
+
+                // Verify color homogeneity
+                const targetColorId = stack[0].colorId;
+                for (let d = 1; d < stack.length; d++) {
+                    if (stack[d].colorId !== targetColorId) {
+                        win = false;
+                        break;
+                    }
+                }
+
+                if (!win) break;
+            }
+
+            if (win) {
+                handleWinSuccess();
+            }
+        }
+
+        function handleWinSuccess() {
+            STATE.isWon = true;
+            pauseTimer();
+
+            playVictorySound();
+
+            const duration = 2.5 * 1000;
+            const end = Date.now() + duration;
+
+            (function frame() {
+                confetti({
+                    particleCount: 5,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: ['#2563EB', '#6D28D9', '#FFE600', '#E11D48']
+                });
+                confetti({
+                    particleCount: 5,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: ['#2563EB', '#6D28D9', '#FFE600', '#E11D48']
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+
+            document.getElementById('stat-time').innerText = document.getElementById('hud-timer').innerText;
+            document.getElementById('stat-moves').innerText = STATE.moves;
+            document.getElementById('stat-diff').innerText = CONFIG.difficulty;
+
+            const modal = document.getElementById('win-modal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                modal.querySelector('.glass-panel').classList.remove('scale-95');
+            }, 50);
+        }
+
+        // --- GUI & CONFIGURATION PANELS SETUP ---
+
+        function setupGUI() {
+            // Configuration Slide-out Drawer Actions
+            const configDrawer = document.getElementById('config-drawer');
+            const drawerBackdrop = document.getElementById('drawer-backdrop');
+            
+            function openDrawer() {
+                configDrawer.classList.remove('translate-x-full');
+                drawerBackdrop.classList.remove('opacity-0', 'pointer-events-none');
+            }
+
+            function closeDrawer() {
+                configDrawer.classList.add('translate-x-full');
+                drawerBackdrop.classList.add('opacity-0', 'pointer-events-none');
+            }
+
+            document.getElementById('btn-menu-trigger').addEventListener('click', openDrawer);
+            document.getElementById('btn-menu-close').addEventListener('click', closeDrawer);
+            drawerBackdrop.addEventListener('click', closeDrawer);
+
+            // Bind Unified Configuration sliders
+            const sliders = [
+                { slider: 'slider-sticks', val: 'val-sticks', key: 'numSticks' },
+                { slider: 'slider-colors', val: 'val-colors', key: 'numColors' },
+                { slider: 'slider-stack', val: 'val-stack', key: 'maxHeight' }
+            ];
+
+            sliders.forEach(sInfo => {
+                const elem = document.getElementById(sInfo.slider);
+                const valElem = document.getElementById(sInfo.val);
+                
+                elem.addEventListener('input', (e) => {
+                    let v = parseInt(e.target.value);
+                    
+                    if (sInfo.key === 'numSticks') {
+                        const colSlider = document.getElementById('slider-colors');
+                        const colVal = document.getElementById('val-colors');
+                        if (parseInt(colSlider.value) >= v) {
+                            colSlider.value = v - 1;
+                            colVal.innerText = v - 1;
+                            CONFIG.numColors = v - 1;
+                        }
+                        colSlider.max = Math.min(v - 1, PALETTE.length); // Prevent setting colors beyond PALETTE size
+                    }
+                    if (sInfo.key === 'numColors') {
+                        const stSlider = document.getElementById('slider-sticks');
+                        if (v >= parseInt(stSlider.value)) {
+                            v = parseInt(stSlider.value) - 1;
+                            elem.value = v;
+                        }
+                    }
+
+                    valElem.innerText = v;
+                    CONFIG[sInfo.key] = v;
+                    CONFIG.difficulty = 'custom';
+                    
+                    clearPresetButtonsHighlight();
+                });
+            });
+
+            // Generate buttons triggers
+            document.getElementById('btn-generate').addEventListener('click', () => {
+                startNewGame();
+                closeDrawer();
+            });
+            document.getElementById('btn-quick-reset').addEventListener('click', () => {
+                startNewGame();
+            });
+            document.getElementById('btn-win-restart').addEventListener('click', () => {
+                startNewGame();
+            });
+        }
+
+        // Sets config presets easily
+        function setDifficultyPreset(level) {
+            CONFIG.difficulty = level;
+            
+            if (level === 'easy') {
+                CONFIG.numSticks = 4;
+                CONFIG.numColors = 3;
+                CONFIG.maxHeight = 7;
+            } else if (level === 'medium') {
+                CONFIG.numSticks = 7;
+                CONFIG.numColors = 5;
+                CONFIG.maxHeight = 8;
+            } else if (level === 'hard') {
+                CONFIG.numSticks = 9;
+                CONFIG.numColors = 8;
+                CONFIG.maxHeight = 12; // Configured to 12
+            }
+
+            // Sync visual sliders
+            document.getElementById(`slider-sticks`).value = CONFIG.numSticks;
+            document.getElementById(`slider-sticks`).max = 12;
+            document.getElementById(`val-sticks`).innerText = CONFIG.numSticks;
+
+            document.getElementById(`slider-colors`).value = CONFIG.numColors;
+            document.getElementById(`slider-colors`).max = CONFIG.numSticks - 1;
+            document.getElementById(`val-colors`).innerText = CONFIG.numColors;
+
+            document.getElementById(`slider-stack`).value = CONFIG.maxHeight;
+            document.getElementById(`slider-stack`).max = 20; // Support values up to 20
+            document.getElementById(`val-stack`).innerText = CONFIG.maxHeight;
+
+            clearPresetButtonsHighlight();
+            const btn = document.getElementById(`preset-${level}`);
+            if (btn) {
+                btn.classList.remove('text-slate-400');
+                btn.classList.add('bg-indigo-500', 'text-white', 'shadow-lg');
+            }
+        }
+
+        function clearPresetButtonsHighlight() {
+            const presets = ['easy', 'medium', 'hard'];
+            presets.forEach(p => {
+                const b = document.getElementById(`preset-${p}`);
+                if (b) {
+                    b.classList.add('text-slate-400');
+                    b.classList.remove('bg-indigo-500', 'text-white', 'shadow-lg');
+                }
+            });
+        }
+
+        // --- FRAME UPDATE LOOP ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = clock.getDelta();
+
+            // Evaluate ongoing physics animations
+            for (let i = STATE.activeAnimations.length - 1; i >= 0; i--) {
+                const anim = STATE.activeAnimations[i];
+                const active = anim.update(dt);
+                if (!active) {
+                    STATE.activeAnimations.splice(i, 1);
+                }
+            }
+
+            // Synchronized group bobbing animation on highlighted active discs
+            if (STATE.selectedStickIndex !== null && !STATE.isAnimating) {
+                const stick = STATE.sticks[STATE.selectedStickIndex];
+                const discs = stick.discs;
+                const count = STATE.selectedCount;
+                if (discs.length > 0 && count > 0) {
+                    const time = Date.now() * 0.005;
+                    const hoverBaseY = stick.position.y + (CONFIG.maxHeight * 0.45) + 0.8;
+                    for (let i = 0; i < count; i++) {
+                        const discIdx = discs.length - count + i;
+                        const disc = discs[discIdx];
+                        if (disc) {
+                            const targetY = hoverBaseY + (i * 0.45) + Math.sin(time) * 0.08;
+                            disc.mesh.position.y = targetY;
+                            disc.mesh.rotation.y += 0.01;
+                        }
+                    }
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
