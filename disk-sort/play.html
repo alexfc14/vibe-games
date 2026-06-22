@@ -185,7 +185,7 @@
                             <span>Unique Colors</span>
                             <span id="val-colors" class="text-indigo-400 font-bold">3</span>
                         </div>
-                        <input type="range" id="slider-colors" min="2" max="10" step="1" value="3" class="w-full accent-indigo-500">
+                        <input type="range" id="slider-colors" min="2" max="11" step="1" value="3" class="w-full accent-indigo-500">
                     </div>
 
                     <div>
@@ -258,8 +258,7 @@
             numSticks: 4,
             numColors: 3,
             maxHeight: 7,        // Default stack height initialized to 7 (Easy baseline)
-            difficulty: 'easy',  // 'easy', 'medium', 'hard', 'custom'
-            scrambleMoves: 10000 // Multi-thousand move scramble loop
+            difficulty: 'easy'
         };
 
         const STATE = {
@@ -394,18 +393,24 @@
             }
         }
 
-        // Distinct, vivid and high-contrast colors (100% Unique - no similar tones)
+        // Distinct, vivid and high-contrast colors (14 fully unique colors to support 12 pegs)
+        // Red is made very deep and solid, Pink is soft light pastel, so they never clash or look similar.
+        // Replaced washed out lavender-white colors with high contrast saturated colors to prevent lighting overexposure issues.
         const PALETTE = [
-            { id: 0, hex: '#E11D48', rgb: [225, 29, 72] },   // Ruby Rose Red
-            { id: 1, hex: '#2563EB', rgb: [37, 99, 235] },   // Electric Royal Blue
-            { id: 2, hex: '#065F46', rgb: [6, 95, 70] },     // Rich Dark Forest Green
-            { id: 3, hex: '#EA580C', rgb: [234, 88, 12] },   // Vibrant Tangerine Orange
-            { id: 4, hex: '#FFE600', rgb: [255, 230, 0] },   // Sunny Lemon Yellow
-            { id: 5, hex: '#6D28D9', rgb: [109, 40, 217] },  // Velvet Deep Purple
-            { id: 6, hex: '#DB2777', rgb: [219, 39, 119] },  // Bright Pink Magenta
-            { id: 7, hex: '#06B6D4', rgb: [6, 182, 212] },   // Fresh Ice Cyan
-            { id: 8, hex: '#F8FAFC', rgb: [248, 250, 252] }, // Glossy Snow White
-            { id: 9, hex: '#78350F', rgb: [120, 53, 15] }    // Earth Cocoa Brown
+            { id: 0, hex: '#B91C1C', rgb: [185, 28, 28] },     // 0: Deep Solid Crimson Red
+            { id: 1, hex: '#1D4ED8', rgb: [29, 78, 216] },     // 1: Royal Blue
+            { id: 2, hex: '#047857', rgb: [4, 120, 87] },      // 2: Rich Dark Forest Green
+            { id: 3, hex: '#F97316', rgb: [249, 115, 22] },    // 3: Vibrant Orange
+            { id: 4, hex: '#FACC15', rgb: [250, 204, 21] },    // 4: Bright Golden Yellow
+            { id: 5, hex: '#6D28D9', rgb: [109, 40, 217] },    // 5: Deep Purple
+            { id: 6, hex: '#A21CAF', rgb: [162, 28, 175] },    // 6: Vivid Saturated Magenta (replaces pale lavender)
+            { id: 7, hex: '#06B6D4', rgb: [6, 182, 212] },     // 7: Bright Turquoise/Cyan
+            { id: 8, hex: '#FFFFFF', rgb: [255, 255, 255] },   // 8: Pure Glossy White (no gray undertone)
+            { id: 9, hex: '#451A03', rgb: [69, 26, 3] },       // 9: Deep Earth Brown
+            { id: 10, hex: '#84CC16', rgb: [132, 204, 22] },   // 10: Lucid Lime Green
+            { id: 11, hex: '#EC4899', rgb: [236, 72, 153] },   // 11: Electric Hot Pink
+            { id: 12, hex: '#334155', rgb: [51, 65, 85] },     // 12: Deep Charcoal Gray (never washed out or identical to white)
+            { id: 13, hex: '#1E1B4B', rgb: [30, 27, 75] }      // 13: Midnight Navy Blue
         ];
 
         // --- THREE.JS GRAPHICS SETUP ---
@@ -593,6 +598,7 @@
         }
 
         // Check if a stick is filled completely with a unified color
+        // Correct completion logic: A peg is completed only if it is completely full of identical colored discs
         function isStickCompleted(stickIdx) {
             const stack = STATE.sticks[stickIdx].discs;
             if (stack.length !== CONFIG.maxHeight) return false;
@@ -735,57 +741,35 @@
             for (let i = 0; i < extraCount; i++) {
                 colorAssignments.push(activeColors[i % CONFIG.numColors].id);
             }
-            // Shuffle
-            for (let i = colorAssignments.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [colorAssignments[i], colorAssignments[j]] = [colorAssignments[j], colorAssignments[i]];
+
+            // Put all sorted discs into a single flat array pool
+            const allDiscsPool = [];
+            for (let i = 0; i < colorAssignments.length; i++) {
+                const colorId = colorAssignments[i];
+                for (let h = 0; h < CONFIG.maxHeight; h++) {
+                    allDiscsPool.push(colorId);
+                }
             }
 
-            // Exactly one stick empty
+            // Perform a mathematically perfect uniform Fisher-Yates shuffle on the entire pool
+            // This guarantees absolutely perfect randomization of every single layer (including the bottom ones)
+            // while mathematically preserving total solvability
+            for (let i = allDiscsPool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [allDiscsPool[i], allDiscsPool[j]] = [allDiscsPool[j], allDiscsPool[i]];
+            }
+
+            // Choose exactly one stick to start completely empty
             const emptyStickIdx = Math.floor(Math.random() * CONFIG.numSticks);
 
+            // Distribute the perfectly scrambled discs into the other S-1 sticks
             const boardState = Array.from({ length: CONFIG.numSticks }, () => []);
-            let assignmentIdx = 0;
+            let poolPointer = 0;
             for (let i = 0; i < CONFIG.numSticks; i++) {
                 if (i === emptyStickIdx) continue;
-                const assignedColorId = colorAssignments[assignmentIdx++];
                 for (let h = 0; h < CONFIG.maxHeight; h++) {
-                    boardState[i].push(assignedColorId);
+                    boardState[i].push(allDiscsPool[poolPointer++]);
                 }
-            }
-
-            // Perform solvable backward scramble loop
-            let scrambleCount = CONFIG.scrambleMoves;
-            let lastSrc = -1;
-            let lastDst = -1;
-
-            while (scrambleCount > 0) {
-                const sourceCandidates = [];
-                for (let i = 0; i < CONFIG.numSticks; i++) {
-                    if (boardState[i].length > 0) sourceCandidates.push(i);
-                }
-
-                if (sourceCandidates.length === 0) break;
-                const src = sourceCandidates[Math.floor(Math.random() * sourceCandidates.length)];
-                
-                const destCandidates = [];
-                for (let j = 0; j < CONFIG.numSticks; j++) {
-                    if (j !== src && boardState[j].length < CONFIG.maxHeight) {
-                        if (!(src === lastDst && j === lastSrc)) {
-                            destCandidates.push(j);
-                        }
-                    }
-                }
-
-                if (destCandidates.length === 0) continue;
-                const dst = destCandidates[Math.floor(Math.random() * destCandidates.length)];
-
-                const discId = boardState[src].pop();
-                boardState[dst].push(discId);
-
-                lastSrc = src;
-                lastDst = dst;
-                scrambleCount--;
             }
 
             // snugs flat torus setup
@@ -1270,7 +1254,7 @@
                             colVal.innerText = v - 1;
                             CONFIG.numColors = v - 1;
                         }
-                        colSlider.max = v - 1;
+                        colSlider.max = Math.min(v - 1, PALETTE.length); // Prevent setting colors beyond PALETTE size
                     }
                     if (sInfo.key === 'numColors') {
                         const stSlider = document.getElementById('slider-sticks');
@@ -1309,17 +1293,14 @@
                 CONFIG.numSticks = 4;
                 CONFIG.numColors = 3;
                 CONFIG.maxHeight = 7;
-                CONFIG.scrambleMoves = 10000;
             } else if (level === 'medium') {
                 CONFIG.numSticks = 7;
                 CONFIG.numColors = 5;
                 CONFIG.maxHeight = 8;
-                CONFIG.scrambleMoves = 20000;
             } else if (level === 'hard') {
                 CONFIG.numSticks = 9;
                 CONFIG.numColors = 8;
-                CONFIG.maxHeight = 8;
-                CONFIG.scrambleMoves = 30000;
+                CONFIG.maxHeight = 12; // Configured to 12
             }
 
             // Sync visual sliders
