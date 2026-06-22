@@ -193,7 +193,7 @@
                             <span>Max Discs Per Peg</span>
                             <span id="val-stack" class="text-indigo-400 font-bold">7</span>
                         </div>
-                        <input type="range" id="slider-stack" min="3" max="16" step="1" value="7" class="w-full accent-indigo-500">
+                        <input type="range" id="slider-stack" min="3" max="20" step="1" value="7" class="w-full accent-indigo-500">
                     </div>
                 </div>
             </div>
@@ -847,6 +847,7 @@
             }, 1000);
         }
 
+        // Stop live counter
         function pauseTimer() {
             clearInterval(STATE.timerInterval);
             STATE.timerInterval = null;
@@ -1135,31 +1136,30 @@
         }
 
         // --- WIN TRIGGER ENGINE ---
+        // Enhanced condition logic:
+        // Every single stick must be completely empty (0 discs) OR completely full (CONFIG.maxHeight discs).
+        // For every filled stick, all stacked discs must share the exact same colorId.
+        // Duplicated colors on multiple sticks are fully permitted and supported for victory calculation!
         function checkWinCondition() {
             let win = true;
-            const colorHomePegs = {}; 
 
             for (let i = 0; i < CONFIG.numSticks; i++) {
                 const stack = STATE.sticks[i].discs;
-                if (stack.length === 0) continue;
+                if (stack.length === 0) continue; // Empty stick is valid
 
-                const pegColorId = stack[0].colorId;
-
-                if (colorHomePegs[pegColorId] !== undefined) {
+                // A filled stick must strictly match the maximum configuration height
+                if (stack.length !== CONFIG.maxHeight) {
                     win = false;
                     break;
                 }
-                colorHomePegs[pegColorId] = i;
 
+                // Verify color homogeneity
+                const targetColorId = stack[0].colorId;
                 for (let d = 1; d < stack.length; d++) {
-                    if (stack[d].colorId !== pegColorId) {
+                    if (stack[d].colorId !== targetColorId) {
                         win = false;
                         break;
                     }
-                }
-
-                if (win && stack.length !== CONFIG.maxHeight) {
-                    win = false;
                 }
 
                 if (!win) break;
@@ -1313,6 +1313,7 @@
             document.getElementById(`val-colors`).innerText = CONFIG.numColors;
 
             document.getElementById(`slider-stack`).value = CONFIG.maxHeight;
+            document.getElementById(`slider-stack`).max = 20; // Support values up to 20
             document.getElementById(`val-stack`).innerText = CONFIG.maxHeight;
 
             clearPresetButtonsHighlight();
