@@ -26,7 +26,7 @@
             display: block;
             outline: none;
         }
-        /* Custom scrollbars for the scrollable victory panel */
+        /* Custom scrollbars */
         ::-webkit-scrollbar {
             width: 6px;
         }
@@ -65,7 +65,7 @@
     <div id="loading-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#0d0e12] transition-opacity duration-500">
         <div class="flex flex-col items-center">
             <div class="relative w-24 h-24 mb-6">
-                <!-- Glowing geometric spinner -->
+                <!-- Glowing spinner -->
                 <div class="absolute inset-0 rounded-full border-4 border-t-indigo-500 border-r-pink-500 border-b-purple-500 border-l-transparent animate-spin"></div>
                 <div class="absolute inset-2 rounded-full border-4 border-t-teal-400 border-r-transparent border-b-cyan-400 border-l-transparent animate-spin" style="animation-direction: reverse; animation-duration: 1.5s;"></div>
             </div>
@@ -111,11 +111,27 @@
                     </div>
                 </div>
 
-                <!-- Action Controls (Undo & Pause) -->
+                <!-- Combined Chaos Panel (Current / Max) -->
+                <div class="glass-panel px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl min-w-[130px]">
+                    <i id="chaos-icon" class="fa-solid fa-chart-line text-rose-400 text-lg animate-pulse transition-colors duration-300"></i>
+                    <div>
+                        <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">CHAOS</div>
+                        <div class="text-lg font-extrabold font-mono transition-colors duration-300">
+                            <span id="hud-chaos-current" class="text-rose-400">0</span><span class="text-slate-500 font-normal mx-0.5">/</span><span id="hud-chaos-max" class="text-slate-400">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Controls (Undo, Hint, & Pause) -->
                 <div class="flex items-center gap-2">
                     <!-- Left Arrow Undo Button -->
                     <button id="btn-undo" class="glass-panel glass-button p-4 rounded-2xl flex items-center justify-center text-slate-400 shadow-2xl opacity-50 cursor-not-allowed transition-all" title="Undo Last Move" disabled>
                         <i class="fa-solid fa-arrow-left text-lg"></i>
+                    </button>
+
+                    <!-- Hint Button -->
+                    <button id="btn-hint" class="glass-panel glass-button p-4 rounded-2xl flex items-center justify-center text-yellow-400 hover:text-yellow-300 shadow-2xl transition-all" title="Show Ideal Move Hint">
+                        <i class="fa-solid fa-lightbulb text-lg"></i>
                     </button>
 
                     <!-- Pause/Options Button -->
@@ -143,12 +159,6 @@
                 <span>Pro Tip: Contiguous stacks of matching colors move together!</span>
             </div>
         </footer>
-    </div>
-
-    <!-- Temporary Toast Message Notification Banner -->
-    <div id="game-toast" class="fixed top-24 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-2xl flex items-center gap-3 shadow-2xl pointer-events-none opacity-0 translate-y-2 transition-all duration-300 z-50 text-xs font-bold text-indigo-300 border border-indigo-500/20">
-        <i class="fa-solid fa-circle-info text-indigo-400"></i>
-        <span id="game-toast-text">Message</span>
     </div>
 
     <!-- Collapsible Universal Drawer Configuration Panel -->
@@ -225,7 +235,6 @@
     <!-- Pause Modal Screen Overlay -->
     <div id="pause-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="glass-panel p-8 rounded-[2rem] w-full max-w-sm text-center mx-4 scale-95 transform transition-transform duration-300 relative overflow-hidden">
-            <!-- Decorative Glow Backgrounds -->
             <div class="absolute -top-12 -left-12 w-32 h-32 bg-indigo-500/25 rounded-full blur-2xl"></div>
             <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-pink-500/25 rounded-full blur-2xl"></div>
 
@@ -238,10 +247,14 @@
                 <p class="text-sm text-slate-400 px-3 mb-6 leading-relaxed">Take a breather, then dive right back in or spin up a new challenge!</p>
 
                 <div class="flex flex-col gap-2">
-                    <button id="btn-pause-resume" class="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold rounded-xl shadow-lg transition-transform active:scale-[0.98] flex items-center justify-center gap-2">
+                    <button id="btn-pause-resume" class="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-play"></i> Resume Game
                     </button>
-                    <button id="btn-pause-reset" class="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-extrabold rounded-xl shadow-lg transition-transform active:scale-[0.98] flex items-center justify-center gap-2">
+                    <!-- Autoplay option inside pause menu -->
+                    <button id="btn-pause-autoplay" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-robot animate-bounce"></i> Autoplay Solver
+                    </button>
+                    <button id="btn-pause-reset" class="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-rotate-left"></i> Start New Game
                     </button>
                 </div>
@@ -249,7 +262,21 @@
         </div>
     </div>
 
-    <!-- Sleek, non-intrusive floating media Recap Control Bar -->
+    <!-- Floating Autoplay Active Control Panel -->
+    <div id="autoplay-panel" class="fixed bottom-24 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-2xl flex items-center gap-4 shadow-2xl pointer-events-auto hidden opacity-0 transition-opacity duration-300 z-30 border border-amber-500/30">
+        <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span>
+            <span class="text-xs font-extrabold text-amber-400 uppercase tracking-wider">AUTOPLAY ACTIVE</span>
+        </div>
+        <div class="h-4 w-px bg-white/10"></div>
+        <div class="text-sm font-bold font-mono text-slate-100" id="autoplay-status">Searching path...</div>
+        <div class="h-4 w-px bg-white/10"></div>
+        <button id="btn-autoplay-stop" class="px-4 py-1.5 bg-red-500/30 border border-red-500/50 hover:bg-red-600/50 text-white font-bold text-xs rounded-lg transition-all" title="Stop Solver Autoplay">
+            Stop
+        </button>
+    </div>
+
+    <!-- Sleek, non-intrusive floating media Replay Control Bar -->
     <div id="replay-panel" class="fixed bottom-24 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-2xl flex items-center gap-4 shadow-2xl pointer-events-auto hidden opacity-0 transition-opacity duration-300 z-30">
         <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse hidden" id="replay-rec-indicator"></span>
@@ -258,15 +285,14 @@
         <div class="h-4 w-px bg-white/10"></div>
         <div class="text-sm font-bold font-mono text-slate-100" id="replay-counter">Move 0 / 0 | Time: 00:00</div>
         <div class="h-4 w-px bg-white/10"></div>
-        <!-- Replay Controls: Play/Pause, Floppy Diskette Save and Stop next to each other -->
         <div class="flex items-center gap-1.5">
-            <button id="btn-replay-toggle" class="p-2 bg-white/5 hover:bg-indigo-500/20 text-slate-200 rounded-xl transition-all tooltip" title="Pause / Resume">
+            <button id="btn-replay-toggle" class="p-2 bg-white/5 hover:bg-indigo-500/20 text-slate-200 rounded-xl transition-all" title="Pause / Resume">
                 <i class="fa-solid fa-pause text-xs" id="icon-replay-toggle"></i>
             </button>
-            <button id="btn-replay-record" class="p-2 bg-white/5 hover:bg-pink-500/20 hover:text-pink-400 text-slate-200 rounded-xl transition-all tooltip" title="Record Recap Video">
+            <button id="btn-replay-record" class="p-2 bg-white/5 hover:bg-pink-500/20 hover:text-pink-400 text-slate-200 rounded-xl transition-all" title="Record Recap Video">
                 <i class="fa-solid fa-floppy-disk text-xs"></i>
             </button>
-            <button id="btn-replay-stop" class="p-2 bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-slate-200 rounded-xl transition-all tooltip" title="Stop & Exit">
+            <button id="btn-replay-stop" class="p-2 bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-slate-200 rounded-xl transition-all" title="Stop & Exit">
                 <i class="fa-solid fa-square text-xs"></i>
             </button>
         </div>
@@ -274,19 +300,19 @@
 
     <!-- Win Modal Screen Overlay -->
     <div id="win-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
-        <div class="glass-panel p-6 md:p-8 rounded-[2rem] w-full max-w-sm text-center mx-4 scale-95 transform transition-transform duration-300 relative max-h-[85vh] flex flex-col justify-between">
+        <div class="glass-panel p-6 md:p-8 rounded-[2rem] w-full max-w-sm text-center mx-4 scale-95 transform transition-transform duration-300 relative max-h-[85vh] flex flex-col justify-between overflow-hidden">
             <!-- Decorative Glow Backgrounds -->
             <div class="absolute -top-12 -left-12 w-32 h-32 bg-indigo-500/25 rounded-full blur-2xl pointer-events-none"></div>
             <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-pink-500/25 rounded-full blur-2xl pointer-events-none"></div>
 
             <!-- Inner scrollable payload container -->
-            <div class="overflow-y-auto pr-1 flex-1 text-center scrollbar-thin scrollbar-thumb-white/10">
+            <div class="overflow-y-auto pr-2 flex-1 text-center scrollbar-thin scrollbar-thumb-white/10 relative z-10">
                 <!-- Glowing crown/trophy icon -->
                 <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-amber-400 to-yellow-600 flex items-center justify-center shadow-lg shadow-yellow-500/20 mb-4 animate-bounce">
                     <i class="fa-solid fa-trophy text-2xl text-white"></i>
                 </div>
 
-                <h2 class="text-3xl font-black tracking-tight text-white mb-4">VICTORY!</h2>
+                <h2 class="text-3xl font-black tracking-tight text-white mb-6">VICTORY!</h2>
 
                 <!-- Performance Panel (For standard/non-challenge play) -->
                 <div id="normal-stats-panel" class="bg-black/30 rounded-2xl p-4 border border-white/5 space-y-3 mb-4 text-left">
@@ -313,8 +339,8 @@
                     </div>
                 </div>
 
-                <!-- Board Setup Panel (Positioned below the comparison section) -->
-                <div id="board-setup-panel" class="bg-black/30 rounded-2xl p-4 border border-white/5 text-left mb-4">
+                <!-- Board Setup Panel -->
+                <div id="board-setup-panel" class="bg-black/30 rounded-2xl p-4 border border-white/5 text-left mb-6">
                     <div class="flex justify-between text-sm">
                         <span class="text-slate-400">Board Setup</span>
                         <span id="stat-config" class="font-bold text-indigo-400 uppercase tracking-wider text-xs">Custom</span>
@@ -322,14 +348,14 @@
                 </div>
 
                 <!-- Action buttons inside victory panel -->
-                <div class="flex flex-col gap-2">
-                    <button id="btn-speed-recap" class="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold rounded-xl shadow-lg transition-transform active:scale-[0.98] flex items-center justify-center gap-2">
+                <div class="flex flex-col gap-2 pb-2">
+                    <button id="btn-speed-recap" class="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-camera"></i> Speed Recap
                     </button>
-                    <button id="btn-pass-friend" class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-extrabold rounded-xl shadow-lg transition-transform active:scale-[0.98] flex items-center justify-center gap-2">
+                    <button id="btn-pass-friend" class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-user-group"></i> Pass to a Friend
                     </button>
-                    <button id="btn-win-restart" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold rounded-xl shadow-lg transition-transform active:scale-[0.98] flex items-center justify-center gap-2">
+                    <button id="btn-win-restart" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-arrow-rotate-right text-emerald-100"></i> Play Another Round
                     </button>
                 </div>
@@ -345,7 +371,7 @@
         const CONFIG = {
             numSticks: 4,
             numColors: 3,
-            maxHeight: 7,        // Default stack height initialized to 7 (Easy baseline)
+            maxHeight: 7,
             difficulty: 'easy'
         };
 
@@ -354,21 +380,26 @@
             startTime: null,
             timerInterval: null,
             elapsedSeconds: 0,
-            selectedStickIndex: null, // Index of selected peg
-            selectedCount: 0,         // How many contiguous matching color discs are selected
-            sticks: [],               // Operational peg array [{mesh, position, discs: []}]
-            discs: [],                // Active disc rendering objects [{mesh, colorId, material}]
-            isAnimating: false,       // Freeze interactions during active movement animations
+            selectedStickIndex: null,
+            selectedCount: 0,
+            sticks: [],
+            discs: [],
+            isAnimating: false,
             isWon: false,
-            activeAnimations: [],     // Smooth interactive transitions
-            completedSticks: [],      // Completed status of each stick to trigger completion burst
-            initialBoardState: null,  // Holds scrambled setup for Speed Recap
-            moveHistory: [],          // Stores sequence of moves {srcIdx, dstIdx, numToMove, elapsedSeconds}
-            lastMoveForUndo: null,    // Tracks immediate previous move for single-step undo
-            isReplaying: false,       // If the speed replay sequence is currently active
-            isReplayPaused: false,    // Pauses playback
-            replayMoveIndex: 0,       // Tracks position in replay timeline
-            isRecording: false        // True if recording the WebGL context as a high-speed video
+            activeAnimations: [],
+            completedSticks: [],
+            initialBoardState: null,
+            moveHistory: [],
+            lastMoveForUndo: null,
+            isReplaying: false,
+            isReplayPaused: false,
+            replayMoveIndex: 0,
+            isRecording: false,
+            initialChaos: null,
+            chaosBeforeMove: null,
+            isAutoplayActive: false,
+            autoplayStateHistory: [], // Loop prevention tracker
+            particles: []             // Sparkle particles system tracker
         };
 
         const CHALLENGE_STATE = {
@@ -378,10 +409,10 @@
             numColors: null,
             maxHeight: null,
             difficulty: null,
-            previousScores: []        // Array of scores to beat { playerNum: X, moves: Y, time: Z, timeStr: "00:00" }
+            previousScores: []
         };
 
-        // Synthesised Wooden Sound Engine (Web Audio API)
+        // --- WEB AUDIO API ENGINE ---
         let audioCtx = null;
         function playWoodSound(type) {
             try {
@@ -439,6 +470,57 @@
                     osc1.stop(now + 0.16);
                     osc2.start(now);
                     osc2.stop(now + 0.12);
+                } else if (type === 'goodChime') {
+                    // Delightful high-pitched sparkling chime arpeggio
+                    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                    notes.forEach((freq, index) => {
+                        const playTime = now + (index * 0.06);
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, playTime);
+                        osc.frequency.exponentialRampToValueAtTime(freq * 1.5, playTime + 0.25);
+                        
+                        gain.gain.setValueAtTime(0.15, playTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, playTime + 0.25);
+                        
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        
+                        osc.start(playTime);
+                        osc.stop(playTime + 0.25);
+                    });
+                } else if (type === 'badBuzzer') {
+                    // Soft discordant downward warning buzz
+                    const osc1 = audioCtx.createOscillator();
+                    const osc2 = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc1.type = 'sawtooth';
+                    osc1.frequency.setValueAtTime(120, now);
+                    osc1.frequency.linearRampToValueAtTime(80, now + 0.25);
+                    
+                    osc2.type = 'triangle';
+                    osc2.frequency.setValueAtTime(123, now);
+                    osc2.frequency.linearRampToValueAtTime(83, now + 0.25);
+                    
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(300, now);
+                    
+                    osc1.connect(filter);
+                    osc2.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc1.start(now);
+                    osc1.stop(now + 0.26);
+                    osc2.start(now);
+                    osc2.stop(now + 0.26);
                 } else if (type === 'shake') {
                     for (let i = 0; i < 2; i++) {
                         const delay = i * 0.07;
@@ -498,46 +580,46 @@
         }
 
         const PALETTE = [
-            { id: 0, hex: '#B91C1C', rgb: [185, 28, 28] },     // 0: Deep Solid Crimson Red
-            { id: 1, hex: '#1D4ED8', rgb: [29, 78, 216] },     // 1: Royal Blue
-            { id: 2, hex: '#047857', rgb: [4, 120, 87] },      // 2: Rich Dark Forest Green
-            { id: 3, hex: '#F97316', rgb: [249, 115, 22] },    // 3: Vibrant Orange
-            { id: 4, hex: '#FACC15', rgb: [250, 204, 21] },    // 4: Bright Golden Yellow
-            { id: 5, hex: '#6D28D9', rgb: [109, 40, 217] },    // 5: Deep Purple
-            { id: 6, hex: '#A21CAF', rgb: [162, 28, 175] },    // 6: Vivid Saturated Magenta
-            { id: 7, hex: '#06B6D4', rgb: [6, 182, 212] },     // 7: Bright Turquoise/Cyan
-            { id: 8, hex: '#FFFFFF', rgb: [255, 255, 255] },   // 8: Pure Glossy White
-            { id: 9, hex: '#451A03', rgb: [69, 26, 3] },       // 9: Deep Earth Brown
-            { id: 10, hex: '#84CC16', rgb: [132, 204, 22] },   // 10: Lucid Lime Green
-            { id: 11, hex: '#EC4899', rgb: [236, 72, 153] },   // 11: Electric Hot Pink
-            { id: 12, hex: '#334155', rgb: [51, 65, 85] },     // 12: Deep Charcoal Gray
-            { id: 13, hex: '#1E1B4B', rgb: [30, 27, 75] }      // 13: Midnight Navy Blue
+            { id: 0, hex: '#B91C1C', rgb: [185, 28, 28] },     // Red
+            { id: 1, hex: '#1D4ED8', rgb: [29, 78, 216] },     // Blue
+            { id: 2, hex: '#047857', rgb: [4, 120, 87] },      // Green
+            { id: 3, hex: '#F97316', rgb: [249, 115, 22] },    // Orange
+            { id: 4, hex: '#FACC15', rgb: [250, 204, 21] },    // Yellow
+            { id: 5, hex: '#6D28D9', rgb: [109, 40, 217] },    // Purple
+            { id: 6, hex: '#A21CAF', rgb: [162, 28, 175] },    // Magenta
+            { id: 7, hex: '#06B6D4', rgb: [6, 182, 212] },     // Cyan
+            { id: 8, hex: '#FFFFFF', rgb: [255, 255, 255] },   // White
+            { id: 9, hex: '#451A03', rgb: [69, 26, 3] },       // Brown
+            { id: 10, hex: '#84CC16', rgb: [132, 204, 22] },   // Lime
+            { id: 11, hex: '#EC4899', rgb: [236, 72, 153] },   // Pink
+            { id: 12, hex: '#334155', rgb: [51, 65, 85] },     // Charcoal
+            { id: 13, hex: '#1E1B4B', rgb: [30, 27, 75] }      // Navy
         ];
 
-        // --- THREE.JS GRAPHICS SETUP ---
-        let scene, camera, renderer, controls;
-        let woodMaterial, woodStickMaterial;
-        let raycaster, mouse;
-        const loaderScreen = document.getElementById('loading-screen');
-
-        let mediaRecorder;
-        let recordedChunks = [];
-
+        // --- MAIN ENTRY POINT ---
         window.addEventListener('load', () => {
             initThree();
             setupGUI();
-            setDifficultyPreset('easy'); // initialize easy state
+            setDifficultyPreset('easy'); 
             startNewGame();
             
-            // Fade loader
+            // Fast loading sequence completion
             setTimeout(() => {
                 const loader = document.getElementById('loading-screen');
                 if (loader) {
                     loader.classList.add('opacity-0');
                     setTimeout(() => loader.style.display = 'none', 500);
                 }
-            }, 1000);
+            }, 500);
         });
+
+        // --- THREE.JS INITIALIZATION ---
+        let scene, camera, renderer, controls;
+        let woodMaterial, woodStickMaterial;
+        let raycaster, mouse;
+
+        let mediaRecorder;
+        let recordedChunks = [];
 
         function initThree() {
             const container = document.getElementById('canvas-container');
@@ -675,8 +757,8 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- GAME INSTANTIATION / SCRAMBLER STATE ENGINE ---
-
+        // --- SPATIAL HELPERS & PARTICLE SYSTEMS ---
+        
         function generateSticksLayout(numSticks) {
             const positions = [];
             const spacingX = 1.45;
@@ -686,6 +768,372 @@
             }
             return positions;
         }
+
+        function spawnStickSparkles(stickIdx, colorHex) {
+            if (stickIdx === null || stickIdx === undefined) return;
+            const stick = STATE.sticks[stickIdx];
+            if (!stick) return;
+            
+            const startPos = stick.position.clone();
+            startPos.y += (CONFIG.maxHeight * 0.45) + 0.5; // Top of the peg active boundary
+            
+            const pCount = 18;
+            const geom = new THREE.SphereGeometry(0.06, 8, 8);
+            
+            for (let i = 0; i < pCount; i++) {
+                const mat = new THREE.MeshBasicMaterial({
+                    color: new THREE.Color(colorHex),
+                    transparent: true,
+                    opacity: 0.95
+                });
+                const mesh = new THREE.Mesh(geom, mat);
+                mesh.position.copy(startPos);
+                
+                mesh.position.x += (Math.random() - 0.5) * 0.7;
+                mesh.position.z += (Math.random() - 0.5) * 0.7;
+                mesh.position.y += (Math.random() - 0.5) * 0.2;
+                
+                const speedScale = 0.045;
+                const velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * speedScale,
+                    (Math.random() * speedScale) + 0.02, 
+                    (Math.random() - 0.5) * speedScale
+                );
+                
+                scene.add(mesh);
+                STATE.particles.push({
+                    mesh,
+                    velocity,
+                    age: 0,
+                    life: 0.6 + Math.random() * 0.4
+                });
+            }
+        }
+
+        // --- THEORETICAL SOLVER LOGIC & CHAOS METRICS ---
+
+        function getCurrentBoardStateAsArrays() {
+            return STATE.sticks.map(stick => {
+                return stick.discs.map(disc => disc.colorId);
+            });
+        }
+
+        function getBoardTransitions(boardState) {
+            let t = 0;
+            for (let i = 0; i < boardState.length; i++) {
+                const peg = boardState[i];
+                if (peg.length === 0) continue;
+                t += 1; // bottom disk on floor
+                for (let j = 1; j < peg.length; j++) {
+                    if (peg[j] !== peg[j - 1]) {
+                        t++;
+                    }
+                }
+            }
+            return t;
+        }
+
+        // Heuristic remaining unresolved color transitions h(S)
+        function getHeuristic(boardState) {
+            return Math.max(0, getBoardTransitions(boardState) - (CONFIG.numSticks - 1));
+        }
+
+        function isSolvedState(boardState, maxHeight) {
+            for (let i = 0; i < boardState.length; i++) {
+                const peg = boardState[i];
+                if (peg.length === 0) continue;
+                if (peg.length !== maxHeight) return false;
+                const baseColor = peg[0];
+                for (let j = 1; j < peg.length; j++) {
+                    if (peg[j] !== baseColor) return false;
+                }
+            }
+            return true;
+        }
+
+        function getLegalMoves(boardState, maxHeight) {
+            const moves = [];
+            const numPegs = boardState.length;
+            for (let src = 0; src < numPegs; src++) {
+                const srcPeg = boardState[src];
+                if (srcPeg.length === 0) continue;
+                
+                const topColor = srcPeg[srcPeg.length - 1];
+                let k = 0;
+                for (let i = srcPeg.length - 1; i >= 0; i--) {
+                    if (srcPeg[i] === topColor) k++;
+                    else break;
+                }
+                
+                for (let dst = 0; dst < numPegs; dst++) {
+                    if (src === dst) continue;
+                    const dstPeg = boardState[dst];
+                    const space = maxHeight - dstPeg.length;
+                    if (space <= 0) continue;
+                    
+                    const numToMove = Math.min(k, space);
+                    if (numToMove > 0) {
+                        moves.push({ src, dst, numToMove, topColor });
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function applyMoveToState(boardState, move) {
+            const nextState = boardState.map(peg => [...peg]);
+            const srcPeg = nextState[move.src];
+            const dstPeg = nextState[move.dst];
+            
+            const movingDiscs = srcPeg.splice(srcPeg.length - move.numToMove);
+            dstPeg.push(...movingDiscs);
+            
+            return nextState;
+        }
+
+        function getPrioritizedMoves(boardState, maxHeight) {
+            const moves = getLegalMoves(boardState, maxHeight);
+            
+            const scoredMoves = moves.map(move => {
+                const nextState = applyMoveToState(boardState, move);
+                const hNext = getHeuristic(nextState);
+                const hCurrent = getHeuristic(boardState);
+                const delta = hNext - hCurrent;
+                
+                let priority = 0;
+                if (delta < 0) {
+                    priority = 3; 
+                } else if (delta === 0) {
+                    if (boardState[move.dst].length === 0) priority = 2.5; 
+                    else priority = 2; 
+                } else {
+                    priority = 1; 
+                }
+                
+                return { move, priority, hNext };
+            });
+            
+            scoredMoves.sort((a, b) => {
+                if (b.priority !== a.priority) return b.priority - a.priority;
+                return a.hNext - b.hNext;
+            });
+            
+            return scoredMoves.map(x => x.move);
+        }
+
+        // Iterative Deepening A* Solver
+        function solveBoard(initialState, maxHeight) {
+            let limit = getHeuristic(initialState);
+            const path = [];
+            const statePath = [JSON.stringify(initialState)];
+            let searchCount = 0;
+            const maxNodes = 6000; 
+
+            function dfs(state, g, limit) {
+                searchCount++;
+                if (searchCount > maxNodes) return { status: 'timeout' };
+                
+                const h = getHeuristic(state);
+                const f = g + h;
+                if (f > limit) return { minF: f };
+                
+                if (isSolvedState(state, maxHeight)) return { solution: [...path] };
+                
+                let minF = Infinity;
+                const prioritized = getPrioritizedMoves(state, maxHeight);
+                
+                for (let i = 0; i < prioritized.length; i++) {
+                    const move = prioritized[i];
+                    const nextState = applyMoveToState(state, move);
+                    const stateStr = JSON.stringify(nextState);
+                    
+                    if (statePath.includes(stateStr)) continue;
+                    
+                    path.push(move);
+                    statePath.push(stateStr);
+                    
+                    const res = dfs(nextState, g + 1, limit);
+                    if (res.solution) return res;
+                    if (res.status === 'timeout') return res;
+                    
+                    if (res.minF < minF) minF = res.minF;
+                    
+                    statePath.pop();
+                    path.pop();
+                }
+                return { minF };
+            }
+
+            while (limit < 60) {
+                const res = dfs(initialState, 0, limit);
+                if (res.solution) return res.solution;
+                if (res.status === 'timeout') break;
+                if (res.minF === Infinity) break;
+                limit = res.minF;
+            }
+            
+            // Greedy fallback
+            const greedyMoves = getPrioritizedMoves(initialState, maxHeight);
+            return greedyMoves.length > 0 ? [greedyMoves[0]] : null;
+        }
+
+        function updateChaosHUD() {
+            const currentBoard = getCurrentBoardStateAsArrays();
+            const chaosVal = Math.max(0, getBoardTransitions(currentBoard) - (CONFIG.numSticks - 1));
+            
+            if (STATE.initialChaos === undefined || STATE.initialChaos === null) {
+                STATE.initialChaos = chaosVal;
+            }
+            
+            const currentEl = document.getElementById('hud-chaos-current');
+            const maxEl = document.getElementById('hud-chaos-max');
+            const iconEl = document.getElementById('chaos-icon');
+            
+            if (currentEl && maxEl) {
+                currentEl.innerText = chaosVal;
+                maxEl.innerText = STATE.initialChaos;
+                
+                let pct = 0;
+                if (STATE.initialChaos > 0) {
+                    pct = Math.min(1.0, Math.max(0.0, chaosVal / STATE.initialChaos));
+                }
+                
+                // Color scale logic (Red -> Yellow -> Green)
+                let r, g, b;
+                if (pct > 0.5) {
+                    const t = (pct - 0.5) * 2;
+                    r = Math.floor(245 + (244 - 245) * t);
+                    g = Math.floor(158 + (63 - 158) * t);
+                    b = Math.floor(11 + (94 - 11) * t);
+                } else {
+                    const t = pct * 2;
+                    r = Math.floor(16 + (245 - 16) * t);
+                    g = Math.floor(185 + (158 - 185) * t);
+                    b = Math.floor(129 + (11 - 129) * t);
+                }
+                const colorStr = `rgb(${r}, ${g}, ${b})`;
+                currentEl.style.color = colorStr;
+                currentEl.style.textShadow = `0 0 12px rgba(${r}, ${g}, ${b}, 0.55)`;
+                if (iconEl) iconEl.style.color = colorStr;
+            }
+        }
+
+        // --- AUTOPLAY LOOP MANAGER ---
+
+        let autoplayTimeout = null;
+
+        function startAutoplay() {
+            if (STATE.isWon) return;
+            STATE.isAutoplayActive = true;
+            STATE.autoplayStateHistory = []; // Reset loop memory
+            
+            const panel = document.getElementById('autoplay-panel');
+            panel.classList.remove('hidden');
+            setTimeout(() => panel.classList.remove('opacity-0'), 50);
+            
+            document.getElementById('autoplay-status').innerText = "Solving puzzle...";
+            startTimer();
+            
+            executeAutoplayStep();
+        }
+
+        function stopAutoplay() {
+            STATE.isAutoplayActive = false;
+            if (autoplayTimeout) {
+                clearTimeout(autoplayTimeout);
+                autoplayTimeout = null;
+            }
+            const panel = document.getElementById('autoplay-panel');
+            panel.classList.add('opacity-0');
+            setTimeout(() => panel.classList.add('hidden'), 300);
+        }
+
+        function executeAutoplayStep() {
+            if (!STATE.isAutoplayActive || STATE.isWon) {
+                stopAutoplay();
+                return;
+            }
+            if (STATE.isAnimating) {
+                autoplayTimeout = setTimeout(executeAutoplayStep, 100);
+                return;
+            }
+            
+            const currentBoard = getCurrentBoardStateAsArrays();
+            document.getElementById('autoplay-status').innerText = "Analyzing path...";
+            
+            // Register state to block oscillating loop behaviour
+            const currentStateStr = JSON.stringify(currentBoard);
+            if (!STATE.autoplayStateHistory.includes(currentStateStr)) {
+                STATE.autoplayStateHistory.push(currentStateStr);
+                if (STATE.autoplayStateHistory.length > 20) { 
+                    STATE.autoplayStateHistory.shift();
+                }
+            }
+            
+            const solution = solveBoard(currentBoard, CONFIG.maxHeight);
+            let chosenMove = null;
+            
+            if (solution && solution.length > 0) {
+                // To break cyclic back-and-forth loops, evaluate candidate moves
+                const legalMoves = getPrioritizedMoves(currentBoard, CONFIG.maxHeight);
+                for (let i = 0; i < legalMoves.length; i++) {
+                    const hypotheticalState = applyMoveToState(currentBoard, legalMoves[i]);
+                    const hypStateStr = JSON.stringify(hypotheticalState);
+                    
+                    if (!STATE.autoplayStateHistory.includes(hypStateStr)) {
+                        chosenMove = legalMoves[i];
+                        break;
+                    }
+                }
+                if (!chosenMove) chosenMove = solution[0]; // Fallback
+            }
+            
+            if (chosenMove) {
+                document.getElementById('autoplay-status').innerText = `Moving discs...`;
+                setTimeout(() => {
+                    if (!STATE.isAutoplayActive) return;
+                    handleAutoMoveExecution(chosenMove.src, chosenMove.dst, chosenMove.numToMove);
+                    autoplayTimeout = setTimeout(executeAutoplayStep, 1500); 
+                }, 150);
+            } else {
+                stopAutoplay();
+                if (isSolvedState(currentBoard, CONFIG.maxHeight)) {
+                    showTemporaryToast("Puzzle solved!");
+                }
+            }
+        }
+
+        function handleAutoMoveExecution(srcIdx, dstIdx, numToMove) {
+            const boardBefore = getCurrentBoardStateAsArrays();
+            STATE.chaosBeforeMove = Math.max(0, getBoardTransitions(boardBefore) - (CONFIG.numSticks - 1));
+
+            STATE.selectedStickIndex = srcIdx;
+            STATE.selectedCount = numToMove;
+            animateDiscsHoverGroup(srcIdx, true);
+            playWoodSound('pick');
+            
+            setTimeout(() => {
+                STATE.lastMoveForUndo = {
+                    srcIdx,
+                    dstIdx,
+                    numToMove,
+                    prevMovesCount: STATE.moves
+                };
+                
+                STATE.moveHistory.push({
+                    srcIdx,
+                    dstIdx,
+                    numToMove,
+                    elapsedSeconds: STATE.elapsedSeconds
+                });
+                
+                STATE.selectedStickIndex = null;
+                STATE.selectedCount = 0;
+                executeGroupDiscTransfer(srcIdx, dstIdx, numToMove);
+            }, 250);
+        }
+
+        // --- LEVEL INITIALIZATION MECHANICS ---
 
         function isStickCompleted(stickIdx) {
             const stack = STATE.sticks[stickIdx].discs;
@@ -823,7 +1271,10 @@
             STATE.activeAnimations = [];
             STATE.moveHistory = [];
             STATE.lastMoveForUndo = null;
+            STATE.particles = [];
+            STATE.autoplayStateHistory = [];
             updateUndoButtonState();
+            stopAutoplay();
 
             const subTitle = document.getElementById('game-subtitle');
             if (CHALLENGE_STATE.active && loadFromChallenge) {
@@ -839,7 +1290,7 @@
             setTimeout(() => replayPanel.classList.add('hidden'), 300);
 
             document.getElementById('win-modal').classList.add('opacity-0', 'pointer-events-none');
-            document.getElementById('win-modal').querySelector('.scale-95')?.classList.add('scale-95');
+            document.getElementById('win-modal').querySelector('.glass-panel')?.classList.add('scale-95');
 
             STATE.sticks.forEach(s => {
                 scene.remove(s.mesh);
@@ -936,7 +1387,6 @@
             }
 
             STATE.initialBoardState = JSON.parse(JSON.stringify(boardState));
-
             const positions = generateSticksLayout(CONFIG.numSticks);
 
             let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
@@ -953,8 +1403,7 @@
             const baseD = (maxZ - minZ) + marginZ * 2;
             const baseH = 0.5;
 
-            const baseGeom = new THREE.BoxGeometry(baseW, baseH, baseD);
-            const baseMesh = new THREE.Mesh(baseGeom, woodMaterial);
+            const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(baseW, baseH, baseD), woodMaterial);
             baseMesh.name = "baseBoard";
             baseMesh.position.set((minX + maxX) / 2, baseH / 2, (minZ + maxZ) / 2);
             baseMesh.receiveShadow = true;
@@ -1038,6 +1487,11 @@
             const cameraDistance = Math.max(boardWidth * 1.2, stickHeight * 2.2);
             camera.position.set(centerX, baseH + stickHeight * 1.3, centerZ + cameraDistance);
             controls.update();
+
+            STATE.initialChaos = null; 
+            setTimeout(() => {
+                updateChaosHUD();
+            }, 100);
         }
 
         function startTimer() {
@@ -1080,9 +1534,7 @@
                     const url = URL.createObjectURL(blob);
                     
                     let extension = 'webm';
-                    if (options.mimeType.includes('mp4')) {
-                        extension = 'mp4';
-                    }
+                    if (options.mimeType.includes('mp4')) extension = 'mp4';
                     
                     const a = document.createElement('a');
                     a.href = url;
@@ -1107,7 +1559,7 @@
         // --- PLAYER INTERACTION & RAYCASTING ---
 
         function onDocumentPointerDown(event) {
-            if (STATE.isWon || STATE.isAnimating || STATE.isReplaying) return;
+            if (STATE.isWon || STATE.isAnimating || STATE.isReplaying || STATE.isAutoplayActive) return;
 
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -1256,6 +1708,10 @@
                         }
                     }
 
+                    // Track baseline prior to executing transition
+                    const boardBefore = getCurrentBoardStateAsArrays();
+                    STATE.chaosBeforeMove = Math.max(0, getBoardTransitions(boardBefore) - (CONFIG.numSticks - 1));
+
                     STATE.lastMoveForUndo = {
                         srcIdx: sourceIdx,
                         dstIdx: stickIdx,
@@ -1357,7 +1813,6 @@
                                     STATE.moves++;
                                     document.getElementById('hud-moves').innerText = STATE.moves;
                                 }
-                                playWoodSound('place');
 
                                 const wasCompleted = STATE.completedSticks[dstIdx];
                                 const nowCompleted = isStickCompleted(dstIdx);
@@ -1366,6 +1821,32 @@
 
                                 if (nowCompleted && !wasCompleted && !STATE.isReplaying && !isUndo) {
                                     triggerStickCompleteAnimation(dstIdx);
+                                }
+
+                                const boardAfter = getCurrentBoardStateAsArrays();
+                                const chaosAfter = Math.max(0, getBoardTransitions(boardAfter) - (CONFIG.numSticks - 1));
+                                const chaosBefore = STATE.chaosBeforeMove !== null ? STATE.chaosBeforeMove : chaosAfter;
+
+                                let quality = 'neutral';
+                                if (chaosAfter < chaosBefore) quality = 'good';
+                                else if (chaosAfter > chaosBefore) quality = 'bad';
+
+                                updateChaosHUD();
+
+                                // ALWAYS play the physical placement thump FIRST
+                                playWoodSound('place');
+
+                                // Trigger corresponding visual sparkles/dust slightly afterwards
+                                if (!STATE.isReplaying && !isUndo) {
+                                    setTimeout(() => {
+                                        if (quality === 'good') {
+                                            spawnStickSparkles(dstIdx, '#facc15'); // gold dust
+                                            playWoodSound('goodChime');
+                                        } else if (quality === 'bad') {
+                                            spawnStickSparkles(dstIdx, '#ef4444'); // red mist
+                                            playWoodSound('badBuzzer');
+                                        }
+                                    }, 120);
                                 }
 
                                 if (STATE.isReplaying && typeof STATE.playNextReplayMove === 'function') {
@@ -1431,6 +1912,7 @@
         function handleWinSuccess() {
             STATE.isWon = true;
             pauseTimer();
+            stopAutoplay();
 
             playVictorySound();
 
@@ -1458,7 +1940,6 @@
                 }
             }());
 
-            // Setup and organize statistics blocks dynamically based on Challenge Mode
             document.getElementById('stat-time').innerText = document.getElementById('hud-timer').innerText;
             document.getElementById('stat-moves').innerText = STATE.moves;
             document.getElementById('stat-config').innerText = `${CONFIG.numSticks} Sticks | ${CONFIG.numColors} Colors | ${CONFIG.maxHeight} H`;
@@ -1467,7 +1948,6 @@
             const challengeCard = document.getElementById('challenge-card');
 
             if (CHALLENGE_STATE.active) {
-                // In challenge mode, do not display the static redundant current score box.
                 normalStatsPanel.classList.add('hidden');
                 challengeCard.classList.remove('hidden');
 
@@ -1527,7 +2007,6 @@
                 challengeCard.classList.add('hidden');
             }
 
-            // Bring up win overlay
             setTimeout(() => {
                 if (!STATE.isWon) return;
 
@@ -1636,27 +2115,16 @@
 
         // --- GUI & CONFIGURATION PANELS SETUP ---
 
-        function showTemporaryToast(msg) {
-            const toast = document.getElementById('game-toast');
-            const text = document.getElementById('game-toast-text');
-            text.innerText = msg;
-            toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
-            toast.classList.add('opacity-100', 'translate-y-0');
-            setTimeout(() => {
-                toast.classList.remove('opacity-100', 'translate-y-0');
-                toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2');
-            }, 4000);
-        }
-
         function setupGUI() {
-            // Pause Overlays Setup
             const pauseModal = document.getElementById('pause-modal');
             const btnPauseTrigger = document.getElementById('btn-pause-trigger');
             const btnPauseResume = document.getElementById('btn-pause-resume');
             const btnPauseReset = document.getElementById('btn-pause-reset');
+            const btnPauseAutoplay = document.getElementById('btn-pause-autoplay');
 
             function openPauseMenu() {
                 if (STATE.isWon || STATE.isReplaying || STATE.isAnimating) return;
+                stopAutoplay(); 
                 pauseTimer();
                 pauseModal.classList.remove('opacity-0', 'pointer-events-none');
                 pauseModal.querySelector('.glass-panel').classList.remove('scale-95');
@@ -1677,7 +2145,25 @@
                 startNewGame(false); 
             });
 
-            // Friends Challenge Setup Actions
+            btnPauseAutoplay.addEventListener('click', () => {
+                closePauseMenu();
+                startAutoplay();
+            });
+
+            document.getElementById('btn-autoplay-stop').addEventListener('click', stopAutoplay);
+
+            document.getElementById('btn-hint').addEventListener('click', () => {
+                if (STATE.isWon || STATE.isAnimating || STATE.isReplaying || STATE.isAutoplayActive) return;
+                
+                const currentBoard = getCurrentBoardStateAsArrays();
+                const solution = solveBoard(currentBoard, CONFIG.maxHeight);
+                
+                if (solution && solution.length > 0) {
+                    const nextMove = solution[0];
+                    handleAutoMoveExecution(nextMove.src, nextMove.dst, nextMove.numToMove);
+                }
+            });
+
             const btnPassFriend = document.getElementById('btn-pass-friend');
             btnPassFriend.addEventListener('click', () => {
                 if (!CHALLENGE_STATE.active) {
@@ -1698,11 +2184,9 @@
                 });
 
                 document.getElementById('win-modal').classList.add('opacity-0', 'pointer-events-none');
-                showTemporaryToast("Challenge Configured! Hand the device to your friend to play the same scrambled board!");
                 startNewGame(true); 
             });
 
-            // Drawer Side-panel Operations
             const configDrawer = document.getElementById('config-drawer');
             const drawerBackdrop = document.getElementById('drawer-backdrop');
             
@@ -1768,7 +2252,7 @@
             });
 
             document.getElementById('btn-undo').addEventListener('click', () => {
-                if (!STATE.lastMoveForUndo || STATE.isAnimating || STATE.isWon || STATE.isReplaying) return;
+                if (!STATE.lastMoveForUndo || STATE.isAnimating || STATE.isWon || STATE.isReplaying || STATE.isAutoplayActive) return;
 
                 const undoMove = STATE.lastMoveForUndo;
                 STATE.lastMoveForUndo = null;
@@ -1781,6 +2265,9 @@
 
                 playWoodSound('pick');
                 
+                const boardBefore = getCurrentBoardStateAsArrays();
+                STATE.chaosBeforeMove = Math.max(0, getBoardTransitions(boardBefore) - (CONFIG.numSticks - 1));
+
                 executeGroupDiscTransfer(undoMove.dstIdx, undoMove.srcIdx, undoMove.numToMove, true);
             });
 
@@ -1873,6 +2360,23 @@
                 const active = anim.update(dt);
                 if (!active) {
                     STATE.activeAnimations.splice(i, 1);
+                }
+            }
+
+            for (let i = STATE.particles.length - 1; i >= 0; i--) {
+                const p = STATE.particles[i];
+                p.mesh.position.add(p.velocity);
+                p.age += dt;
+                
+                const lifeRatio = Math.max(0, 1.0 - (p.age / p.life));
+                p.mesh.scale.setScalar(lifeRatio);
+                p.mesh.material.opacity = lifeRatio;
+                
+                if (p.age >= p.life) {
+                    scene.remove(p.mesh);
+                    p.mesh.geometry.dispose();
+                    p.mesh.material.dispose();
+                    STATE.particles.splice(i, 1);
                 }
             }
 
