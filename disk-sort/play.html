@@ -161,6 +161,12 @@
         </footer>
     </div>
 
+    <!-- Temporary Toast Message Notification Banner -->
+    <div id="game-toast" class="fixed top-24 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-2xl flex items-center gap-3 shadow-2xl pointer-events-none opacity-0 translate-y-2 transition-all duration-300 z-50 text-xs font-bold text-indigo-300 border border-indigo-500/20">
+        <i class="fa-solid fa-circle-info text-indigo-400"></i>
+        <span id="game-toast-text">Message</span>
+    </div>
+
     <!-- Collapsible Universal Drawer Configuration Panel -->
     <div id="config-drawer" class="fixed inset-y-0 right-0 w-full max-w-sm z-40 transform translate-x-full transition-transform duration-300 ease-out flex pointer-events-auto">
         <div class="glass-panel w-full h-full flex flex-col justify-between p-6 shadow-2xl rounded-l-[2rem]">
@@ -412,7 +418,10 @@
             isAutoplayActive: false,
             particles: [],
             hintCount: 0,           // Tracks hint requests
-            autoplayCount: 0        // Tracks autoplay activations
+            autoplayCount: 0,       // Tracks autoplay activations
+            recentBoardHashes: [],   // Memory of executed states to prevent cyclic loops
+            autoplayPlannedPath: [], // Cache planned multi-move sequences
+            autoplayStartChaos: 999  // Reference chaos score at start of commitment plan
         };
 
         const CHALLENGE_STATE = {
@@ -607,7 +616,15 @@
             { id: 13, hex: '#1E1B4B', rgb: [30, 27, 75] }      // Navy
         ];
 
-        // --- MAIN ENTRY POINT ---
+        // --- THREE.JS GRAPHICS SETUP ---
+        let scene, camera, renderer, controls;
+        let woodMaterial, woodStickMaterial;
+        let raycaster, mouse;
+        const loaderScreen = document.getElementById('loading-screen');
+
+        let mediaRecorder;
+        let recordedChunks = [];
+
         window.addEventListener('load', () => {
             initThree();
             setupGUI();
@@ -622,14 +639,6 @@
                 }
             }, 500);
         });
-
-        // --- THREE.JS INITIALIZATION ---
-        let scene, camera, renderer, controls;
-        let woodMaterial, woodStickMaterial;
-        let raycaster, mouse;
-
-        let mediaRecorder;
-        let recordedChunks = [];
 
         function initThree() {
             const container = document.getElementById('canvas-container');
@@ -848,6 +857,7 @@
             return t;
         }
 
+        // Logic helper: calculates how scrambled the board currently is
         function getHeuristic(boardState) {
             return Math.max(0, getBoardTransitions(boardState) - (boardState.length - 1));
         }
@@ -935,130 +945,234 @@
             return scoredMoves.map(x => x.move);
         }
 
-        // Bounded-Depth A* Solver with Symmetrical Hashing and Immediate-Gain Branch Culling
+        // Extremely fast Beam-guided pathfinder to resolve deeper states without performance hits
+        function findPathsToImprovement(initialState, maxHeight, targetDepth, startChaos) {
+            let queue = [{ board: initialState, moves: [], h: startChaos }];
+            
+            for (let step = 0; step < targetDepth; step++) {
+                const nextQueue = [];
+                const visitedThisLayer = new Set();
+                
+                // Limit layer expansion depth dynamically using a beam width of 400
+                const beamWidth = 400;
+                const limit = Math.min(queue.length, beamWidth);
+                
+                for (let i = 0; i < limit; i++) {
+                    const curr = queue[i];
+                    
+                    // Cull and branch strictly using the top 10 best prioritized moves at this step
+                    const prioritizedMoves = getPrioritizedMoves(curr.board, maxHeight);
+                    const movesToExplore = prioritizedMoves.slice(0, 10);
+                    
+                    for (let m of movesToExplore) {
+                        const nextBoard = applyMoveToState(curr.board, m);
+                        const nextH = getHeuristic(nextBoard);
+                        const nextHash = getCanonicalHash(nextBoard);
+                        
+                        if (STATE.recentBoardHashes && STATE.recentBoardHashes.includes(nextHash)) {
+                            continue; // avoid backtracking into executed loop states
+                        }
+                        
+                        const nextMoves = [...curr.moves, m];
+                        
+                        if (step === targetDepth - 1) {
+                            if (nextH < startChaos) {
+                                nextQueue.push({
+                                    moves: nextMoves,
+                                    h: nextH,
+                                    finalState: nextBoard
+                                });
+                            }
+                        } else {
+                            if (!visitedThisLayer.has(nextHash)) {
+                                visitedThisLayer.add(nextHash);
+                                nextQueue.push({ board: nextBoard, moves: nextMoves, h: nextH });
+                            }
+                        }
+                    }
+                }
+                
+                if (step === targetDepth - 1) {
+                    if (nextQueue.length > 0) {
+                        return { paths: nextQueue };
+                    }
+                } else {
+                    // Sort the layer queue by heuristic and trim to beam width
+                    nextQueue.sort((a, b) => a.h - b.h);
+                    queue = nextQueue.slice(0, beamWidth);
+                }
+                
+                if (queue.length === 0) break;
+            }
+            
+            return null;
+        }
+
+        // Selects the absolute best tie-breaking path from a set of paths
+        function selectBestTieBreaker(paths) {
+            paths.sort((a, b) => {
+                if (a.h !== b.h) return a.h - b.h;
+                return a.path.length - b.path.length;
+            });
+            return paths[0];
+        }
+
+        // Iterative Deepening Lookahead with commitment planning rules and tie-breaking expansion
         function solveBoard(initialState, maxHeight) {
-            const openSet = [];
-            const closedSet = new Set();
-            
-            const startHash = getCanonicalHash(initialState);
-            const startNode = {
-                board: initialState,
-                hash: startHash,
-                g: 0,
-                h: getHeuristic(initialState),
-                f: 0,
-                parent: null,
-                lastMove: null
-            };
-            startNode.f = startNode.g + startNode.h;
-            openSet.push(startNode);
-            
-            let bestNode = startNode; // Track best state (lowest f, tie-breaking on lowest h)
-            
-            const maxDepth = 5; // Lookahead depth limit
-            let iterations = 0;
-            const maxIterations = 2000; // safety iteration ceiling
-            
-            while (openSet.length > 0) {
-                iterations++;
-                if (iterations > maxIterations) break;
-                
-                // Find node with minimum f cost in O(N) - much faster than array sorting!
-                let minIdx = 0;
-                for (let i = 1; i < openSet.length; i++) {
-                    if (openSet[i].f < openSet[minIdx].f) {
-                        minIdx = i;
-                    } else if (openSet[i].f === openSet[minIdx].f) {
-                        if (openSet[i].h < openSet[minIdx].h) {
-                            minIdx = i;
-                        }
-                    }
-                }
-                
-                const curr = openSet.splice(minIdx, 1)[0];
-                
-                // Evaluate if this state is the most promising so far (minimizing chaos)
-                if (curr.h < bestNode.h || (curr.h === bestNode.h && curr.g < bestNode.g)) {
-                    bestNode = curr;
-                }
-                
-                if (isSolvedState(curr.board, maxHeight)) {
-                    bestNode = curr;
-                    break; // Solved state found!
-                }
-                
-                closedSet.add(curr.hash);
-                
-                // Do not expand branches past the 5-move lookahead ceiling
-                if (curr.g >= maxDepth) {
-                    continue;
-                }
-                
-                // Fetch legal moves
-                const legalMoves = getLegalMoves(curr.board, maxHeight);
-                
-                // --- IMMEDIATE-GAIN BRANCH CULLING ---
-                // Evaluate if there are any moves at this state that result in immediate Chaos reduction.
-                const currH = curr.h;
-                const movesWithGain = [];
-                const normalMoves = [];
-                
-                for (let i = 0; i < legalMoves.length; i++) {
-                    const move = legalMoves[i];
-                    const nextBoard = applyMoveToState(curr.board, move);
-                    const nextH = getHeuristic(nextBoard);
-                    
-                    if (nextH < currH) {
-                        movesWithGain.push({ move, board: nextBoard, h: nextH });
-                    } else {
-                        normalMoves.push({ move, board: nextBoard, h: nextH });
-                    }
-                }
-                
-                // If moves with immediate gain (reducing transitions) are available, 
-                // we ONLY explore those and completely prune/cull neutral and bad moves!
-                const movesToExpand = movesWithGain.length > 0 ? movesWithGain : normalMoves;
-                
-                for (let i = 0; i < movesToExpand.length; i++) {
-                    const candidate = movesToExpand[i];
-                    const nextHash = getCanonicalHash(candidate.board);
-                    
-                    if (closedSet.has(nextHash)) continue;
-                    
-                    const nextG = curr.g + 1;
-                    const nextF = nextG + candidate.h;
-                    
-                    const existingInOpen = openSet.find(node => node.hash === nextHash);
-                    if (existingInOpen) {
-                        if (nextG < existingInOpen.g) {
-                            existingInOpen.g = nextG;
-                            existingInOpen.f = nextF;
-                            existingInOpen.parent = curr;
-                            existingInOpen.lastMove = candidate.move;
-                        }
-                    } else {
-                        openSet.push({
-                            board: candidate.board,
-                            hash: nextHash,
-                            g: nextG,
-                            h: candidate.h,
-                            f: nextF,
-                            parent: curr,
-                            lastMove: candidate.move
-                        });
-                    }
+            const currentChaos = getHeuristic(initialState);
+            const legalMoves = getLegalMoves(initialState, maxHeight);
+            if (legalMoves.length === 0) return [];
+
+            // 1) Evaluate immediate 1-ply moves for direct improvement
+            const improvingMoves = [];
+            for (let i = 0; i < legalMoves.length; i++) {
+                const m = legalMoves[i];
+                const nextState = applyMoveToState(initialState, m);
+                const nextChaos = getHeuristic(nextState);
+                if (nextChaos < currentChaos) {
+                    improvingMoves.push({ move: m, chaos: nextChaos, state: nextState });
                 }
             }
-            
-            // Backtrace the path leading to the best node within the 5-move horizon
-            const path = [];
-            let temp = bestNode;
-            while (temp && temp.parent) {
-                path.push(temp.lastMove);
-                temp = temp.parent;
+
+            // Rule 1.1: If there's an immediate move with improvement, and it's the only one:
+            if (improvingMoves.length === 1) {
+                return [improvingMoves[0].move];
             }
-            path.reverse();
-            return path;
+
+            // Rule 1.2: If there are more than one immediate improving moves (a tie):
+            if (improvingMoves.length > 1) {
+                let currentWinners = improvingMoves.map(cand => ({
+                    initialMove: cand.move,
+                    currentState: cand.state,
+                    chaos: cand.chaos,
+                    path: [cand.move]
+                }));
+
+                // Expand lookahead from depth 2 up to depth 5
+                for (let depth = 2; depth <= 5; depth++) {
+                    let nextWinners = [];
+                    let bestChaosThisDepth = Infinity;
+
+                    for (let w of currentWinners) {
+                        // Narrow branching strictly to top 8 candidates per tie step
+                        const moves = getPrioritizedMoves(w.currentState, maxHeight).slice(0, 8);
+                        for (let m of moves) {
+                            const nextState = applyMoveToState(w.currentState, m);
+                            const nextChaos = getHeuristic(nextState);
+                            
+                            if (nextChaos < bestChaosThisDepth) {
+                                bestChaosThisDepth = nextChaos;
+                                nextWinners = [{
+                                    initialMove: w.initialMove,
+                                    currentState: nextState,
+                                    chaos: nextChaos,
+                                    path: [...w.path, m]
+                                }];
+                            } else if (nextChaos === bestChaosThisDepth) {
+                                nextWinners.push({
+                                    initialMove: w.initialMove,
+                                    currentState: nextState,
+                                    chaos: nextChaos,
+                                    path: [...w.path, m]
+                                });
+                            }
+                        }
+                    }
+
+                    if (nextWinners.length > 0) {
+                        currentWinners = nextWinners;
+                    }
+
+                    // Check if we have a unique winner (i.e. only one starting move is represented in currentWinners)
+                    const uniqueStartingMoves = new Set(currentWinners.map(w => w.initialMove.src + '-' + w.initialMove.dst));
+                    if (uniqueStartingMoves.size === 1) {
+                        const win = currentWinners[0];
+                        return win.path;
+                    }
+                }
+
+                // If still tied after 5 levels, use priority tie-breaking strategy
+                const bestWinner = currentWinners[0];
+                return bestWinner.path;
+            }
+
+            // 2) If there is no immediate move with an improvement in chaos, we enter PLANNING mode.
+            // We progressively increase lookahead (depth 2, 3, etc.) until we find a state with Chaos < currentChaos.
+            const maxAllowedDepth = Math.min(24, CONFIG.numSticks + 12); 
+            for (let depth = 2; depth <= maxAllowedDepth; depth++) {
+                const res = findPathsToImprovement(initialState, maxHeight, depth, currentChaos);
+                if (res && res.paths.length > 0) {
+                    let winnerPaths = res.paths;
+                    
+                    // If we found multiple paths of equal length that lead to an improved state,
+                    // we keep expanding this "winner set" of paths up to a maximum total window of 5
+                    if (depth < 5) {
+                        let currentWinners = winnerPaths.map(p => ({
+                            initialPath: p.moves,
+                            currentState: p.finalState,
+                            chaos: p.h
+                        }));
+
+                        for (let d = depth + 1; d <= 5; d++) {
+                            let nextWinners = [];
+                            let bestChaosThisDepth = Infinity;
+
+                            for (let w of currentWinners) {
+                                const moves = getPrioritizedMoves(w.currentState, maxHeight).slice(0, 8);
+                                for (let m of moves) {
+                                    const nextState = applyMoveToState(w.currentState, m);
+                                    const nextChaos = getHeuristic(nextState);
+
+                                    if (nextChaos < bestChaosThisDepth) {
+                                        bestChaosThisDepth = nextChaos;
+                                        nextWinners = [{
+                                            initialPath: [...w.initialPath, m],
+                                            currentState: nextState,
+                                            chaos: nextChaos
+                                        }];
+                                    } else if (nextChaos === bestChaosThisDepth) {
+                                        nextWinners.push({
+                                            initialPath: [...w.initialPath, m],
+                                            currentState: nextState,
+                                            chaos: nextChaos
+                                        });
+                                    }
+                                }
+                            }
+
+                            if (nextWinners.length > 0) {
+                                currentWinners = nextWinners;
+                            }
+
+                            // If we have a unique winner path
+                            const uniquePaths = new Set(currentWinners.map(w => w.initialPath.map(move => move.src + '-' + move.dst).join(',')));
+                            if (uniquePaths.size === 1) {
+                                return currentWinners[0].initialPath;
+                            }
+                        }
+
+                        // Apply tie-breaking strategy on the final winners
+                        const bestWinner = currentWinners[0];
+                        return bestWinner.initialPath;
+                    }
+
+                    // Otherwise (if depth >= 5), return the best winner path found
+                    const selected = selectBestTieBreaker(winnerPaths.map(p => ({ path: p.moves, h: p.h })));
+                    return selected.path;
+                }
+            }
+
+            // Fallback: If no improving state can be reached at all, choose the move that keeps chaos minimized,
+            // strictly filtering out moves that cycle back onto recently visited positions to prevent loops!
+            const sorted = getPrioritizedMoves(initialState, maxHeight);
+            for (let m of sorted) {
+                const nextState = applyMoveToState(initialState, m);
+                const hash = getCanonicalHash(nextState);
+                if (!STATE.recentBoardHashes.includes(hash)) {
+                    return [m];
+                }
+            }
+            return sorted.length > 0 ? [sorted[0]] : [];
         }
 
         function updateChaosHUD() {
@@ -1126,9 +1240,19 @@
                 clearTimeout(autoplayTimeout);
                 autoplayTimeout = null;
             }
+            STATE.autoplayPlannedPath = []; // reset planning queues
+            STATE.autoplayStartChaos = 999;
             const panel = document.getElementById('autoplay-panel');
-            panel.classList.add('opacity-0');
-            setTimeout(() => panel.classList.add('hidden'), 300);
+            if (panel) {
+                panel.classList.add('opacity-0');
+                setTimeout(() => {
+                    panel.classList.add('hidden');
+                    const statusEl = document.getElementById('autoplay-status');
+                    if (statusEl) {
+                        statusEl.innerText = ""; // Clear text!
+                    }
+                }, 300);
+            }
         }
 
         function executeAutoplayStep() {
@@ -1142,16 +1266,52 @@
             }
             
             const currentBoard = getCurrentBoardStateAsArrays();
-            document.getElementById('autoplay-status').innerText = "Calculating optimal path...";
+            const currentChaos = getHeuristic(currentBoard);
             
-            // Resolve optimal moves (up to 5-move lookahead with branch culling)
-            const solution = solveBoard(currentBoard, CONFIG.maxHeight);
+            // COMMITMENT RECALCULATION RULE:
+            const shouldRecalculate = (STATE.autoplayPlannedPath.length === 0) || 
+                                      (currentChaos < STATE.autoplayStartChaos);
             
-            if (solution && solution.length > 0) {
-                const chosenMove = solution[0]; // execute first optimal move on chosen path
-                document.getElementById('autoplay-status').innerText = `Moving discs...`;
+            if (shouldRecalculate) {
+                const statusEl = document.getElementById('autoplay-status');
+                if (statusEl) statusEl.innerText = "Thinking...";
+                
+                // Give a microtimeout so "Thinking..." is printed to UI cleanly
                 setTimeout(() => {
-                    if (!STATE.isAutoplayActive) return;
+                    if (!STATE.isAutoplayActive || STATE.isWon) return;
+                    
+                    const solution = solveBoard(currentBoard, CONFIG.maxHeight);
+                    
+                    if (solution && solution.length > 0) {
+                        STATE.autoplayPlannedPath = solution;
+                        STATE.autoplayStartChaos = currentChaos; // lock commitment baseline
+                        continueAutoplayExecution();
+                    } else {
+                        stopAutoplay();
+                    }
+                }, 50);
+                return;
+            }
+            
+            continueAutoplayExecution();
+        }
+
+        function continueAutoplayExecution() {
+            if (STATE.autoplayPlannedPath.length > 0) {
+                const chosenMove = STATE.autoplayPlannedPath.shift();
+                const stepsLeft = STATE.autoplayPlannedPath.length;
+                
+                const statusEl = document.getElementById('autoplay-status');
+                if (statusEl) {
+                    if (stepsLeft > 0) {
+                        statusEl.innerText = `Executing committed path (${stepsLeft} steps left)...`;
+                    } else {
+                        statusEl.innerText = "Moving discs...";
+                    }
+                }
+                
+                setTimeout(() => {
+                    if (!STATE.isAutoplayActive || STATE.isWon) return;
                     handleAutoMoveExecution(chosenMove.src, chosenMove.dst, chosenMove.numToMove);
                     autoplayTimeout = setTimeout(executeAutoplayStep, 1500); 
                 }, 150);
@@ -1331,6 +1491,9 @@
             STATE.particles = [];
             STATE.hintCount = 0;
             STATE.autoplayCount = 0;
+            STATE.recentBoardHashes = [];
+            STATE.autoplayPlannedPath = []; // reset planning queues
+            STATE.autoplayStartChaos = 999;
             updateUndoButtonState();
             stopAutoplay();
 
@@ -1545,6 +1708,9 @@
             const cameraDistance = Math.max(boardWidth * 1.2, stickHeight * 2.2);
             camera.position.set(centerX, baseH + stickHeight * 1.3, centerZ + cameraDistance);
             controls.update();
+
+            // Track recent hashes to prevent immediate backtracking cycles
+            STATE.recentBoardHashes = [getCanonicalHash(boardState)];
 
             STATE.initialChaos = null; 
             setTimeout(() => {
@@ -1835,7 +2001,7 @@
 
             let completedCount = 0;
             const peakHeight = Math.max(srcStick.position.y, dstStick.position.y) + (CONFIG.maxHeight * 0.45) + 0.8;
-            const speedScale = STATE.isReplaying ? 14.5 : 6.5;
+            const speedScale = STATE.isReplaying ? 15.0 : 6.5;
 
             movingDiscs.forEach((disc, i) => {
                 disc.mesh.material.emissive = new THREE.Color(0x000000);
@@ -1890,10 +2056,10 @@
 
                                 updateChaosHUD();
 
-                                // Always play physical wooden clump first
+                                // Play physical wooden clump first
                                 playWoodSound('place');
 
-                                // Slight delay before beautiful sparkles and tones
+                                // Slight delay before sparkles and tones
                                 if (!STATE.isReplaying && !isUndo) {
                                     setTimeout(() => {
                                         if (quality === 'good') {
@@ -1904,6 +2070,22 @@
                                             playWoodSound('badBuzzer');
                                         }
                                     }, 120);
+                                }
+
+                                // Update real game layout history cache to prevent lookahead solver from repeating moves
+                                if (!STATE.isReplaying && !isUndo) {
+                                    const canon = getCanonicalHash(boardAfter);
+                                    if (!STATE.recentBoardHashes.includes(canon)) {
+                                        STATE.recentBoardHashes.push(canon);
+                                        if (STATE.recentBoardHashes.length > 30) {
+                                            STATE.recentBoardHashes.shift();
+                                        }
+                                    }
+                                }
+
+                                // Clear multi-move cache if board changes unexpectedly
+                                if (!STATE.isReplaying && !isUndo && !STATE.isAutoplayActive) {
+                                    STATE.autoplayPlannedPath = [];
                                 }
 
                                 if (STATE.isReplaying && typeof STATE.playNextReplayMove === 'function') {
@@ -2149,7 +2331,7 @@
                     document.getElementById('replay-counter').innerText = `Move ${STATE.replayMoveIndex + 1} / ${STATE.moveHistory.length} | Time: ${mins}:${secs}`;
 
                     STATE.replayMoveIndex++;
-                    executeGroupDiscTransfer(move.srcIdx, move.dstIdx, move.numToMove);
+                    executeGroupDiscTransfer(move.srcIdx, move.dstIdx, move.numToMove); 
                 } else {
                     finishReplay();
                 }
