@@ -9,7 +9,7 @@
     <!-- Google Fonts for premium look -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Canvas Confetti for Win Effect -->
@@ -81,18 +81,7 @@
     <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-6 z-10">
         
         <!-- Header / Stats Bar -->
-        <header class="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pointer-events-auto">
-            <!-- Brand -->
-            <div class="glass-panel px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                    <i class="fa-solid fa-layer-group text-lg text-white"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-extrabold tracking-tight leading-none bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">SPIROSORT 3D</h1>
-                    <span id="game-subtitle" class="text-[10px] text-indigo-400 font-semibold tracking-wider uppercase">Chunky Sorting Challenge</span>
-                </div>
-            </div>
-
+        <header class="w-full flex flex-col sm:flex-row items-center justify-end gap-4 pointer-events-auto">
             <!-- Global Live Counters -->
             <div class="flex flex-wrap items-center justify-center gap-3">
                 <div class="glass-panel px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl min-w-[120px]">
@@ -140,25 +129,12 @@
                     </button>
                 </div>
 
-                <!-- Unified Configuration Toggle Button -->
-                <button id="btn-menu-trigger" class="glass-panel glass-button px-5 py-3 rounded-2xl flex items-center gap-2 font-bold text-sm text-indigo-400 shadow-2xl">
+                <!-- Unified Configuration Toggle Button (Icon only) -->
+                <button id="btn-menu-trigger" class="glass-panel glass-button p-4 rounded-2xl flex items-center justify-center text-indigo-400 shadow-2xl animate-pulse hover:animate-none" title="Configure Board Settings">
                     <i class="fa-solid fa-gear text-lg"></i>
-                    <span class="hidden sm:inline">Configure</span>
                 </button>
             </div>
         </header>
-
-        <!-- Bottom Controls Bar (Camera Info) -->
-        <footer class="w-full flex flex-col md:flex-row items-center justify-between gap-2 pointer-events-auto">
-            <div class="glass-panel px-4 py-2.5 rounded-xl text-[11px] text-slate-400 flex items-center gap-2">
-                <i class="fa-solid fa-arrows-up-down-left-right text-indigo-400"></i>
-                <span>Left Click + Drag to Orbit | Scroll to Zoom | Right Click to Pan</span>
-            </div>
-            <div class="glass-panel px-4 py-2.5 rounded-xl text-[11px] text-indigo-400 flex items-center gap-2 font-bold">
-                <i class="fa-solid fa-hand-pointer"></i>
-                <span>Pro Tip: Contiguous stacks of matching colors move together!</span>
-            </div>
-        </footer>
     </div>
 
     <!-- Temporary Toast Message Notification Banner -->
@@ -170,7 +146,7 @@
     <!-- Collapsible Universal Drawer Configuration Panel -->
     <div id="config-drawer" class="fixed inset-y-0 right-0 w-full max-w-sm z-40 transform translate-x-full transition-transform duration-300 ease-out flex pointer-events-auto">
         <div class="glass-panel w-full h-full flex flex-col justify-between p-6 shadow-2xl rounded-l-[2rem]">
-            <div class="space-y-6">
+            <div class="space-y-6 overflow-y-auto pr-1">
                 <!-- Header -->
                 <div class="flex justify-between items-center border-b border-white/5 pb-4">
                     <h3 class="text-lg font-extrabold text-slate-100 flex items-center gap-2">
@@ -181,24 +157,15 @@
                     </button>
                 </div>
 
-                <!-- How to Play Quick Cards -->
-                <div class="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl space-y-2">
-                    <h4 class="text-xs font-bold text-indigo-300 uppercase tracking-widest flex items-center gap-1.5">
-                        <i class="fa-solid fa-circle-question"></i> Dynamic Moves
-                    </h4>
-                    <p class="text-[11px] text-slate-300 leading-relaxed">
-                        Click a stick to highlight all consecutive top discs of the *same* color. Click another stick to transfer them as a single bulk stack instantly!
-                    </p>
-                </div>
-
                 <!-- Controls sliders -->
                 <div class="space-y-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Preset Difficulty</label>
-                        <div class="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5">
-                            <button onclick="setDifficultyPreset('easy')" id="preset-easy" class="py-2 text-xs font-semibold rounded-lg text-slate-400 transition-colors">Easy</button>
-                            <button onclick="setDifficultyPreset('medium')" id="preset-medium" class="py-2 text-xs font-semibold rounded-lg text-slate-400 transition-colors">Medium</button>
-                            <button onclick="setDifficultyPreset('hard')" id="preset-hard" class="py-2 text-xs font-semibold rounded-lg text-slate-400 transition-colors">Hard</button>
+                        <div class="grid grid-cols-4 gap-1 bg-black/40 p-1 rounded-xl border border-white/5">
+                            <button onclick="setDifficultyPreset('easy')" id="preset-easy" class="py-2 text-[10px] sm:text-xs font-semibold rounded-lg text-slate-400 transition-colors">Easy</button>
+                            <button onclick="setDifficultyPreset('medium')" id="preset-medium" class="py-2 text-[10px] sm:text-xs font-semibold rounded-lg text-slate-400 transition-colors">Med</button>
+                            <button onclick="setDifficultyPreset('hard')" id="preset-hard" class="py-2 text-[10px] sm:text-xs font-semibold rounded-lg text-slate-400 transition-colors">Hard</button>
+                            <button onclick="setDifficultyPreset('max')" id="preset-max" class="py-2 text-[10px] sm:text-xs font-semibold rounded-lg text-slate-400 transition-colors">Max</button>
                         </div>
                     </div>
 
@@ -224,6 +191,18 @@
                             <span id="val-stack" class="text-indigo-400 font-bold">7</span>
                         </div>
                         <input type="range" id="slider-stack" min="3" max="20" step="1" value="7" class="w-full accent-indigo-500">
+                    </div>
+
+                    <!-- Infinite Auto Solve Option Toggle -->
+                    <div class="flex items-center justify-between bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold text-indigo-300 uppercase tracking-wider">Infinite Loop</span>
+                            <span class="text-[10px] text-slate-400 mt-0.5">Autoplay ➔ Recap ➔ Loop</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggle-infinite-auto" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -268,22 +247,8 @@
         </div>
     </div>
 
-    <!-- Floating Autoplay Active Control Panel -->
-    <div id="autoplay-panel" class="fixed bottom-24 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-2xl flex items-center gap-4 shadow-2xl pointer-events-auto hidden opacity-0 transition-opacity duration-300 z-30 border border-amber-500/30">
-        <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span>
-            <span class="text-xs font-extrabold text-amber-400 uppercase tracking-wider">AUTOPLAY ACTIVE</span>
-        </div>
-        <div class="h-4 w-px bg-white/10"></div>
-        <div class="text-sm font-bold font-mono text-slate-100" id="autoplay-status">Searching path...</div>
-        <div class="h-4 w-px bg-white/10"></div>
-        <button id="btn-autoplay-stop" class="px-4 py-1.5 bg-red-500/30 border border-red-500/50 hover:bg-red-600/50 text-white font-bold text-xs rounded-lg transition-all" title="Stop Solver Autoplay">
-            Stop
-        </button>
-    </div>
-
     <!-- Sleek, non-intrusive floating media Replay Control Bar -->
-    <div id="replay-panel" class="fixed bottom-24 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-2xl flex items-center gap-4 shadow-2xl pointer-events-auto hidden opacity-0 transition-opacity duration-300 z-30">
+    <div id="replay-panel" class="fixed bottom-24 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-2xl flex items-center gap-4 shadow-2xl pointer-events-none opacity-0 transition-opacity duration-300 z-30">
         <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse hidden" id="replay-rec-indicator"></span>
             <span class="text-xs font-extrabold text-indigo-400 uppercase tracking-wider" id="replay-mode-label">REPLAY</span>
@@ -311,41 +276,35 @@
             <div class="absolute -top-12 -left-12 w-32 h-32 bg-indigo-500/25 rounded-full blur-2xl pointer-events-none"></div>
             <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-pink-500/25 rounded-full blur-2xl pointer-events-none"></div>
 
-            <!-- Inner scrollable container -->
-            <div class="overflow-y-auto pr-2 flex-1 text-center scrollbar-thin scrollbar-thumb-white/10 relative z-10">
-                <!-- Glowing crown/trophy icon -->
-                <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-amber-400 to-yellow-600 flex items-center justify-center shadow-lg shadow-yellow-500/20 mb-4 animate-bounce">
+            <!-- Inner scrollable container - Padded top generously to allow bouncing crown to display cleanly -->
+            <div class="overflow-y-auto pr-2 flex-1 text-center scrollbar-thin scrollbar-thumb-white/10 relative z-10 pt-16 pb-4">
+                <!-- Glowing crown/trophy icon with animation headroom -->
+                <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-amber-400 to-yellow-600 flex items-center justify-center shadow-lg shadow-yellow-500/20 mb-8 animate-bounce">
                     <i class="fa-solid fa-trophy text-2xl text-white"></i>
                 </div>
 
-                <h2 class="text-3xl font-black tracking-tight text-white mb-6">VICTORY!</h2>
-
-                <!-- Performance Panel (For standard/non-challenge play) -->
-                <div id="normal-stats-panel" class="bg-black/30 rounded-2xl p-4 border border-white/5 space-y-3 mb-4 text-left">
-                    <div class="flex justify-between text-sm">
-                        <span class="text-slate-400">Time Taken</span>
-                        <span id="stat-time" class="font-bold text-slate-100 font-mono">00:00</span>
+                <!-- Performance Panel (Consolidated, high-legibility layout) -->
+                <div id="normal-stats-panel" class="bg-black/30 rounded-2xl p-4 border border-white/5 space-y-3 mb-6 text-left">
+                    <div class="text-sm">
+                        <span class="text-slate-400 font-medium">Score:</span>
+                        <span id="stat-score" class="font-bold text-slate-100 font-mono ml-1">00:00s | 0 moves</span>
                     </div>
-                    <div class="flex justify-between text-sm border-t border-white/5 pt-2">
-                        <span class="text-slate-400">Total Moves</span>
-                        <span id="stat-moves" class="font-bold text-slate-100 font-mono">0</span>
+                    <div class="text-sm border-t border-white/5 pt-2">
+                        <span class="text-slate-400 font-medium">Help:</span>
+                        <span id="stat-help" class="font-bold text-yellow-400 font-mono ml-1">None</span>
                     </div>
-                    <div class="flex justify-between text-sm border-t border-white/5 pt-2">
-                        <span class="text-slate-400 font-semibold">Board Difficulty (Initial Chaos)</span>
-                        <span id="stat-initial-chaos" class="font-bold text-rose-400 font-mono">0</span>
+                    <div class="text-sm border-t border-white/5 pt-2">
+                        <span class="text-slate-400 font-medium">Setup:</span>
+                        <span id="stat-setup" class="font-bold text-indigo-400 font-mono ml-1">4 sticks | 3 colors | 7 height</span>
                     </div>
-                    <div class="flex justify-between text-sm border-t border-white/5 pt-2">
-                        <span class="text-slate-400">Hints Requested</span>
-                        <span id="stat-hints" class="font-bold text-yellow-400 font-mono">0</span>
-                    </div>
-                    <div class="flex justify-between text-sm border-t border-white/5 pt-2">
-                        <span class="text-slate-400">Autoplay Activations</span>
-                        <span id="stat-autoplay" class="font-bold text-amber-400 font-mono">0</span>
+                    <div class="text-sm border-t border-white/5 pt-2">
+                        <span class="text-slate-400 font-medium">Difficulty:</span>
+                        <span id="stat-difficulty" class="font-bold text-rose-400 font-mono ml-1">0 chaos</span>
                     </div>
                 </div>
 
                 <!-- Challenge Leaderboard/Comparison Card -->
-                <div id="challenge-card" class="bg-black/30 rounded-2xl p-4 border border-white/5 space-y-3 mb-4 text-left hidden">
+                <div id="challenge-card" class="bg-black/30 rounded-2xl p-4 border border-white/5 space-y-3 mb-6 text-left hidden">
                     <div class="flex items-center gap-2 text-pink-400 font-extrabold text-xs uppercase tracking-wider">
                         <i class="fa-solid fa-user-group"></i> Pass-to-Friend Challenge
                     </div>
@@ -357,20 +316,12 @@
                     </div>
                 </div>
 
-                <!-- Board Setup Panel -->
-                <div id="board-setup-panel" class="bg-black/30 rounded-2xl p-4 border border-white/5 text-left mb-6">
-                    <div class="flex justify-between text-sm">
-                        <span class="text-slate-400">Board Setup</span>
-                        <span id="stat-config" class="font-bold text-indigo-400 uppercase tracking-wider text-xs">Custom</span>
-                    </div>
-                </div>
-
                 <!-- Action buttons inside victory panel -->
                 <div class="flex flex-col gap-2 pb-2">
                     <button id="btn-speed-recap" class="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-camera"></i> Speed Recap
                     </button>
-                    <button id="btn-pass-friend" class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+                    <button id="btn-pass-friend" class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-700 text-white font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-user-group"></i> Pass to a Friend
                     </button>
                     <button id="btn-win-restart" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
@@ -416,6 +367,8 @@
             initialChaos: null,
             chaosBeforeMove: null,
             isAutoplayActive: false,
+            isInfiniteAutoSolve: false,
+            isFirstGame: true,       // Tracks if camera needs default positioning
             particles: [],
             hintCount: 0,           // Tracks hint requests
             autoplayCount: 0,       // Tracks autoplay activations
@@ -1224,13 +1177,7 @@
             STATE.isAutoplayActive = true;
             STATE.autoplayCount++; 
             
-            const panel = document.getElementById('autoplay-panel');
-            panel.classList.remove('hidden');
-            setTimeout(() => panel.classList.remove('opacity-0'), 50);
-            
-            document.getElementById('autoplay-status').innerText = "Solving puzzle...";
             startTimer();
-            
             executeAutoplayStep();
         }
 
@@ -1242,17 +1189,6 @@
             }
             STATE.autoplayPlannedPath = []; // reset planning queues
             STATE.autoplayStartChaos = 999;
-            const panel = document.getElementById('autoplay-panel');
-            if (panel) {
-                panel.classList.add('opacity-0');
-                setTimeout(() => {
-                    panel.classList.add('hidden');
-                    const statusEl = document.getElementById('autoplay-status');
-                    if (statusEl) {
-                        statusEl.innerText = ""; // Clear text!
-                    }
-                }, 300);
-            }
         }
 
         function executeAutoplayStep() {
@@ -1273,10 +1209,6 @@
                                       (currentChaos < STATE.autoplayStartChaos);
             
             if (shouldRecalculate) {
-                const statusEl = document.getElementById('autoplay-status');
-                if (statusEl) statusEl.innerText = "Thinking...";
-                
-                // Give a microtimeout so "Thinking..." is printed to UI cleanly
                 setTimeout(() => {
                     if (!STATE.isAutoplayActive || STATE.isWon) return;
                     
@@ -1299,16 +1231,6 @@
         function continueAutoplayExecution() {
             if (STATE.autoplayPlannedPath.length > 0) {
                 const chosenMove = STATE.autoplayPlannedPath.shift();
-                const stepsLeft = STATE.autoplayPlannedPath.length;
-                
-                const statusEl = document.getElementById('autoplay-status');
-                if (statusEl) {
-                    if (stepsLeft > 0) {
-                        statusEl.innerText = `Executing committed path (${stepsLeft} steps left)...`;
-                    } else {
-                        statusEl.innerText = "Moving discs...";
-                    }
-                }
                 
                 setTimeout(() => {
                     if (!STATE.isAutoplayActive || STATE.isWon) return;
@@ -1497,17 +1419,25 @@
             updateUndoButtonState();
             stopAutoplay();
 
+            // Sync the infinite loop toggle checkbox state inside the configuration panel
+            const toggleInfinite = document.getElementById('toggle-infinite-auto');
+            if (toggleInfinite) {
+                STATE.isInfiniteAutoSolve = toggleInfinite.checked;
+            }
+
             const subTitle = document.getElementById('game-subtitle');
-            if (CHALLENGE_STATE.active && loadFromChallenge) {
-                subTitle.innerText = `⚔️ Friend Challenge Mode!`;
-                subTitle.className = "text-[10px] text-pink-400 font-bold tracking-wider uppercase";
-            } else {
-                subTitle.innerText = `Chunky Sorting Challenge`;
-                subTitle.className = "text-[10px] text-indigo-400 font-semibold tracking-wider uppercase";
+            if (subTitle) {
+                if (CHALLENGE_STATE.active && loadFromChallenge) {
+                    subTitle.innerText = `⚔️ Friend Challenge Mode!`;
+                    subTitle.className = "text-[10px] text-pink-400 font-bold tracking-wider uppercase";
+                } else {
+                    subTitle.innerText = `Chunky Sorting Challenge`;
+                    subTitle.className = "text-[10px] text-indigo-400 font-semibold tracking-wider uppercase";
+                }
             }
 
             const replayPanel = document.getElementById('replay-panel');
-            replayPanel.classList.add('opacity-0');
+            replayPanel.classList.add('opacity-0', 'pointer-events-none');
             setTimeout(() => replayPanel.classList.add('hidden'), 300);
 
             document.getElementById('win-modal').classList.add('opacity-0', 'pointer-events-none');
@@ -1541,8 +1471,12 @@
 
                 document.getElementById(`slider-sticks`).value = CONFIG.numSticks;
                 document.getElementById(`val-sticks`).innerText = CONFIG.numSticks;
+                
+                // Slider limit max updated before setting value
+                document.getElementById(`slider-colors`).max = CONFIG.numSticks - 1; 
                 document.getElementById(`slider-colors`).value = CONFIG.numColors;
                 document.getElementById(`val-colors`).innerText = CONFIG.numColors;
+                
                 document.getElementById(`slider-stack`).value = CONFIG.maxHeight;
                 document.getElementById(`val-stack`).innerText = CONFIG.maxHeight;
 
@@ -1700,14 +1634,31 @@
                 STATE.completedSticks[i] = isStickCompleted(i);
             }
 
+            // --- CAMERA INTUITION SETUP & PRESERVATION ---
             const centerX = (minX + maxX) / 2;
             const centerZ = (minZ + maxZ) / 2;
-            controls.target.set(centerX, baseH + (CONFIG.maxHeight * 0.45) / 3, centerZ);
 
-            const boardWidth = (maxX - minX) + 4.0;
-            const cameraDistance = Math.max(boardWidth * 1.2, stickHeight * 2.2);
-            camera.position.set(centerX, baseH + stickHeight * 1.3, centerZ + cameraDistance);
-            controls.update();
+            if (STATE.isFirstGame) {
+                // Focus slightly higher on the pegs to angle base near the bottom of viewport with vertical headroom
+                const targetY = baseH + stickHeight * 0.8;
+                controls.target.set(centerX, targetY, centerZ);
+
+                const boardWidth = (maxX - minX) + 4.0;
+                const cameraDistance = Math.max(boardWidth * 1.3, stickHeight * 2.3);
+                camera.position.set(centerX, baseH + stickHeight * 1.7, centerZ + cameraDistance);
+                
+                controls.update();
+                STATE.isFirstGame = false;
+            } else {
+                // Maintain the custom rotation, zoom, and orientation of previous rounds by moving camera alongside layout shift
+                const targetY = baseH + stickHeight * 0.8;
+                const newTarget = new THREE.Vector3(centerX, targetY, centerZ);
+                const shiftOffset = new THREE.Vector3().subVectors(newTarget, controls.target);
+                
+                camera.position.add(shiftOffset);
+                controls.target.copy(newTarget);
+                controls.update();
+            }
 
             // Track recent hashes to prevent immediate backtracking cycles
             STATE.recentBoardHashes = [getCanonicalHash(boardState)];
@@ -1716,6 +1667,15 @@
             setTimeout(() => {
                 updateChaosHUD();
             }, 100);
+
+            // Automatically trigger solver if Infinite Auto Solve is active
+            if (STATE.isInfiniteAutoSolve && !loadFromChallenge) {
+                setTimeout(() => {
+                    if (STATE.isInfiniteAutoSolve) {
+                        startAutoplay();
+                    }
+                }, 600);
+            }
         }
 
         function startTimer() {
@@ -1774,16 +1734,15 @@
             }
         }
 
-        function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
-        }
-
         // --- PLAYER INTERACTION & RAYCASTING ---
 
         function onDocumentPointerDown(event) {
-            if (STATE.isWon || STATE.isAnimating || STATE.isReplaying || STATE.isAutoplayActive) return;
+            if (STATE.isWon || STATE.isAnimating || STATE.isReplaying || STATE.isAutoplayActive) {
+                if (STATE.isReplaying) {
+                    triggerReplayPanelFlash();
+                }
+                return;
+            }
 
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -2179,15 +2138,30 @@
                 }
             }());
 
-            // Render stats inside Victory Scoreboard
-            document.getElementById('stat-time').innerText = document.getElementById('hud-timer').innerText;
-            document.getElementById('stat-moves').innerText = STATE.moves;
-            document.getElementById('stat-config').innerText = `${CONFIG.numSticks} Sticks | ${CONFIG.numColors} Colors | ${CONFIG.maxHeight} H`;
-            
-            // Log difficulty, hints & autoplay requested
-            document.getElementById('stat-initial-chaos').innerText = STATE.initialChaos;
-            document.getElementById('stat-hints').innerText = STATE.hintCount;
-            document.getElementById('stat-autoplay').innerText = STATE.autoplayCount;
+            // Render simplified single-line stats inside Victory Scoreboard
+            const timeStr = document.getElementById('hud-timer').innerText;
+            document.getElementById('stat-score').innerText = `${timeStr}s | ${STATE.moves} moves`;
+
+            let helpStr = "None";
+            if (STATE.autoplayCount > 0) {
+                helpStr = "autoplay";
+            } else if (STATE.hintCount > 0) {
+                helpStr = `${STATE.hintCount} hint${STATE.hintCount > 1 ? 's' : ''}`;
+            }
+            document.getElementById('stat-help').innerText = helpStr;
+
+            document.getElementById('stat-setup').innerText = `${CONFIG.numSticks} sticks | ${CONFIG.numColors} colors | ${CONFIG.maxHeight} height`;
+            document.getElementById('stat-difficulty').innerText = `${STATE.initialChaos} chaos`;
+
+            // If Infinite Loop mode is enabled, immediately skip victory modals and transition to Speed Recap
+            if (STATE.isInfiniteAutoSolve) {
+                setTimeout(() => {
+                    if (STATE.isInfiniteAutoSolve && STATE.isWon) {
+                        startSpeedReplayFlow(false);
+                    }
+                }, 1500);
+                return;
+            }
 
             const normalStatsPanel = document.getElementById('normal-stats-panel');
             const challengeCard = document.getElementById('challenge-card');
@@ -2266,6 +2240,7 @@
 
             setTimeout(() => {
                 if (!STATE.isWon) return;
+                if (STATE.isInfiniteAutoSolve) return; // Skip victory score panel display on Infinite Solve Mode
 
                 const modal = document.getElementById('win-modal');
                 modal.classList.remove('opacity-0', 'pointer-events-none');
@@ -2276,6 +2251,34 @@
         }
 
         // --- SPEED REPLAY LOGIC ---
+
+        let replayPanelTimeout = null;
+
+        function triggerReplayPanelFlash() {
+            if (!STATE.isReplaying) return;
+            const replayPanel = document.getElementById('replay-panel');
+            if (!replayPanel) return;
+
+            if (replayPanelTimeout) {
+                clearTimeout(replayPanelTimeout);
+            }
+
+            replayPanel.classList.remove('opacity-0', 'pointer-events-none');
+            replayPanel.classList.add('opacity-100', 'pointer-events-auto');
+
+            replayPanelTimeout = setTimeout(() => {
+                if (STATE.isReplaying) {
+                    replayPanel.classList.remove('opacity-100', 'pointer-events-auto');
+                    replayPanel.classList.add('opacity-0', 'pointer-events-none');
+                }
+            }, 1000);
+        }
+
+        window.addEventListener('pointerdown', () => {
+            if (STATE.isReplaying) {
+                triggerReplayPanelFlash();
+            }
+        });
 
         function startSpeedReplayFlow(isRecordRun = false) {
             const modal = document.getElementById('win-modal');
@@ -2288,7 +2291,7 @@
 
             const replayPanel = document.getElementById('replay-panel');
             replayPanel.classList.remove('hidden');
-            setTimeout(() => replayPanel.classList.remove('opacity-0'), 50);
+            // Replay panel starts invisible and immersive. Appears momentarily only upon tap/click.
 
             const recIndicator = document.getElementById('replay-rec-indicator');
             const modeLabel = document.getElementById('replay-mode-label');
@@ -2350,9 +2353,17 @@
                 STATE.isRecording = false;
             }
 
+            if (replayPanelTimeout) {
+                clearTimeout(replayPanelTimeout);
+                replayPanelTimeout = null;
+            }
+
             const replayPanel = document.getElementById('replay-panel');
-            replayPanel.classList.add('opacity-0');
-            setTimeout(() => replayPanel.classList.add('hidden'), 300);
+            if (replayPanel) {
+                replayPanel.classList.remove('opacity-100', 'pointer-events-auto');
+                replayPanel.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => replayPanel.classList.add('hidden'), 300);
+            }
 
             document.getElementById('hud-moves').innerText = STATE.moveHistory.length;
             const finalMove = STATE.moveHistory[STATE.moveHistory.length - 1];
@@ -2361,6 +2372,16 @@
                 const mins = pad(Math.floor(finalMove.elapsedSeconds / 60));
                 const secs = pad(finalMove.elapsedSeconds % 60);
                 document.getElementById('hud-timer').innerText = `${mins}:${secs}`;
+            }
+
+            // Infinite loop transition: Trigger a brand new game setup automatically
+            if (STATE.isInfiniteAutoSolve) {
+                setTimeout(() => {
+                    if (STATE.isInfiniteAutoSolve) {
+                        startNewGame();
+                    }
+                }, 1000);
+                return;
             }
 
             setTimeout(() => {
@@ -2396,6 +2417,18 @@
                     startTimer();
                 }
             });
+
+            // Resumes game when clicking outside the pause card area on the backdrop
+            pauseModal.addEventListener('click', (event) => {
+                if (event.target === pauseModal) {
+                    pauseModal.classList.add('opacity-0', 'pointer-events-none');
+                    pauseModal.querySelector('.glass-panel').classList.add('scale-95');
+                    if (STATE.moves > 0 || STATE.elapsedSeconds > 0) {
+                        startTimer();
+                    }
+                }
+            });
+
             btnPauseReset.addEventListener('click', () => {
                 pauseModal.classList.add('opacity-0', 'pointer-events-none');
                 pauseModal.querySelector('.glass-panel').classList.add('scale-95');
@@ -2408,7 +2441,14 @@
                 startAutoplay();
             });
 
-            document.getElementById('btn-autoplay-stop').addEventListener('click', stopAutoplay);
+            // Infinite Auto Solve Toggle Change Listener (Only updates loop flag, doesn't start solver on check)
+            const toggleInfinite = document.getElementById('toggle-infinite-auto');
+            toggleInfinite.addEventListener('change', (e) => {
+                STATE.isInfiniteAutoSolve = e.target.checked;
+                if (!STATE.isInfiniteAutoSolve) {
+                    stopAutoplay();
+                }
+            });
 
             document.getElementById('btn-hint').addEventListener('click', () => {
                 if (STATE.isWon || STATE.isAnimating || STATE.isReplaying || STATE.isAutoplayActive) return;
@@ -2540,7 +2580,8 @@
                 startSpeedReplayFlow(true); 
             });
 
-            document.getElementById('btn-replay-toggle').addEventListener('click', () => {
+            document.getElementById('btn-replay-toggle').addEventListener('click', (e) => {
+                e.stopPropagation(); // Avoid triggering screen tap fade
                 if (!STATE.isReplaying) return;
                 STATE.isReplayPaused = !STATE.isReplayPaused;
                 
@@ -2553,10 +2594,17 @@
                         STATE.playNextReplayMove();
                     }
                 }
+                triggerReplayPanelFlash();
             });
 
-            document.getElementById('btn-replay-stop').addEventListener('click', () => {
+            document.getElementById('btn-replay-stop').addEventListener('click', (e) => {
+                e.stopPropagation();
                 finishReplay();
+            });
+
+            document.getElementById('btn-replay-record').addEventListener('click', (e) => {
+                e.stopPropagation();
+                triggerReplayPanelFlash();
             });
         }
 
@@ -2575,18 +2623,26 @@
                 CONFIG.numSticks = 7;
                 CONFIG.numColors = 6;
                 CONFIG.maxHeight = 16;
+            } else if (level === 'max') {
+                CONFIG.numSticks = 12;
+                CONFIG.numColors = 11;
+                CONFIG.maxHeight = 20;
             }
 
-            document.getElementById(`slider-sticks`).value = CONFIG.numSticks;
-            document.getElementById(`slider-sticks`).max = 12;
+            const sliderSticks = document.getElementById(`slider-sticks`);
+            sliderSticks.max = 12;
+            sliderSticks.value = CONFIG.numSticks;
             document.getElementById(`val-sticks`).innerText = CONFIG.numSticks;
 
-            document.getElementById(`slider-colors`).value = CONFIG.numColors;
-            document.getElementById(`slider-colors`).max = CONFIG.numSticks - 1;
+            // Critically set slider max BEFORE assigning new values to prevent clipping
+            const sliderColors = document.getElementById(`slider-colors`);
+            sliderColors.max = CONFIG.numSticks - 1;
+            sliderColors.value = CONFIG.numColors;
             document.getElementById(`val-colors`).innerText = CONFIG.numColors;
 
-            document.getElementById(`slider-stack`).value = CONFIG.maxHeight;
-            document.getElementById(`slider-stack`).max = 20;
+            const sliderStack = document.getElementById(`slider-stack`);
+            sliderStack.max = 20;
+            sliderStack.value = CONFIG.maxHeight;
             document.getElementById(`val-stack`).innerText = CONFIG.maxHeight;
 
             clearPresetButtonsHighlight();
@@ -2598,7 +2654,7 @@
         }
 
         function clearPresetButtonsHighlight() {
-            const presets = ['easy', 'medium', 'hard'];
+            const presets = ['easy', 'medium', 'hard', 'max'];
             presets.forEach(p => {
                 const b = document.getElementById(`preset-${p}`);
                 if (b) {
