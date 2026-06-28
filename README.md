@@ -9,6 +9,7 @@ Live links to play:
 * [Carrom](https://alexfc14.github.io/vibe-games/carrom/play.html)
 * [Pong Runner](https://alexfc14.github.io/vibe-games/pong-runner/play.html)
 * [Disk Sort](https://alexfc14.github.io/vibe-games/disk-sort/play.html)
+* [Nautilus](https://alexfc14.github.io/vibe-games/nautilus/play.html)
 
 ----
 # License
