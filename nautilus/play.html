@@ -375,6 +375,16 @@
         function initAudio() {
             if (audioCtxInitialized) return;
             
+            // --- STRICT IPAD WEB AUDIO SESSION OVERRIDE ---
+            // Forces iOS to bypass "ambient" mode and use "playback" instead, ignoring the physical side mute switch.
+            if (navigator.audioSession) {
+                try {
+                    navigator.audioSession.type = "playback";
+                } catch (e) {
+                    console.warn("Unable to set audio session type:", e);
+                }
+            }
+
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
             audioCtx = new AudioContextClass();
             
@@ -665,8 +675,8 @@
             overtoneChime.stop(stopTime);
         }
 
-        // Unified Pointer wake trigger for zero iOS click latency
-        btnAwaken.addEventListener('pointerdown', wakeSystem);
+        // Unified click-action trigger to wake audio contexts instantly
+        btnAwaken.addEventListener('click', wakeSystem);
 
         function wakeSystem(e) {
             if (e) e.preventDefault();
@@ -1086,6 +1096,11 @@
             // locking the screen, or changing browser focus. This synchronous listener ensures 
             // that the very first subsequent screen touch completely restores the audio session!
             const recoverSession = () => {
+                if (navigator.audioSession) {
+                    try {
+                        navigator.audioSession.type = "playback";
+                    } catch (e) {}
+                }
                 if (audioCtxInitialized && audioCtx && audioCtx.state === 'suspended') {
                     audioCtx.resume().then(() => {
                         console.log("Audio session auto-resumed successfully via passive interaction.");
