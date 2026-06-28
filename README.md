@@ -8,7 +8,7 @@ Live links to play:
 * [Hotwheels Racing](https://alexfc14.github.io/vibe-games/hotwheels/play.html)
 * [Carrom](https://alexfc14.github.io/vibe-games/carrom/play.html)
 * [Pong Runner](https://alexfc14.github.io/vibe-games/pong-runner/play.html)
-* [Disk Sort](https://alexfc14.github.io/vibe-games/disk-sort/play.html)
+* [Disk Sort](https://alexfc14.github.io/vibe-games/disk-sort/play.html) | [Donut Version](https://alexfc14.github.io/vibe-games/disk-sort/donuts.html)
 * [Nautilus](https://alexfc14.github.io/vibe-games/nautilus/play.html)
 
 ----
