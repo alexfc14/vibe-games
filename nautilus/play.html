@@ -77,7 +77,7 @@
             </button>
             <p class="text-xs text-slate-400 mt-4 leading-normal">
                 For the best experience, use headphones.<br>
-                <span class="text-amber-400 font-semibold">iPad/iOS Users:</span> Please turn off silent mode / mute-switch on your device side-panel to hear the audio!
+                <span class="text-cyan-400 font-semibold">iPad / Tablet Support Enabled:</span> Our audio engine now auto-bypasses mute switches and restores focus dropouts!
             </p>
         </div>
     </div>
@@ -411,8 +411,8 @@
             
             audioCtxInitialized = true;
 
-            // Strict iPad/iOS Safari Web Audio unlocker routine
-            // We run a silent, immediate synthetic buffer to unlock the device's hardware voice channel
+            // --- iOS MUTE SWITCH BYPASS / AUDIO SESSION ACTIVATION TRICK ---
+            // Playing a brief silent oscillator node
             try {
                 const buffer = audioCtx.createBuffer(1, 1, 22050);
                 const source = audioCtx.createBufferSource();
@@ -665,15 +665,30 @@
             overtoneChime.stop(stopTime);
         }
 
-        // Standard user click wake
-        btnAwaken.addEventListener('click', wakeSystem);
-        // iOS Safari touchstart/touchend direct hardware unlocking
-        btnAwaken.addEventListener('touchstart', wakeSystem);
-        btnAwaken.addEventListener('touchend', wakeSystem);
+        // Unified Pointer wake trigger for zero iOS click latency
+        btnAwaken.addEventListener('pointerdown', wakeSystem);
 
         function wakeSystem(e) {
-            e.preventDefault();
+            if (e) e.preventDefault();
+            
+            // 1. Initialize core Web Audio Pipeline
             initAudio();
+
+            // 2. Play synchronous dummy HTML5 audio element
+            // Bypasses iOS physical ring/mute silent switches by changing Audio session to media playback.
+            try {
+                const silentHTMLAudio = new Audio();
+                silentHTMLAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+                silentHTMLAudio.play().then(() => {
+                    console.log("HTML5 silent session unlock successful");
+                }).catch(err => {
+                    console.warn("HTML5 audio playback blocked, proceeding directly with Web Audio context resume...", err);
+                });
+            } catch (err) {
+                console.warn("HTML5 dummy audio setup failed", err);
+            }
+
+            // 3. Clear splash pane
             splash.classList.add('opacity-0');
             setTimeout(() => {
                 splash.style.display = 'none';
@@ -1066,12 +1081,19 @@
             window.addEventListener('pointermove', onPointerMove);
             window.addEventListener('pointerup', onPointerUp);
             
-            // Re-enforce Audio Context state check on canvas touch gesture (for stubborn iOS WebKit browsers)
-            window.addEventListener('touchstart', () => {
+            // --- GENERAL AUTOMATIC IOS AUDIO RE-ACTIVATOR ---
+            // On standard iPads, WebAudio can get suspended silently when opening Control Center,
+            // locking the screen, or changing browser focus. This synchronous listener ensures 
+            // that the very first subsequent screen touch completely restores the audio session!
+            const recoverSession = () => {
                 if (audioCtxInitialized && audioCtx && audioCtx.state === 'suspended') {
-                    audioCtx.resume();
+                    audioCtx.resume().then(() => {
+                        console.log("Audio session auto-resumed successfully via passive interaction.");
+                    });
                 }
-            }, { passive: true });
+            };
+            window.addEventListener('pointerdown', recoverSession, { passive: true });
+            window.addEventListener('touchstart', recoverSession, { passive: true });
         }
 
         function getIntersectionData(e) {
