@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Three.js for 3D physics/visual rendering -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- LameJS for high-fidelity client-side WebM to MP3 conversion (COOP/COEP header independent) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.all.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
         
@@ -34,7 +36,7 @@
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background: #06b6d4;
+            background: #a5f3fc;
             cursor: pointer;
             box-shadow: 0 2px 6px rgba(0,0,0,0.3);
             transition: transform 0.1s;
@@ -50,67 +52,93 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
         }
+
+        /* Ambient glowing note labels */
+        .note-label {
+            position: absolute;
+            font-weight: 800;
+            font-size: 12px;
+            color: #ffffff;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.6), 0 0 10px rgba(165, 243, 252, 0.1);
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+        .note-label.active {
+            color: #f472b6;
+            background: rgba(244, 114, 182, 0.25);
+            border-color: rgba(244, 114, 182, 0.5);
+            font-size: 13px;
+            text-shadow: 0 0 10px rgba(244, 114, 182, 0.85);
+            scale: 1.10; /* Very subtle dynamic bounce scale */
+        }
     </style>
 </head>
 <body class="relative w-screen h-screen">
 
     <!-- Splash/Welcome Screen for Web Audio Activation -->
-    <div id="splash" class="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-gradient-to-tr from-slate-950 via-slate-900 to-cyan-950 text-white transition-opacity duration-700">
-        <div class="max-w-md text-center glass-panel p-8 rounded-3xl border border-cyan-500/20 shadow-2xl">
-            <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-tr from-cyan-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                <svg class="w-14 h-14 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div id="splash" class="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-gradient-to-tr from-slate-950 via-slate-900 to-indigo-950 text-white transition-opacity duration-700">
+        <div class="max-w-md text-center glass-panel p-8 rounded-3xl border border-indigo-500/20 shadow-2xl">
+            <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-tr from-indigo-300 to-pink-300 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                <svg class="w-14 h-14 text-slate-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 12c1.5-3 4-4 4-4s-1 4-4 4zm0 0c-3 1.5-4 4-4 4s4-1 4-4z" />
                 </svg>
             </div>
-            <h1 class="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 to-pink-400 bg-clip-text text-transparent mb-3">
+            <h1 class="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-300 to-pink-300 bg-clip-text text-transparent mb-3">
                 HARMONIC NAUTILUS
             </h1>
             <p class="text-sm text-slate-300 font-medium mb-6 leading-relaxed">
-                An immersive spiral synthesizer. Play the <b class="text-cyan-400">center keys</b> for organic, powerful bass resonance, or strike the <b class="text-pink-400">outer edges</b> for bright metallic tones.
+                An immersive pastel-toned spiral synthesizer. Play the <b class="text-indigo-300">center keys</b> for warm, organic resonant bass, or strike the <b class="text-pink-300">outer edges</b> for bright metallic chimes.
             </p>
-            <button id="btn-awaken" class="w-full py-4 px-8 text-lg font-bold text-white bg-gradient-to-r from-cyan-500 to-pink-500 hover:from-cyan-600 hover:to-pink-600 rounded-2xl shadow-md transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
+            <button id="btn-awaken" class="w-full py-4 px-8 text-lg font-bold text-slate-950 bg-gradient-to-r from-indigo-200 to-pink-200 hover:from-indigo-300 hover:to-pink-300 rounded-2xl shadow-md transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
                 <span>Awaken the Instrument</span>
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-5 h-5 text-slate-950" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                 </svg>
             </button>
             <p class="text-xs text-slate-400 mt-4 leading-normal">
                 For the best experience, use headphones.<br>
-                <span class="text-cyan-400 font-semibold">iPad / Tablet Support Enabled:</span> Our audio engine now auto-bypasses mute switches and restores focus dropouts!
+                <span class="text-indigo-300 font-semibold">iPad / Tablet Support Enabled:</span> Our audio engine auto-bypasses silent switches and restores focus dropouts!
             </p>
         </div>
     </div>
 
     <!-- Clean Instrument Top Header -->
-    <div id="app-container" class="absolute inset-x-0 top-0 p-4 pointer-events-none z-10 flex items-center justify-between">
+    <div id="app-container" class="absolute inset-x-0 top-0 p-4 pointer-events-none z-10 flex flex-wrap gap-3 items-center justify-between">
         
         <!-- Minimal Note and State Status -->
         <div class="glass-panel px-5 py-3 rounded-2xl flex items-center gap-4 pointer-events-auto">
-            <span class="w-3 h-3 rounded-full bg-cyan-400 animate-ping"></span>
+            <span id="active-pulse" class="w-3 h-3 rounded-full bg-indigo-300 animate-ping"></span>
             <div>
                 <h2 class="text-xs font-extrabold tracking-wide text-slate-400 uppercase">Harmonic Nautilus</h2>
-                <p id="current-note" class="text-sm font-extrabold text-cyan-400 tracking-wider">Acoustic Active</p>
+                <p id="current-note" class="text-sm font-extrabold text-indigo-300 tracking-wider font-mono">Acoustic Active</p>
             </div>
         </div>
 
-        <!-- Dynamic Striking Tone Feedback Indicator -->
-        <div id="timbre-feedback" class="hidden md:flex glass-panel px-6 py-3 rounded-2xl items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-200 transition-all duration-300 pointer-events-auto">
-            <svg class="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-            </svg>
-            <span id="timbre-txt">Tap keys to begin</span>
-        </div>
-
-        <!-- Sequencer and settings toggles -->
+        <!-- Sequencer, Recorder, and settings toggles -->
         <div class="glass-panel p-2 rounded-2xl flex items-center gap-2 pointer-events-auto">
-            <button id="btn-sequencer" class="px-5 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all bg-emerald-600 hover:bg-emerald-500 text-white shadow-md active:scale-95">
+            <!-- Sweep Button -->
+            <button id="btn-sequencer" class="px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all bg-indigo-600 hover:bg-indigo-500 text-white shadow-md active:scale-95">
                 <svg id="sequencer-icon" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                 </svg>
                 <span id="sequencer-txt">Start Sweep</span>
             </button>
-            <button id="btn-config" class="p-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-all active:scale-90" title="Sound Lab Settings">
+            
+            <!-- Lossless Audio Recorder Button -->
+            <button id="btn-record" class="px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all bg-slate-800 hover:bg-slate-700 text-slate-100 shadow-md active:scale-95 border border-rose-500/30" title="Record directly to high-fidelity MP3">
+                <span id="record-dot" class="w-3 h-3 rounded-full bg-rose-500"></span>
+                <span id="record-txt" class="font-mono">Record MP3</span>
+            </button>
+
+            <!-- Config Button -->
+            <button id="btn-config" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-all active:scale-90" title="Sound Lab Settings">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                 </svg>
@@ -119,7 +147,7 @@
     </div>
 
     <!-- Hidden Slide-Out Sound Lab Drawer containing all instrument settings -->
-    <div id="side-drawer" class="fixed right-4 top-24 bottom-24 w-80 glass-panel rounded-3xl p-5 border border-cyan-500/20 shadow-2xl pointer-events-auto flex flex-col gap-4 transform translate-x-[340px] transition-transform duration-300 ease-out z-20 overflow-hidden text-slate-100">
+    <div id="side-drawer" class="fixed right-4 top-24 bottom-24 w-80 glass-panel rounded-3xl p-5 border border-indigo-500/20 shadow-2xl pointer-events-auto flex flex-col gap-4 transform translate-x-[340px] transition-transform duration-300 ease-out z-20 overflow-hidden text-slate-100">
         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
             <h3 class="font-extrabold text-slate-200 text-md uppercase tracking-wider">Sound Lab Settings</h3>
             <button id="btn-close-drawer" class="p-1 rounded-full hover:bg-slate-800 text-slate-400 hover:text-slate-200">
@@ -133,7 +161,7 @@
             
             <!-- Materials Selector -->
             <div class="flex flex-col gap-2">
-                <span class="text-xs font-bold text-pink-400 uppercase tracking-widest">Resonance Chamber Material</span>
+                <span class="text-xs font-bold text-pink-300 uppercase tracking-widest">Resonance Chamber Material</span>
                 <div class="flex flex-col gap-1">
                     <select id="select-material" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-3 rounded-xl outline-none border border-slate-700 transition-all cursor-pointer">
                         <option value="horn" selected>🐚 Nautilus Horn (Wind-Blown)</option>
@@ -148,7 +176,7 @@
 
             <!-- Scale Mode Selector -->
             <div class="flex flex-col gap-2 border-t border-slate-800 pt-3">
-                <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Musical Tuning</span>
+                <span class="text-xs font-bold text-indigo-300 uppercase tracking-widest">Musical Tuning</span>
                 
                 <!-- Base Note Selector -->
                 <div class="flex flex-col gap-1 mb-1">
@@ -187,19 +215,19 @@
                 <div class="flex flex-col gap-1">
                     <div class="flex justify-between text-xs text-slate-400">
                         <span>Spiral Chambers (Keys)</span>
-                        <span id="density-val" class="text-slate-200">36 Chambers</span>
+                        <span id="density-val" class="text-slate-200">56 Chambers</span>
                     </div>
-                    <input id="slider-density" type="range" min="12" max="64" value="36">
+                    <input id="slider-density" type="range" min="12" max="150" value="56">
                 </div>
             </div>
 
             <!-- Wave Morph & Detuning -->
             <div class="flex flex-col gap-2 border-t border-slate-800 pt-3">
-                <span class="text-xs font-bold text-sky-400 uppercase tracking-widest">Timbre & Spectrum</span>
+                <span class="text-xs font-bold text-sky-300 uppercase tracking-widest">Timbre & Spectrum</span>
                 <div class="flex flex-col gap-1">
                     <div class="flex justify-between text-xs text-slate-400">
                         <span>Oscillator Wave Morph</span>
-                        <span id="morph-val" class="font-bold text-sky-400">Triangle</span>
+                        <span id="morph-val" class="font-bold text-sky-300">Triangle</span>
                     </div>
                     <input id="slider-wave-morph" type="range" min="0" max="3" step="0.01" value="1.0">
                 </div>
@@ -214,7 +242,7 @@
 
             <!-- Envelope ADSR Settings -->
             <div class="flex flex-col gap-2 border-t border-slate-800 pt-3">
-                <span class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Envelope (ADSR)</span>
+                <span class="text-xs font-bold text-indigo-300 uppercase tracking-widest">Envelope (ADSR)</span>
                 <div class="flex flex-col gap-1">
                     <div class="flex justify-between text-xs text-slate-400">
                         <span>Attack Time</span>
@@ -247,7 +275,7 @@
 
             <!-- Nautilus Echo Chamber Delay -->
             <div class="flex flex-col gap-2 border-t border-slate-800 pt-3">
-                <span class="text-xs font-bold text-pink-400 uppercase tracking-widest">Nautilus Delay Chamber</span>
+                <span class="text-xs font-bold text-pink-300 uppercase tracking-widest">Nautilus Delay Chamber</span>
                 <div class="flex flex-col gap-1">
                     <div class="flex justify-between text-xs text-slate-400">
                         <span>Echo Time</span>
@@ -278,9 +306,12 @@
         </div>
         
         <div class="text-[10px] text-slate-500 text-center border-t border-slate-800 pt-2">
-            Harmonic Nautilus Synthesizer v3
+            Harmonic Nautilus Synthesizer v6
         </div>
     </div>
+
+    <!-- Container for dynamic screen-space projected note indicators -->
+    <div id="labels-container" class="absolute inset-0 z-10 pointer-events-none overflow-hidden"></div>
 
     <!-- Full viewport WebGL Interactive container -->
     <div id="canvas-container" class="absolute inset-0 z-0 cursor-pointer"></div>
@@ -292,7 +323,7 @@
         let scaleMode = 'major'; // Default to pleasant diatonic major scale
         let baseMIDINote = 36;   // Default base note is C2 (~65Hz)
         let chamberMaterial = 'horn'; // Nautilus Horn as default
-        let nodeCount = 36;             
+        let nodeCount = 56;      // Default density keys (fits auditory threshold limit)
         let sweepRPM = 12;              
         let sweepAngle = 0;             
 
@@ -315,6 +346,9 @@
             whole_tone: [0, 2, 4, 6, 8, 10]                       
         };
 
+        // Chromatic note letters list starting at C
+        const CHROMATIC_LETTERS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
         // Synthesis parameters
         const synthConfig = {
             attack: 0.05,
@@ -327,6 +361,13 @@
             delayFeedback: 0.20   
         };
 
+        // Recording System Variables
+        let isRecording = false;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let recordTimer = null;
+        let recordDuration = 0;
+
         // DOM nodes
         const splash = document.getElementById('splash');
         const btnAwaken = document.getElementById('btn-awaken');
@@ -334,12 +375,15 @@
         const btnSequencer = document.getElementById('btn-sequencer');
         const sequencerIcon = document.getElementById('sequencer-icon');
         const sequencerTxt = document.getElementById('sequencer-txt');
+        const btnRecord = document.getElementById('btn-record');
+        const recordDot = document.getElementById('record-dot');
+        const recordTxt = document.getElementById('record-txt');
         const btnConfig = document.getElementById('btn-config');
         const btnCloseDrawer = document.getElementById('btn-close-drawer');
         const sideDrawer = document.getElementById('side-drawer');
         const currentNoteEl = document.getElementById('current-note');
-        const timbreFeedback = document.getElementById('timbre-feedback');
-        const timbreTxt = document.getElementById('timbre-txt');
+        const activePulse = document.getElementById('active-pulse');
+        const labelsContainer = document.getElementById('labels-container');
 
         // Parameter selectors & sliders
         const selectMaterial = document.getElementById('select-material');
@@ -376,7 +420,6 @@
             if (audioCtxInitialized) return;
             
             // --- STRICT IPAD WEB AUDIO SESSION OVERRIDE ---
-            // Forces iOS to bypass "ambient" mode and use "playback" instead, ignoring the physical side mute switch.
             if (navigator.audioSession) {
                 try {
                     navigator.audioSession.type = "playback";
@@ -422,7 +465,6 @@
             audioCtxInitialized = true;
 
             // --- iOS MUTE SWITCH BYPASS / AUDIO SESSION ACTIVATION TRICK ---
-            // Playing a brief silent oscillator node
             try {
                 const buffer = audioCtx.createBuffer(1, 1, 22050);
                 const source = audioCtx.createBufferSource();
@@ -448,12 +490,15 @@
             const baseMIDI = baseMIDINote; // Dynamic base MIDI register
             const semitones = getSemitoneOffsetForIndex(i);
             const midiNote = baseMIDI + semitones;
-            return 440 * Math.pow(2, (midiNote - 69) / 12);
+            let freq = 440 * Math.pow(2, (midiNote - 69) / 12);
+            // Clamp to maximum upper limit of human hearing perception to avoid painful ultrasonic squeaks
+            if (freq > 20000) freq = 20000;
+            return freq;
         }
 
         // Return pitch class name from frequency
         function getApproximateNoteName(freq) {
-            const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+            const notes = CHROMATIC_LETTERS;
             const c0 = 16.35;
             const h = 12 * Math.log2(freq / c0);
             const oct = Math.floor(h / 12);
@@ -463,7 +508,6 @@
 
         /**
          * Real-time Multi-Material Physical synthesis voice with adaptive bass scaling.
-         * Resolves dry wooden logs by adding dynamic low-end unison widths, pitch-decay scaling, and sub-bass resonators.
          */
         function playSustainVoice(frequency, velocity = 0.5, edgeFactor = 0.0) {
             if (!audioCtxInitialized) return;
@@ -643,7 +687,7 @@
             resonatorGain.gain.exponentialRampToValueAtTime(subVolume * 0.4 + 0.0001, now + synthConfig.attack + scaledDecay);
             resonatorGain.gain.exponentialRampToValueAtTime(0.0001, now + synthConfig.attack + scaledDecay + scaledRelease + 0.2);
 
-            // Configure overtone chime (Gives definition and acoustic shine to edge strikes)
+            // Configure overtone chime
             const chimeVolume = (0.05 + (edgeFactor * 0.55)) * baseGainValue * 0.35;
             chimeGain.gain.setValueAtTime(0, now);
             chimeGain.gain.linearRampToValueAtTime(chimeVolume, now + 0.002);
@@ -675,30 +719,201 @@
             overtoneChime.stop(stopTime);
         }
 
+        // Recording trigger toggles
+        btnRecord.addEventListener('click', () => {
+            if (!audioCtxInitialized) {
+                showNotification("Awaken the instrument first!");
+                return;
+            }
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        });
+
+        // Robust pure JavaScript WebM-to-MP3 offline decoding & encoding pipeline
+        async function convertWebmToMp3(webmBlob) {
+            const arrayBuffer = await webmBlob.arrayBuffer();
+            
+            // Decode recorded WebM stream into raw Float32 audio channel arrays
+            const decodeCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const audioBuffer = await new Promise((resolve, reject) => {
+                decodeCtx.decodeAudioData(arrayBuffer, resolve, reject);
+            });
+            decodeCtx.close();
+
+            const channels = audioBuffer.numberOfChannels;
+            const sampleRate = audioBuffer.sampleRate;
+            
+            // Initialize LameJS MP3 encoder
+            const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, 192); // Encode in solid 192kbps stereo/mono
+            const mp3Data = [];
+
+            if (channels === 2) {
+                const left = audioBuffer.getChannelData(0);
+                const right = audioBuffer.getChannelData(1);
+                const leftInt16 = new Int16Array(left.length);
+                const rightInt16 = new Int16Array(right.length);
+                
+                // Transcode floats (-1.0 to 1.0) to signed Int16 samples
+                for (let i = 0; i < left.length; i++) {
+                    let l = Math.max(-1, Math.min(1, left[i]));
+                    leftInt16[i] = l < 0 ? l * 0x8000 : l * 0x7FFF;
+                    
+                    let r = Math.max(-1, Math.min(1, right[i]));
+                    rightInt16[i] = r < 0 ? r * 0x8000 : r * 0x7FFF;
+                }
+
+                const sampleBlockSize = 1152;
+                for (let i = 0; i < leftInt16.length; i += sampleBlockSize) {
+                    const leftChunk = leftInt16.subarray(i, i + sampleBlockSize);
+                    const rightChunk = rightInt16.subarray(i, i + sampleBlockSize);
+                    const mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
+                    if (mp3buf.length > 0) {
+                        mp3Data.push(mp3buf);
+                    }
+                }
+            } else {
+                const mono = audioBuffer.getChannelData(0);
+                const monoInt16 = new Int16Array(mono.length);
+                for (let i = 0; i < mono.length; i++) {
+                    let m = Math.max(-1, Math.min(1, mono[i]));
+                    monoInt16[i] = m < 0 ? m * 0x8000 : m * 0x7FFF;
+                }
+
+                const sampleBlockSize = 1152;
+                for (let i = 0; i < monoInt16.length; i += sampleBlockSize) {
+                    const monoChunk = monoInt16.subarray(i, i + sampleBlockSize);
+                    const mp3buf = mp3encoder.encodeBuffer(monoChunk);
+                    if (mp3buf.length > 0) {
+                        mp3Data.push(mp3buf);
+                    }
+                }
+            }
+
+            const mp3buf = mp3encoder.flush();
+            if (mp3buf.length > 0) {
+                mp3Data.push(mp3buf);
+            }
+
+            return new Blob(mp3Data, { type: 'audio/mp3' });
+        }
+
+        function startRecording() {
+            recordedChunks = [];
+            
+            const streamDest = audioCtx.createMediaStreamDestination();
+            dynamicsLimiter.connect(streamDest);
+
+            try {
+                mediaRecorder = new MediaRecorder(streamDest.stream);
+            } catch (e) {
+                showNotification("Recording setup restricted on this web context.");
+                console.error(e);
+                return;
+            }
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                const webmBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+                showNotification("Encoding performance to MP3... ⏳");
+
+                try {
+                    const mp3Blob = await convertWebmToMp3(webmBlob);
+                    const url = URL.createObjectURL(mp3Blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `nautilus-session-${Date.now()}.mp3`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showNotification("Performance saved as MP3 successfully! ✨");
+                } catch (err) {
+                    console.error("Local MP3 encoding error:", err);
+                    // Absolute robust fallback: download raw webm blob
+                    const url = URL.createObjectURL(webmBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `nautilus-session-${Date.now()}.webm`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showNotification("MP3 failure. Falling back to lossless WebM! 🎵");
+                }
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            recordDuration = 0;
+            recordTxt.innerText = "Rec 00:00";
+            btnRecord.classList.remove('bg-slate-800', 'text-slate-100');
+            btnRecord.classList.add('bg-rose-950/80', 'text-rose-200', 'border-rose-500');
+            recordDot.classList.add('animate-ping');
+
+            recordTimer = setInterval(() => {
+                recordDuration++;
+                const mins = String(Math.floor(recordDuration / 60)).padStart(2, '0');
+                const secs = String(recordDuration % 60).padStart(2, '0');
+                recordTxt.innerText = `Rec ${mins}:${secs}`;
+            }, 1000);
+
+            showNotification("Recording session started.");
+        }
+
+        function stopRecording() {
+            if (!mediaRecorder || !isRecording) return;
+            mediaRecorder.stop();
+            isRecording = false;
+            clearInterval(recordTimer);
+
+            recordTxt.innerText = "Record MP3";
+            btnRecord.classList.remove('bg-rose-950/80', 'text-rose-200', 'border-rose-500');
+            btnRecord.classList.add('bg-slate-800', 'text-slate-100');
+            recordDot.classList.remove('animate-ping');
+        }
+
+        // Custom elegant notification popup
+        function showNotification(message) {
+            const popup = document.createElement('div');
+            popup.className = 'fixed bottom-12 left-1/2 -translate-x-1/2 glass-panel border border-indigo-500/30 px-6 py-3 rounded-2xl text-slate-100 font-bold text-sm tracking-wide shadow-2xl z-50 flex items-center gap-2 animate-bounce';
+            popup.innerHTML = `<span>✨</span><span>${message}</span>`;
+            document.body.appendChild(popup);
+            setTimeout(() => {
+                popup.style.opacity = '0';
+                popup.style.transition = 'opacity 0.6s ease';
+                setTimeout(() => popup.remove(), 600);
+            }, 3000);
+        }
+
         // Unified click-action trigger to wake audio contexts instantly
         btnAwaken.addEventListener('click', wakeSystem);
 
         function wakeSystem(e) {
             if (e) e.preventDefault();
-            
-            // 1. Initialize core Web Audio Pipeline
             initAudio();
 
-            // 2. Play synchronous dummy HTML5 audio element
-            // Bypasses iOS physical ring/mute silent switches by changing Audio session to media playback.
+            // Play synchronous dummy HTML5 audio element
             try {
                 const silentHTMLAudio = new Audio();
                 silentHTMLAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
                 silentHTMLAudio.play().then(() => {
                     console.log("HTML5 silent session unlock successful");
                 }).catch(err => {
-                    console.warn("HTML5 audio playback blocked, proceeding directly with Web Audio context resume...", err);
+                    console.warn("HTML5 audio playback blocked...", err);
                 });
             } catch (err) {
                 console.warn("HTML5 dummy audio setup failed", err);
             }
 
-            // 3. Clear splash pane
+            // Clear splash pane
             splash.classList.add('opacity-0');
             setTimeout(() => {
                 splash.style.display = 'none';
@@ -707,12 +922,13 @@
         }
 
 
-        // ==========================================
-        // THREE.JS - Contiguous Octave-Aligned Spiral Marimba
-        // ==========================================
+        // =========================================================================
+        // THREE.JS - Colossal, Thick, Compact Interlocking Contiguous Spiral
+        // =========================================================================
         const container = document.getElementById('canvas-container');
         let scene, camera, renderer;
         let spores = []; 
+        let directionalLabels = [];
         let particleSystem;
         let particlesData = [];
         let sweepLine; 
@@ -722,26 +938,30 @@
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x0b0f19); 
 
-            // Ambient lighting
+            // --- STUDIO LIGHTS SETUP (No overexposure bleaching) ---
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
             scene.add(ambientLight);
 
-            // Soft directional key light
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.95);
-            dirLight.position.set(5, 15, 10);
+            // Shunted key directional light to avoid mirror-like white hotspots
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.70);
+            dirLight.position.set(20, 25, 30);
             scene.add(dirLight);
 
-            // Spotlights for beautiful color depth highlights
-            const spotLight1 = new THREE.SpotLight(0x06b6d4, 2.5, 120, 0.45, 0.5, 1);
-            spotLight1.position.set(-15, 20, 15);
+            const spotLight1 = new THREE.SpotLight(0xa5f3fc, 0.80, 150, 0.5, 0.5, 1);
+            spotLight1.position.set(-20, 30, 25);
             scene.add(spotLight1);
 
-            const spotLight2 = new THREE.SpotLight(0xec4899, 2.5, 120, 0.45, 0.5, 1);
-            spotLight2.position.set(15, -20, 15);
+            const spotLight2 = new THREE.SpotLight(0xfbcfe8, 0.80, 150, 0.5, 0.5, 1);
+            spotLight2.position.set(20, -30, 25);
             scene.add(spotLight2);
 
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 150);
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 180);
             
+            // Extremely soft dynamic headlight following camera view
+            const headlight = new THREE.DirectionalLight(0xffffff, 0.10);
+            camera.add(headlight);
+            scene.add(camera);
+
             onWindowResize();
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -750,6 +970,7 @@
             container.appendChild(renderer.domElement);
 
             buildNautilusChambers();
+            buildDirectionalLabels();
             buildParticleSystem();
             buildSweepLine();
 
@@ -765,14 +986,14 @@
             });
             spores = [];
 
-            const R_base = 13.5;    
-            const b = 0.075;       // Makes high/low keys more balanced in size
+            const R_base = 15.5;    // Balanced radius to ensure zero overflow on mobile
+            const b = 0.045;       // Fast decay pull towards center
+            const C = 0.35;        // Tight asymptotic limit (Squeezes center gap tightly, enlarging the pieces)
 
             // Pre-calculate angular offsets based on semitones for alignment
             const midAngles = [];
             for (let i = 0; i < nodeCount; i++) {
                 const semitones = getSemitoneOffsetForIndex(i);
-                // 12 semitones = exactly 2*pi radians (one full octave turn!)
                 midAngles.push(semitones * (Math.PI / 6)); 
             }
 
@@ -780,33 +1001,52 @@
             const len = scaleNotes.length;
 
             for (let i = 0; i < nodeCount; i++) {
-                const thetaStart = (i === 0) ? midAngles[0] - (midAngles[1] - midAngles[0]) / 2 : (midAngles[i - 1] + midAngles[i]) / 2;
-                const thetaEnd = (i === nodeCount - 1) ? midAngles[i] + (midAngles[i] - midAngles[i - 1]) / 2 : (midAngles[i] + midAngles[i + 1]) / 2;
+                let thetaStart, thetaEnd;
+
+                // --- PERFECT CHROMATIC SEGMENTATION BOUNDS ---
+                // Prevents Base C (i = 0) from expanding too far backwards into B's sector.
+                if (i === 0) {
+                    thetaStart = midAngles[0] - (Math.PI / 12); // Bound base C strictly to 15 degrees back
+                    thetaEnd = (midAngles[0] + midAngles[1]) / 2;
+                } else if (i === nodeCount - 1) {
+                    thetaStart = (midAngles[i - 1] + midAngles[i]) / 2;
+                    thetaEnd = midAngles[i] + (Math.PI / 12);
+                } else {
+                    thetaStart = (midAngles[i - 1] + midAngles[i]) / 2;
+                    thetaEnd = (midAngles[i] + midAngles[i + 1]) / 2;
+                }
 
                 const shape = new THREE.Shape();
                 const resolution = 16;
                 const outerPoints = [];
                 const innerPoints = [];
 
-                // 1. Plot outer spiral arc (Note i outer boundary)
-                for (let s = 0; s <= resolution; s++) {
-                    const t = thetaStart + (s / resolution) * (thetaEnd - thetaStart);
-                    const r_outer = R_base * Math.exp(-b * t);
-                    const x = r_outer * Math.cos(t);
-                    const y = r_outer * Math.sin(t);
-                    outerPoints.push(new THREE.Vector2(x, y));
+                // Tiny spacing gap to ensure visual segmentation and clear block edges
+                const thetaGap = 0.015; 
+                const tS = thetaStart + thetaGap;
+                const tE = thetaEnd - thetaGap;
+
+                if (tE > tS) {
+                    // 1. Plot outer spiral boundary curve
+                    for (let s = 0; s <= resolution; s++) {
+                        const t = tS + (s / resolution) * (tE - tS);
+                        const r_outer = (R_base - C) * Math.exp(-b * t) + C;
+                        const x = r_outer * Math.cos(t);
+                        const y = r_outer * Math.sin(t);
+                        outerPoints.push(new THREE.Vector2(x, y));
+                    }
+
+                    // 2. Plot inner spiral boundary curve
+                    for (let s = resolution; s >= 0; s--) {
+                        const t = tS + (s / resolution) * (tE - tS);
+                        const r_inner = (R_base - C) * Math.exp(-b * (t + 2 * Math.PI)) + C;
+                        const x = r_inner * Math.cos(t);
+                        const y = r_inner * Math.sin(t);
+                        innerPoints.push(new THREE.Vector2(x, y));
+                    }
                 }
 
-                // 2. Plot inner spiral arc (Interlocks perfectly with adjacent inward turn, offset by 2*pi)
-                for (let s = resolution; s >= 0; s--) {
-                    const t = thetaStart + (s / resolution) * (thetaEnd - thetaStart);
-                    const r_inner = R_base * Math.exp(-b * (t + 2 * Math.PI));
-                    const x = r_inner * Math.cos(t);
-                    const y = r_inner * Math.sin(t);
-                    innerPoints.push(new THREE.Vector2(x, y));
-                }
-
-                // Join outlines to make contiguous wedges
+                // Join outlines to make interlocking contiguous wedges
                 outerPoints.forEach((p, idx) => {
                     if (idx === 0) shape.moveTo(p.x, p.y);
                     else shape.lineTo(p.x, p.y);
@@ -817,109 +1057,50 @@
                 shape.closePath();
 
                 const extrudeSettings = {
-                    depth: 0.35,
+                    depth: 2.20,           // Chunky, heavy block depth
                     bevelEnabled: true,
                     bevelSegments: 4,
                     steps: 1,
-                    bevelSize: 0.03,
-                    bevelThickness: 0.03
+                    bevelSize: 0.10,       // Thick rounded bevel borders
+                    bevelThickness: 0.10
                 };
 
                 const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
                 
-                // --- Octave-aligned Color Mapping ---
+                // --- Octave-aligned Beautiful Consistent Pastel Color Mapping ---
                 const noteIndex = i % len;
-
-                // Locked hue distribution: Adjacent keys are highly distinct. Same pitch classes share hues.
+                const octave = Math.floor(i / len);
                 const hue = (noteIndex / len); 
-
-                // Uniform saturation and lightness globally as requested
-                const saturation = 0.88; 
-                const lightness = 0.50;  
+                const saturation = Math.max(0.40, 0.80 - (octave * 0.045)); // Grows softer and more pastel as pitch rises
+                const lightness = Math.min(0.85, 0.55 + (octave * 0.035));  
                 const baseColor = new THREE.Color().setHSL(hue, saturation, lightness);
 
-                // Material physical settings based on current Chamber selection (PBR based)
-                let materialOptions = {};
+                // Pure Glossy Opaque Nautilus Finish
+                // roughness = 0.65 scatters reflections beautifully, keeping colors soft and visible
+                // metalness = 0.15 preserves beautiful, soft pastel tone without bleaching out into silver/white glare
+                const material = new THREE.MeshStandardMaterial({
+                    color: baseColor,
+                    roughness: 0.65,
+                    metalness: 0.15,
+                    emissive: baseColor.clone().multiplyScalar(0.01),
+                    transparent: false,
+                    opacity: 1.0
+                });
 
-                if (chamberMaterial === 'wood') {
-                    materialOptions = {
-                        color: baseColor,
-                        roughness: 0.85,
-                        metalness: 0.05,
-                        emissive: baseColor.clone().multiplyScalar(0.05),
-                        transparent: true,
-                        opacity: 0.98
-                    };
-                } 
-                else if (chamberMaterial === 'metal') {
-                    materialOptions = {
-                        color: baseColor,
-                        roughness: 0.15,
-                        metalness: 0.92,
-                        emissive: baseColor.clone().multiplyScalar(0.08),
-                        transparent: true,
-                        opacity: 0.95
-                    };
-                } 
-                else if (chamberMaterial === 'glass') {
-                    materialOptions = {
-                        color: baseColor,
-                        roughness: 0.05,
-                        metalness: 0.1,
-                        emissive: baseColor.clone().multiplyScalar(0.40), 
-                        transparent: true,
-                        opacity: 0.65 
-                    };
-                } 
-                else if (chamberMaterial === 'cosmic') {
-                    materialOptions = {
-                        color: baseColor,
-                        roughness: 0.3,
-                        metalness: 0.2,
-                        emissive: baseColor.clone().multiplyScalar(0.65), 
-                        transparent: true,
-                        opacity: 0.92
-                    };
-                }
-                else if (chamberMaterial === 'horn') {
-                    // Shell-wood hybrid finish
-                    materialOptions = {
-                        color: baseColor,
-                        roughness: 0.5,
-                        metalness: 0.3,
-                        emissive: baseColor.clone().multiplyScalar(0.12),
-                        transparent: true,
-                        opacity: 0.96
-                    };
-                }
-                else if (chamberMaterial === 'bell') {
-                    // Cast bronze metal feel
-                    materialOptions = {
-                        color: baseColor,
-                        roughness: 0.35,
-                        metalness: 0.8,
-                        emissive: baseColor.clone().multiplyScalar(0.1),
-                        transparent: true,
-                        opacity: 0.95
-                    };
-                }
-
-                const material = new THREE.MeshStandardMaterial(materialOptions);
                 const mesh = new THREE.Mesh(geometry, material);
-                
                 mesh.position.z = -0.01 * i;
                 scene.add(mesh);
 
                 // Find key centroid for distance calculation
                 const midAngle = midAngles[i];
-                const r_outer_mid = R_base * Math.exp(-b * midAngle);
-                const r_inner_mid = R_base * Math.exp(-b * (midAngle + 2 * Math.PI));
+                const r_outer_mid = (R_base - C) * Math.exp(-b * midAngle) + C;
+                const r_inner_mid = (R_base - C) * Math.exp(-b * (midAngle + 2 * Math.PI)) + C;
                 const midRadius = (r_inner_mid + r_outer_mid) / 2;
                 
                 const centroid = new THREE.Vector3(
                     midRadius * Math.cos(midAngle),
                     midRadius * Math.sin(midAngle),
-                    mesh.position.z + 0.18
+                    mesh.position.z + 0.65 // Recalculated Z-axis centroid targeting thicker depth center
                 );
 
                 const plateWidth = (r_outer_mid - r_inner_mid);
@@ -933,10 +1114,87 @@
                     centroid: centroid,
                     width: plateWidth,
                     angle: midAngle % (Math.PI * 2), 
+                    r_outer: r_outer_mid, // Save actual outer radius for dynamic annotation placement
                     active: false, 
-                    lastTriggered: 0
+                    lastTriggered: 0,
+                    lastTriggeredTime: 0 // Record accurate timestamp for custom physical ADS visual scaling
                 });
             }
+        }
+
+        // Build the outer chromatic region indicator notes specifically for the lowest octave circle
+        function buildDirectionalLabels() {
+            labelsContainer.innerHTML = '';
+            directionalLabels = [];
+
+            const scaleNotes = SCALES[scaleMode] || SCALES.major;
+            const len = scaleNotes.length; // Dynamic notes per octave in current tuning
+
+            // Annotate specifically the note letters on the outermost ring of pieces (the lowest pitch circle)
+            for (let i = 0; i < len; i++) {
+                const spore = spores[i];
+                if (!spore) continue;
+
+                const angle = spore.angle;
+                
+                // Add a visual padding offset past the geometry edge
+                const labelRadius = spore.r_outer + 2.5; 
+
+                const x = labelRadius * Math.cos(angle);
+                const y = labelRadius * Math.sin(angle);
+                const z = 0.3;
+
+                const el = document.createElement('div');
+                el.className = 'note-label';
+                
+                // Shift letters dynamically based on root key mapping
+                const targetMIDIPitch = baseMIDINote + getSemitoneOffsetForIndex(i);
+                const letter = CHROMATIC_LETTERS[targetMIDIPitch % 12];
+                el.innerText = letter;
+
+                labelsContainer.appendChild(el);
+
+                directionalLabels.push({
+                    element: el,
+                    worldPos: new THREE.Vector3(x, y, z),
+                    angle: angle,
+                    midiPitchClass: targetMIDIPitch % 12
+                });
+            }
+        }
+
+        // Update projected positions of note labels from 3D to 2D screen positions
+        function updateDirectionalLabelsProjection() {
+            const tempV = new THREE.Vector3();
+            directionalLabels.forEach(label => {
+                tempV.copy(label.worldPos);
+                tempV.project(camera);
+
+                if (tempV.z > 1) {
+                    label.element.style.display = 'none';
+                } else {
+                    label.element.style.display = 'block';
+                    const screenX = (tempV.x * 0.5 + 0.5) * window.innerWidth;
+                    const screenY = (tempV.y * -0.5 + 0.5) * window.innerHeight;
+                    label.element.style.transform = `translate(-50%, -50%) translate(${screenX}px, ${screenY}px)`;
+                }
+            });
+        }
+
+        // Trigger brief visual pulse on the direction label corresponding to triggered MIDI note
+        function pulseDirectionalLabel(noteNameString) {
+            const matches = noteNameString.match(/^([A-G]#?)/);
+            if (!matches) return;
+            const letter = matches[1];
+
+            directionalLabels.forEach(label => {
+                if (CHROMATIC_LETTERS[label.midiPitchClass] === letter) {
+                    label.element.classList.add('active');
+                    setTimeout(() => {
+                        label.element.classList.remove('active');
+                    }, 500);
+                }
+            });
         }
 
         // Build glowing circular sequencer line
@@ -944,7 +1202,7 @@
             if (sweepLine) scene.remove(sweepLine);
 
             const material = new THREE.LineBasicMaterial({
-                color: 0xf43f5e, 
+                color: 0xf472b6, 
                 linewidth: 3,
                 transparent: true,
                 opacity: 0.85
@@ -952,7 +1210,7 @@
 
             const points = [];
             points.push(new THREE.Vector3(0, 0, 0.4));
-            points.push(new THREE.Vector3(15 * Math.cos(0), 15 * Math.sin(0), 0.4));
+            points.push(new THREE.Vector3(17.5 * Math.cos(0), 17.5 * Math.sin(0), 0.4)); // Scaled to radius 17.5
 
             const geometry = new THREE.BufferGeometry().setFromPoints(points);
             sweepLine = new THREE.Line(geometry, material);
@@ -960,7 +1218,7 @@
             sweepLine.visible = false; 
         }
 
-        // Sparkle system
+        // Sparkle particle system
         function buildParticleSystem() {
             const geometry = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
@@ -1047,9 +1305,9 @@
 
                     let sparkColor;
                     if (edgeFactor > 0.6) {
-                        sparkColor = new THREE.Color().setHSL(0.55 + (Math.random() * 0.35), 1.0, 0.65);
+                        sparkColor = new THREE.Color().setHSL(0.55 + (Math.random() * 0.35), 0.7, 0.75);
                     } else {
-                        sparkColor = new THREE.Color().setHSL(0.08 + (Math.random() * 0.1), 1.0, 0.55);
+                        sparkColor = new THREE.Color().setHSL(0.08 + (Math.random() * 0.1), 0.7, 0.75);
                     }
                     particlesData[i].color = sparkColor;
 
@@ -1068,10 +1326,11 @@
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
+            // Camera distance buffer (Z = 38) keeps compact layout framed perfectly with notes
             if (window.innerWidth < window.innerHeight) {
-                camera.position.set(0, 0, 34 * (window.innerHeight / window.innerWidth) * 0.82);
+                camera.position.set(0, 0, 38 * (window.innerHeight / window.innerWidth) * 0.82);
             } else {
-                camera.position.set(0, 0, 34);
+                camera.position.set(0, 0, 38);
             }
             camera.updateProjectionMatrix();
             if (renderer) renderer.setSize(window.innerWidth, window.innerHeight);
@@ -1091,10 +1350,7 @@
             window.addEventListener('pointermove', onPointerMove);
             window.addEventListener('pointerup', onPointerUp);
             
-            // --- GENERAL AUTOMATIC IOS AUDIO RE-ACTIVATOR ---
-            // On standard iPads, WebAudio can get suspended silently when opening Control Center,
-            // locking the screen, or changing browser focus. This synchronous listener ensures 
-            // that the very first subsequent screen touch completely restores the audio session!
+            // GENERAL AUTOMATIC IOS AUDIO RE-ACTIVATOR
             const recoverSession = () => {
                 if (navigator.audioSession) {
                     try {
@@ -1103,7 +1359,7 @@
                 }
                 if (audioCtxInitialized && audioCtx && audioCtx.state === 'suspended') {
                     audioCtx.resume().then(() => {
-                        console.log("Audio session auto-resumed successfully via passive interaction.");
+                        console.log("Audio session auto-resumed via passive interaction.");
                     });
                 }
             };
@@ -1164,6 +1420,7 @@
 
             if (now - spore.lastTriggered < 50) return; 
             spore.lastTriggered = now;
+            spore.lastTriggeredTime = performance.now(); // Start individual envelope tracker
 
             const dist = hitPoint.distanceTo(spore.centroid);
             const MathRadius = (spore.width * 0.45);
@@ -1171,42 +1428,31 @@
 
             playSustainVoice(freq, 0.85, edgeFactor);
 
-            // Animate physical strike response
-            spore.mesh.scale.set(1.0, 1.0, 1.45 - (edgeFactor * 0.15));
-            spore.mesh.position.z = -0.01 * spore.index + 0.3; 
-
             if (sequencerActive) {
                 spore.active = !spore.active;
                 if (spore.active) {
-                    spore.mesh.material.emissive.setHex(0xf43f5e); 
+                    spore.mesh.material.emissive.setHex(0xf472b6); 
                 } else {
-                    spore.mesh.material.emissive.copy(spore.color).multiplyScalar(0.18);
+                    spore.mesh.material.emissive.copy(spore.color).multiplyScalar(0.01);
                 }
             } else {
                 triggerVisualBurst(hitPoint, spore.color, edgeFactor);
             }
 
             // UI Label updates
-            currentNoteEl.innerText = getApproximateNoteName(freq);
+            const fullNoteName = getApproximateNoteName(freq);
+            currentNoteEl.innerText = fullNoteName;
             currentNoteEl.style.color = `#${spore.color.getHexString()}`;
+            activePulse.style.backgroundColor = `#${spore.color.getHexString()}`;
 
-            timbreFeedback.classList.remove('hidden');
-            if (edgeFactor < 0.35) {
-                timbreTxt.innerText = "Deep Center Resonance 🌀";
-                timbreTxt.style.color = "#38bdf8"; 
-            } else if (edgeFactor < 0.65) {
-                timbreTxt.innerText = "Clean Tone Strike 🌈";
-                timbreTxt.style.color = "#06b6d4"; 
-            } else {
-                timbreTxt.innerText = "Metallic Edge Chime ✨";
-                timbreTxt.style.color = "#f472b6"; 
-            }
+            // Pulse the matching directional letter
+            pulseDirectionalLabel(fullNoteName);
         }
 
 
-        // ==========================================
+        // =========================================================================
         // LOOP / RENDER / PLAYBACK SEQUENCING
-        // ==========================================
+        // =========================================================================
         let lastFrameTime = performance.now();
 
         function animate() {
@@ -1222,32 +1468,49 @@
             camera.position.y = Math.cos(autoRotateAngle) * 1.2;
             camera.lookAt(0, 0, -2);
 
-            let frequencyData;
-            if (audioCtxInitialized && analyser) {
-                frequencyData = new Uint8Array(analyser.frequencyBinCount);
-                analyser.getByteFrequencyData(frequencyData);
-            }
-
-            // Decay key physics
+            // Decay key physics - Only clicked keys scale dynamically matching ADSR envelope
             spores.forEach((spore) => {
-                if (spore.mesh.scale.z > 1.0) {
-                    spore.mesh.scale.z -= delta * 3.0;
-                    if (spore.mesh.scale.z < 1.0) spore.mesh.scale.set(1, 1, 1);
-                }
-                
-                const defaultZ = -0.01 * spore.index;
-                if (spore.mesh.position.z > defaultZ) {
-                    spore.mesh.position.z -= delta * 1.8;
-                    if (spore.mesh.position.z < defaultZ) spore.mesh.position.z = defaultZ;
-                }
+                if (spore.lastTriggeredTime > 0) {
+                    const elapsed = (now - spore.lastTriggeredTime) / 1000; // time in seconds
+                    const attack = synthConfig.attack;
+                    const decay = synthConfig.decay;
+                    const sustain = synthConfig.sustain;
+                    const release = synthConfig.release;
+                    const totalDuration = attack + decay + release;
 
-                // Spectrum responsive pulsing
-                if (frequencyData) {
-                    const bin = Math.floor((spore.index / nodeCount) * frequencyData.length * 0.4);
-                    const amplitude = frequencyData[bin] / 255;
-                    if (amplitude > 0.08) {
-                        const pulseAmt = 1.0 + (amplitude * 0.25);
-                        spore.mesh.scale.z = Math.max(spore.mesh.scale.z, pulseAmt);
+                    if (elapsed < totalDuration) {
+                        let scaleZ = 1.0;
+                        let offsetZ = 0.0;
+                        const maxScale = 0.08;  // Highly subtle 8% max scale visual bounce
+                        const maxOffset = 0.05; // Highly subtle Z-axis depth lift
+                        
+                        // Calculate phase-specific physical depth movements
+                        if (elapsed < attack) {
+                            // Attack phase
+                            const t = elapsed / attack;
+                            scaleZ = 1.0 + t * maxScale;
+                            offsetZ = t * maxOffset;
+                        } else if (elapsed < attack + decay) {
+                            // Decay phase
+                            const t = (elapsed - attack) / decay;
+                            scaleZ = 1.0 + maxScale - t * (maxScale - (maxScale * sustain));
+                            offsetZ = maxOffset - t * (maxOffset - (maxOffset * sustain));
+                        } else {
+                            // Release phase
+                            const t = (elapsed - attack - decay) / release;
+                            const sustainScale = 1.0 + (maxScale * sustain);
+                            const sustainOffset = maxOffset * sustain;
+                            scaleZ = sustainScale - t * (sustainScale - 1.0);
+                            offsetZ = sustainOffset - t * sustainOffset;
+                        }
+                        
+                        spore.mesh.scale.set(1.0, 1.0, scaleZ);
+                        spore.mesh.position.z = -0.01 * spore.index + offsetZ;
+                    } else {
+                        // Reset perfectly when sound concludes
+                        spore.mesh.scale.set(1.0, 1.0, 1.0);
+                        spore.mesh.position.z = -0.01 * spore.index;
+                        spore.lastTriggeredTime = 0;
                     }
                 }
             });
@@ -1277,8 +1540,8 @@
                 sweepAngle += radiansPerSec * delta;
                 sweepAngle = sweepAngle % (Math.PI * 2);
 
-                const endX = 15 * Math.cos(sweepAngle);
-                const endY = 15 * Math.sin(sweepAngle);
+                const endX = 17.5 * Math.cos(sweepAngle); 
+                const endY = 17.5 * Math.sin(sweepAngle);
                 const posAttr = sweepLine.geometry.attributes.position;
                 posAttr.setXYZ(1, endX, endY, 0.4);
                 posAttr.needsUpdate = true;
@@ -1292,36 +1555,45 @@
                             const timeSinceTrigger = now - spore.lastTriggered;
                             if (timeSinceTrigger > 350) {
                                 playSustainVoice(spore.freq, 0.9, 0.1);
-                                spore.mesh.scale.set(1.0, 1.0, 1.45);
-                                spore.mesh.position.z = -0.01 * spore.index + 0.3;
-                                
-                                triggerVisualBurst(spore.centroid, spore.color, 0.1);
+                                spore.lastTriggeredTime = now;
                                 spore.lastTriggered = now;
 
-                                currentNoteEl.innerText = `SWEPT: ${getApproximateNoteName(spore.freq)}`;
-                                currentNoteEl.style.color = `#f43f5e`;
+                                triggerVisualBurst(spore.centroid, spore.color, 0.1);
+
+                                const fullNote = getApproximateNoteName(spore.freq);
+                                currentNoteEl.innerText = `SWEPT: ${fullNote}`;
+                                currentNoteEl.style.color = `#f472b6`;
+                                activePulse.style.backgroundColor = '#f472b6';
+
+                                pulseDirectionalLabel(fullNote);
                             }
                         }
                     }
                 });
             }
 
+            // Project note letters from 3D coordinates to 2D HTML space
+            updateDirectionalLabelsProjection();
+
             renderer.render(scene, camera);
         }
 
 
         // ==========================================
-        // SOUND LAB EVENT REGISTRATIONS
+        // EVENT REGISTRATIONS & SOUND LAB INTERACTION
         // ==========================================
 
         // Playback Sequencer
         btnSequencer.addEventListener('click', () => {
-            if (!audioCtxInitialized) return;
+            if (!audioCtxInitialized) {
+                showNotification("Awaken the instrument first!");
+                return;
+            }
             sequencerActive = !sequencerActive;
 
             if (sequencerActive) {
-                btnSequencer.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
-                btnSequencer.classList.add('bg-rose-600', 'hover:bg-rose-500');
+                btnSequencer.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
+                btnSequencer.classList.add('bg-pink-600', 'hover:bg-pink-500');
                 sequencerTxt.innerText = "Stop Sweep";
                 sweepLine.visible = true;
                 
@@ -1329,41 +1601,54 @@
                 if (activeCount === 0) {
                     for (let i = 0; i < spores.length; i += 4) {
                         spores[i].active = true;
-                        spores[i].mesh.material.emissive.setHex(0xf43f5e);
+                        spores[i].mesh.material.emissive.setHex(0xf472b6);
                     }
                 }
             } else {
-                btnSequencer.classList.remove('bg-rose-600', 'hover:bg-rose-500');
-                btnSequencer.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+                btnSequencer.classList.remove('bg-pink-600', 'hover:bg-pink-500');
+                btnSequencer.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
                 sequencerTxt.innerText = "Start Sweep";
                 sweepLine.visible = false;
             }
         });
 
         // Config Drawer toggles
-        btnConfig.addEventListener('click', () => {
+        btnConfig.addEventListener('click', (e) => {
+            e.stopPropagation(); 
             sideDrawer.classList.toggle('translate-x-[340px]');
         });
         btnCloseDrawer.addEventListener('click', () => {
             sideDrawer.classList.add('translate-x-[340px]');
         });
 
+        // Close settings drawer when tapping anywhere outside the settings drawer element
+        const closeDrawerOutside = (e) => {
+            if (!sideDrawer.classList.contains('translate-x-[340px]')) {
+                if (!sideDrawer.contains(e.target) && !btnConfig.contains(e.target)) {
+                    sideDrawer.classList.add('translate-x-[340px]');
+                }
+            }
+        };
+        document.addEventListener('pointerdown', closeDrawerOutside);
+        document.addEventListener('touchstart', closeDrawerOutside, { passive: true });
+
         // Material Selector
         selectMaterial.addEventListener('change', (e) => {
             chamberMaterial = e.target.value;
-            buildNautilusChambers();
         });
 
         // Base Note Selector
         selectBaseNote.addEventListener('change', (e) => {
             baseMIDINote = parseInt(e.target.value);
             buildNautilusChambers();
+            buildDirectionalLabels(); // Remap note letters to align with the new base root direction
         });
 
         // Musical Scale Selector
         selectScale.addEventListener('change', (e) => {
             scaleMode = e.target.value;
             buildNautilusChambers();
+            buildDirectionalLabels(); // Remap outer octave circles
         });
 
         // Density Changer
@@ -1371,6 +1656,7 @@
             nodeCount = parseInt(e.target.value);
             densityVal.innerText = `${nodeCount} Chambers`;
             buildNautilusChambers();
+            buildDirectionalLabels();
         });
 
         // Morpher Wave
