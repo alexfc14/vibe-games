@@ -13,15 +13,10 @@
         
         body {
             font-family: 'Outfit', sans-serif;
-            background-color: #0b0f19; /* Darker back-drop to make custom materials and glowing particles POP */
+            background-color: #0b0f19;
             overflow: hidden;
             user-select: none;
             -webkit-user-select: none;
-        }
-
-        /* Neon glows for interactive actions */
-        .neon-glow-cyan {
-            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
         }
 
         /* Touch-friendly customized slider elements */
@@ -80,7 +75,10 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                 </svg>
             </button>
-            <p class="text-xs text-slate-400 mt-4">For the best experience, use headphones or external speakers.</p>
+            <p class="text-xs text-slate-400 mt-4 leading-normal">
+                For the best experience, use headphones.<br>
+                <span class="text-amber-400 font-semibold">iPad/iOS Users:</span> Please turn off silent mode / mute-switch on your device side-panel to hear the audio!
+            </p>
         </div>
     </div>
 
@@ -138,12 +136,12 @@
                 <span class="text-xs font-bold text-pink-400 uppercase tracking-widest">Resonance Chamber Material</span>
                 <div class="flex flex-col gap-1">
                     <select id="select-material" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-3 rounded-xl outline-none border border-slate-700 transition-all cursor-pointer">
-                        <option value="horn" selected>🐚 Nautilus Horn (Wind-Blown & Rich)</option>
-                        <option value="wood">🪵 Honduran Rosewood (Warm & Deep)</option>
-                        <option value="metal">🔔 Vibraphone Brass (Ringing & Bright)</option>
-                        <option value="glass">💎 Borosilicate Glass (Pure & Delicate)</option>
-                        <option value="bell">⛪ Church Bells (Heavy Clang & Ring)</option>
-                        <option value="cosmic">🌌 Cosmic Plasma (Warm detuned drone)</option>
+                        <option value="horn" selected>🐚 Nautilus Horn (Wind-Blown)</option>
+                        <option value="wood">🪵 Rosewood (Warm Acoustic)</option>
+                        <option value="metal">🔔 Vibraphone Brass (Ringing)</option>
+                        <option value="glass">💎 Borosilicate Glass (Pure Crystal)</option>
+                        <option value="bell">⛪ Church Bells (Sonorous Cast)</option>
+                        <option value="cosmic">🌌 Cosmic Plasma (Ethereal Space Drone)</option>
                     </select>
                 </div>
             </div>
@@ -151,6 +149,21 @@
             <!-- Scale Mode Selector -->
             <div class="flex flex-col gap-2 border-t border-slate-800 pt-3">
                 <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Musical Tuning</span>
+                
+                <!-- Base Note Selector -->
+                <div class="flex flex-col gap-1 mb-1">
+                    <label class="text-xs text-slate-400">Base Root Note</label>
+                    <select id="select-base-note" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-3 rounded-xl outline-none border border-slate-700 transition-all cursor-pointer">
+                        <option value="24">C1 (Deep Bass Sub, ~32.7 Hz)</option>
+                        <option value="29">F1 (Bass Register, ~43.7 Hz)</option>
+                        <option value="36" selected>C2 (Default Bass, ~65.4 Hz)</option>
+                        <option value="41">F2 (Warm Tenor, ~87.3 Hz)</option>
+                        <option value="48">C3 (Warm Alto, ~130.8 Hz)</option>
+                        <option value="53">F3 (Middle Register, ~174.6 Hz)</option>
+                        <option value="60">C4 (Middle C Register, ~261.6 Hz)</option>
+                    </select>
+                </div>
+
                 <div class="flex flex-col gap-1">
                     <label class="text-xs text-slate-400">Tuning Scale System</label>
                     <select id="select-scale" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-3 rounded-xl outline-none border border-slate-700 transition-all cursor-pointer">
@@ -265,7 +278,7 @@
         </div>
         
         <div class="text-[10px] text-slate-500 text-center border-t border-slate-800 pt-2">
-            Harmonic Nautilus Synthesizer v4
+            Harmonic Nautilus Synthesizer v3
         </div>
     </div>
 
@@ -276,8 +289,9 @@
         // State variables
         let audioCtxInitialized = false;
         let sequencerActive = false;
-        let scaleMode = 'major'; // Defaulting to Major scale for pleasant harmonic matches
-        let chamberMaterial = 'horn'; // Defaulting to organic wind-blown nautilus horn
+        let scaleMode = 'major'; // Default to pleasant diatonic major scale
+        let baseMIDINote = 36;   // Default base note is C2 (~65Hz)
+        let chamberMaterial = 'horn'; // Nautilus Horn as default
         let nodeCount = 36;             
         let sweepRPM = 12;              
         let sweepAngle = 0;             
@@ -301,7 +315,7 @@
             whole_tone: [0, 2, 4, 6, 8, 10]                       
         };
 
-        // Synthesis parameters - Horn starts with a slightly longer and softer breathing curve
+        // Synthesis parameters
         const synthConfig = {
             attack: 0.05,
             decay: 0.60,
@@ -329,6 +343,7 @@
 
         // Parameter selectors & sliders
         const selectMaterial = document.getElementById('select-material');
+        const selectBaseNote = document.getElementById('select-base-note');
         const selectScale = document.getElementById('select-scale');
         const sliderDensity = document.getElementById('slider-density');
         const densityVal = document.getElementById('density-val');
@@ -355,12 +370,7 @@
         const valBpm = document.getElementById('val-bpm');
 
         // Audio node setups
-        let audioCtx;
-        let masterGain;
-        let analyser;
-        let delayNode;
-        let delayFeedbackNode;
-        let dynamicsLimiter;
+        let audioCtx, masterGain, analyser, delayNode, delayFeedbackNode, dynamicsLimiter;
 
         function initAudio() {
             if (audioCtxInitialized) return;
@@ -385,13 +395,13 @@
             analyser = audioCtx.createAnalyser();
             analyser.fftSize = 256;
 
-            // Mastering Compressor/Limiter for warmth and physical pressure simulation
+            // Mastering Compressor/Limiter for standard gain protection and analog warmth saturation
             dynamicsLimiter = audioCtx.createDynamicsCompressor();
-            dynamicsLimiter.threshold.setValueAtTime(-6, audioCtx.currentTime); // Gentle soft ceiling
-            dynamicsLimiter.knee.setValueAtTime(12, audioCtx.currentTime);
+            dynamicsLimiter.threshold.setValueAtTime(-6, audioCtx.currentTime);
+            dynamicsLimiter.knee.setValueAtTime(10, audioCtx.currentTime);
             dynamicsLimiter.ratio.setValueAtTime(3.5, audioCtx.currentTime);
-            dynamicsLimiter.attack.setValueAtTime(0.008, audioCtx.currentTime);
-            dynamicsLimiter.release.setValueAtTime(0.12, audioCtx.currentTime);
+            dynamicsLimiter.attack.setValueAtTime(0.005, audioCtx.currentTime);
+            dynamicsLimiter.release.setValueAtTime(0.05, audioCtx.currentTime);
 
             masterGain.connect(dynamicsLimiter);
             delayNode.connect(dynamicsLimiter);
@@ -400,6 +410,18 @@
             analyser.connect(audioCtx.destination);
             
             audioCtxInitialized = true;
+
+            // Strict iPad/iOS Safari Web Audio unlocker routine
+            // We run a silent, immediate synthetic buffer to unlock the device's hardware voice channel
+            try {
+                const buffer = audioCtx.createBuffer(1, 1, 22050);
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioCtx.destination);
+                source.start(0);
+            } catch (e) {
+                console.warn("Silent buffer unlock error", e);
+            }
         }
 
         // Return note semitone offset above base pitch for index i
@@ -413,8 +435,7 @@
 
         // Return frequency for key index i
         function getFrequencyForIndex(i) {
-            // F2 (~87Hz) is base MIDI 41. It sits in a beautifully resonant low range
-            const baseMIDI = 41; 
+            const baseMIDI = baseMIDINote; // Dynamic base MIDI register
             const semitones = getSemitoneOffsetForIndex(i);
             const midiNote = baseMIDI + semitones;
             return 440 * Math.pow(2, (midiNote - 69) / 12);
@@ -431,8 +452,8 @@
         }
 
         /**
-         * Real-time Multi-Material Physical synthesis voice with adaptive psychoacoustic bass scaling.
-         * Addresses high energy bias in high pitches by boosting lower frequencies, and adds Nautilus Horn and Church Bells.
+         * Real-time Multi-Material Physical synthesis voice with adaptive bass scaling.
+         * Resolves dry wooden logs by adding dynamic low-end unison widths, pitch-decay scaling, and sub-bass resonators.
          */
         function playSustainVoice(frequency, velocity = 0.5, edgeFactor = 0.0) {
             if (!audioCtxInitialized) return;
@@ -442,23 +463,20 @@
 
             const now = audioCtx.currentTime;
 
-            // --- Bass Equal-Loudness Compensation Curve ---
-            // Naturally gives significantly more physical energy ("oomph") to low notes below 350Hz
-            let bassBoostMultiplier = 1.0;
-            if (frequency < 350) {
-                bassBoostMultiplier = Math.max(1.0, Math.pow(350 / frequency, 1.15)); // Up to 3.5x boost for extremely low sub registers
-            }
-
-            // Pitch dependency factor: Higher pitches decay faster. Lower pitches decay longer to ring out.
+            // Pitch dependency factor: Higher pitches decay faster. Lower pitches decay MUCH longer
             const pitchEnvelopeFactor = Math.max(0.1, Math.min(1.0, (1000 - frequency) / 900));
             const scaledDecay = synthConfig.decay + (pitchEnvelopeFactor * 1.8);  
             const scaledRelease = synthConfig.release + (pitchEnvelopeFactor * 1.2); 
 
-            // Core Wide Stereo Sound generators
+            // Create Wide Stereo Voice (Oscillator Left, Oscillator Right, slightly detuned)
             const oscL = audioCtx.createOscillator();
             const oscR = audioCtx.createOscillator();
-            const subResonator = audioCtx.createOscillator(); // Deep physical tracking bass resonator
-            const overtoneChime = audioCtx.createOscillator(); // High harmonic/inharmonic gloss (for bells/horns)
+            const subResonator = audioCtx.createOscillator(); 
+            const overtoneChime = audioCtx.createOscillator(); 
+
+            // Dynamic Equal Loudness Curve (Low frequency volume boost)
+            const volumeBoost = Math.max(1.0, Math.min(3.5, 300 / frequency));
+            const baseGainValue = velocity * 0.40 * volumeBoost;
 
             const voiceGain = audioCtx.createGain();
             const resonatorGain = audioCtx.createGain();
@@ -468,63 +486,60 @@
             // Set Material Waveform & Harmonics Setup
             let waveType1 = 'sine';
             let waveType2 = 'triangle';
-            let chimeRatio = 3.0; // Perfect organic fifth overtone
+            let chimeRatio = 3.0; // Perfect fifth overtone default
             let filterType = 'lowpass';
-            let resonance = 1.5;
+            let resonance = 1.0;
             let filterCutoffStart = frequency * 2.5;
             let filterCutoffEnd = frequency * 0.9;
             let customSubVolume = 0.0;
 
             if (chamberMaterial === 'horn') {
-                // Nautilus Horn: Rich, wind-blown, brassy breathy resonance. Slow blooming attack.
+                // Wind-blown Nautilus Horn (Breath attack, resonant formant bandpass filter)
                 waveType1 = 'sawtooth';
                 waveType2 = 'triangle';
-                chimeRatio = 1.5; // Brassy sub-fifth resonance
-                filterType = 'bandpass'; // Bandpass focuses on mid-range formants
-                resonance = 2.8;
+                chimeRatio = 1.5; // Majestic under-fifths
+                filterType = 'bandpass';
+                resonance = 3.5;
                 filterCutoffStart = frequency * 1.8;
-                filterCutoffEnd = frequency * 1.1;
-                customSubVolume = frequency < 300 ? 0.75 : 0.35; // Rich warm breathy low end
-                
-                // Breath Fluctuation Simulation (Tremolo)
-                const breathingLfo = audioCtx.createOscillator();
-                const lfoGain = audioCtx.createGain();
-                breathingLfo.frequency.setValueAtTime(6.5, now); // 6.5 Hz organic flutter
-                lfoGain.gain.setValueAtTime(0.08, now); // Subtle tremolo depth
-                
-                breathingLfo.connect(lfoGain);
-                lfoGain.connect(voiceGain.gain);
-                breathingLfo.start(now);
-                breathingLfo.stop(now + scaledDecay + scaledRelease + 1);
-            } 
-            else if (chamberMaterial === 'bell') {
-                // Church Bells: Heavy initial clanging strike, long ringing decays, rich inharmonic overtones
-                waveType1 = 'sine';
-                waveType2 = 'triangle';
-                chimeRatio = 1.2; // Minor Third (tierce) ratio - key indicator of traditional bells!
-                filterType = 'lowpass';
-                resonance = 3.0;
-                filterCutoffStart = frequency * 4.5;
-                filterCutoffEnd = frequency * 0.8;
-                customSubVolume = frequency < 300 ? 0.55 : 0.25;
+                filterCutoffEnd = frequency * 1.2;
+                customSubVolume = frequency < 250 ? 0.75 : 0.25;
 
-                // Extra long ringing overtone oscillator representing a deep hum (half-frequency sub bell hum)
+                // Emulated Wind Tremolo
+                const tremolo = audioCtx.createOscillator();
+                const tremoloGain = audioCtx.createGain();
+                tremolo.frequency.setValueAtTime(6.5, now); // 6.5 Hz breath flutter
+                tremoloGain.gain.setValueAtTime(0.08, now);
+                tremolo.connect(tremoloGain);
+                tremoloGain.connect(voiceGain.gain);
+                tremolo.start(now);
+                tremolo.stop(now + scaledDecay + scaledRelease);
+            }
+            else if (chamberMaterial === 'bell') {
+                // Church Bells: Complex physical metal chime structure (Hum, Minor Third, Octave)
+                waveType1 = 'sine';
+                waveType2 = 'sawtooth';
+                chimeRatio = 1.2; // Minor third bell partial
+                filterType = 'bandpass';
+                resonance = 4.5;
+                filterCutoffStart = frequency * 4.0;
+                filterCutoffEnd = frequency * 0.8;
+                customSubVolume = frequency < 250 ? 0.90 : 0.35;
+
+                // Bell Hum voice (exactly 0.5x frequency)
                 const bellHum = audioCtx.createOscillator();
                 const humGain = audioCtx.createGain();
                 bellHum.type = 'sine';
                 bellHum.frequency.setValueAtTime(frequency * 0.5, now);
-                
                 humGain.gain.setValueAtTime(0, now);
-                humGain.gain.linearRampToValueAtTime(velocity * 0.25 * bassBoostMultiplier, now + 0.005);
-                humGain.gain.exponentialRampToValueAtTime(0.0001, now + scaledDecay * 2.5); // Hum rings out incredibly long
-                
+                humGain.gain.linearRampToValueAtTime(baseGainValue * 0.45, now + 0.01);
+                humGain.gain.exponentialRampToValueAtTime(0.0001, now + scaledDecay * 1.5 + scaledRelease);
                 bellHum.connect(humGain);
                 humGain.connect(masterGain);
                 bellHum.start(now);
-                bellHum.stop(now + scaledDecay * 2.5 + 0.5);
+                bellHum.stop(now + scaledDecay * 1.5 + scaledRelease + 0.2);
             }
             else if (chamberMaterial === 'wood') {
-                // Classic Honduran Rosewood Marimba: Warm, round fundamental, highly damped high overtones
+                // Classic Honduran Rosewood Marimba: Warm, round fundamental
                 waveType1 = 'triangle';
                 waveType2 = 'sine';
                 chimeRatio = 3.0; 
@@ -532,13 +547,13 @@
                 resonance = 1.5;
                 filterCutoffStart = frequency * 2.2;
                 filterCutoffEnd = frequency * 0.85;
-                customSubVolume = frequency < 250 ? 0.65 : 0.2; // Extra sub-pipe resonance for warm bass chambers
+                customSubVolume = frequency < 250 ? 0.65 : 0.2; 
             } 
             else if (chamberMaterial === 'metal') {
-                // Bell Brass Vibraphone: Super long ringing decay, highly bright and metallic specular
+                // Vibraphone Bell Brass: Shiny, mirror-like specular highlights
                 waveType1 = 'sine';
                 waveType2 = 'sawtooth';
-                chimeRatio = 6.0; // High metallic shimmer octave+fifth
+                chimeRatio = 6.0; 
                 filterType = 'bandpass';
                 resonance = 4.0;
                 filterCutoffStart = frequency * 3.5;
@@ -546,15 +561,15 @@
                 customSubVolume = frequency < 250 ? 0.45 : 0.15;
             } 
             else if (chamberMaterial === 'glass') {
-                // Borosilicate Glass: Delicate, crystal pure sine waves
+                // Borosilicate Glass: Delicate, crystal pure sines
                 waveType1 = 'sine';
                 waveType2 = 'sine';
-                chimeRatio = 4.0; // Two octaves above chime
+                chimeRatio = 4.0; 
                 filterType = 'lowpass';
                 resonance = 0.8;
                 filterCutoffStart = frequency * 1.8;
                 filterCutoffEnd = frequency * 0.95;
-                customSubVolume = 0.0; // Pure crystalline glass
+                customSubVolume = 0.0; 
             } 
             else if (chamberMaterial === 'cosmic') {
                 // Cosmic Plasma Space Drone: Rich, complex wave morphing
@@ -580,8 +595,8 @@
             subResonator.type = 'sine'; 
             overtoneChime.type = 'sine';
 
-            // Micro-detuning to create a huge Wide stereo field on low registers
-            const microDetune = 6.5 * (1.0 + pitchEnvelopeFactor * 1.5); // Wider detuning on the bass register
+            // Micro-detuning for wide stereophonic field on low notes
+            const microDetune = 6.5 * (1.0 + pitchEnvelopeFactor * 1.5); 
             oscL.frequency.setValueAtTime(frequency, now);
             oscL.detune.setValueAtTime(-microDetune * synthConfig.detuneRatio, now);
 
@@ -601,8 +616,8 @@
             filterNode.frequency.exponentialRampToValueAtTime(filterCutoffEnd, now + synthConfig.attack + scaledDecay);
 
             // Set Primary Envelope
-            const edgeMuffler = 1.0 - (edgeFactor * 0.55); // Strikes on edges damp the fundamental volume
-            const peakGain = velocity * 0.45 * edgeMuffler * bassBoostMultiplier;
+            const edgeMuffler = 1.0 - (edgeFactor * 0.45); 
+            const peakGain = baseGainValue * edgeMuffler;
             const sustainGain = peakGain * synthConfig.sustain;
 
             voiceGain.gain.setValueAtTime(0, now);
@@ -611,20 +626,20 @@
             voiceGain.gain.setValueAtTime(sustainGain, now + synthConfig.attack + scaledDecay);
             voiceGain.gain.exponentialRampToValueAtTime(0.0001, now + synthConfig.attack + scaledDecay + scaledRelease);
 
-            // Configure sub-resonator (Deep Bass Pipe with Bass boost support)
-            const subVolume = customSubVolume * velocity * edgeMuffler * bassBoostMultiplier;
+            // Configure sub-resonator (Deep Bass Pipe)
+            const subVolume = customSubVolume * baseGainValue * edgeMuffler;
             resonatorGain.gain.setValueAtTime(0, now);
             resonatorGain.gain.linearRampToValueAtTime(subVolume, now + synthConfig.attack + 0.02);
             resonatorGain.gain.exponentialRampToValueAtTime(subVolume * 0.4 + 0.0001, now + synthConfig.attack + scaledDecay);
             resonatorGain.gain.exponentialRampToValueAtTime(0.0001, now + synthConfig.attack + scaledDecay + scaledRelease + 0.2);
 
             // Configure overtone chime (Gives definition and acoustic shine to edge strikes)
-            const chimeVolume = (0.05 + (edgeFactor * 0.55)) * velocity * 0.35 * (chamberMaterial === 'bell' ? 2.2 : 1.0);
+            const chimeVolume = (0.05 + (edgeFactor * 0.55)) * baseGainValue * 0.35;
             chimeGain.gain.setValueAtTime(0, now);
             chimeGain.gain.linearRampToValueAtTime(chimeVolume, now + 0.002);
-            chimeGain.gain.exponentialRampToValueAtTime(0.0001, now + (chamberMaterial === 'bell' ? scaledDecay : 0.12) + (edgeFactor * 0.2));
+            chimeGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12 + (edgeFactor * 0.2));
 
-            // Routing connections
+            // routing connections
             oscL.connect(filterNode);
             oscR.connect(filterNode);
             subResonator.connect(resonatorGain);
@@ -643,21 +658,28 @@
             overtoneChime.start(now);
 
             // Dynamic lifetime limits
-            const stopTime = now + synthConfig.attack + scaledDecay + scaledRelease + 1.0;
+            const stopTime = now + synthConfig.attack + scaledDecay + scaledRelease + 0.5;
             oscL.stop(stopTime);
             oscR.stop(stopTime);
             subResonator.stop(stopTime);
             overtoneChime.stop(stopTime);
         }
 
-        btnAwaken.addEventListener('click', () => {
+        // Standard user click wake
+        btnAwaken.addEventListener('click', wakeSystem);
+        // iOS Safari touchstart/touchend direct hardware unlocking
+        btnAwaken.addEventListener('touchstart', wakeSystem);
+        btnAwaken.addEventListener('touchend', wakeSystem);
+
+        function wakeSystem(e) {
+            e.preventDefault();
             initAudio();
             splash.classList.add('opacity-0');
             setTimeout(() => {
                 splash.style.display = 'none';
             }, 700);
             appContainer.classList.remove('pointer-events-none');
-        });
+        }
 
 
         // ==========================================
@@ -673,30 +695,28 @@
 
         function init3D() {
             scene = new THREE.Scene();
-            // Deep cosmic background space matching body styling exactly
             scene.background = new THREE.Color(0x0b0f19); 
 
-            // High aesthetic ambient lightning
+            // Ambient lighting
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
             scene.add(ambientLight);
 
-            // Soft directional key light to show geometry bevel details
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+            // Soft directional key light
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.95);
             dirLight.position.set(5, 15, 10);
             scene.add(dirLight);
 
-            // Studio spotlights for beautiful physical color depth and neon highlights
-            const spotLight1 = new THREE.SpotLight(0x06b6d4, 1.8, 100, 0.5, 0.5, 1);
+            // Spotlights for beautiful color depth highlights
+            const spotLight1 = new THREE.SpotLight(0x06b6d4, 2.5, 120, 0.45, 0.5, 1);
             spotLight1.position.set(-15, 20, 15);
             scene.add(spotLight1);
 
-            const spotLight2 = new THREE.SpotLight(0xec4899, 1.8, 100, 0.5, 0.5, 1);
+            const spotLight2 = new THREE.SpotLight(0xec4899, 2.5, 120, 0.45, 0.5, 1);
             spotLight2.position.set(15, -20, 15);
             scene.add(spotLight2);
 
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 150);
             
-            // Align camera initial perspective
             onWindowResize();
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -720,8 +740,8 @@
             });
             spores = [];
 
-            const R_base = 13.5;    // Base outer boundary fitting the viewport beautifully
-            const b = 0.095;       // Taper decay parameter
+            const R_base = 13.5;    
+            const b = 0.075;       // Makes high/low keys more balanced in size
 
             // Pre-calculate angular offsets based on semitones for alignment
             const midAngles = [];
@@ -735,7 +755,6 @@
             const len = scaleNotes.length;
 
             for (let i = 0; i < nodeCount; i++) {
-                // Ensure contiguous connection from preceding key to current key
                 const thetaStart = (i === 0) ? midAngles[0] - (midAngles[1] - midAngles[0]) / 2 : (midAngles[i - 1] + midAngles[i]) / 2;
                 const thetaEnd = (i === nodeCount - 1) ? midAngles[i] + (midAngles[i] - midAngles[i - 1]) / 2 : (midAngles[i] + midAngles[i + 1]) / 2;
 
@@ -784,91 +803,85 @@
                 const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
                 
                 // --- Octave-aligned Color Mapping ---
-                // Saturation and lightness are kept completely uniform to prevent desaturation/washing out
                 const noteIndex = i % len;
 
-                // Basic Hue is strictly tied to the note index within the octave scale
+                // Locked hue distribution: Adjacent keys are highly distinct. Same pitch classes share hues.
                 const hue = (noteIndex / len); 
 
-                const saturation = 0.88; // Uniform rich saturation for solid, deep colors
-                const lightness = 0.50;  // Uniform balanced lightness to prevent bleaching/whitening at the center
+                // Uniform saturation and lightness globally as requested
+                const saturation = 0.88; 
+                const lightness = 0.50;  
                 const baseColor = new THREE.Color().setHSL(hue, saturation, lightness);
 
                 // Material physical settings based on current Chamber selection (PBR based)
-                // Color remains identical, swapping only physical properties
                 let materialOptions = {};
 
-                if (chamberMaterial === 'horn') {
-                    // Nautilus Horn: Pearl-coated organic semi-gloss shell material
-                    materialOptions = {
-                        color: baseColor,
-                        roughness: 0.35,
-                        metalness: 0.15,
-                        emissive: baseColor.clone().multiplyScalar(0.12),
-                        transparent: true,
-                        opacity: 0.96
-                    };
-                } 
-                else if (chamberMaterial === 'bell') {
-                    // Church Bell: Heavy bronze, dark metalness cast surface
-                    materialOptions = {
-                        color: baseColor,
-                        roughness: 0.55,
-                        metalness: 0.85,
-                        emissive: baseColor.clone().multiplyScalar(0.08),
-                        transparent: true,
-                        opacity: 0.98
-                    };
-                }
-                else if (chamberMaterial === 'wood') {
-                    // Honduran Rosewood: Warm, satin, organic matte finish
+                if (chamberMaterial === 'wood') {
                     materialOptions = {
                         color: baseColor,
                         roughness: 0.85,
                         metalness: 0.05,
-                        emissive: baseColor.clone().multiplyScalar(0.04),
+                        emissive: baseColor.clone().multiplyScalar(0.05),
                         transparent: true,
                         opacity: 0.98
                     };
                 } 
                 else if (chamberMaterial === 'metal') {
-                    // Vibraphone Bell Brass: Shiny, mirror-like specular highlights
                     materialOptions = {
                         color: baseColor,
                         roughness: 0.15,
-                        metalness: 0.9,
-                        emissive: baseColor.clone().multiplyScalar(0.1),
+                        metalness: 0.92,
+                        emissive: baseColor.clone().multiplyScalar(0.08),
                         transparent: true,
                         opacity: 0.95
                     };
                 } 
                 else if (chamberMaterial === 'glass') {
-                    // Borosilicate Glass: Glowing refractive transparent frames (Now keeping its base color pristine!)
                     materialOptions = {
                         color: baseColor,
                         roughness: 0.05,
-                        metalness: 0.05,
-                        emissive: baseColor.clone().multiplyScalar(0.35), // Beautiful high emissive boost so colors shine fully
+                        metalness: 0.1,
+                        emissive: baseColor.clone().multiplyScalar(0.40), 
                         transparent: true,
-                        opacity: 0.72 // High-refractive elegant translucency that retains the colors
+                        opacity: 0.65 
                     };
                 } 
                 else if (chamberMaterial === 'cosmic') {
-                    // Cosmic Plasma Space: Electroluminescent emissive neon keys
                     materialOptions = {
                         color: baseColor,
                         roughness: 0.3,
                         metalness: 0.2,
-                        emissive: baseColor.clone().multiplyScalar(0.5), // Beautiful balanced glowing keys
+                        emissive: baseColor.clone().multiplyScalar(0.65), 
                         transparent: true,
                         opacity: 0.92
+                    };
+                }
+                else if (chamberMaterial === 'horn') {
+                    // Shell-wood hybrid finish
+                    materialOptions = {
+                        color: baseColor,
+                        roughness: 0.5,
+                        metalness: 0.3,
+                        emissive: baseColor.clone().multiplyScalar(0.12),
+                        transparent: true,
+                        opacity: 0.96
+                    };
+                }
+                else if (chamberMaterial === 'bell') {
+                    // Cast bronze metal feel
+                    materialOptions = {
+                        color: baseColor,
+                        roughness: 0.35,
+                        metalness: 0.8,
+                        emissive: baseColor.clone().multiplyScalar(0.1),
+                        transparent: true,
+                        opacity: 0.95
                     };
                 }
 
                 const material = new THREE.MeshStandardMaterial(materialOptions);
                 const mesh = new THREE.Mesh(geometry, material);
                 
-                // Slight Z staggered offset to prevent depth rendering overlaps
                 mesh.position.z = -0.01 * i;
                 scene.add(mesh);
 
@@ -894,7 +907,7 @@
                     color: baseColor,
                     centroid: centroid,
                     width: plateWidth,
-                    angle: midAngle % (Math.PI * 2), // Normalized sweep angle class
+                    angle: midAngle % (Math.PI * 2), 
                     active: false, 
                     lastTriggered: 0
                 });
@@ -1009,10 +1022,8 @@
 
                     let sparkColor;
                     if (edgeFactor > 0.6) {
-                        // Electric high-contrast colors for edge highlights
                         sparkColor = new THREE.Color().setHSL(0.55 + (Math.random() * 0.35), 1.0, 0.65);
                     } else {
-                        // Resonant rich gold/ambers for center hits
                         sparkColor = new THREE.Color().setHSL(0.08 + (Math.random() * 0.1), 1.0, 0.55);
                     }
                     particlesData[i].color = sparkColor;
@@ -1032,7 +1043,6 @@
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
-            // Push camera back dynamically on narrow screens to fit the keyboard perfectly
             if (window.innerWidth < window.innerHeight) {
                 camera.position.set(0, 0, 34 * (window.innerHeight / window.innerWidth) * 0.82);
             } else {
@@ -1055,6 +1065,13 @@
             window.addEventListener('pointerdown', onPointerDown);
             window.addEventListener('pointermove', onPointerMove);
             window.addEventListener('pointerup', onPointerUp);
+            
+            // Re-enforce Audio Context state check on canvas touch gesture (for stubborn iOS WebKit browsers)
+            window.addEventListener('touchstart', () => {
+                if (audioCtxInitialized && audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            }, { passive: true });
         }
 
         function getIntersectionData(e) {
@@ -1108,14 +1125,12 @@
             const freq = spore.freq;
             const now = Date.now();
 
-            if (now - spore.lastTriggered < 50) return; // Smooth debouncing
+            if (now - spore.lastTriggered < 50) return; 
             spore.lastTriggered = now;
 
-            // Compute distance to centroid
             const dist = hitPoint.distanceTo(spore.centroid);
-            
-            // Map edge strike factor based on geometric size
-            const edgeFactor = Math.min(1.0, dist / (spore.width * 0.45));
+            const MathRadius = (spore.width * 0.45);
+            const edgeFactor = MathRadius > 0 ? Math.min(1.0, dist / MathRadius) : 0.0;
 
             playSustainVoice(freq, 0.85, edgeFactor);
 
@@ -1164,7 +1179,7 @@
             const delta = (now - lastFrameTime) / 1000;
             lastFrameTime = now;
 
-            // Gentle decorative orbit camera movement
+            // Gentle orbit camera movement
             const autoRotateAngle = now * 0.0001;
             camera.position.x = Math.sin(autoRotateAngle) * 1.8;
             camera.position.y = Math.cos(autoRotateAngle) * 1.2;
@@ -1176,7 +1191,7 @@
                 analyser.getByteFrequencyData(frequencyData);
             }
 
-            // Dynamic decay animations
+            // Decay key physics
             spores.forEach((spore) => {
                 if (spore.mesh.scale.z > 1.0) {
                     spore.mesh.scale.z -= delta * 3.0;
@@ -1189,7 +1204,7 @@
                     if (spore.mesh.position.z < defaultZ) spore.mesh.position.z = defaultZ;
                 }
 
-                // Spectrum responsive sizing (pulsing visual look based on frequency volume)
+                // Spectrum responsive pulsing
                 if (frequencyData) {
                     const bin = Math.floor((spore.index / nodeCount) * frequencyData.length * 0.4);
                     const amplitude = frequencyData[bin] / 255;
@@ -1200,7 +1215,7 @@
                 }
             });
 
-            // Update Particle explosion physics
+            // Update Particle physics
             const positions = particleSystem.geometry.attributes.position.array;
             for (let i = 0; i < particleCount; i++) {
                 if (particlesData[i].life > 0) {
@@ -1219,7 +1234,7 @@
             }
             particleSystem.geometry.attributes.position.needsUpdate = true;
 
-            // Handle Sequence rotation and active step checks
+            // Handle Sequence rotation
             if (sequencerActive) {
                 const radiansPerSec = (sweepRPM * Math.PI * 2) / 60;
                 sweepAngle += radiansPerSec * delta;
@@ -1239,7 +1254,6 @@
                         if (diff < 0.07) {
                             const timeSinceTrigger = now - spore.lastTriggered;
                             if (timeSinceTrigger > 350) {
-                                // Sequenced hits default to warm resonance sweep
                                 playSustainVoice(spore.freq, 0.9, 0.1);
                                 spore.mesh.scale.set(1.0, 1.0, 1.45);
                                 spore.mesh.position.z = -0.01 * spore.index + 0.3;
@@ -1300,19 +1314,20 @@
         // Material Selector
         selectMaterial.addEventListener('change', (e) => {
             chamberMaterial = e.target.value;
-            // Instantly rebuild the physical marimba to morph materials and lights
+            buildNautilusChambers();
+        });
+
+        // Base Note Selector
+        selectBaseNote.addEventListener('change', (e) => {
+            baseMIDINote = parseInt(e.target.value);
             buildNautilusChambers();
         });
 
         // Musical Scale Selector
         selectScale.addEventListener('change', (e) => {
             scaleMode = e.target.value;
-            recalculateSporeFrequencies();
-        });
-
-        function recalculateSporeFrequencies() {
             buildNautilusChambers();
-        }
+        });
 
         // Density Changer
         sliderDensity.addEventListener('input', (e) => {
