@@ -186,6 +186,20 @@
 
                 <!-- Controls sliders -->
                 <div class="space-y-4">
+                    <!-- Audio & Ambient Music Section -->
+                    <div class="bg-amber-500/5 border border-amber-500/10 p-4 rounded-xl space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-amber-950 uppercase tracking-wider">Cozy Shop Music</span>
+                                <span class="text-[10px] text-amber-800/70">Mellow coffee-shop chords & groove</span>
+                            </div>
+                            <button id="btn-music-toggle" class="px-3.5 py-1.5 bg-pink-500/10 hover:bg-pink-500/20 text-pink-600 font-extrabold rounded-xl text-xs transition-all border border-pink-500/20 flex items-center gap-1.5 shadow-sm">
+                                <i id="music-toggle-icon" class="fa-solid fa-volume-xmark"></i>
+                                <span id="music-toggle-text">OFF</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <div>
                         <label class="block text-xs font-semibold text-amber-800 uppercase tracking-wider mb-2">Preset Difficulty</label>
                         <div class="grid grid-cols-4 gap-1 bg-amber-500/5 p-1 rounded-xl border border-amber-500/10">
@@ -438,7 +452,8 @@
             autoplayPlannedPath: [], // Cache planned multi-move sequences
             autoplayStartChaos: 999, // Reference chaos score at start of commitment plan
             selectionRingMesh: null, // Visual guide for active selection
-            hasRestartedRound: false // Notes if round was restarted
+            hasRestartedRound: false, // Notes if round was restarted
+            isMusicPlaying: false   // Background ambient music state
         };
 
         // Cache last configured metrics to detect manual adjustments and reset camera only when sliders change
@@ -459,6 +474,26 @@
         };
 
         let audioCtx = null;
+        let musicGainNode = null;
+        let ambientHumSource = null;
+        let beatCount = 0;
+        let barCount = 0;
+        let nextBeatTime = 0;
+        const beatDuration = 0.833; // ~72 BPM (perfect relaxing lo-fi tempo)
+        let scheduledNotes = [];
+        let musicTickerId = null;
+
+        // Warm, cozy major-9th and extended jazz chords playing a rich, evolving 8-bar loop
+        const MUSIC_CHORDS = [
+            [130.81, 196.00, 246.94, 293.66, 329.63], // Bar 0: Cmaj9 (C3, G3, B3, D4, E4)
+            [110.00, 164.81, 196.00, 246.94, 261.63], // Bar 1: Am9 (A2, E3, G3, B3, C4)
+            [146.83, 220.00, 261.63, 293.66, 349.23], // Bar 2: Dm9 (D3, A3, C4, D4, F4)
+            [98.00, 146.83, 174.61, 220.00, 246.94, 329.63], // Bar 3: G13 (G2, D3, F3, A3, B3, E4)
+            [164.81, 246.94, 293.66, 329.63, 392.00], // Bar 4: Em7 (E3, B3, D4, E4, G4)
+            [110.00, 164.81, 218.27, 277.18, 349.23], // Bar 5: A7b9 (A2, E3, Bb3, C#4, F4)
+            [87.31, 130.81, 164.81, 196.00, 220.00],  // Bar 6: Fmaj9 (F2, C3, E3, G3, A3)
+            null // Bar 7: SILENCE (Breathing room for relaxing atmosphere)
+        ];
         
         // Prevent iPad sleep & sound constraints on mobile browsers
         try {
@@ -469,19 +504,363 @@
             console.warn("iPad audioSession initialization skipped or unsupported:", e);
         }
 
+        // Initialize Shared Audio Context lazily on user interaction
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            // Safely initialize music gain node independently of core audioCtx creation
+            if (!musicGainNode && audioCtx) {
+                musicGainNode = audioCtx.createGain();
+                musicGainNode.gain.setValueAtTime(0, audioCtx.currentTime); // start silent
+                musicGainNode.connect(audioCtx.destination);
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Generates looped pinkish-brown room rumble sound simulating vinyl/coffee shop texture
+        function createAmbientHum() {
+            const bufferSize = audioCtx.sampleRate * 4; // 4 seconds of unique noise
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            let b0, b1, b2, b3, b4, b5, b6;
+            b0 = b1 = b2 = b3 = b4 = b5 = b6 = 0.0;
+            for (let i = 0; i < bufferSize; i++) {
+                const white = Math.random() * 2 - 1;
+                b0 = 0.99886 * b0 + white * 0.0555179;
+                b1 = 0.99332 * b1 + white * 0.0750759;
+                b2 = 0.96900 * b2 + white * 0.1538520;
+                b3 = 0.86650 * b3 + white * 0.3104856;
+                b4 = 0.55000 * b4 + white * 0.5329522;
+                b5 = -0.7616 * b5 - white * 0.0168980;
+                data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+                data[i] *= 0.09; // scale down
+                b6 = white * 0.115926;
+            }
+            const source = audioCtx.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
+            
+            const lowpass = audioCtx.createBiquadFilter();
+            lowpass.type = 'lowpass';
+            lowpass.frequency.setValueAtTime(180, audioCtx.currentTime); // cozy warm room rumble filter
+            
+            const ambientGain = audioCtx.createGain();
+            ambientGain.gain.setValueAtTime(0.25, audioCtx.currentTime); // Moderated ambient rumble level
+            
+            source.connect(lowpass);
+            lowpass.connect(ambientGain);
+            ambientGain.connect(musicGainNode);
+            
+            source.start(0);
+            return source;
+        }
+
+        function triggerVinylCrackle() {
+            if (!STATE.isMusicPlaying) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(1200 + Math.random() * 1800, now);
+            
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.015 + Math.random() * 0.015, now + 0.002); // Moderated vinyl pop levels
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.012 + Math.random() * 0.015);
+            
+            const highpass = audioCtx.createBiquadFilter();
+            highpass.type = 'highpass';
+            highpass.frequency.setValueAtTime(4500, now); // high sizzle crackles
+            
+            osc.connect(highpass);
+            highpass.connect(gain);
+            gain.connect(musicGainNode);
+            
+            osc.start(now);
+            osc.stop(now + 0.1);
+            
+            // Re-schedule dynamically
+            setTimeout(triggerVinylCrackle, 500 + Math.random() * 2500);
+        }
+
+        function triggerCupClink() {
+            if (!STATE.isMusicPlaying) return;
+            const now = audioCtx.currentTime;
+            
+            // Cozy ambient coffee cup ring
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sine';
+            const freq = 1900 + Math.random() * 1100;
+            osc.frequency.setValueAtTime(freq, now);
+            
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.012 + Math.random() * 0.01, now + 0.006); // Moderated cup clink levels
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25 + Math.random() * 0.2);
+            
+            const bandpass = audioCtx.createBiquadFilter();
+            bandpass.type = 'bandpass';
+            bandpass.frequency.setValueAtTime(freq, now);
+            bandpass.Q.setValueAtTime(15, now);
+            
+            osc.connect(bandpass);
+            bandpass.connect(gain);
+            gain.connect(musicGainNode);
+            
+            osc.start(now);
+            osc.stop(now + 0.61);
+            
+            // Re-schedule ambient shop event
+            setTimeout(triggerCupClink, 6000 + Math.random() * 15000);
+        }
+
+        function playLoFiKick(time, volScale = 1.0) {
+            if (!STATE.isMusicPlaying) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(75, time);
+            osc.frequency.exponentialRampToValueAtTime(32, time + 0.15);
+            
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(0.85 * volScale, time + 0.006); // Deep, fully audible lo-fi thud
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.18);
+            
+            const lowpass = audioCtx.createBiquadFilter();
+            lowpass.type = 'lowpass';
+            lowpass.frequency.setValueAtTime(95, time);
+            
+            osc.connect(lowpass);
+            lowpass.connect(gain);
+            gain.connect(musicGainNode);
+            
+            osc.start(time);
+            osc.stop(time + 0.2);
+        }
+
+        function playLoFiSnare(time) {
+            if (!STATE.isMusicPlaying) return;
+            // Warm lo-fi snare: bandpassed white noise brush
+            const bufferSize = audioCtx.sampleRate * 0.15;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            
+            const source = audioCtx.createBufferSource();
+            source.buffer = buffer;
+            
+            const bandpass = audioCtx.createBiquadFilter();
+            bandpass.type = 'bandpass';
+            bandpass.frequency.setValueAtTime(900, time);
+            bandpass.Q.setValueAtTime(2.2, time);
+            
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(0.18, time + 0.008); // Fully present soft brush snare sweep
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+            
+            source.connect(bandpass);
+            bandpass.connect(gain);
+            gain.connect(musicGainNode);
+            
+            source.start(time);
+            source.stop(time + 0.16);
+        }
+
+        function playLoFiShaker(time) {
+            if (!STATE.isMusicPlaying) return;
+            const bufferSize = audioCtx.sampleRate * 0.04;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            
+            const source = audioCtx.createBufferSource();
+            source.buffer = buffer;
+            
+            const highpass = audioCtx.createBiquadFilter();
+            highpass.type = 'highpass';
+            highpass.frequency.setValueAtTime(7000, time);
+            
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(0.065, time + 0.003); // Crisp, highly audible high end off-beat texture
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+            
+            source.connect(highpass);
+            highpass.connect(gain);
+            gain.connect(musicGainNode);
+            
+            source.start(time);
+            source.stop(time + 0.05);
+        }
+
+        function startProceduralMusic() {
+            initAudio();
+            if (STATE.isMusicPlaying) return;
+            
+            STATE.isMusicPlaying = true;
+            musicGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            // Drastically higher baseline volume - faded in smoothly
+            musicGainNode.gain.linearRampToValueAtTime(0.24, audioCtx.currentTime + 2.0);
+
+            nextBeatTime = audioCtx.currentTime;
+            beatCount = 0;
+            barCount = 0;
+            
+            // Loop ambient coffee shop textures
+            ambientHumSource = createAmbientHum();
+            
+            // Trigger vinyl click/crackle loop and random cup rings
+            setTimeout(triggerVinylCrackle, 250);
+            setTimeout(triggerCupClink, 4000);
+            
+            // Core heartbeat scheduler ticking every 150ms to schedule chords + rhythm beats in advance
+            musicTickerId = setInterval(scheduler, 150);
+
+            updateMusicUI(true);
+        }
+
+        function stopProceduralMusic() {
+            if (!STATE.isMusicPlaying) return;
+            STATE.isMusicPlaying = false;
+
+            if (musicGainNode) {
+                musicGainNode.gain.setValueAtTime(musicGainNode.gain.value, audioCtx.currentTime);
+                musicGainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.0);
+            }
+
+            if (musicTickerId) {
+                clearInterval(musicTickerId);
+                musicTickerId = null;
+            }
+
+            if (ambientHumSource) {
+                try { ambientHumSource.stop(); } catch(e){}
+                ambientHumSource = null;
+            }
+
+            scheduledNotes.forEach(node => {
+                try { node.stop(); } catch(e){}
+            });
+            scheduledNotes = [];
+
+            updateMusicUI(false);
+        }
+
+        function scheduler() {
+            while (nextBeatTime < audioCtx.currentTime + 0.4) {
+                scheduleBeat(beatCount, barCount, nextBeatTime);
+                
+                // Advance Beat Timing
+                nextBeatTime += beatDuration;
+                
+                beatCount++;
+                if (beatCount === 4) {
+                    beatCount = 0;
+                    barCount = (barCount + 1) % MUSIC_CHORDS.length;
+                }
+            }
+        }
+
+        function scheduleBeat(beat, bar, time) {
+            // Beat 1: Trigger chord progression and alternate kick logic based on bar index
+            if (beat === 0) {
+                // Play the gorgeous cozy lo-fi chords on beat 1 of each bar
+                playChord(bar, time);
+
+                if (bar % 2 === 0) {
+                    // Bar Even: Single deep kick drum "boom" at start
+                    playLoFiKick(time, 1.0);
+                } else {
+                    // Bar Odd: Double syncopated "bo-boom" kick
+                    playLoFiKick(time, 1.0);
+                    playLoFiKick(time + beatDuration * 0.35, 0.8);
+                }
+            }
+
+            // Beat 2 Pickups: Soft ghost drum pickup "oomps" during the double kick measures (Bar Odd)
+            if (beat === 1 && bar % 2 === 1) {
+                playLoFiKick(time + beatDuration * 0.5, 0.35); // Softer bouncy pick-up tap
+            }
+            
+            // Beat 3: Snare brush stroke
+            if (beat === 2) {
+                playLoFiSnare(time);
+            }
+
+            // Shaker Offbeats
+            playLoFiShaker(time + beatDuration / 2);
+        }
+
+        function playChord(barIdx, time) {
+            if (!STATE.isMusicPlaying) return;
+            const freqs = MUSIC_CHORDS[barIdx];
+            if (!freqs) return; // Silent bar (breathing room!)
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(500, time); // Muffle chord frequencies for warm lo-fi tone
+            filter.connect(musicGainNode);
+
+            freqs.forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const noteGain = audioCtx.createGain();
+
+                osc.type = (idx % 2 === 0) ? 'triangle' : 'sine';
+                osc.frequency.setValueAtTime(freq, time);
+
+                noteGain.gain.setValueAtTime(0, time);
+                // Soft, slow attack envelopes to avoid pop clicks
+                noteGain.gain.linearRampToValueAtTime(0.06, time + 1.1); 
+                noteGain.gain.setValueAtTime(0.06, time + 2.4);
+                noteGain.gain.exponentialRampToValueAtTime(0.001, time + 3.3);
+
+                osc.connect(noteGain);
+                noteGain.connect(filter);
+
+                osc.start(time);
+                osc.stop(time + 3.3);
+
+                scheduledNotes.push(osc);
+            });
+        }
+
+        function updateMusicUI(active) {
+            const toggleIcon = document.getElementById('music-toggle-icon');
+            const toggleText = document.getElementById('music-toggle-text');
+            const toggleBtn = document.getElementById('btn-music-toggle');
+
+            if (toggleIcon && toggleText && toggleBtn) {
+                if (active) {
+                    toggleIcon.className = "fa-solid fa-volume-high text-pink-500 animate-bounce";
+                    toggleText.innerText = "ON";
+                    toggleBtn.classList.remove('bg-pink-500/10', 'text-pink-600');
+                    toggleBtn.classList.add('bg-pink-500', 'text-white', 'shadow-md');
+                } else {
+                    toggleIcon.className = "fa-solid fa-volume-xmark";
+                    toggleText.innerText = "OFF";
+                    toggleBtn.classList.add('bg-pink-500/10', 'text-pink-600');
+                    toggleBtn.classList.remove('bg-pink-500', 'text-white', 'shadow-md');
+                }
+            }
+        }
+
         function playWoodSound(type) {
             try {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-                
+                initAudio();
                 const now = audioCtx.currentTime;
                 
                 if (type === 'pick') {
-                    // Soft, wet pop (picking up a fresh squishy glazed donut)
+                    // Soft, wet pop (picking up a fresh squishy glazed donut) - GENTLY MIXED DOWN TO NOT OVERPOWER
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     
@@ -489,7 +868,7 @@
                     osc.frequency.setValueAtTime(320, now);
                     osc.frequency.exponentialRampToValueAtTime(150, now + 0.12);
                     
-                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.setValueAtTime(0.04, now); // Super soft doughy pop
                     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
                     
                     osc.connect(gain);
@@ -498,7 +877,7 @@
                     osc.start(now);
                     osc.stop(now + 0.12);
                 } else if (type === 'place') {
-                    // Doughy, damp landing thump
+                    // Doughy, damp landing thump - MIXED DOWN GENTLY
                     const osc1 = audioCtx.createOscillator();
                     const osc2 = audioCtx.createOscillator();
                     const gain1 = audioCtx.createGain();
@@ -512,10 +891,10 @@
                     osc2.frequency.setValueAtTime(180, now);
                     osc2.frequency.exponentialRampToValueAtTime(60, now + 0.15);
                     
-                    gain1.gain.setValueAtTime(0.4, now);
+                    gain1.gain.setValueAtTime(0.06, now); // Extremely subtle landing thump
                     gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
                     
-                    gain2.gain.setValueAtTime(0.2, now);
+                    gain2.gain.setValueAtTime(0.03, now);
                     gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
                     
                     osc1.connect(gain1);
@@ -528,7 +907,7 @@
                     osc2.start(now);
                     osc2.stop(now + 0.15);
                 } else if (type === 'goodChime') {
-                    // Sweet candy sparkles chime
+                    // Sweet candy sparkles chime - OPTIMIZED: substantially softer so color matching overlays subtly!
                     const notes = [587.33, 698.46, 880.00, 1174.66]; // D5, F5, A5, D6
                     notes.forEach((freq, index) => {
                         const playTime = now + (index * 0.05);
@@ -539,7 +918,7 @@
                         osc.frequency.setValueAtTime(freq, playTime);
                         osc.frequency.exponentialRampToValueAtTime(freq * 1.2, playTime + 0.3);
                         
-                        gain.gain.setValueAtTime(0.12, playTime);
+                        gain.gain.setValueAtTime(0.012, playTime); // reduced gain to prevent interference
                         gain.gain.exponentialRampToValueAtTime(0.001, playTime + 0.3);
                         
                         osc.connect(gain);
@@ -549,7 +928,7 @@
                         osc.stop(playTime + 0.3);
                     });
                 } else if (type === 'badBuzzer') {
-                    // Soft wobble bounce
+                    // Soft wobble bounce - MIXED DOWN
                     const osc1 = audioCtx.createOscillator();
                     const osc2 = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
@@ -562,7 +941,7 @@
                     osc2.frequency.setValueAtTime(105, now);
                     osc2.frequency.linearRampToValueAtTime(75, now + 0.3);
                     
-                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.setValueAtTime(0.015, now); // Softer wobble buzz
                     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
                     
                     const filter = audioCtx.createBiquadFilter();
@@ -579,7 +958,7 @@
                     osc2.start(now);
                     osc2.stop(now + 0.31);
                 } else if (type === 'shake') {
-                    // Soft rattle shake
+                    // Soft rattle shake - MIXED DOWN
                     for (let i = 0; i < 2; i++) {
                         const delay = i * 0.07;
                         const osc = audioCtx.createOscillator();
@@ -589,7 +968,7 @@
                         osc.frequency.setValueAtTime(90, now + delay);
                         osc.frequency.exponentialRampToValueAtTime(30, now + delay + 0.08);
                         
-                        gain.gain.setValueAtTime(0.2, now + delay);
+                        gain.gain.setValueAtTime(0.04, now + delay); // Highly subdued peg rattle shake
                         gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.08);
                         
                         osc.connect(gain);
@@ -606,35 +985,47 @@
 
         function playVictorySound() {
             try {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
+                initAudio();
                 const now = audioCtx.currentTime;
-                // Bright sweet arpeggio for complete bakery orders
-                const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50]; // C major chords
-                notes.forEach((freq, index) => {
-                    const time = now + index * 0.1;
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(freq, time);
-                    osc.frequency.exponentialRampToValueAtTime(freq * 0.8, time + 0.4);
-                    
-                    gain.gain.setValueAtTime(0.35, time);
-                    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.4);
-                    
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    
-                    osc.start(time);
-                    osc.stop(time + 0.41);
-                });
+                
+                const osc1 = audioCtx.createOscillator();
+                const osc2 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                const gain2 = audioCtx.createGain();
+                
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(2500, now); // High fundamental bell tone
+                
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(3250, now); // Metallic overtone harmonic
+                
+                // Extremely soft, delicate bell strike
+                gain1.gain.setValueAtTime(0, now);
+                gain1.gain.linearRampToValueAtTime(0.012, now + 0.005);
+                gain1.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+                
+                gain2.gain.setValueAtTime(0, now);
+                gain2.gain.linearRampToValueAtTime(0.006, now + 0.005);
+                gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
+                
+                const highpass = audioCtx.createBiquadFilter();
+                highpass.type = 'highpass';
+                highpass.frequency.setValueAtTime(1800, now); // Filter out lower mud for crispness
+                
+                osc1.connect(gain1);
+                osc2.connect(gain2);
+                
+                gain1.connect(highpass);
+                gain2.connect(highpass);
+                
+                highpass.connect(audioCtx.destination);
+                
+                osc1.start(now);
+                osc1.stop(now + 1.3);
+                osc2.start(now);
+                osc2.stop(now + 0.9);
             } catch (e) {
-                console.warn("Victory sound execution failed:", e);
+                console.warn("Victory chime execution failed:", e);
             }
         }
 
@@ -938,14 +1329,9 @@
                 
                 const numLines = 8;
                 for (let i = 0; i < numLines; i++) {
-                    // Jitter baseline spacing so vertical stripes look hand-poured and unequally distant
                     const baseX = (i / numLines) * 512 + (Math.random() - 0.5) * 16;
-                    ctx.lineWidth = 7 + Math.random() * 9; // Vary thickness randomly between stripes
-                    
-                    // Curvature factor to tilt stripes organically.
-                    // Using sine of (y / 256) * Math.PI ensures it returns to starting X coordinate at y=256,
-                    // guaranteeing 100% seamless wrapping vertically while introducing playful tilted look!
-                    const tiltX = (Math.random() - 0.5) * 45; // randomized tilt amplitude per stripe
+                    ctx.lineWidth = 7 + Math.random() * 9; 
+                    const tiltX = (Math.random() - 0.5) * 45; 
                     
                     const getX = (y, offset) => {
                         return baseX + offset + tiltX * Math.sin((y / 256) * Math.PI);
@@ -962,8 +1348,8 @@
                     };
                     
                     drawCurve(0);
-                    drawCurve(-512); // Wrap left
-                    drawCurve(512);  // Wrap right
+                    drawCurve(-512); 
+                    drawCurve(512);  
                 }
             } else if (pattern === 'stripes') {
                 ctx.fillStyle = '#ffffff';
@@ -973,16 +1359,11 @@
                 const numStripes = 10;
                 const spacing = 512 / numStripes;
                 for (let i = 0; i < numStripes; i++) {
-                    // Jitter offset slightly so wave coordinates are not completely uniform
                     const offset = i * spacing + (Math.random() - 0.5) * 12;
+                    const waveAmp = 12 + Math.random() * 6; 
+                    const waveFreq = 2; 
                     
-                    // Tiny curvature jitter per stripe to represent handmade pouring
-                    const waveAmp = 12 + Math.random() * 6; // slightly varied amplitudes (12 to 18)
-                    const waveFreq = 2; // Keep to exactly 2 full cycles for perfect vertical matching
-                    
-                    // Line width modulated dynamically by y-coordinate to create a hand-drawn thickness variation
                     const getLineWidth = (y) => {
-                        // Periodic modulation over 256 guarantees seamless vertical wrapping
                         return (9 + Math.random() * 1) + Math.sin((y / 256) * Math.PI * 4) * 2.5;
                     };
                     
@@ -992,7 +1373,6 @@
                     };
 
                     const drawHandPouredStripe = (shift) => {
-                        // Draw segment-by-segment to update lineWidth on each step
                         for (let y = 0; y < 256; y += 4) {
                             ctx.beginPath();
                             const x1 = getX(y, shift);
@@ -1003,8 +1383,6 @@
                             ctx.stroke();
                         }
                         
-                        // Add an occasional slow-drip round spot inside some of the stripes
-                        // Placing it at y=128 (dead center) prevents vertical wrapping seam issues entirely
                         if (i % 3 === 0) {
                             const blobY = 128;
                             const blobX = getX(blobY, shift);
@@ -1036,15 +1414,11 @@
                 const baseWidth = 512 / numRibbons;
                 
                 for (let i = 0; i < numRibbons; i++) {
-                    // Jitter spacing randomly to simulate organic hand-poured patterns
                     const offset = (i + (Math.random() * 0.6 - 0.3)) * baseWidth;
-                    
-                    // Vary thickness of each ribbon organically
                     ctx.lineWidth = 14 + Math.random() * 11;
                     
-                    // Purely periodic trigonometric harmonics ensure exact vertical seamless wrapping (y=0 matches y=256)
-                    const freq1 = Math.floor(Math.random() * 2) + 1; // 1 or 2 cycles
-                    const freq2 = Math.floor(Math.random() * 2) + 3; // 3 or 4 cycles
+                    const freq1 = Math.floor(Math.random() * 2) + 1; 
+                    const freq2 = Math.floor(Math.random() * 2) + 3; 
                     const amp1 = 15 + Math.random() * 20;
                     const amp2 = 5 + Math.random() * 8;
                     const phase1 = Math.random() * Math.PI * 2;
@@ -1055,7 +1429,6 @@
                         return offset + amp1 * Math.sin(radY * freq1 + phase1) + amp2 * Math.sin(radY * freq2 + phase2);
                     };
 
-                    // Draw main path
                     ctx.beginPath();
                     for (let y = 0; y <= 256; y += 4) {
                         const x = getX(y);
@@ -1064,7 +1437,6 @@
                     }
                     ctx.stroke();
 
-                    // Draw wrapped left copy for seamless horizontal wrapping
                     ctx.beginPath();
                     for (let y = 0; y <= 256; y += 4) {
                         const x = getX(y) - 512;
@@ -1073,7 +1445,6 @@
                     }
                     ctx.stroke();
 
-                    // Draw wrapped right copy
                     ctx.beginPath();
                     for (let y = 0; y <= 256; y += 4) {
                         const x = getX(y) + 512;
@@ -1151,8 +1522,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- SPATIAL HELPERS & PARTICLE SYSTEMS ---
-        
         function generateSticksLayout(numSticks) {
             const positions = [];
             const spacingX = 1.45;
@@ -1238,8 +1607,7 @@
             }
         }
 
-        // --- HIGH-PERFORMANCE CANONICAL BOUNDED-DEPTH A* SOLVER ---
-
+        /* STREAMING_CHUNK: High-Performance A* Solver Core... */
         function getCurrentBoardStateAsArrays() {
             return STATE.sticks.map(stick => {
                 return stick.discs.map(disc => disc.colorId);
@@ -1592,7 +1960,6 @@
             }
         }
 
-        // --- AUTOPLAY LOOP MANAGER ---
         let autoplayTimeout = null;
 
         function startAutoplay() {
@@ -1711,8 +2078,6 @@
             }, 250);
         }
 
-        // --- LEVEL INITIALIZATION MECHANICS ---
-
         function isStickCompleted(stickIdx) {
             const stack = STATE.sticks[stickIdx].discs;
             if (stack.length !== CONFIG.maxHeight) return false;
@@ -1784,7 +2149,7 @@
             STATE.discs = [];
 
             const torusRadius = 0.45;
-            const torusTube = 0.22; // Slightly chunkier toruses to resemble round puffy yeast donuts
+            const torusTube = 0.22; 
             const discGeom = new THREE.TorusGeometry(torusRadius, torusTube, 20, 50);
             discGeom.rotateX(Math.PI / 2);
 
@@ -1832,7 +2197,7 @@
             
             // Create a smooth radial gradient fading out to the edges
             const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-            grad.addColorStop(0, 'rgba(107, 33, 41, 0.42)');  // Soft warm dark berry shadow core
+            grad.addColorStop(0, 'rgba(107, 33, 41, 0.42)');  
             grad.addColorStop(0.3, 'rgba(107, 33, 41, 0.20)');
             grad.addColorStop(0.7, 'rgba(107, 33, 41, 0.04)');
             grad.addColorStop(1, 'rgba(107, 33, 41, 0)');
@@ -1850,9 +2215,8 @@
             if (!stick) return;
 
             if (!STATE.selectionRingMesh) {
-                // Soft, feathered circular shadow mesh on the counter floor
                 const planeGeom = new THREE.PlaneGeometry(2.2, 2.2);
-                planeGeom.rotateX(-Math.PI / 2); // align horizontal
+                planeGeom.rotateX(-Math.PI / 2); 
                 const shadeMat = new THREE.MeshBasicMaterial({
                     map: createSoftShadeTexture(),
                     transparent: true,
@@ -1862,7 +2226,6 @@
                 STATE.selectionRingMesh = new THREE.Mesh(planeGeom, shadeMat);
             }
 
-            // Position selection ring slightly above the wooden table base board
             const shiftY = -1.5;
             const baseH = 0.55;
             STATE.selectionRingMesh.position.set(stick.position.x, baseH + shiftY + 0.02, stick.position.z);
@@ -1880,10 +2243,8 @@
             pauseTimer();
             clearSelectionIndicator();
 
-            // All current moves are cataloged as wasted moves
             STATE.wastedMoves += STATE.moves;
 
-            // Reset current active stats
             STATE.moves = 0;
             document.getElementById('hud-moves').innerText = "0";
             STATE.elapsedSeconds = 0;
@@ -1897,14 +2258,11 @@
             STATE.moveHistory = [];
             STATE.lastMoveForUndo = null;
             
-            // Restart overwrites undos count completely
             STATE.undoCount = 0;
             updateUndoButtonState();
 
-            // Tag as restarted round
             STATE.hasRestartedRound = true;
 
-            // Remove current donuts from scene and rebuild from STATE.initialBoardState
             STATE.discs.forEach(d => {
                 scene.remove(d.mesh);
             });
@@ -1949,7 +2307,6 @@
                 }
             }
 
-            // Sync completion markers
             STATE.completedSticks = Array(CONFIG.numSticks).fill(false);
             for (let i = 0; i < CONFIG.numSticks; i++) {
                 STATE.completedSticks[i] = isStickCompleted(i);
@@ -1984,7 +2341,7 @@
             STATE.recentBoardHashes = [];
             STATE.autoplayPlannedPath = []; 
             STATE.autoplayStartChaos = 999;
-            STATE.hasRestartedRound = false; // Reset restart flag
+            STATE.hasRestartedRound = false; 
             updateUndoButtonState();
             stopAutoplay();
             clearSelectionIndicator();
@@ -2003,7 +2360,7 @@
 
             STATE.sticks.forEach(s => {
                 scene.remove(s.mesh);
-                if (s.hitboxMesh) scene.remove(s.hitboxMesh); // Clear fatter hitboxes
+                if (s.hitboxMesh) scene.remove(s.hitboxMesh); 
             });
             STATE.discs.forEach(d => {
                 scene.remove(d.mesh);
@@ -2151,7 +2508,6 @@
                 stickMesh.receiveShadow = true;
                 scene.add(stickMesh);
 
-                // Touch Target Invisible Mesh
                 const hitboxMesh = new THREE.Mesh(hitboxGeom, new THREE.MeshBasicMaterial({
                     transparent: true,
                     opacity: 0,
@@ -2271,6 +2627,9 @@
             STATE.timerInterval = null;
         }
 
+        let recordedChunks = [];
+        let mediaRecorder = null;
+
         function startRecording() {
             recordedChunks = [];
             const stream = renderer.domElement.captureStream(30);
@@ -2317,9 +2676,10 @@
             }
         }
 
-        // --- PLAYER INTERACTION & RAYCASTING ---
-
         function onDocumentPointerDown(event) {
+            // Unmute & start audio context on first interactive tap/click
+            initAudio();
+
             if (STATE.isWon || STATE.isAnimating || STATE.isReplaying || STATE.isAutoplayActive) {
                 if (STATE.isReplaying) {
                     triggerReplayPanelFlash();
@@ -2332,7 +2692,6 @@
 
             raycaster.setFromCamera(mouse, camera);
 
-            // Prioritize fatter invisible hitboxes to ensure extremely responsive touch inputs on mobile
             const targets = [];
             STATE.sticks.forEach(s => {
                 if (s.hitboxMesh) targets.push(s.hitboxMesh);
@@ -2344,14 +2703,12 @@
             if (intersects.length > 0) {
                 const hitObject = intersects[0].object;
                 
-                // Check if we hit an invisible fatter hitbox cylinder
                 const hitStickIndex = STATE.sticks.findIndex(s => s.hitboxMesh === hitObject);
                 if (hitStickIndex !== -1) {
                     handleStickSelection(hitStickIndex);
                     return;
                 }
 
-                // Fallback direct mesh click check
                 const hitDisc = STATE.discs.find(d => d.mesh === hitObject);
                 if (hitDisc) {
                     const hitStickIndexFromDisc = getDiscStickIndex(hitDisc);
@@ -2425,7 +2782,6 @@
                 STATE.selectedStickIndex = stickIdx;
                 STATE.selectedCount = count;
                 
-                // Show selected indicator projection rings and hover colors
                 setSelectionIndicator(stickIdx);
                 animateDiscsHoverGroup(stickIdx, true);
                 playWoodSound('pick');
@@ -2486,7 +2842,6 @@
                     const boardBefore = getCurrentBoardStateAsArrays();
                     STATE.chaosBeforeMove = Math.max(0, getBoardTransitions(boardBefore) - (CONFIG.numSticks - 1));
 
-                    // Evaluate if player move is wasted (lands on non-empty peg of different color)
                     const destTopColor = dstStick.discs.length > 0 ? dstStick.discs[dstStick.discs.length - 1].colorId : null;
                     const movingColor = srcStick.discs[srcStick.discs.length - countToMove].colorId;
                     const landsOnDifferentColor = (destTopColor !== null && destTopColor !== movingColor);
@@ -2607,7 +2962,6 @@
 
                                 if (nowCompleted && !wasCompleted && !STATE.isReplaying && !isUndo) {
                                     triggerStickCompleteAnimation(dstIdx);
-                                    // Trigger beautiful projected floating completed praise popup
                                     spawnFloatingPraise(dstIdx);
                                 }
 
@@ -2679,8 +3033,6 @@
             });
         }
 
-        // --- WIN TRIGGER ENGINE ---
-
         function checkWinCondition() {
             let win = true;
 
@@ -2714,7 +3066,15 @@
             pauseTimer();
             stopAutoplay();
 
+            // Play the ultra-soft metallic triangle ding
             playVictorySound();
+
+            // Trigger complete peg bounce animation cascadingly across all sticks to generate a beautiful sequential thumping wave
+            for (let i = 0; i < CONFIG.numSticks; i++) {
+                setTimeout(() => {
+                    triggerStickCompleteAnimation(i);
+                }, i * 150);
+            }
 
             const duration = 2.5 * 1000;
             const end = Date.now() + duration;
@@ -2743,7 +3103,6 @@
             const timeStr = document.getElementById('hud-timer').innerText;
             document.getElementById('stat-score').innerText = `${timeStr}s | ${STATE.moves} moves`;
 
-            // Setup compiled help report string. Restart overwrites undo details.
             let helpStr = "None";
             if (STATE.hasRestartedRound) {
                 helpStr = "Restarted";
@@ -2763,7 +3122,6 @@
             }
             document.getElementById('stat-help').innerText = helpStr;
 
-            // Display live wasted moves inside stats container
             document.getElementById('stat-wasted').innerText = STATE.wastedMoves;
 
             document.getElementById('stat-setup').innerText = `${CONFIG.numSticks} pegs | ${CONFIG.numColors} glazes | ${CONFIG.maxHeight} stack`;
@@ -2785,7 +3143,6 @@
                 normalStatsPanel.classList.add('hidden');
                 challengeCard.classList.remove('hidden');
 
-                // Update selected difficulty in challenge badge
                 const diffBadge = document.getElementById('challenge-diff-badge');
                 if (diffBadge) {
                     diffBadge.innerText = (CHALLENGE_STATE.difficulty || CONFIG.difficulty || 'custom').toUpperCase();
@@ -2875,7 +3232,6 @@
             }, 1000);
         }
 
-        // --- SPEED REPLAY ---
         let replayPanelTimeout = null;
 
         function triggerReplayPanelFlash() {
@@ -3012,8 +3368,6 @@
                 modal.querySelector('.glass-panel').classList.remove('scale-95');
             }, 1000);
         }
-
-        // --- GUI & CONFIGURATION PANELS SETUP ---
 
         function setupGUI() {
             const pauseModal = document.getElementById('pause-modal');
@@ -3167,6 +3521,15 @@
             document.getElementById('btn-menu-close').addEventListener('click', closeDrawer);
             drawerBackdrop.addEventListener('click', closeDrawer);
 
+            // Music Toggle Button Listener
+            document.getElementById('btn-music-toggle').addEventListener('click', () => {
+                if (STATE.isMusicPlaying) {
+                    stopProceduralMusic();
+                } else {
+                    startProceduralMusic();
+                }
+            });
+
             const sliders = [
                 { slider: 'slider-sticks', val: 'val-sticks', key: 'numSticks' },
                 { slider: 'slider-colors', val: 'val-colors', key: 'numColors' },
@@ -3224,7 +3587,6 @@
                 updateUndoButtonState();
 
                 const undoneMoveLog = STATE.moveHistory.pop();
-                // Decrement wasted count if player is reverting a move that was counted as wasted
                 if (undoneMoveLog && undoneMoveLog.isWasted) {
                     STATE.wastedMoves = Math.max(0, STATE.wastedMoves - 1);
                 }
@@ -3331,7 +3693,6 @@
             });
         }
 
-        // --- FRAME UPDATE LOOP ---
         const clock = new THREE.Clock();
 
         function animate() {
