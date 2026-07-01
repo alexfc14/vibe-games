@@ -6,13 +6,13 @@
     <title>Donut Stack Shop - 3D sorting puzzle</title>
     <!-- Tailwind CSS for UI styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts for premium look -->
+    <!-- Google Fonts for premium typography look -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;600;700;800&display=swap" rel="stylesheet">
-    <!-- FontAwesome for Icons -->
+    <!-- FontAwesome for Premium Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Canvas Confetti for Win Effect -->
+    <!-- Canvas Confetti for Win Celebration Effect -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         body {
@@ -26,7 +26,7 @@
             display: block;
             outline: none;
         }
-        /* Custom scrollbars */
+        /* Custom scrollbars for side drawer config */
         ::-webkit-scrollbar {
             width: 6px;
         }
@@ -37,7 +37,7 @@
             background: rgba(217, 119, 6, 0.3);
             border-radius: 3px;
         }
-        /* Glassmorphism utility classes styled for warm, friendly donut theme */
+        /* Glassmorphism panel styling tailored for warm doughnut shop theme */
         .glass-panel {
             background: rgba(255, 253, 249, 0.9);
             backdrop-filter: blur(16px);
@@ -57,6 +57,32 @@
         .glass-button:active:not(:disabled) {
             transform: translateY(1px);
         }
+        /* Style for flying 3D praise words overlay */
+        .praise-text {
+            position: absolute;
+            pointer-events: none;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15), 0 0 10px rgba(255, 255, 255, 0.8);
+            transform: translate(-50%, -50%);
+            animation: floatUpFade 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            z-index: 30;
+        }
+        @keyframes floatUpFade {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, 0) scale(0.6);
+            }
+            15% {
+                opacity: 1;
+                transform: translate(-50%, -20px) scale(1.1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -80px) scale(0.9);
+            }
+        }
     </style>
 </head>
 <body class="w-screen h-screen relative text-amber-950">
@@ -74,6 +100,9 @@
 
     <!-- Background WebGL Viewport -->
     <div id="canvas-container" class="w-full h-full absolute inset-0"></div>
+    
+    <!-- Praise Popup overlay container -->
+    <div id="praise-container" class="absolute inset-0 pointer-events-none overflow-hidden z-20"></div>
 
     <!-- MAIN HUD LAYOUT -->
     <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-6 z-10">
@@ -227,18 +256,22 @@
                 </div>
 
                 <h2 class="text-3xl font-black tracking-tight text-amber-950 mb-2">SHOP PAUSED</h2>
-                <p class="text-sm text-amber-800 px-3 mb-6 leading-relaxed">Your glazes are chilling! Resume, watch the robot baker solve it, or bake a brand new layout.</p>
+                <p class="text-sm text-amber-800 px-3 mb-6 leading-relaxed">Your glazes are chilling! Resume, restart your baker progress, watch the AI solve it, or bake a brand new layout.</p>
 
                 <div class="flex flex-col gap-2">
-                    <button id="btn-pause-resume" class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                    <button id="btn-pause-resume" class="w-full py-3 bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-play"></i> Resume Baking
                     </button>
+                    <!-- Dedicated Restart Current Round button -->
+                    <button id="btn-pause-restart-round" class="w-full py-3 bg-gradient-to-r from-orange-400 to-amber-500 hover:from-orange-500 hover:to-amber-600 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-arrow-rotate-left animate-spin-slow"></i> Restart Current Round
+                    </button>
                     <!-- Autoplay option inside pause menu -->
-                    <button id="btn-pause-autoplay" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                    <button id="btn-pause-autoplay" class="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-robot animate-bounce"></i> Autoplay Solver
                     </button>
-                    <button id="btn-pause-reset" class="w-full py-3.5 bg-gradient-to-r from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-rotate-left"></i> Start Fresh Board
+                    <button id="btn-pause-reset" class="w-full py-3 bg-gradient-to-r from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-cookie"></i> Start Fresh Board
                     </button>
                 </div>
             </div>
@@ -291,6 +324,11 @@
                         <span class="text-amber-800 font-medium">Bakery Help:</span>
                         <span id="stat-help" class="font-bold text-pink-600 font-mono ml-1">None</span>
                     </div>
+                    <!-- Wasted moves line -->
+                    <div class="text-sm border-t border-amber-500/10 pt-2">
+                        <span class="text-amber-800 font-medium">Wasted Moves:</span>
+                        <span id="stat-wasted" class="font-bold text-rose-500 font-mono ml-1">0</span>
+                    </div>
                     <div class="text-sm border-t border-amber-500/10 pt-2">
                         <span class="text-amber-800 font-medium">Setup:</span>
                         <span id="stat-setup" class="font-bold text-orange-600 font-mono ml-1">4 pegs | 3 glazes | 7 height</span>
@@ -303,8 +341,10 @@
 
                 <!-- Challenge Leaderboard/Comparison Card -->
                 <div id="challenge-card" class="bg-amber-500/5 rounded-2xl p-4 border border-amber-500/10 space-y-3 mb-6 text-left hidden">
-                    <div class="flex items-center gap-2 text-pink-600 font-extrabold text-xs uppercase tracking-wider">
-                        <i class="fa-solid fa-user-group"></i> Pass-to-Friend Challenge
+                    <div class="flex items-center justify-between text-pink-600 font-extrabold text-xs uppercase tracking-wider">
+                        <span><i class="fa-solid fa-user-group"></i> Pass-to-Friend</span>
+                        <!-- Displaying difficulty inside challenge panel badge -->
+                        <span id="challenge-diff-badge" class="bg-pink-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm tracking-wide">EASY</span>
                     </div>
                     <div id="challenge-scores" class="space-y-2 text-xs text-amber-900">
                         <!-- Scores dynamic insertion -->
@@ -316,13 +356,17 @@
 
                 <!-- Action buttons inside victory panel -->
                 <div class="flex flex-col gap-2 pb-2">
-                    <button id="btn-speed-recap" class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                    <button id="btn-speed-recap" class="w-full py-3 bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-camera"></i> Speed Recap
                     </button>
-                    <button id="btn-pass-friend" class="w-full py-3.5 bg-gradient-to-r from-orange-400 to-pink-500 hover:from-orange-500 hover:to-pink-600 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                    <button id="btn-pass-friend" class="w-full py-3 bg-gradient-to-r from-orange-400 to-pink-500 hover:from-orange-500 hover:to-pink-600 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-user-group"></i> Pass to a Friend
                     </button>
-                    <button id="btn-win-restart" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                    <!-- Directly Pass to AI Challenge button (shortcut) -->
+                    <button id="btn-pass-ai" class="w-full py-3 bg-gradient-to-r from-violet-500 to-fuchsia-600 hover:from-violet-600 hover:to-fuchsia-700 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-robot animate-pulse"></i> Pass to AI Challenge
+                    </button>
+                    <button id="btn-win-restart" class="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-arrow-rotate-right"></i> Bake Another Round
                     </button>
                 </div>
@@ -335,6 +379,24 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
+        // Delicious Bakery Glaze Palette with distinct textures to avoid color-confusion
+        const PALETTE = [
+            { id: 0, hex: '#FF6B8B', name: 'Strawberry Sprinkle', sprinkleColors: ['#FFFFFF', '#FFE066', '#4DABF7'], pattern: 'sprinkle' },
+            { id: 1, hex: '#4D96FF', name: 'Blueberry Icing', sprinkleColors: [], pattern: 'subtle_sparkles' },
+            { id: 2, hex: '#51CF66', name: 'Matcha Tea Glaze', sprinkleColors: ['#FFFFFF', '#FF8787', '#FCC419'], pattern: 'dust' },
+            { id: 3, hex: '#FFA94D', name: 'Mango Orange Drizzle', sprinkleColors: ['#FFFFFF', '#74C0FC', '#FF8787'], pattern: 'caramel' },
+            { id: 4, hex: '#FFD43B', name: 'Cinnamon Custard', sprinkleColors: [], pattern: 'ground_cinnamon' },
+            { id: 5, hex: '#8249DE', name: 'Ube Purple Velvet', sprinkleColors: ['#FFFFFF', '#FFD93D', '#63E6BE'], pattern: 'marble' },
+            { id: 6, hex: '#FFB3C1', name: 'Raspberry Jelly Glaze', sprinkleColors: [], pattern: 'raspberry_jelly' },
+            { id: 7, hex: '#E599F7', name: 'Lavender Candy Glaze', sprinkleColors: ['#FFFFFF', '#FFD43B', '#51CF66'], pattern: 'lavender_stripes' },
+            { id: 8, hex: '#FFFFFF', name: 'White Coconut Shavings', sprinkleColors: [], pattern: 'multicolor_shavings' },
+            { id: 9, hex: '#A86F44', name: 'Choco Fudge glaze', sprinkleColors: ['#3d220f'], pattern: 'choco_chips' }, // dark spots on light brown
+            { id: 10, hex: '#94D82D', name: 'Lime Zest Frosting', sprinkleColors: ['#FFFFFF', '#FF6B8B', '#FF922B'], pattern: 'stripes' },
+            { id: 11, hex: '#FF87B2', name: 'Cherry Buttercream', sprinkleColors: ['#FFFFFF', '#4DABF7', '#FCC419'], pattern: 'marble' },
+            { id: 12, hex: '#5C7CFA', name: 'Wild Blackberry Glaze', sprinkleColors: ['#FFFFFF', '#FFD93D', '#FF8787'], pattern: 'spots' },
+            { id: 13, hex: '#D0BFFF', name: 'Plum Frost Sugar', sprinkleColors: ['#FFFFFF', '#FF922B', '#20C997'], pattern: 'dust' }
+        ];
+
         const CONFIG = {
             numSticks: 4,
             numColors: 3,
@@ -370,9 +432,13 @@
             particles: [],
             hintCount: 0,           // Tracks hint requests
             autoplayCount: 0,       // Tracks autoplay activations
+            undoCount: 0,           // Tracks undos clicked
+            wastedMoves: 0,         // Tracks wasted moves (undos + discarded moves on restart)
             recentBoardHashes: [],   // Memory of executed states to prevent cyclic loops
             autoplayPlannedPath: [], // Cache planned multi-move sequences
-            autoplayStartChaos: 999  // Reference chaos score at start of commitment plan
+            autoplayStartChaos: 999, // Reference chaos score at start of commitment plan
+            selectionRingMesh: null, // Visual guide for active selection
+            hasRestartedRound: false // Notes if round was restarted
         };
 
         // Cache last configured metrics to detect manual adjustments and reset camera only when sliders change
@@ -392,7 +458,6 @@
             previousScores: []
         };
 
-        // --- WEB AUDIO ENGINE ---
         let audioCtx = null;
         
         // Prevent iPad sleep & sound constraints on mobile browsers
@@ -573,53 +638,15 @@
             }
         }
 
-        // Delicious Bakery Glaze Palette with distinct textures to avoid color-confusion
-        const PALETTE = [
-            { id: 0, hex: '#FF6B8B', name: 'Strawberry Sprinkle', sprinkleColors: ['#FFFFFF', '#FFE066', '#4DABF7'], pattern: 'sprinkle' },
-            { id: 1, hex: '#4D96FF', name: 'Blueberry Icing', sprinkleColors: [], pattern: 'subtle_sparkles' },
-            { id: 2, hex: '#51CF66', name: 'Matcha Tea Glaze', sprinkleColors: ['#FFFFFF', '#FF8787', '#FCC419'], pattern: 'dust' },
-            { id: 3, hex: '#FFA94D', name: 'Mango Orange Drizzle', sprinkleColors: ['#FFFFFF', '#74C0FC', '#FF8787'], pattern: 'caramel' },
-            { id: 4, hex: '#FFD43B', name: 'Cinnamon Custard', sprinkleColors: [], pattern: 'ground_cinnamon' },
-            { id: 5, hex: '#8249DE', name: 'Ube Purple Velvet', sprinkleColors: ['#FFFFFF', '#FFD93D', '#63E6BE'], pattern: 'marble' },
-            { id: 6, hex: '#FFB3C1', name: 'Raspberry Jelly Glaze', sprinkleColors: [], pattern: 'raspberry_jelly' },
-            { id: 7, hex: '#E599F7', name: 'Lavender Candy Glaze', sprinkleColors: ['#FFFFFF', '#FFD43B', '#51CF66'], pattern: 'stripes' },
-            { id: 8, hex: '#FFFFFF', name: 'White Coconut Shavings', sprinkleColors: [], pattern: 'multicolor_shavings' },
-            { id: 9, hex: '#A86F44', name: 'Choco Fudge glaze', sprinkleColors: ['#3d220f'], pattern: 'choco_chips' }, // dark spots on light brown
-            { id: 10, hex: '#94D82D', name: 'Lime Zest Frosting', sprinkleColors: ['#FFFFFF', '#FF6B8B', '#FF922B'], pattern: 'stripes' },
-            { id: 11, hex: '#FF87B2', name: 'Cherry Buttercream', sprinkleColors: ['#FFFFFF', '#4DABF7', '#FCC419'], pattern: 'marble' },
-            { id: 12, hex: '#5C7CFA', name: 'Wild Blackberry Glaze', sprinkleColors: ['#FFFFFF', '#FFD93D', '#FF8787'], pattern: 'spots' },
-            { id: 13, hex: '#D0BFFF', name: 'Plum Frost Sugar', sprinkleColors: ['#FFFFFF', '#FF922B', '#20C997'], pattern: 'dust' }
-        ];
-
-        // --- THREE.JS GRAPHICS SETUP ---
+        // --- GRAPHICS & LIGHTING INITIALIZER ---
         let scene, camera, renderer, controls;
         let standWoodMaterial, standFabricMaterial, rodMaterial;
         let raycaster, mouse;
-        const loaderScreen = document.getElementById('loading-screen');
-
-        let mediaRecorder;
-        let recordedChunks = [];
-
-        window.addEventListener('load', () => {
-            initThree();
-            setupGUI();
-            setDifficultyPreset('easy'); 
-            startNewGame();
-            
-            setTimeout(() => {
-                const loader = document.getElementById('loading-screen');
-                if (loader) {
-                    loader.classList.add('opacity-0');
-                    setTimeout(() => loader.style.display = 'none', 500);
-                }
-            }, 500);
-        });
 
         function initThree() {
             const container = document.getElementById('canvas-container');
             
             scene = new THREE.Scene();
-            // Cozy warm bakery atmosphere lighting background
             scene.background = new THREE.Color(0xfffbf4);
 
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -640,6 +667,10 @@
             controls.maxPolarAngle = Math.PI / 2.1;
             controls.minDistance = 4;
             controls.maxDistance = 45;
+
+            // Lock horizontal OrbitControls rotation to ONLY allow tilts (up/down towards observer), zoom, and pan (drag)
+            controls.minAzimuthAngle = 0;
+            controls.maxAzimuthAngle = 0;
 
             // Cozy friendly lighting
             const ambientLight = new THREE.AmbientLight(0xfff7ea, 0.75);
@@ -675,7 +706,6 @@
         }
 
         function generateBakeryMaterials() {
-            // Generate a beautiful warm honey-oak wooden pastry stand texture
             const woodCanvas = document.createElement('canvas');
             woodCanvas.width = 512;
             woodCanvas.height = 512;
@@ -697,7 +727,6 @@
                 woodCtx.stroke();
             }
 
-            // Soft grain noise overlay
             const imgData = woodCtx.getImageData(0, 0, 512, 512);
             const data = imgData.data;
             for (let i = 0; i < data.length; i += 4) {
@@ -721,24 +750,20 @@
                 bumpScale: 0.02
             });
 
-            // Generate a cute striped festive fabric skirt texture for the table display stand
             const fabricCanvas = document.createElement('canvas');
             fabricCanvas.width = 256;
             fabricCanvas.height = 256;
             const fabCtx = fabricCanvas.getContext('2d');
             
-            // Creamy base
             fabCtx.fillStyle = '#fff9f0';
             fabCtx.fillRect(0, 0, 256, 256);
             
-            // Sweet strawberry-pink stripes
             fabCtx.fillStyle = '#ff8ca3';
             const stripeWidth = 32;
             for (let x = 0; x < 256; x += stripeWidth * 2) {
                 fabCtx.fillRect(x, 0, stripeWidth, 256);
             }
 
-            // Draw thin cute gold stitching lines
             fabCtx.strokeStyle = '#ffd43b';
             fabCtx.lineWidth = 2;
             for (let x = stripeWidth; x < 256; x += stripeWidth) {
@@ -760,7 +785,6 @@
                 bumpScale: 0.008
             });
 
-            // Acrylic Rods for clear gourmet presentation
             rodMaterial = new THREE.MeshStandardMaterial({
                 color: 0xffeedd,
                 roughness: 0.1,
@@ -770,7 +794,6 @@
             });
         }
 
-        // Dynamically generates gourmet glazed textures with distinctive visual patterns to improve color clarity
         function generateDonutMaterial(colorInfo) {
             const donutCanvas = document.createElement('canvas');
             donutCanvas.width = 512;
@@ -781,12 +804,10 @@
             const sprinkleColors = colorInfo.sprinkleColors || ['#FFFFFF'];
             const pattern = colorInfo.pattern || 'sprinkle';
 
-            // Draw a shiny delicious frosted glaze base
             ctx.fillStyle = colorHex;
             ctx.fillRect(0, 0, 512, 256);
 
             if (pattern === 'sprinkle') {
-                // Classic sprinkles pattern
                 const sprinkleCount = 75;
                 for (let i = 0; i < sprinkleCount; i++) {
                     ctx.save();
@@ -801,7 +822,6 @@
                     ctx.restore();
                 }
             } else if (pattern === 'raspberry_jelly') {
-                // High-contrast, abundant glistening raspberry jelly spots wrapping around all sides with organic, unique shapes and random rotations
                 ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
                 ctx.shadowBlur = 6;
                 ctx.shadowOffsetY = 3;
@@ -812,24 +832,20 @@
                     
                     ctx.save();
                     ctx.translate(x, y);
-                    // Random organic rotation
                     const randomRotation = Math.random() * Math.PI * 2;
                     ctx.rotate(randomRotation);
                     
-                    // Random scaling factor for variety in spot size
                     const scaleX = 0.8 + Math.random() * 0.5;
                     const scaleY = 0.6 + Math.random() * 0.4;
                     ctx.scale(scaleX, scaleY);
                     
-                    const rBase = 15 + Math.random() * 8; // Beautiful chunky splat base radius
+                    const rBase = 15 + Math.random() * 8;
                     
-                    // Draw an organic irregular splat shape using multiple points with radial noise
-                    ctx.fillStyle = '#9B0F1C'; // Deep rich jam red
+                    ctx.fillStyle = '#9B0F1C';
                     ctx.beginPath();
                     const pointsCount = 10;
                     for (let k = 0; k < pointsCount; k++) {
                         const angle = (k / pointsCount) * Math.PI * 2;
-                        // Add natural, flowing wave deformation to make it look like dollops of jelly
                         const waveDeformation = Math.sin(k * 1.5) * 4.5 + (Math.random() - 0.5) * 3;
                         const currentRadius = rBase + waveDeformation;
                         
@@ -842,16 +858,13 @@
                     ctx.closePath();
                     ctx.fill();
                     
-                    // Add a glistening wet glaze white reflection highlight, scaled offset from the center
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
                     ctx.beginPath();
-                    // Highlight position is offset slightly to give a 3D spherical look
                     ctx.arc(-rBase / 3, -rBase / 4, rBase / 4, 0, Math.PI * 2);
                     ctx.fill();
                     
                     ctx.restore();
                     
-                    // Occasionally throw in a tiny surrounding splash droplet to enhance organic realism
                     if (Math.random() > 0.6) {
                         const dropletX = x + (Math.random() - 0.5) * 55;
                         const dropletY = y + (Math.random() - 0.5) * 55;
@@ -870,11 +883,10 @@
                         ctx.restore();
                     }
                 }
-                ctx.shadowColor = 'transparent'; // reset shadow
+                ctx.shadowColor = 'transparent';
             } else if (pattern === 'multicolor_shavings') {
-                // Bold, dense, chunky rainbow shavings scattered aggressively over the white donut
                 const colors = ['#FF1493', '#1E90FF', '#32CD32', '#FF8C00', '#FFD700', '#9400D3'];
-                for (let i = 0; i < 240; i++) { // Highly dense toppings pool
+                for (let i = 0; i < 240; i++) {
                     ctx.save();
                     const x = Math.random() * 512;
                     const y = Math.random() * 256;
@@ -882,31 +894,27 @@
                     ctx.rotate(Math.random() * Math.PI);
                     ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
                     
-                    // Large, thick chocolate shavings
                     if (Math.random() > 0.4) {
-                        ctx.fillRect(-12, -3, 24, 6); // Double-sized rectangular blocks
+                        ctx.fillRect(-12, -3, 24, 6);
                     } else {
-                        // Curved shavings
                         ctx.beginPath();
                         ctx.arc(0, 0, 8, 0, Math.PI * 0.85);
-                        ctx.lineWidth = 4.5; // Bold line weight
+                        ctx.lineWidth = 4.5;
                         ctx.strokeStyle = ctx.fillStyle;
                         ctx.stroke();
                     }
                     ctx.restore();
                 }
             } else if (pattern === 'ground_cinnamon') {
-                // Purely sprinkled dark ground cinnamon spice dots - NO curves or stripes
-                for (let i = 0; i < 3200; i++) { // Thick, highly apparent coverage
+                for (let i = 0; i < 3200; i++) {
                     const x = Math.random() * 512;
                     const y = Math.random() * 256;
                     const size = 1.5 + Math.random() * 4; 
-                    const alpha = 0.4 + Math.random() * 0.6; // Bold opacity
-                    ctx.fillStyle = `rgba(90, 42, 6, ${alpha})`; // Rich, dark cinnamon brown
+                    const alpha = 0.4 + Math.random() * 0.6;
+                    ctx.fillStyle = `rgba(90, 42, 6, ${alpha})`;
                     ctx.fillRect(x, y, size, size);
                 }
             } else if (pattern === 'subtle_sparkles') {
-                // Smooth clean flat icing with subtle sweet white sugar stars/sparkles
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
                 for (let i = 0; i < 28; i++) {
                     ctx.save();
@@ -924,25 +932,93 @@
                     ctx.fill();
                     ctx.restore();
                 }
-            } else if (pattern === 'stripes') {
-                // Wavy white glass sugar lines (undulated white stripes)
+            } else if (pattern === 'lavender_stripes') {
                 ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 8;
                 ctx.lineCap = 'round';
-                for (let offset = -40; offset < 512 + 40; offset += 50) {
-                    ctx.beginPath();
-                    for (let y = 0; y <= 256; y += 10) {
-                        const wave = Math.sin(y * 0.04) * 15;
-                        if (y === 0) {
-                            ctx.moveTo(offset + wave, y);
-                        } else {
-                            ctx.lineTo(offset + wave, y);
+                
+                const numLines = 8;
+                for (let i = 0; i < numLines; i++) {
+                    // Jitter baseline spacing so vertical stripes look hand-poured and unequally distant
+                    const baseX = (i / numLines) * 512 + (Math.random() - 0.5) * 16;
+                    ctx.lineWidth = 7 + Math.random() * 9; // Vary thickness randomly between stripes
+                    
+                    // Curvature factor to tilt stripes organically.
+                    // Using sine of (y / 256) * Math.PI ensures it returns to starting X coordinate at y=256,
+                    // guaranteeing 100% seamless wrapping vertically while introducing playful tilted look!
+                    const tiltX = (Math.random() - 0.5) * 45; // randomized tilt amplitude per stripe
+                    
+                    const getX = (y, offset) => {
+                        return baseX + offset + tiltX * Math.sin((y / 256) * Math.PI);
+                    };
+                    
+                    const drawCurve = (offset) => {
+                        ctx.beginPath();
+                        for (let y = 0; y <= 256; y += 4) {
+                            const x = getX(y, offset);
+                            if (y === 0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
                         }
-                    }
-                    ctx.stroke();
+                        ctx.stroke();
+                    };
+                    
+                    drawCurve(0);
+                    drawCurve(-512); // Wrap left
+                    drawCurve(512);  // Wrap right
+                }
+            } else if (pattern === 'stripes') {
+                ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineCap = 'round';
+                
+                const numStripes = 10;
+                const spacing = 512 / numStripes;
+                for (let i = 0; i < numStripes; i++) {
+                    // Jitter offset slightly so wave coordinates are not completely uniform
+                    const offset = i * spacing + (Math.random() - 0.5) * 12;
+                    
+                    // Tiny curvature jitter per stripe to represent handmade pouring
+                    const waveAmp = 12 + Math.random() * 6; // slightly varied amplitudes (12 to 18)
+                    const waveFreq = 2; // Keep to exactly 2 full cycles for perfect vertical matching
+                    
+                    // Line width modulated dynamically by y-coordinate to create a hand-drawn thickness variation
+                    const getLineWidth = (y) => {
+                        // Periodic modulation over 256 guarantees seamless vertical wrapping
+                        return (9 + Math.random() * 1) + Math.sin((y / 256) * Math.PI * 4) * 2.5;
+                    };
+                    
+                    const getX = (y, shift) => {
+                        const wave = Math.sin((y / 256) * Math.PI * waveFreq * 2) * waveAmp;
+                        return offset + wave + shift;
+                    };
+
+                    const drawHandPouredStripe = (shift) => {
+                        // Draw segment-by-segment to update lineWidth on each step
+                        for (let y = 0; y < 256; y += 4) {
+                            ctx.beginPath();
+                            const x1 = getX(y, shift);
+                            const x2 = getX(y + 4, shift);
+                            ctx.moveTo(x1, y);
+                            ctx.lineTo(x2, y + 4);
+                            ctx.lineWidth = getLineWidth(y);
+                            ctx.stroke();
+                        }
+                        
+                        // Add an occasional slow-drip round spot inside some of the stripes
+                        // Placing it at y=128 (dead center) prevents vertical wrapping seam issues entirely
+                        if (i % 3 === 0) {
+                            const blobY = 128;
+                            const blobX = getX(blobY, shift);
+                            ctx.beginPath();
+                            ctx.arc(blobX, blobY, 13, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    };
+
+                    drawHandPouredStripe(0);
+                    drawHandPouredStripe(-512);
+                    drawHandPouredStripe(512);
                 }
             } else if (pattern === 'dust') {
-                // Powdered granulated sugar specks
                 ctx.fillStyle = '#ffffff';
                 for (let i = 0; i < 350; i++) {
                     const x = Math.random() * 512;
@@ -953,25 +1029,60 @@
                     ctx.fill();
                 }
             } else if (pattern === 'caramel') {
-                // Thick wavy melted caramel syrup
-                ctx.strokeStyle = '#854d0e'; // Rich dark golden brown
-                ctx.lineWidth = 18; // Thicker lines for higher visibility
+                ctx.strokeStyle = '#854d0e';
                 ctx.lineCap = 'round';
-                const stripeCount = 14; // Increased from 5 to 14 to cover the full torus 360 degrees
-                for (let i = 0; i < stripeCount; i++) {
+                
+                const numRibbons = 8;
+                const baseWidth = 512 / numRibbons;
+                
+                for (let i = 0; i < numRibbons; i++) {
+                    // Jitter spacing randomly to simulate organic hand-poured patterns
+                    const offset = (i + (Math.random() * 0.6 - 0.3)) * baseWidth;
+                    
+                    // Vary thickness of each ribbon organically
+                    ctx.lineWidth = 14 + Math.random() * 11;
+                    
+                    // Purely periodic trigonometric harmonics ensure exact vertical seamless wrapping (y=0 matches y=256)
+                    const freq1 = Math.floor(Math.random() * 2) + 1; // 1 or 2 cycles
+                    const freq2 = Math.floor(Math.random() * 2) + 3; // 3 or 4 cycles
+                    const amp1 = 15 + Math.random() * 20;
+                    const amp2 = 5 + Math.random() * 8;
+                    const phase1 = Math.random() * Math.PI * 2;
+                    const phase2 = Math.random() * Math.PI * 2;
+                    
+                    const getX = (y) => {
+                        const radY = (y / 256) * Math.PI * 2;
+                        return offset + amp1 * Math.sin(radY * freq1 + phase1) + amp2 * Math.sin(radY * freq2 + phase2);
+                    };
+
+                    // Draw main path
                     ctx.beginPath();
-                    // Evenly distribute start points so stripes wrap seamlessly around the whole donut
-                    const startX = (i * (512 / stripeCount)) + (Math.random() - 0.5) * 15;
-                    ctx.moveTo(startX, -10);
-                    ctx.bezierCurveTo(
-                        startX + (Math.random() - 0.5) * 100, 64,
-                        startX + (Math.random() - 0.5) * 100, 192,
-                        startX + (Math.random() - 0.5) * 100, 266
-                    );
+                    for (let y = 0; y <= 256; y += 4) {
+                        const x = getX(y);
+                        if (y === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+
+                    // Draw wrapped left copy for seamless horizontal wrapping
+                    ctx.beginPath();
+                    for (let y = 0; y <= 256; y += 4) {
+                        const x = getX(y) - 512;
+                        if (y === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+
+                    // Draw wrapped right copy
+                    ctx.beginPath();
+                    for (let y = 0; y <= 256; y += 4) {
+                        const x = getX(y) + 512;
+                        if (y === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
                     ctx.stroke();
                 }
             } else if (pattern === 'spots') {
-                // Cream spots (white dots)
                 ctx.fillStyle = '#ffffff';
                 const spotCount = 35;
                 for (let i = 0; i < spotCount; i++) {
@@ -983,7 +1094,6 @@
                     ctx.fill();
                 }
             } else if (pattern === 'marble') {
-                // Swirling marble cream frosting ribbons
                 ctx.strokeStyle = '#fffbeb';
                 ctx.lineWidth = 5;
                 for (let i = 0; i < 12; i++) {
@@ -998,7 +1108,6 @@
                     ctx.stroke();
                 }
             } else if (pattern === 'dots') {
-                // Tiny speckles (e.g. Vanilla Bean grains)
                 ctx.fillStyle = '#3f2511';
                 for (let i = 0; i < 200; i++) {
                     const x = Math.random() * 512;
@@ -1006,7 +1115,6 @@
                     ctx.fillRect(x, y, 2.5, 2.5);
                 }
             } else if (pattern === 'choco_chips') {
-                // Dark chocolate chips/spots
                 ctx.fillStyle = sprinkleColors[0];
                 const spotCount = 45;
                 for (let i = 0; i < spotCount; i++) {
@@ -1023,7 +1131,10 @@
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
 
-            // Premium glossy edible clearcoat glaze look
+            // Randomize texture offsets completely so adjacent donuts have pattern rotations aligned differently!
+            texture.offset.x = Math.random();
+            texture.offset.y = Math.random();
+
             return new THREE.MeshPhysicalMaterial({
                 map: texture,
                 roughness: 0.08,
@@ -1058,7 +1169,7 @@
             if (!stick) return;
             
             const startPos = stick.position.clone();
-            startPos.y += (CONFIG.maxHeight * 0.45) + 0.5; // Top of the peg
+            startPos.y += (CONFIG.maxHeight * 0.45) + 0.5;
             
             const pCount = 18;
             const geom = new THREE.SphereGeometry(0.06, 8, 8);
@@ -1093,6 +1204,40 @@
             }
         }
 
+        function spawnFloatingPraise(stickIdx) {
+            if (stickIdx === null || stickIdx === undefined) return;
+            const stick = STATE.sticks[stickIdx];
+            if (!stick) return;
+
+            const phrases = ["GLAZED!", "SWEET!", "PERFECT!", "YUMMY!", "AWESOME!", "DELICIOUS!", "CLEVER!", "SORTED!"];
+            const colors = ["#FF6B8B", "#FF8787", "#4D96FF", "#51CF66", "#FFA94D", "#8249DE"];
+            
+            const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            const worldPos = stick.position.clone();
+            worldPos.y += (CONFIG.maxHeight * 0.45) + 0.8; 
+            
+            const screenPos = worldPos.project(camera);
+            const x = (screenPos.x * .5 + .5) * window.innerWidth;
+            const y = (-(screenPos.y * .5) + .5) * window.innerHeight;
+
+            if (x < 0 || x > window.innerWidth || y < 0 || y > window.innerHeight) return;
+
+            const praiseEl = document.createElement('div');
+            praiseEl.className = "praise-text text-lg sm:text-2xl font-black";
+            praiseEl.style.left = `${x}px`;
+            praiseEl.style.top = `${y}px`;
+            praiseEl.style.color = color;
+            praiseEl.innerText = phrase;
+
+            const container = document.getElementById('praise-container');
+            if (container) {
+                container.appendChild(praiseEl);
+                setTimeout(() => praiseEl.remove(), 1200);
+            }
+        }
+
         // --- HIGH-PERFORMANCE CANONICAL BOUNDED-DEPTH A* SOLVER ---
 
         function getCurrentBoardStateAsArrays() {
@@ -1101,7 +1246,6 @@
             });
         }
 
-        // Symmetry reduction: Represents layout canonically so symmetries are collapsed
         function getCanonicalHash(boardState) {
             return boardState.map(peg => peg.join(',')).sort().join('|');
         }
@@ -1111,7 +1255,7 @@
             for (let i = 0; i < boardState.length; i++) {
                 const peg = boardState[i];
                 if (peg.length === 0) continue;
-                t += 1; // Floor transition
+                t += 1; 
                 for (let j = 1; j < peg.length; j++) {
                     if (peg[j] !== peg[j - 1]) {
                         t++;
@@ -1215,14 +1359,12 @@
                 const nextQueue = [];
                 const visitedThisLayer = new Set();
                 
-                // Limit layer expansion depth dynamically using a beam width of 400
                 const beamWidth = 400;
                 const limit = Math.min(queue.length, beamWidth);
                 
                 for (let i = 0; i < limit; i++) {
                     const curr = queue[i];
                     
-                    // Cull and branch strictly using the top 10 best prioritized moves at this step
                     const prioritizedMoves = getPrioritizedMoves(curr.board, maxHeight);
                     const movesToExplore = prioritizedMoves.slice(0, 10);
                     
@@ -1232,7 +1374,7 @@
                         const nextHash = getCanonicalHash(nextBoard);
                         
                         if (STATE.recentBoardHashes && STATE.recentBoardHashes.includes(nextHash)) {
-                            continue; // avoid backtracking into executed loop states
+                            continue;
                         }
                         
                         const nextMoves = [...curr.moves, m];
@@ -1259,7 +1401,6 @@
                         return { paths: nextQueue };
                     }
                 } else {
-                    // Sort the layer queue by heuristic and trim to beam width
                     nextQueue.sort((a, b) => a.h - b.h);
                     queue = nextQueue.slice(0, beamWidth);
                 }
@@ -1270,13 +1411,11 @@
             return null;
         }
 
-        // Iterative Deepening Lookahead with commitment planning rules and tie-breaking expansion
         function solveBoard(initialState, maxHeight) {
             const currentChaos = getHeuristic(initialState);
             const legalMoves = getLegalMoves(initialState, maxHeight);
             if (legalMoves.length === 0) return [];
 
-            // 1) Evaluate immediate 1-ply moves for direct improvement
             const improvingMoves = [];
             for (let i = 0; i < legalMoves.length; i++) {
                 const m = legalMoves[i];
@@ -1287,12 +1426,10 @@
                 }
             }
 
-            // Rule 1.1: If there's an immediate move with improvement, and it's the only one:
             if (improvingMoves.length === 1) {
                 return [improvingMoves[0].move];
             }
 
-            // Rule 1.2: If there are more than one immediate improving moves (a tie):
             if (improvingMoves.length > 1) {
                 let currentWinners = improvingMoves.map(cand => ({
                     initialMove: cand.move,
@@ -1301,13 +1438,11 @@
                     path: [cand.move]
                 }));
 
-                // Expand lookahead from depth 2 up to depth 5
                 for (let depth = 2; depth <= 5; depth++) {
                     let nextWinners = [];
                     let bestChaosThisDepth = Infinity;
 
                     for (let w of currentWinners) {
-                        // Narrow branching strictly to top 8 candidates per tie step
                         const moves = getPrioritizedMoves(w.currentState, maxHeight).slice(0, 8);
                         for (let m of moves) {
                             const nextState = applyMoveToState(w.currentState, m);
@@ -1336,7 +1471,6 @@
                         currentWinners = nextWinners;
                     }
 
-                    // Check if we have a unique winner
                     const uniqueStartingMoves = new Set(currentWinners.map(w => w.initialMove.src + '-' + w.initialMove.dst));
                     if (uniqueStartingMoves.size === 1) {
                         const win = currentWinners[0];
@@ -1344,12 +1478,10 @@
                     }
                 }
 
-                // If still tied after 5 levels, use priority tie-breaking strategy
                 const bestWinner = currentWinners[0];
                 return bestWinner.path;
             }
 
-            // 2) PLANNING mode.
             const maxAllowedDepth = Math.min(24, CONFIG.numSticks + 12); 
             for (let depth = 2; depth <= maxAllowedDepth; depth++) {
                 const res = findPathsToImprovement(initialState, maxHeight, depth, currentChaos);
@@ -1394,25 +1526,21 @@
                                 currentWinners = nextWinners;
                             }
 
-                            // If we have a unique winner path
                             const uniquePaths = new Set(currentWinners.map(w => w.initialPath.map(move => move.src + '-' + move.dst).join(',')));
                             if (uniquePaths.size === 1) {
                                 return currentWinners[0].initialPath;
                             }
                         }
 
-                        // Apply tie-breaking strategy on the final winners
                         const bestWinner = currentWinners[0];
                         return bestWinner.initialPath;
                     }
 
-                    // Otherwise (if depth >= 5), return the best winner path found
                     winnerPaths.sort((a, b) => a.h - b.h);
                     return winnerPaths[0].moves;
                 }
             }
 
-            // Fallback: choose the move that keeps chaos minimized
             const sorted = getPrioritizedMoves(initialState, maxHeight);
             for (let m of sorted) {
                 const nextState = applyMoveToState(initialState, m);
@@ -1445,11 +1573,10 @@
                     pct = Math.min(1.0, Math.max(0.0, chaosVal / STATE.initialChaos));
                 }
                 
-                // Transition between orange and hot pink to represent bakery excitement
                 let r, g, b;
                 if (pct > 0.5) {
                     const t = (pct - 0.5) * 2;
-                    r = Math.floor(239 + (219 - 239) * t); // Hot Pink to warm orange
+                    r = Math.floor(239 + (219 - 239) * t); 
                     g = Math.floor(68 + (119 - 68) * t);
                     b = Math.floor(68 + (6 - 68) * t);
                 } else {
@@ -1483,7 +1610,7 @@
                 clearTimeout(autoplayTimeout);
                 autoplayTimeout = null;
             }
-            STATE.autoplayPlannedPath = []; // reset planning queues
+            STATE.autoplayPlannedPath = []; 
             STATE.autoplayStartChaos = 999;
         }
 
@@ -1500,7 +1627,6 @@
             const currentBoard = getCurrentBoardStateAsArrays();
             const currentChaos = getHeuristic(currentBoard);
             
-            // COMMITMENT RECALCULATION RULE:
             const shouldRecalculate = (STATE.autoplayPlannedPath.length === 0) || 
                                       (currentChaos < STATE.autoplayStartChaos);
             
@@ -1512,7 +1638,7 @@
                     
                     if (solution && solution.length > 0) {
                         STATE.autoplayPlannedPath = solution;
-                        STATE.autoplayStartChaos = currentChaos; // lock commitment baseline
+                        STATE.autoplayStartChaos = currentChaos; 
                         continueAutoplayExecution();
                     } else {
                         stopAutoplay();
@@ -1542,28 +1668,45 @@
             const boardBefore = getCurrentBoardStateAsArrays();
             STATE.chaosBeforeMove = Math.max(0, getBoardTransitions(boardBefore) - (CONFIG.numSticks - 1));
 
+            // Set visual selection indicators
+            setSelectionIndicator(srcIdx);
+
             STATE.selectedStickIndex = srcIdx;
             STATE.selectedCount = numToMove;
             animateDiscsHoverGroup(srcIdx, true);
             playWoodSound('pick');
             
             setTimeout(() => {
+                const destPeg = STATE.sticks[dstIdx];
+                const destTopColor = destPeg.discs.length > 0 ? destPeg.discs[destPeg.discs.length - 1].colorId : null;
+                const movingColor = STATE.sticks[srcIdx].discs[STATE.sticks[srcIdx].discs.length - numToMove].colorId;
+                
+                // Assess if AI move is wasted (moving to different color base)
+                const landsOnDifferentColor = (destTopColor !== null && destTopColor !== movingColor);
+
                 STATE.lastMoveForUndo = {
                     srcIdx,
                     dstIdx,
                     numToMove,
-                    prevMovesCount: STATE.moves
+                    prevMovesCount: STATE.moves,
+                    isWasted: landsOnDifferentColor
                 };
                 
                 STATE.moveHistory.push({
                     srcIdx,
                     dstIdx,
                     numToMove,
-                    elapsedSeconds: STATE.elapsedSeconds
+                    elapsedSeconds: STATE.elapsedSeconds,
+                    isWasted: landsOnDifferentColor
                 });
+
+                if (landsOnDifferentColor) {
+                    STATE.wastedMoves++;
+                }
                 
                 STATE.selectedStickIndex = null;
                 STATE.selectedCount = 0;
+                clearSelectionIndicator();
                 executeGroupDiscTransfer(srcIdx, dstIdx, numToMove);
             }, 250);
         }
@@ -1680,6 +1823,142 @@
             STATE.isAnimating = false;
         }
 
+        // Procedural generator for a beautiful soft, feathered radial shadow texture
+        function createSoftShadeTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            
+            // Create a smooth radial gradient fading out to the edges
+            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, 'rgba(107, 33, 41, 0.42)');  // Soft warm dark berry shadow core
+            grad.addColorStop(0.3, 'rgba(107, 33, 41, 0.20)');
+            grad.addColorStop(0.7, 'rgba(107, 33, 41, 0.04)');
+            grad.addColorStop(1, 'rgba(107, 33, 41, 0)');
+            
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 128, 128);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            return texture;
+        }
+
+        function setSelectionIndicator(stickIdx) {
+            if (stickIdx === null || stickIdx === undefined) return;
+            const stick = STATE.sticks[stickIdx];
+            if (!stick) return;
+
+            if (!STATE.selectionRingMesh) {
+                // Soft, feathered circular shadow mesh on the counter floor
+                const planeGeom = new THREE.PlaneGeometry(2.2, 2.2);
+                planeGeom.rotateX(-Math.PI / 2); // align horizontal
+                const shadeMat = new THREE.MeshBasicMaterial({
+                    map: createSoftShadeTexture(),
+                    transparent: true,
+                    depthWrite: false,
+                    blending: THREE.NormalBlending
+                });
+                STATE.selectionRingMesh = new THREE.Mesh(planeGeom, shadeMat);
+            }
+
+            // Position selection ring slightly above the wooden table base board
+            const shiftY = -1.5;
+            const baseH = 0.55;
+            STATE.selectionRingMesh.position.set(stick.position.x, baseH + shiftY + 0.02, stick.position.z);
+            scene.add(STATE.selectionRingMesh);
+        }
+
+        function clearSelectionIndicator() {
+            if (STATE.selectionRingMesh) {
+                scene.remove(STATE.selectionRingMesh);
+            }
+        }
+
+        function restartCurrentRound() {
+            stopAutoplay();
+            pauseTimer();
+            clearSelectionIndicator();
+
+            // All current moves are cataloged as wasted moves
+            STATE.wastedMoves += STATE.moves;
+
+            // Reset current active stats
+            STATE.moves = 0;
+            document.getElementById('hud-moves').innerText = "0";
+            STATE.elapsedSeconds = 0;
+            document.getElementById('hud-timer').innerText = "00:00";
+            STATE.isWon = false;
+            STATE.selectedStickIndex = null;
+            STATE.selectedCount = 0;
+            STATE.isAnimating = false;
+            STATE.activeAnimations = [];
+            STATE.particles = [];
+            STATE.moveHistory = [];
+            STATE.lastMoveForUndo = null;
+            
+            // Restart overwrites undos count completely
+            STATE.undoCount = 0;
+            updateUndoButtonState();
+
+            // Tag as restarted round
+            STATE.hasRestartedRound = true;
+
+            // Remove current donuts from scene and rebuild from STATE.initialBoardState
+            STATE.discs.forEach(d => {
+                scene.remove(d.mesh);
+            });
+            STATE.sticks.forEach(s => {
+                s.discs = [];
+            });
+            STATE.discs = [];
+
+            const torusRadius = 0.45;
+            const torusTube = 0.22; 
+            const discGeom = new THREE.TorusGeometry(torusRadius, torusTube, 20, 50);
+            discGeom.rotateX(Math.PI / 2);
+
+            for (let stickIdx = 0; stickIdx < CONFIG.numSticks; stickIdx++) {
+                const stack = STATE.initialBoardState[stickIdx];
+                for (let h = 0; h < stack.length; h++) {
+                    const colorId = stack[h];
+                    const colorInfo = PALETTE.find(p => p.id === colorId);
+                    const discMat = generateDonutMaterial(colorInfo);
+
+                    const discMesh = new THREE.Mesh(discGeom, discMat);
+                    discMesh.castShadow = true;
+                    discMesh.receiveShadow = true;
+
+                    const targetY = STATE.sticks[stickIdx].position.y + (h * 0.45) + 0.225;
+                    discMesh.position.set(
+                        STATE.sticks[stickIdx].position.x,
+                        targetY,
+                        STATE.sticks[stickIdx].position.z
+                    );
+
+                    scene.add(discMesh);
+
+                    const discObj = {
+                        mesh: discMesh,
+                        colorId: colorId,
+                        initialMat: discMat
+                    };
+
+                    STATE.sticks[stickIdx].discs.push(discObj);
+                    STATE.discs.push(discObj);
+                }
+            }
+
+            // Sync completion markers
+            STATE.completedSticks = Array(CONFIG.numSticks).fill(false);
+            for (let i = 0; i < CONFIG.numSticks; i++) {
+                STATE.completedSticks[i] = isStickCompleted(i);
+            }
+
+            STATE.recentBoardHashes = [getCanonicalHash(STATE.initialBoardState)];
+            updateChaosHUD();
+        }
+
         function startNewGame(loadFromChallenge = false) {
             clearInterval(STATE.timerInterval);
             STATE.timerInterval = null;
@@ -1700,13 +1979,16 @@
             STATE.particles = [];
             STATE.hintCount = 0;
             STATE.autoplayCount = 0;
+            STATE.undoCount = 0;
+            STATE.wastedMoves = 0;
             STATE.recentBoardHashes = [];
-            STATE.autoplayPlannedPath = []; // reset planning queues
+            STATE.autoplayPlannedPath = []; 
             STATE.autoplayStartChaos = 999;
+            STATE.hasRestartedRound = false; // Reset restart flag
             updateUndoButtonState();
             stopAutoplay();
+            clearSelectionIndicator();
 
-            // Sync the infinite loop toggle checkbox state inside the configuration panel
             const toggleInfinite = document.getElementById('toggle-infinite-auto');
             if (toggleInfinite) {
                 STATE.isInfiniteAutoSolve = toggleInfinite.checked;
@@ -1721,6 +2003,7 @@
 
             STATE.sticks.forEach(s => {
                 scene.remove(s.mesh);
+                if (s.hitboxMesh) scene.remove(s.hitboxMesh); // Clear fatter hitboxes
             });
             STATE.discs.forEach(d => {
                 scene.remove(d.mesh);
@@ -1748,7 +2031,6 @@
                 document.getElementById(`slider-sticks`).value = CONFIG.numSticks;
                 document.getElementById(`val-sticks`).innerText = CONFIG.numSticks;
                 
-                // Slider limit max updated before setting value
                 document.getElementById(`slider-colors`).max = CONFIG.numSticks - 1; 
                 document.getElementById(`slider-colors`).value = CONFIG.numColors;
                 document.getElementById(`val-colors`).innerText = CONFIG.numColors;
@@ -1834,10 +2116,8 @@
             const baseD = (maxZ - minZ) + marginZ * 2;
             const baseH = 0.55;
 
-            // --- BUILD 3D DECORATED SHOP COUNTER SHIFTED DOWN BY 1.5 UNITS FOR OPTIMAL FRAMING ---
             const shiftY = -1.5;
 
-            // Main tabletop base board (cozy honey wood)
             const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(baseW, baseH, baseD), standWoodMaterial);
             baseMesh.name = "baseBoard";
             baseMesh.position.set((minX + maxX) / 2, baseH / 2 + shiftY, (minZ + maxZ) / 2);
@@ -1845,7 +2125,6 @@
             baseMesh.castShadow = true;
             scene.add(baseMesh);
 
-            // Striped Fabric skirt (adds cozy festival/street shop aesthetic to bottom of stand)
             const skirtH = 2.0;
             const skirtMesh = new THREE.Mesh(
                 new THREE.BoxGeometry(baseW - 0.05, skirtH, baseD - 0.05),
@@ -1856,10 +2135,13 @@
             skirtMesh.receiveShadow = true;
             scene.add(skirtMesh);
 
-            // Peg holder rods (polished gourmet acrylic)
             const stickHeight = (CONFIG.maxHeight * 0.45);
             const stickGeom = new THREE.CylinderGeometry(0.18, 0.18, stickHeight, 24);
             stickGeom.translate(0, stickHeight / 2, 0);
+
+            // Generous Touch Targets geometry: fatter invisible cylinders
+            const hitboxGeom = new THREE.CylinderGeometry(0.68, 0.68, stickHeight + 1.2, 16);
+            hitboxGeom.translate(0, (stickHeight + 1.2) / 2, 0);
 
             for (let i = 0; i < CONFIG.numSticks; i++) {
                 const stickMesh = new THREE.Mesh(stickGeom, rodMaterial);
@@ -1869,16 +2151,26 @@
                 stickMesh.receiveShadow = true;
                 scene.add(stickMesh);
 
+                // Touch Target Invisible Mesh
+                const hitboxMesh = new THREE.Mesh(hitboxGeom, new THREE.MeshBasicMaterial({
+                    transparent: true,
+                    opacity: 0,
+                    depthWrite: false
+                }));
+                hitboxMesh.position.copy(stickMesh.position);
+                hitboxMesh.position.y -= 0.2;
+                scene.add(hitboxMesh);
+
                 STATE.sticks.push({
                     mesh: stickMesh,
+                    hitboxMesh: hitboxMesh,
                     position: stickMesh.position.clone(),
                     discs: [] 
                 });
             }
 
-            // Puffy yeast donut geometry
             const torusRadius = 0.45;
-            const torusTube = 0.22; // Resembles round dough
+            const torusTube = 0.22; 
             const discGeom = new THREE.TorusGeometry(torusRadius, torusTube, 20, 50);
             discGeom.rotateX(Math.PI / 2);
 
@@ -1918,7 +2210,6 @@
                 STATE.completedSticks[i] = isStickCompleted(i);
             }
 
-            // --- CAMERA SETUP & PRESERVATION ---
             const centerX = (minX + maxX) / 2;
             const centerZ = (minZ + maxZ) / 2;
 
@@ -1927,7 +2218,6 @@
                                      LAST_CONFIG.maxHeight !== CONFIG.maxHeight);
 
             if (isConfigChanged) {
-                // Focus camera nicely on sweet baked display
                 const targetY = baseH + stickHeight * 0.45 + shiftY;
                 controls.target.set(centerX, targetY, centerZ);
 
@@ -1946,7 +2236,6 @@
                 controls.update();
             }
 
-            // Save configurations
             LAST_CONFIG.numSticks = CONFIG.numSticks;
             LAST_CONFIG.maxHeight = CONFIG.maxHeight;
             LAST_CONFIG.numColors = CONFIG.numColors;
@@ -1957,7 +2246,6 @@
                 updateChaosHUD();
             }, 100);
 
-            // Automatically trigger solver if Infinite Auto Solve is active
             if (STATE.isInfiniteAutoSolve && !loadFromChallenge) {
                 setTimeout(() => {
                     if (STATE.isInfiniteAutoSolve) {
@@ -2044,8 +2332,11 @@
 
             raycaster.setFromCamera(mouse, camera);
 
+            // Prioritize fatter invisible hitboxes to ensure extremely responsive touch inputs on mobile
             const targets = [];
-            STATE.sticks.forEach(s => targets.push(s.mesh));
+            STATE.sticks.forEach(s => {
+                if (s.hitboxMesh) targets.push(s.hitboxMesh);
+            });
             STATE.discs.forEach(d => targets.push(d.mesh));
 
             const intersects = raycaster.intersectObjects(targets);
@@ -2053,12 +2344,14 @@
             if (intersects.length > 0) {
                 const hitObject = intersects[0].object;
                 
-                const hitStickIndex = STATE.sticks.findIndex(s => s.mesh === hitObject);
+                // Check if we hit an invisible fatter hitbox cylinder
+                const hitStickIndex = STATE.sticks.findIndex(s => s.hitboxMesh === hitObject);
                 if (hitStickIndex !== -1) {
                     handleStickSelection(hitStickIndex);
                     return;
                 }
 
+                // Fallback direct mesh click check
                 const hitDisc = STATE.discs.find(d => d.mesh === hitObject);
                 if (hitDisc) {
                     const hitStickIndexFromDisc = getDiscStickIndex(hitDisc);
@@ -2085,7 +2378,6 @@
                     : (stick.position.y + (discIdx * 0.45) + 0.225);
 
                 if (hoverState) {
-                    // Sweet glowing sugary sheen highlights
                     disc.mesh.material.emissive = new THREE.Color(0x221111);
                 } else {
                     disc.mesh.material.emissive = new THREE.Color(0x000000);
@@ -2133,6 +2425,8 @@
                 STATE.selectedStickIndex = stickIdx;
                 STATE.selectedCount = count;
                 
+                // Show selected indicator projection rings and hover colors
+                setSelectionIndicator(stickIdx);
                 animateDiscsHoverGroup(stickIdx, true);
                 playWoodSound('pick');
             } else {
@@ -2142,6 +2436,7 @@
                     animateDiscsHoverGroup(sourceIdx, false);
                     STATE.selectedStickIndex = null;
                     STATE.selectedCount = 0;
+                    clearSelectionIndicator();
                     playWoodSound('pick');
                 } else {
                     const srcStick = STATE.sticks[sourceIdx];
@@ -2155,6 +2450,7 @@
                         animateDiscsHoverGroup(sourceIdx, false);
                         STATE.selectedStickIndex = null;
                         STATE.selectedCount = 0;
+                        clearSelectionIndicator();
                         return;
                     }
 
@@ -2190,22 +2486,34 @@
                     const boardBefore = getCurrentBoardStateAsArrays();
                     STATE.chaosBeforeMove = Math.max(0, getBoardTransitions(boardBefore) - (CONFIG.numSticks - 1));
 
+                    // Evaluate if player move is wasted (lands on non-empty peg of different color)
+                    const destTopColor = dstStick.discs.length > 0 ? dstStick.discs[dstStick.discs.length - 1].colorId : null;
+                    const movingColor = srcStick.discs[srcStick.discs.length - countToMove].colorId;
+                    const landsOnDifferentColor = (destTopColor !== null && destTopColor !== movingColor);
+
                     STATE.lastMoveForUndo = {
                         srcIdx: sourceIdx,
                         dstIdx: stickIdx,
                         numToMove: countToMove,
-                        prevMovesCount: STATE.moves
+                        prevMovesCount: STATE.moves,
+                        isWasted: landsOnDifferentColor
                     };
 
                     STATE.moveHistory.push({
                         srcIdx: sourceIdx,
                         dstIdx: stickIdx,
                         numToMove: countToMove,
-                        elapsedSeconds: STATE.elapsedSeconds
+                        elapsedSeconds: STATE.elapsedSeconds,
+                        isWasted: landsOnDifferentColor
                     });
+
+                    if (landsOnDifferentColor) {
+                        STATE.wastedMoves++;
+                    }
 
                     STATE.selectedStickIndex = null; 
                     STATE.selectedCount = 0;
+                    clearSelectionIndicator();
 
                     executeGroupDiscTransfer(sourceIdx, stickIdx, countToMove);
                 }
@@ -2299,6 +2607,8 @@
 
                                 if (nowCompleted && !wasCompleted && !STATE.isReplaying && !isUndo) {
                                     triggerStickCompleteAnimation(dstIdx);
+                                    // Trigger beautiful projected floating completed praise popup
+                                    spawnFloatingPraise(dstIdx);
                                 }
 
                                 const boardAfter = getCurrentBoardStateAsArrays();
@@ -2311,23 +2621,20 @@
 
                                 updateChaosHUD();
 
-                                // Play damp pastry slide sound on settle
                                 playWoodSound('place');
 
-                                // Slight delay before sparkles and tones
                                 if (!STATE.isReplaying && !isUndo) {
                                     setTimeout(() => {
                                         if (quality === 'good') {
-                                            spawnStickSparkles(dstIdx, '#facc15'); // Gold sparkles
+                                            spawnStickSparkles(dstIdx, '#facc15'); 
                                             playWoodSound('goodChime');
                                         } else if (quality === 'bad') {
-                                            spawnStickSparkles(dstIdx, '#f43f5e'); // Rose sprinkles
+                                            spawnStickSparkles(dstIdx, '#f43f5e'); 
                                             playWoodSound('badBuzzer');
                                         }
                                     }, 120);
                                 }
 
-                                // Update loop history memory
                                 if (!STATE.isReplaying && !isUndo) {
                                     const canon = getCanonicalHash(boardAfter);
                                     if (!STATE.recentBoardHashes.includes(canon)) {
@@ -2338,7 +2645,6 @@
                                     }
                                 }
 
-                                // Clear planned sequence cache
                                 if (!STATE.isReplaying && !isUndo && !STATE.isAutoplayActive) {
                                     STATE.autoplayPlannedPath = [];
                                 }
@@ -2434,22 +2740,35 @@
                 }
             }());
 
-            // Render stats
             const timeStr = document.getElementById('hud-timer').innerText;
             document.getElementById('stat-score').innerText = `${timeStr}s | ${STATE.moves} moves`;
 
+            // Setup compiled help report string. Restart overwrites undo details.
             let helpStr = "None";
-            if (STATE.autoplayCount > 0) {
-                helpStr = "autoplay";
-            } else if (STATE.hintCount > 0) {
-                helpStr = `${STATE.hintCount} hint${STATE.hintCount > 1 ? 's' : ''}`;
+            if (STATE.hasRestartedRound) {
+                helpStr = "Restarted";
+            } else if (STATE.autoplayCount > 0) {
+                helpStr = "Autoplay used";
+            } else {
+                const helperLabels = [];
+                if (STATE.hintCount > 0) {
+                    helperLabels.push(`${STATE.hintCount} Hint${STATE.hintCount > 1 ? 's' : ''}`);
+                }
+                if (STATE.undoCount > 0) {
+                    helperLabels.push(`${STATE.undoCount} Undo${STATE.undoCount > 1 ? 's' : ''}`);
+                }
+                if (helperLabels.length > 0) {
+                    helpStr = helperLabels.join(", ");
+                }
             }
             document.getElementById('stat-help').innerText = helpStr;
+
+            // Display live wasted moves inside stats container
+            document.getElementById('stat-wasted').innerText = STATE.wastedMoves;
 
             document.getElementById('stat-setup').innerText = `${CONFIG.numSticks} pegs | ${CONFIG.numColors} glazes | ${CONFIG.maxHeight} stack`;
             document.getElementById('stat-difficulty').innerText = `${STATE.initialChaos} chaos`;
 
-            // If Infinite Loop mode is enabled, immediately skip victory modals and transition to Speed Recap
             if (STATE.isInfiniteAutoSolve) {
                 setTimeout(() => {
                     if (STATE.isInfiniteAutoSolve && STATE.isWon) {
@@ -2465,6 +2784,12 @@
             if (CHALLENGE_STATE.active) {
                 normalStatsPanel.classList.add('hidden');
                 challengeCard.classList.remove('hidden');
+
+                // Update selected difficulty in challenge badge
+                const diffBadge = document.getElementById('challenge-diff-badge');
+                if (diffBadge) {
+                    diffBadge.innerText = (CHALLENGE_STATE.difficulty || CONFIG.difficulty || 'custom').toUpperCase();
+                }
 
                 const challengeScores = document.getElementById('challenge-scores');
                 const challengeVerdict = document.getElementById('challenge-comparison-verdict');
@@ -2489,9 +2814,11 @@
                                 <span class="text-amber-800 font-semibold">Baker #${score.playerNum} ${isBest ? '👑' : ''}</span>
                                 <span class="font-mono font-bold text-amber-950">${score.moves} Moves | ${score.timeStr}</span>
                             </div>
-                            <div class="text-[10px] text-amber-700 flex gap-4 mt-0.5">
+                            <div class="text-[10px] text-amber-700 flex flex-wrap gap-x-4 gap-y-0.5 mt-0.5">
                                 <span>💡 Hints: ${score.hints}</span>
                                 <span>🤖 Autoplay: ${score.autoplay}</span>
+                                <span>🗑️ Wasted: ${score.wasted}</span>
+                                ${score.restarted ? `<span class="text-rose-500 font-bold">🔄 Restarted</span>` : `<span>🔄 Undos: ${score.undos}</span>`}
                             </div>
                         </div>
                     `;
@@ -2508,9 +2835,11 @@
                             <span>You (Latest Order) ${currentIsBest ? '✨' : ''}</span>
                             <span class="font-mono font-bold">${currentMoves} Moves | ${currentTimeStr}</span>
                         </div>
-                        <div class="text-[10px] text-pink-600 flex gap-4 mt-0.5">
+                        <div class="text-[10px] text-pink-600 flex flex-wrap gap-x-4 gap-y-0.5 mt-0.5">
                             <span>💡 Hints: ${STATE.hintCount}</span>
                             <span>🤖 Autoplay: ${STATE.autoplayCount}</span>
+                            <span>🗑️ Wasted: ${STATE.wastedMoves}</span>
+                            ${STATE.hasRestartedRound ? `<span class="text-rose-500 font-bold">🔄 Restarted</span>` : `<span>🔄 Undos: ${STATE.undoCount}</span>`}
                         </div>
                     </div>
                 `;
@@ -2536,7 +2865,7 @@
 
             setTimeout(() => {
                 if (!STATE.isWon) return;
-                if (STATE.isInfiniteAutoSolve) return; // Skip victory score panel display on Infinite Solve Mode
+                if (STATE.isInfiniteAutoSolve) return; 
 
                 const modal = document.getElementById('win-modal');
                 modal.classList.remove('opacity-0', 'pointer-events-none');
@@ -2546,7 +2875,7 @@
             }, 1000);
         }
 
-        // --- SPEED REPLAY LOGIC ---
+        // --- SPEED REPLAY ---
         let replayPanelTimeout = null;
 
         function triggerReplayPanelFlash() {
@@ -2668,7 +2997,6 @@
                 document.getElementById('hud-timer').innerText = `${mins}:${secs}`;
             }
 
-            // Infinite loop transition: Trigger a brand new game setup automatically
             if (STATE.isInfiniteAutoSolve) {
                 setTimeout(() => {
                     if (STATE.isInfiniteAutoSolve) {
@@ -2693,6 +3021,7 @@
             const btnPauseResume = document.getElementById('btn-pause-resume');
             const btnPauseReset = document.getElementById('btn-pause-reset');
             const btnPauseAutoplay = document.getElementById('btn-pause-autoplay');
+            const btnPauseRestartRound = document.getElementById('btn-pause-restart-round');
 
             function openPauseMenu() {
                 if (STATE.isWon || STATE.isReplaying || STATE.isAnimating) return;
@@ -2712,7 +3041,6 @@
                 }
             });
 
-            // Resumes game when clicking outside the pause card area on the backdrop
             pauseModal.addEventListener('click', (event) => {
                 if (event.target === pauseModal) {
                     pauseModal.classList.add('opacity-0', 'pointer-events-none');
@@ -2735,7 +3063,12 @@
                 startAutoplay();
             });
 
-            // Infinite Auto Solve Toggle Change Listener
+            btnPauseRestartRound.addEventListener('click', () => {
+                pauseModal.classList.add('opacity-0', 'pointer-events-none');
+                pauseModal.querySelector('.glass-panel').classList.add('scale-95');
+                restartCurrentRound();
+            });
+
             const toggleInfinite = document.getElementById('toggle-infinite-auto');
             toggleInfinite.addEventListener('change', (e) => {
                 STATE.isInfiniteAutoSolve = e.target.checked;
@@ -2775,11 +3108,46 @@
                     time: STATE.elapsedSeconds,
                     timeStr: document.getElementById('hud-timer').innerText,
                     hints: STATE.hintCount,
-                    autoplay: STATE.autoplayCount
+                    autoplay: STATE.autoplayCount,
+                    restarted: STATE.hasRestartedRound,
+                    undos: STATE.undoCount,
+                    wasted: STATE.wastedMoves
                 });
 
                 document.getElementById('win-modal').classList.add('opacity-0', 'pointer-events-none');
                 startNewGame(true); 
+            });
+
+            const btnPassAI = document.getElementById('btn-pass-ai');
+            btnPassAI.addEventListener('click', () => {
+                if (!CHALLENGE_STATE.active) {
+                    CHALLENGE_STATE.active = true;
+                    CHALLENGE_STATE.numSticks = CONFIG.numSticks;
+                    CHALLENGE_STATE.numColors = CONFIG.numColors;
+                    CHALLENGE_STATE.maxHeight = CONFIG.maxHeight;
+                    CHALLENGE_STATE.difficulty = CONFIG.difficulty;
+                    CHALLENGE_STATE.initialBoardState = JSON.parse(JSON.stringify(STATE.initialBoardState));
+                    CHALLENGE_STATE.previousScores = [];
+                }
+
+                CHALLENGE_STATE.previousScores.push({
+                    playerNum: CHALLENGE_STATE.previousScores.length + 1,
+                    moves: STATE.moves,
+                    time: STATE.elapsedSeconds,
+                    timeStr: document.getElementById('hud-timer').innerText,
+                    hints: STATE.hintCount,
+                    autoplay: STATE.autoplayCount,
+                    restarted: STATE.hasRestartedRound,
+                    undos: STATE.undoCount,
+                    wasted: STATE.wastedMoves
+                });
+
+                document.getElementById('win-modal').classList.add('opacity-0', 'pointer-events-none');
+                startNewGame(true); 
+
+                setTimeout(() => {
+                    startAutoplay();
+                }, 800);
             });
 
             const configDrawer = document.getElementById('config-drawer');
@@ -2849,11 +3217,17 @@
             document.getElementById('btn-undo').addEventListener('click', () => {
                 if (!STATE.lastMoveForUndo || STATE.isAnimating || STATE.isWon || STATE.isReplaying || STATE.isAutoplayActive) return;
 
+                STATE.undoCount++;
+
                 const undoMove = STATE.lastMoveForUndo;
                 STATE.lastMoveForUndo = null;
                 updateUndoButtonState();
 
-                STATE.moveHistory.pop();
+                const undoneMoveLog = STATE.moveHistory.pop();
+                // Decrement wasted count if player is reverting a move that was counted as wasted
+                if (undoneMoveLog && undoneMoveLog.isWasted) {
+                    STATE.wastedMoves = Math.max(0, STATE.wastedMoves - 1);
+                }
 
                 STATE.moves = undoMove.prevMovesCount;
                 document.getElementById('hud-moves').innerText = STATE.moves;
@@ -2875,7 +3249,7 @@
             });
 
             document.getElementById('btn-replay-toggle').addEventListener('click', (e) => {
-                e.stopPropagation(); // Avoid triggering screen tap fade
+                e.stopPropagation(); 
                 if (!STATE.isReplaying) return;
                 STATE.isReplayPaused = !STATE.isReplayPaused;
                 
@@ -2928,7 +3302,6 @@
             sliderSticks.value = CONFIG.numSticks;
             document.getElementById(`val-sticks`).innerText = CONFIG.numSticks;
 
-            // Critically set slider max BEFORE assigning new values to prevent clipping
             const sliderColors = document.getElementById(`slider-colors`);
             sliderColors.max = CONFIG.numSticks - 1;
             sliderColors.value = CONFIG.numColors;
@@ -3002,7 +3375,6 @@
                         const discIdx = discs.length - count + i;
                         const disc = discs[discIdx];
                         if (disc) {
-                            // Gentle floating yeast hover bounce animation
                             const targetY = hoverBaseY + (i * 0.45) + Math.sin(time) * 0.08;
                             disc.mesh.position.y = targetY;
                             disc.mesh.rotation.y += 0.01;
@@ -3014,6 +3386,21 @@
             controls.update();
             renderer.render(scene, camera);
         }
+
+        window.onload = function() {
+            initThree();
+            setupGUI();
+            setDifficultyPreset('easy'); 
+            startNewGame();
+            
+            setTimeout(() => {
+                const loader = document.getElementById('loading-screen');
+                if (loader) {
+                    loader.classList.add('opacity-0');
+                    setTimeout(() => loader.style.display = 'none', 500);
+                }
+            }, 500);
+        };
     </script>
 </body>
 </html>
