@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tangle Fruit - 3D Puzzle</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <!-- Three.js (v128) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- GSAP for smooth animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  
+  <style>
+    body {
+      font-family: 'Outfit', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+    }
+    canvas {
+      display: block;
+      outline: none;
+    }
+    .neon-text-glow {
+      text-shadow: 0 0 10px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.2);
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen flex flex-col justify-between p-4 text-white overflow-hidden">
+
+  <!-- Top Header / Scoreboard -->
+  <div class="w-full max-w-md mx-auto z-10 flex flex-col gap-2 shrink-0 select-none">
+    <div class="flex items-center justify-between w-full">
+      <div class="flex flex-col">
+        <h1 class="text-3xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-200">
+          TANGLE FRUIT
+        </h1>
+        <p class="text-[10px] text-slate-400 tracking-widest uppercase">Align identical fruits in columns</p>
+      </div>
+      <button id="btn-config" class="p-2 rounded-full glass-panel hover:bg-slate-800/80 transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37( 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="flex justify-between w-full mt-1 gap-2">
+      <div class="flex-1 glass-panel px-3 py-1.5 rounded-xl flex flex-col items-center">
+        <span class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Tangle</span>
+        <span id="score-tangle" class="text-xl font-black text-rose-400 font-mono">12</span>
+      </div>
+      <div class="flex-1 glass-panel px-3 py-1.5 rounded-xl flex flex-col items-center">
+        <span class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Moves</span>
+        <span id="stat-moves" class="text-xl font-black text-amber-300 font-mono">0</span>
+      </div>
+      <div class="flex-1 glass-panel px-3 py-1.5 rounded-xl flex flex-col items-center">
+        <span class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Time</span>
+        <span id="stat-time" class="text-xl font-black text-sky-400 font-mono">00:00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dedicated WebGL Game Container -->
+  <div id="canvas-container" class="w-full flex-grow relative z-0 min-h-0 my-2"></div>
+
+  <!-- Bottom Controls -->
+  <div class="w-full max-w-xs mx-auto z-10 flex gap-4 shrink-0 mb-2">
+    <button id="btn-scramble" class="flex-1 py-3 px-4 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl font-bold transition-all flex items-center justify-center gap-2 active:scale-95 shadow-lg">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17" />
+      </svg>
+      Scramble
+    </button>
+  </div>
+
+  <!-- Settings/Config Modal Overlay -->
+  <div id="modal-config" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+    <div class="w-full max-w-sm glass-panel rounded-2xl p-6 shadow-2xl relative">
+      <button id="modal-config-close" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <h2 class="text-xl font-extrabold text-emerald-400 mb-6 flex items-center gap-2">
+        Game Options
+      </h2>
+
+      <!-- Grid Size Option -->
+      <div class="mb-6">
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Grid Size</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button data-size="3" class="btn-size py-3 glass-panel rounded-xl font-bold text-slate-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all">3 x 3</button>
+          <button data-size="4" class="btn-size py-3 glass-panel border-emerald-500 bg-emerald-900/20 text-emerald-300 rounded-xl font-bold transition-all">4 x 4</button>
+          <button data-size="5" class="btn-size py-3 glass-panel rounded-xl font-bold text-slate-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all">5 x 5</button>
+        </div>
+      </div>
+
+      <!-- Controls Mode Alert -->
+      <div class="mb-6 p-4 rounded-xl bg-slate-800/50 border border-slate-700 text-sm text-slate-300 flex flex-col gap-2">
+        <span class="font-bold text-slate-100 flex items-center gap-1">
+          💡 How to play:
+        </span>
+        <ul class="list-disc pl-4 space-y-1 text-xs text-slate-400">
+          <li>Press and drag any fruit horizontally to slide its row.</li>
+          <li>Press and drag any fruit vertically to slide its column.</li>
+          <li>Tap the semitransparent triangular arrows to shift by single positions.</li>
+          <li>Match columns fully with identical fruit to solve the puzzle!</li>
+        </ul>
+      </div>
+
+      <!-- Accept Button -->
+      <button id="modal-config-apply" class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-lg rounded-xl shadow-lg shadow-emerald-500/20 transition-all uppercase tracking-wider">
+        Let's Play
+      </button>
+    </div>
+  </div>
+
+  <!-- Victory Overlay Panel -->
+  <div id="modal-victory" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/85 backdrop-blur-md p-4">
+    <div class="w-full max-w-sm glass-panel rounded-3xl p-8 shadow-2xl relative text-center flex flex-col items-center">
+      <!-- Huge Trophy Icon -->
+      <div class="w-20 h-20 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center justify-center mb-6 animate-bounce">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+        </svg>
+      </div>
+
+      <h2 class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-200 uppercase tracking-widest mb-1">
+        PUZZLE SOLVED!
+      </h2>
+      <p class="text-sm text-slate-400 mb-6 font-semibold uppercase tracking-wider">Perfect Alignment Achieved</p>
+
+      <!-- Victory Stats -->
+      <div class="grid grid-cols-2 gap-3 w-full mb-8">
+        <div class="glass-panel p-4 rounded-2xl">
+          <span class="block text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-1">Total Moves</span>
+          <span id="vic-moves" class="text-2xl font-black text-emerald-300 font-mono">24</span>
+        </div>
+        <div class="glass-panel p-4 rounded-2xl">
+          <span class="block text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-1">Total Time</span>
+          <span id="vic-time" class="text-2xl font-black text-sky-300 font-mono">01:42</span>
+        </div>
+      </div>
+
+      <!-- Play Again button -->
+      <button id="btn-victory-restart" class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-lg rounded-xl shadow-lg shadow-emerald-500/20 transition-all uppercase tracking-wider">
+        Play Again
+      </button>
+    </div>
+  </div>
+
+  <!-- Audio Synth Controller -->
+  <script>
+    class SoundSynth {
+      constructor() {
+        this.ctx = null;
+        this.enabled = false;
+      }
+
+      init() {
+        if (this.ctx) return;
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContextClass();
+          
+          if (navigator.audioSession) {
+            navigator.audioSession.type = "playback";
+          }
+          this.enabled = true;
+        } catch (e) {
+          console.warn('Web Audio API not supported', e);
+        }
+      }
+
+      resume() {
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playGrab() {
+        if (!this.enabled) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.exponentialRampToValueAtTime(180, now + 0.08);
+
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+
+      playSnap() {
+        if (!this.enabled) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(250, now);
+        osc.frequency.exponentialRampToValueAtTime(100, now + 0.15);
+
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+
+      playTangleSuccess() {
+        if (!this.enabled) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const startTime = now + idx * 0.06;
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, startTime);
+          osc.frequency.exponentialRampToValueAtTime(freq * 1.05, startTime + 0.2);
+
+          gain.gain.setValueAtTime(0, startTime);
+          gain.gain.linearRampToValueAtTime(0.08, startTime + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.22);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(startTime);
+          osc.stop(startTime + 0.22);
+        });
+      }
+
+      playVictory() {
+        if (!this.enabled) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        
+        const rootNotes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50]; // C4 arpeggio
+        rootNotes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const startTime = now + idx * 0.12;
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, startTime);
+          
+          gain.gain.setValueAtTime(0, startTime);
+          gain.gain.linearRampToValueAtTime(0.08, startTime + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.8);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(startTime);
+          osc.stop(startTime + 0.8);
+        });
+      }
+    }
+
+    const sound = new SoundSynth();
+  </script>
+
+  <!-- Game / WebGL Script -->
+  <script>
+    // --- Global Game State & Configuration ---
+    let N = 4; // Grid size NxN
+    const CELL_SPACING = 1.3;
+    let fruitsGrid = []; // N x N array representation
+    let solvedColumns = []; // Track solved state per column
+    let isTransitioning = false;
+    let movesCount = 0;
+    let startTime = null;
+    let timerInterval = null;
+    let firstInteractionDone = false;
+
+    // WebGL properties
+    let scene, camera, renderer;
+    let boardGroup;
+    let columnTracks = [];
+    let backgroundParticles;
+    const clickArrows = [];
+
+    // Drag-to-Rotate tracking vars
+    let isDragging = false;
+    let dragStartWorld = new THREE.Vector3();
+    let dragCurrentWorld = new THREE.Vector3();
+    let dragLockedDir = null; // 'horizontal', 'vertical', or null
+    let dragRowIdx = -1;
+    let dragColIdx = -1;
+    let dragFractionalOffset = 0;
+    let dragClones = [];
+    let initialFruitPositions = [];
+
+    // Visual assets lists
+    const colors = [
+      0xef4444, // Red (Apple)
+      0xf97316, // Orange (Orange)
+      0xfacc15, // Yellow (Lemon)
+      0xa855f7, // Purple (Grapes)
+      0x22c55e, // Green (Pear)
+      0x3b82f6  // Blue (Blueberry)
+    ];
+
+    // Setup window load triggers
+    window.onload = function() {
+      initEngine();
+      initGame();
+      setupEvents();
+    };
+
+    // --- WebGL Engine Initialization ---
+    function initEngine() {
+      const container = document.getElementById('canvas-container');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      // Create Scene
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x020617, 0.05);
+
+      // Create Camera looking flat down at coordinates
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+      camera.position.set(0, 0, 7.5);
+      camera.lookAt(0, 0, 0);
+
+      // Create Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(width, height);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      // Create Main Group (remains flat and centered)
+      boardGroup = new THREE.Group();
+      scene.add(boardGroup);
+
+      // Studio Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+      scene.add(ambientLight);
+
+      const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
+      mainLight.position.set(5, 5, 8);
+      mainLight.castShadow = true;
+      mainLight.shadow.mapSize.width = 1024;
+      mainLight.shadow.mapSize.height = 1024;
+      mainLight.shadow.bias = -0.001;
+      scene.add(mainLight);
+
+      const fillLight = new THREE.DirectionalLight(0x00f3ff, 0.35); // Neon blue fill
+      fillLight.position.set(-5, 3, 2);
+      scene.add(fillLight);
+
+      // Create background sparkle dust particles
+      const particleGeo = new THREE.BufferGeometry();
+      const count = 40;
+      const positions = new Float32Array(count * 3);
+      for (let i = 0; i < count * 3; i += 3) {
+        positions[i] = (Math.random() - 0.5) * 12;
+        positions[i + 1] = (Math.random() - 0.5) * 12;
+        positions[i + 2] = -2 - Math.random() * 4;
+      }
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const particleMat = new THREE.PointsMaterial({
+        color: 0x34d399,
+        size: 0.08,
+        transparent: true,
+        opacity: 0.4,
+        blending: THREE.AdditiveBlending
+      });
+      backgroundParticles = new THREE.Points(particleGeo, particleMat);
+      scene.add(backgroundParticles);
+
+      // Render Loop
+      function animate() {
+        requestAnimationFrame(animate);
+        
+        backgroundParticles.rotation.z += 0.0008;
+        
+        // Continuous edge-clipping logic to cleanly hide/shrink wrapped clones
+        applyBoundaryClipping();
+        
+        renderer.render(scene, camera);
+      }
+      animate();
+    }
+
+    // --- Procedural 3D Fruit Mesh Generation ---
+    function createFruitMesh(type) {
+      const group = new THREE.Group();
+      const glossMaterial = new THREE.MeshPhysicalMaterial({
+        color: colors[type % colors.length],
+        roughness: 0.15,
+        metalness: 0.05,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.1,
+        shadowSide: THREE.DoubleSide
+      });
+
+      switch (type) {
+        case 0: // Apple (Red)
+          const appleBody = new THREE.Mesh(new THREE.SphereGeometry(0.35, 32, 32), glossMaterial);
+          appleBody.scale.set(1, 0.9, 1);
+          appleBody.castShadow = true;
+          group.add(appleBody);
+          // Stem
+          const stemMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.7 });
+          const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.15), stemMat);
+          stem.position.y = 0.33;
+          stem.rotation.z = -0.2;
+          group.add(stem);
+          // Leaf
+          const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.5 });
+          const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.2, 4), leafMat);
+          leaf.position.set(0.08, 0.38, 0);
+          leaf.rotation.z = -0.7;
+          group.add(leaf);
+          break;
+
+        case 1: // Orange (Orange)
+          const orangeMat = glossMaterial.clone();
+          orangeMat.roughness = 0.4;
+          const orangeBody = new THREE.Mesh(new THREE.SphereGeometry(0.35, 32, 32), orangeMat);
+          orangeBody.castShadow = true;
+          group.add(orangeBody);
+          // Small leaf at top
+          const oLeafMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.5 });
+          const oLeaf = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.15, 4), oLeafMat);
+          oLeaf.position.set(0.03, 0.35, 0);
+          oLeaf.rotation.z = -0.5;
+          group.add(oLeaf);
+          break;
+
+        case 2: // Lemon (Yellow)
+          const lemonBody = new THREE.Mesh(new THREE.SphereGeometry(0.33, 32, 32), glossMaterial);
+          lemonBody.scale.set(1.3, 0.85, 0.85);
+          lemonBody.castShadow = true;
+          group.add(lemonBody);
+          // Points on ends
+          const leftTip = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.12, 16), glossMaterial);
+          leftTip.position.x = -0.4;
+          leftTip.rotation.z = Math.PI / 2;
+          group.add(leftTip);
+          const rightTip = leftTip.clone();
+          rightTip.position.x = 0.4;
+          rightTip.rotation.z = -Math.PI / 2;
+          group.add(rightTip);
+          break;
+
+        case 3: // Purple Grape bunch
+          const bunch = new THREE.Group();
+          const p1 = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 16), glossMaterial);
+          p1.position.set(0, -0.2, 0); bunch.add(p1);
+          const p2 = p1.clone(); p2.position.set(0.12, -0.05, 0.1); bunch.add(p2);
+          const p3 = p1.clone(); p3.position.set(-0.12, -0.05, 0.1); bunch.add(p3);
+          const p4 = p1.clone(); p4.position.set(0, 0.08, 0.12); bunch.add(p4);
+          const p5 = p1.clone(); p5.position.set(-0.1, 0.1, -0.1); bunch.add(p5);
+          const p6 = p1.clone(); p6.position.set(0.1, 0.1, -0.1); bunch.add(p6);
+          bunch.castShadow = true;
+          group.add(bunch);
+          break;
+
+        case 4: // Green Pear
+          const topPart = new THREE.Mesh(new THREE.SphereGeometry(0.22, 32, 32), glossMaterial);
+          topPart.position.y = 0.14;
+          const bottomPart = new THREE.Mesh(new THREE.SphereGeometry(0.33, 32, 32), glossMaterial);
+          bottomPart.position.y = -0.13;
+          topPart.castShadow = true;
+          bottomPart.castShadow = true;
+          group.add(topPart);
+          group.add(bottomPart);
+          // Stem
+          const pearStem = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.15), new THREE.MeshStandardMaterial({ color: 0x5c4033 }));
+          pearStem.position.y = 0.33;
+          pearStem.rotation.z = -0.1;
+          group.add(pearStem);
+          break;
+
+        case 5: // Blueberry (Blue)
+          const blueBody = new THREE.Mesh(new THREE.SphereGeometry(0.33, 32, 32), glossMaterial);
+          blueBody.castShadow = true;
+          group.add(blueBody);
+          // Crown on top of blueberry
+          const crownGeo = new THREE.TorusGeometry(0.08, 0.03, 8, 16);
+          const crownMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.5 });
+          const crown = new THREE.Mesh(crownGeo, crownMat);
+          crown.position.y = 0.31;
+          crown.rotation.x = Math.PI / 2;
+          group.add(crown);
+          break;
+      }
+
+      group.userData = { isFruit: true, type: type };
+      return group;
+    }
+
+    // --- Interactive 3D Directional Arrows Creators ---
+    function build3DArrows() {
+      clickArrows.forEach(arrow => boardGroup.remove(arrow));
+      clickArrows.length = 0;
+
+      const totalWidth = N * CELL_SPACING;
+      const margin = (totalWidth / 2) + 0.45; // Position closely outside the board boundary frame
+
+      // Flat elegant semi-transparent triangle design
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0.18);
+      shape.lineTo(-0.14, -0.14);
+      shape.lineTo(0.14, -0.14);
+      shape.closePath();
+
+      const arrowGeo = new THREE.ShapeGeometry(shape);
+      const arrowMat = new THREE.MeshBasicMaterial({
+        color: 0x10b981,
+        transparent: true,
+        opacity: 0.4,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+
+      for (let r = 0; r < N; r++) {
+        const y = (r - (N - 1) / 2) * CELL_SPACING;
+
+        // LEFT Arrow pointing RIGHT
+        const arrowL = new THREE.Mesh(arrowGeo, arrowMat.clone());
+        arrowL.position.set(-margin, y, 0.05);
+        arrowL.rotation.z = -Math.PI / 2;
+        arrowL.userData = { isArrow: true, dir: 'horizontal', index: r, shift: 1 };
+        boardGroup.add(arrowL);
+        clickArrows.push(arrowL);
+
+        // RIGHT Arrow pointing LEFT
+        const arrowR = new THREE.Mesh(arrowGeo, arrowMat.clone());
+        arrowR.position.set(margin, y, 0.05);
+        arrowR.rotation.z = Math.PI / 2;
+        arrowR.userData = { isArrow: true, dir: 'horizontal', index: r, shift: -1 };
+        boardGroup.add(arrowR);
+        clickArrows.push(arrowR);
+      }
+
+      for (let c = 0; c < N; c++) {
+        const x = (c - (N - 1) / 2) * CELL_SPACING;
+
+        // TOP Arrow pointing DOWN
+        const arrowT = new THREE.Mesh(arrowGeo, arrowMat.clone());
+        arrowT.position.set(x, margin, 0.05);
+        arrowT.rotation.z = Math.PI;
+        arrowT.userData = { isArrow: true, dir: 'vertical', index: c, shift: -1 };
+        boardGroup.add(arrowT);
+        clickArrows.push(arrowT);
+
+        // BOTTOM Arrow pointing UP
+        const arrowB = new THREE.Mesh(arrowGeo, arrowMat.clone());
+        arrowB.position.set(x, -margin, 0.05);
+        arrowB.rotation.z = 0;
+        arrowB.userData = { isArrow: true, dir: 'vertical', index: c, shift: 1 };
+        boardGroup.add(arrowB);
+        clickArrows.push(arrowB);
+      }
+    }
+
+    // --- Build Columns Track Highlighting Plates ---
+    function buildColumnTracks() {
+      columnTracks.forEach(track => boardGroup.remove(track));
+      columnTracks.length = 0;
+
+      const trackHeight = N * CELL_SPACING;
+      const trackGeo = new THREE.PlaneGeometry(CELL_SPACING * 0.9, trackHeight, 1, 1);
+
+      for (let c = 0; c < N; c++) {
+        const x = (c - (N - 1) / 2) * CELL_SPACING;
+        const trackMat = new THREE.MeshStandardMaterial({
+          color: 0x1e293b,
+          transparent: true,
+          opacity: 0.15,
+          roughness: 0.9
+        });
+        const track = new THREE.Mesh(trackGeo, trackMat);
+        track.position.set(x, 0, -0.4);
+        boardGroup.add(track);
+        columnTracks.push(track);
+      }
+    }
+
+    // --- Build Dark Solid Frame and Board Plate ---
+    function buildBoardFrame() {
+      if (window.boardFrameBox) boardGroup.remove(window.boardFrameBox);
+
+      const size = N * CELL_SPACING;
+      
+      const frameGeo = new THREE.BoxGeometry(size + 0.15, size + 0.15, 0.15);
+      const frameMat = new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        roughness: 0.7,
+        metalness: 0.2
+      });
+      
+      const frame = new THREE.Mesh(frameGeo, frameMat);
+      frame.position.set(0, 0, -0.42);
+      frame.receiveShadow = true;
+      boardGroup.add(frame);
+      window.boardFrameBox = frame;
+    }
+
+    // --- Core Game Initialization ---
+    function initGame() {
+      solvedColumns = new Array(N).fill(false);
+
+      // Clear existing assets safely
+      fruitsGrid.forEach(row => {
+        row.forEach(cell => {
+          if (cell && cell.mesh) boardGroup.remove(cell.mesh);
+        });
+      });
+      fruitsGrid = [];
+
+      // Populate empty N x N representation
+      for (let r = 0; r < N; r++) {
+        fruitsGrid.push(new Array(N).fill(null));
+      }
+
+      // Initialize fruits in perfectly sorted columns first
+      for (let c = 0; c < N; c++) {
+        for (let r = 0; r < N; r++) {
+          const type = c; // Column index dictates fruit type
+          const mesh = createFruitMesh(type);
+          boardGroup.add(mesh);
+          
+          fruitsGrid[r][c] = {
+            type: type,
+            mesh: mesh
+          };
+        }
+      }
+
+      // Realign all elements static coordinates
+      repositionBoardAllStatic();
+
+      // Build Board components
+      buildBoardFrame();
+      buildColumnTracks();
+      build3DArrows();
+
+      // Scramble sequence (simulate tens of thousands of logical moves starting from solved state)
+      scrambleBoard();
+
+      // Reset statistics
+      movesCount = 0;
+      document.getElementById('stat-moves').innerText = movesCount;
+      resetTimer();
+
+      updateTangleValue();
+      updateTrackVisuals();
+      
+      // Perform initial responsive scale fit calculation
+      resizeCameraAndBoard();
+    }
+
+    // --- Rearrange elements coordinates static ---
+    function repositionBoardAllStatic() {
+      for (let r = 0; r < N; r++) {
+        for (let c = 0; c < N; c++) {
+          const item = fruitsGrid[r][c];
+          if (item && item.mesh) {
+            const px = (c - (N - 1) / 2) * CELL_SPACING;
+            const py = (r - (N - 1) / 2) * CELL_SPACING;
+            item.mesh.position.set(px, py, 0);
+            item.mesh.scale.set(1, 1, 1);
+            item.mesh.visible = true;
+            item.mesh.traverse(child => {
+              if (child.isMesh && child.material) {
+                child.material.opacity = 1.0;
+                child.material.transparent = false;
+              }
+            });
+          }
+        }
+      }
+    }
+
+    // --- Board Scrambler Mechanism ---
+    // Simulates tens of thousands of quick logical array shifts to guarantee solvability
+    function scrambleBoard() {
+      // 1. Reset back to perfectly solved initial column state first
+      for (let c = 0; c < N; c++) {
+        for (let r = 0; r < N; r++) {
+          fruitsGrid[r][c].type = c;
+        }
+      }
+
+      // 2. Perform 20,000 rapid random rotational shifts on the grid array
+      const scrambleSteps = 20000;
+      for (let s = 0; s < scrambleSteps; s++) {
+        const isRow = Math.random() > 0.5;
+        const index = Math.floor(Math.random() * N);
+        const dir = Math.random() > 0.5 ? 1 : -1;
+        
+        if (isRow) {
+          shiftRowImmediate(index, dir);
+        } else {
+          shiftColImmediate(index, dir);
+        }
+      }
+
+      // 3. Rebuild/refresh meshes to correspond to the logical scramble output
+      for (let r = 0; r < N; r++) {
+        for (let c = 0; c < N; c++) {
+          const item = fruitsGrid[r][c];
+          if (item && item.mesh) {
+            boardGroup.remove(item.mesh);
+            const newMesh = createFruitMesh(item.type);
+            boardGroup.add(newMesh);
+            item.mesh = newMesh;
+          }
+        }
+      }
+
+      repositionBoardAllStatic();
+    }
+
+    // Scramble shifting algorithms
+    function shiftRowImmediate(r, shift) {
+      fruitsGrid[r] = arrayRotate(fruitsGrid[r], shift);
+    }
+
+    function shiftColImmediate(c, shift) {
+      let colArr = [];
+      for (let r = 0; r < N; r++) {
+        colArr.push(fruitsGrid[r][c]);
+      }
+      colArr = arrayRotate(colArr, shift);
+      for (let r = 0; r < N; r++) {
+        fruitsGrid[r][c] = colArr[r];
+      }
+    }
+
+    function arrayRotate(arr, count) {
+      const len = arr.length;
+      const rot = ((count % len) + len) % len;
+      if (rot === 0) return arr;
+      return arr.slice(len - rot).concat(arr.slice(0, len - rot));
+    }
+
+    // --- Core Tangle Scoring Logic ---
+    function updateTangleValue() {
+      let tangle = 0;
+      for (let c = 0; c < N; c++) {
+        for (let r = 0; r < N - 1; r++) {
+          if (fruitsGrid[r][c].type !== fruitsGrid[r + 1][c].type) {
+            tangle++;
+          }
+        }
+      }
+      
+      const scoreElement = document.getElementById('score-tangle');
+      scoreElement.innerText = tangle;
+      
+      if (tangle === 0) {
+        scoreElement.className = "text-2xl font-black text-emerald-400 neon-text-glow";
+        triggerVictory();
+      } else {
+        scoreElement.className = "text-2xl font-black text-rose-400";
+      }
+
+      return tangle;
+    }
+
+    // --- Solved Column Highlight Track Tweens & Sparkle Animations ---
+    function updateTrackVisuals() {
+      for (let c = 0; c < N; c++) {
+        let colComplete = true;
+        const targetType = fruitsGrid[0][c].type;
+        for (let r = 1; r < N; r++) {
+          if (fruitsGrid[r][c].type !== targetType) {
+            colComplete = false;
+            break;
+          }
+        }
+
+        const wasComplete = solvedColumns[c];
+        solvedColumns[c] = colComplete;
+
+        const track = columnTracks[c];
+        if (track) {
+          const targetColor = colComplete ? { r: 16/255, g: 185/255, b: 129/255 } : { r: 30/255, g: 41/255, b: 59/255 };
+          
+          // Safe uniform upload tween using proxy
+          const currentMatColor = track.material.color;
+          const colorProxy = { r: currentMatColor.r, g: currentMatColor.g, b: currentMatColor.b };
+          
+          // Trigger custom completed column highlight animation
+          if (colComplete && !wasComplete && firstInteractionDone) {
+            sound.playTangleSuccess();
+
+            // Pulsing highlight track animation
+            gsap.timeline()
+              .to(track.material, { opacity: 0.9, duration: 0.15, overwrite: 'auto' })
+              .to(track.material, { opacity: 0.35, duration: 0.35 });
+
+            // Spawn elegant sparkles along the track column
+            spawnColumnSparkles(c);
+          } else {
+            gsap.to(colorProxy, {
+              r: targetColor.r,
+              g: targetColor.g,
+              b: targetColor.b,
+              duration: 0.4,
+              overwrite: 'auto',
+              onUpdate: () => {
+                track.material.color.setRGB(colorProxy.r, colorProxy.g, colorProxy.b);
+              }
+            });
+            gsap.to(track.material, {
+              duration: 0.4,
+              opacity: colComplete ? 0.35 : 0.15,
+              overwrite: 'auto'
+            });
+          }
+        }
+      }
+    }
+
+    // --- Sparkling Particles Rising up Solved Tracks ---
+    function spawnColumnSparkles(colIndex) {
+      const x = (colIndex - (N - 1) / 2) * CELL_SPACING;
+      const trackHeight = N * CELL_SPACING;
+      const halfHeight = trackHeight / 2;
+      
+      const pCount = 18;
+      const geo = new THREE.SphereGeometry(0.045, 6, 6);
+      
+      for (let i = 0; i < pCount; i++) {
+        const mat = new THREE.MeshBasicMaterial({
+          color: 0x34d399,
+          transparent: true,
+          opacity: 0.95
+        });
+        const m = new THREE.Mesh(geo, mat);
+        
+        // Starting points distributed vertically on the track column
+        m.position.set(
+          x + (Math.random() - 0.5) * 0.4, 
+          -halfHeight + (Math.random() * trackHeight), 
+          0.1
+        );
+        boardGroup.add(m);
+        
+        // Rise up and shrink away
+        gsap.to(m.position, {
+          y: `+=${0.6 + Math.random() * 0.9}`,
+          duration: 0.7 + Math.random() * 0.4,
+          ease: "power1.out"
+        });
+        gsap.to(m.scale, {
+          x: 0.1, y: 0.1, z: 0.1,
+          duration: 0.7 + Math.random() * 0.4,
+          onComplete: () => {
+            boardGroup.remove(m);
+            mat.dispose();
+          }
+        });
+      }
+      geo.dispose();
+    }
+
+    // --- Dynamic Mesh Boundary Scale/Clipping ---
+    function applyBoundaryClipping() {
+      const halfBoard = (N * CELL_SPACING) / 2;
+      
+      boardGroup.children.forEach(child => {
+        if (child.userData && child.userData.isFruit) {
+          const distFromCenterH = Math.abs(child.position.x);
+          const distFromCenterV = Math.abs(child.position.y);
+          const maxDist = Math.max(distFromCenterH, distFromCenterV);
+          
+          const fadeStart = halfBoard - 0.15;
+          const fadeEnd = halfBoard + 0.35;
+          
+          let scaleFactor = 1.0;
+          if (maxDist > fadeStart) {
+            scaleFactor = 1.0 - (maxDist - fadeStart) / (fadeEnd - fadeStart);
+            scaleFactor = Math.max(0.0, Math.min(1.0, scaleFactor));
+          }
+          
+          child.scale.set(scaleFactor, scaleFactor, scaleFactor);
+          child.visible = (scaleFactor > 0.02);
+        }
+      });
+    }
+
+    // --- Tap-to-Shift animation trigger for 3D arrow clicking ---
+    function triggerArrowShift(dir, index, shift) {
+      if (isTransitioning) return;
+      isTransitioning = true;
+      startGameplayTimer();
+
+      sound.playSnap();
+
+      // Trigger modern click animation feedback on semitransparent arrow triangle
+      const clickedArrow = clickArrows.find(a => a.userData.dir === dir && a.userData.index === index && a.userData.shift === shift);
+      if (clickedArrow) {
+        gsap.to(clickedArrow.scale, {
+          x: 1.4, y: 1.4, z: 1.4,
+          duration: 0.1,
+          yoyo: true,
+          repeat: 1,
+          ease: "power1.inOut"
+        });
+      }
+
+      const totalWidth = N * CELL_SPACING;
+      const movementUnit = shift * CELL_SPACING;
+
+      if (dir === 'horizontal') {
+        const rowFruits = fruitsGrid[index];
+        const clones = [];
+        rowFruits.forEach(item => {
+          // Left Clone
+          const c1 = item.mesh.clone();
+          c1.position.x -= totalWidth;
+          boardGroup.add(c1);
+          clones.push(c1);
+
+          // Right Clone
+          const c2 = item.mesh.clone();
+          c2.position.x += totalWidth;
+          boardGroup.add(c2);
+          clones.push(c2);
+        });
+
+        // GSAP animate shift slide
+        const timeline = gsap.timeline({
+          onUpdate: () => {
+            rowFruits.forEach((item, idx) => {
+              const currentX = item.mesh.position.x;
+              clones[idx * 2].position.x = currentX - totalWidth;
+              clones[idx * 2 + 1].position.x = currentX + totalWidth;
+            });
+          },
+          onComplete: () => {
+            clones.forEach(c => boardGroup.remove(c));
+            shiftRowImmediate(index, shift);
+            repositionBoardAllStatic();
+            finalizeMove();
+          }
+        });
+
+        rowFruits.forEach(item => {
+          timeline.to(item.mesh.position, {
+            x: `+=${movementUnit}`,
+            duration: 0.35,
+            ease: "back.out(1.1)"
+          }, 0);
+        });
+
+        clones.forEach(c => {
+          timeline.to(c.position, {
+            x: `+=${movementUnit}`,
+            duration: 0.35,
+            ease: "back.out(1.1)"
+          }, 0);
+        });
+
+      } else { // vertical
+        const colFruits = [];
+        for (let r = 0; r < N; r++) colFruits.push(fruitsGrid[r][index]);
+
+        const clones = [];
+        colFruits.forEach(item => {
+          const c1 = item.mesh.clone();
+          c1.position.y -= totalWidth;
+          boardGroup.add(c1);
+          clones.push(c1);
+
+          const c2 = item.mesh.clone();
+          c2.position.y += totalWidth;
+          boardGroup.add(c2);
+          clones.push(c2);
+        });
+
+        const timeline = gsap.timeline({
+          onUpdate: () => {
+            colFruits.forEach((item, idx) => {
+              const currentY = item.mesh.position.y;
+              clones[idx * 2].position.y = currentY - totalWidth;
+              clones[idx * 2 + 1].position.y = currentY + totalWidth;
+            });
+          },
+          onComplete: () => {
+            clones.forEach(c => boardGroup.remove(c));
+            shiftColImmediate(index, shift);
+            repositionBoardAllStatic();
+            finalizeMove();
+          }
+        });
+
+        colFruits.forEach(item => {
+          timeline.to(item.mesh.position, {
+            y: `+=${movementUnit}`,
+            duration: 0.35,
+            ease: "back.out(1.1)"
+          }, 0);
+        });
+
+        clones.forEach(c => {
+          timeline.to(c.position, {
+            y: `+=${movementUnit}`,
+            duration: 0.35,
+            ease: "back.out(1.1)"
+          }, 0);
+        });
+      }
+    }
+
+    // Wrap up shift actions
+    function finalizeMove() {
+      movesCount++;
+      document.getElementById('stat-moves').innerText = movesCount;
+
+      updateTangleValue();
+      updateTrackVisuals();
+      isTransitioning = false;
+    }
+
+    // --- Interactive Drag & Swipe Processing ---
+    const raycaster = new THREE.Raycaster();
+    const touchCoord = new THREE.Vector2();
+
+    function setupEvents() {
+      const container = document.getElementById('canvas-container');
+
+      // Click / Pointer events
+      container.addEventListener('pointerdown', onPointerDown, { passive: false });
+      container.addEventListener('pointermove', onPointerMove, { passive: false });
+      window.addEventListener('pointerup', onPointerUp, { passive: false });
+
+      // Window resize
+      window.addEventListener('resize', resizeCameraAndBoard);
+
+      // HTML buttons bindings
+      document.getElementById('btn-scramble').addEventListener('click', () => {
+        sound.init();
+        scrambleBoard();
+        repositionBoardAllStatic();
+        movesCount = 0;
+        document.getElementById('stat-moves').innerText = movesCount;
+        resetTimer();
+        updateTangleValue();
+        updateTrackVisuals();
+        sound.playSnap();
+      });
+
+      // Config modal
+      const btnConfig = document.getElementById('btn-config');
+      const modalConfig = document.getElementById('modal-config');
+      const closeConfig = document.getElementById('modal-config-close');
+      const applyConfig = document.getElementById('modal-config-apply');
+
+      btnConfig.addEventListener('click', () => {
+        sound.init();
+        modalConfig.classList.remove('hidden');
+      });
+
+      closeConfig.addEventListener('click', () => {
+        modalConfig.classList.add('hidden');
+      });
+
+      applyConfig.addEventListener('click', () => {
+        modalConfig.classList.add('hidden');
+        initGame();
+      });
+
+      // Grid size buttons active highlights
+      const sizeBtns = document.querySelectorAll('.btn-size');
+      sizeBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          sizeBtns.forEach(b => {
+            b.className = "btn-size py-3 glass-panel rounded-xl font-bold text-slate-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all";
+          });
+          btn.className = "btn-size py-3 glass-panel border-emerald-500 bg-emerald-900/20 text-emerald-300 rounded-xl font-bold transition-all";
+          N = parseInt(btn.getAttribute('data-size'), 10);
+        });
+      });
+
+      // Victory CTA restart
+      document.getElementById('btn-victory-restart').addEventListener('click', () => {
+        document.getElementById('modal-victory').classList.add('hidden');
+        initGame();
+      });
+    }
+
+    // --- Dynamic Camera and Board Fitting ---
+    function resizeCameraAndBoard() {
+      const container = document.getElementById('canvas-container');
+      if (!container) return;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      renderer.setSize(width, height);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+
+      // Scaled calculations to ensure the board fits nicely
+      const boardSize = N * CELL_SPACING + 1.8; // Board size + arrows footprint
+      
+      const vFOV = camera.fov * Math.PI / 180;
+      const visibleHeight = 2 * Math.tan(vFOV / 2) * 7.5;
+      const visibleWidth = visibleHeight * camera.aspect;
+
+      const scaleY = visibleHeight / boardSize;
+      const scaleX = visibleWidth / boardSize;
+      const optimalScale = Math.min(scaleX, scaleY, 1.0) * 0.95; // 5% protective bounds padding
+
+      boardGroup.scale.set(optimalScale, optimalScale, optimalScale);
+    }
+
+    // --- Pointerdown Intercept ---
+    function onPointerDown(e) {
+      if (isTransitioning) return;
+      sound.init();
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      touchCoord.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      touchCoord.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(touchCoord, camera);
+      const intersects = raycaster.intersectObjects(boardGroup.children, true);
+
+      if (intersects.length > 0) {
+        // Check if 3D Arrow clicked first
+        let arrowHit = null;
+        intersects.forEach(hit => {
+          let curr = hit.object;
+          while (curr && curr !== boardGroup) {
+            if (curr.userData && curr.userData.isArrow) {
+              arrowHit = curr;
+              break;
+            }
+            curr = curr.parent;
+          }
+        });
+
+        if (arrowHit) {
+          const { dir, index, shift } = arrowHit.userData;
+          triggerArrowShift(dir, index, shift);
+          return;
+        }
+
+        // Check if Fruit clicked
+        let fruitHit = null;
+        intersects.forEach(hit => {
+          let curr = hit.object;
+          while (curr && curr !== boardGroup) {
+            if (curr.userData && curr.userData.isFruit) {
+              fruitHit = curr;
+              break;
+            }
+            curr = curr.parent;
+          }
+        });
+
+        if (fruitHit) {
+          let hitR = -1, hitC = -1;
+          for (let r = 0; r < N; r++) {
+            for (let c = 0; c < N; c++) {
+              if (fruitsGrid[r][c].mesh === fruitHit) {
+                hitR = r;
+                hitC = c;
+                break;
+              }
+            }
+          }
+
+          if (hitR !== -1 && hitC !== -1) {
+            isDragging = true;
+            dragRowIdx = hitR;
+            dragColIdx = hitC;
+            dragLockedDir = null;
+
+            const targetZPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+            raycaster.ray.intersectPlane(targetZPlane, dragStartWorld);
+
+            initialFruitPositions = [];
+            for (let r = 0; r < N; r++) {
+              initialFruitPositions.push([]);
+              for (let c = 0; c < N; c++) {
+                initialFruitPositions[r].push(fruitsGrid[r][c].mesh.position.clone());
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // --- Drag Mechanics (continuous loop) ---
+    function onPointerMove(e) {
+      if (!isDragging) return;
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      touchCoord.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      touchCoord.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(touchCoord, camera);
+      const targetZPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      raycaster.ray.intersectPlane(targetZPlane, dragCurrentWorld);
+
+      const delta = dragCurrentWorld.clone().sub(dragStartWorld);
+
+      // Lock drag axis direction when passing min tolerance threshold
+      if (dragLockedDir === null) {
+        const threshold = 0.12;
+        if (delta.length() > threshold) {
+          if (Math.abs(delta.x) > Math.abs(delta.y)) {
+            dragLockedDir = 'horizontal';
+            sound.playGrab();
+            buildDragClones('row', dragRowIdx);
+          } else {
+            dragLockedDir = 'vertical';
+            sound.playGrab();
+            buildDragClones('col', dragColIdx);
+          }
+        }
+        return;
+      }
+
+      // Update positions live based on drag axis lock
+      const totalWidth = N * CELL_SPACING;
+
+      if (dragLockedDir === 'horizontal') {
+        const movementUnit = delta.x;
+        const rowFruits = fruitsGrid[dragRowIdx];
+        
+        rowFruits.forEach((item, c) => {
+          const originalX = initialFruitPositions[dragRowIdx][c].x;
+          let targetX = originalX + movementUnit;
+          
+          const halfTotal = totalWidth / 2;
+          while (targetX < -halfTotal) targetX += totalWidth;
+          while (targetX > halfTotal) targetX -= totalWidth;
+          
+          item.mesh.position.x = targetX;
+
+          dragClones[c * 2].position.set(targetX - totalWidth, item.mesh.position.y, 0);
+          dragClones[c * 2 + 1].position.set(targetX + totalWidth, item.mesh.position.y, 0);
+        });
+      } else if (dragLockedDir === 'vertical') {
+        const movementUnit = delta.y;
+        
+        for (let r = 0; r < N; r++) {
+          const item = fruitsGrid[r][dragColIdx];
+          const originalY = initialFruitPositions[r][dragColIdx].y;
+          let targetY = originalY + movementUnit;
+          
+          const halfTotal = totalWidth / 2;
+          while (targetY < -halfTotal) targetY += totalWidth;
+          while (targetY > halfTotal) targetY -= totalWidth;
+          
+          item.mesh.position.y = targetY;
+
+          dragClones[r * 2].position.set(item.mesh.position.x, targetY - totalWidth, 0);
+          dragClones[r * 2 + 1].position.set(item.mesh.position.x, targetY + totalWidth, 0);
+        }
+      }
+    }
+
+    // Create duplicator helpers at row/col ends for smooth continuous infinite visual wrap
+    function buildDragClones(type, idx) {
+      dragClones.forEach(c => boardGroup.remove(c));
+      dragClones.length = 0;
+
+      const totalWidth = N * CELL_SPACING;
+
+      if (type === 'row') {
+        const row = fruitsGrid[idx];
+        row.forEach(item => {
+          const leftClone = item.mesh.clone();
+          leftClone.position.x -= totalWidth;
+          boardGroup.add(leftClone);
+          dragClones.push(leftClone);
+
+          const rightClone = item.mesh.clone();
+          rightClone.position.x += totalWidth;
+          boardGroup.add(rightClone);
+          dragClones.push(rightClone);
+        });
+      } else {
+        for (let r = 0; r < N; r++) {
+          const item = fruitsGrid[r][idx];
+          const downClone = item.mesh.clone();
+          downClone.position.y -= totalWidth;
+          boardGroup.add(downClone);
+          dragClones.push(downClone);
+
+          const upClone = item.mesh.clone();
+          upClone.position.y += totalWidth;
+          boardGroup.add(upClone);
+          dragClones.push(upClone);
+        }
+      }
+    }
+
+    // --- Drag Release & Snap Execution ---
+    function onPointerUp() {
+      if (!isDragging) return;
+      isDragging = false;
+      startGameplayTimer();
+
+      if (dragLockedDir === null) {
+        return;
+      }
+
+      isTransitioning = true;
+
+      const delta = dragCurrentWorld.clone().sub(dragStartWorld);
+      const totalWidth = N * CELL_SPACING;
+
+      let shiftAmount = 0;
+      if (dragLockedDir === 'horizontal') {
+        shiftAmount = Math.round(delta.x / CELL_SPACING);
+      } else {
+        shiftAmount = Math.round(delta.y / CELL_SPACING);
+      }
+
+      const targetSnapOffset = shiftAmount * CELL_SPACING;
+      const snapObj = { offset: (dragLockedDir === 'horizontal') ? delta.x : delta.y };
+
+      sound.playSnap();
+
+      gsap.to(snapObj, {
+        offset: targetSnapOffset,
+        duration: 0.3,
+        ease: "back.out(1.2)",
+        onUpdate: () => {
+          if (dragLockedDir === 'horizontal') {
+            const rowFruits = fruitsGrid[dragRowIdx];
+            rowFruits.forEach((item, c) => {
+              const originalX = initialFruitPositions[dragRowIdx][c].x;
+              let targetX = originalX + snapObj.offset;
+              
+              const halfTotal = totalWidth / 2;
+              while (targetX < -halfTotal) targetX += totalWidth;
+              while (targetX > halfTotal) targetX -= totalWidth;
+              
+              item.mesh.position.x = targetX;
+
+              dragClones[c * 2].position.x = targetX - totalWidth;
+              dragClones[c * 2 + 1].position.x = targetX + totalWidth;
+            });
+          } else {
+            for (let r = 0; r < N; r++) {
+              const item = fruitsGrid[r][dragColIdx];
+              const originalY = initialFruitPositions[r][dragColIdx].y;
+              let targetY = originalY + snapObj.offset;
+              
+              const halfTotal = totalWidth / 2;
+              while (targetY < -halfTotal) targetY += totalWidth;
+              while (targetY > halfTotal) targetY -= totalWidth;
+              
+              item.mesh.position.y = targetY;
+
+              dragClones[r * 2].position.y = targetY - totalWidth;
+              dragClones[r * 2 + 1].position.y = targetY + totalWidth;
+            }
+          }
+        },
+        onComplete: () => {
+          dragClones.forEach(c => boardGroup.remove(c));
+          dragClones.length = 0;
+
+          if (dragLockedDir === 'horizontal') {
+            shiftRowImmediate(dragRowIdx, shiftAmount);
+          } else {
+            shiftColImmediate(dragColIdx, shiftAmount);
+          }
+
+          repositionBoardAllStatic();
+          finalizeMove();
+        }
+      });
+    }
+
+    // --- Splash Particle Explosion for Visual Rewards ---
+    function spawnSplashParticles(cx, cy, colorValue) {
+      const pCount = 35;
+      const geo = new THREE.SphereGeometry(0.06, 8, 8);
+      const meshes = [];
+
+      for (let i = 0; i < pCount; i++) {
+        const mat = new THREE.MeshStandardMaterial({
+          color: colorValue,
+          roughness: 0.2,
+          emissive: colorValue,
+          emissiveIntensity: 0.5
+        });
+        const m = new THREE.Mesh(geo, mat);
+        m.position.set(cx + (Math.random() - 0.5) * 1.5, cy + (Math.random() - 0.5) * 1.5, 0.2);
+        boardGroup.add(m);
+        meshes.push(m);
+
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 1.5 + Math.random() * 2.5;
+        const vx = Math.cos(angle) * velocity;
+        const vy = Math.sin(angle) * velocity;
+        const vz = (Math.random() - 0.2) * 2;
+
+        gsap.to(m.position, {
+          x: m.position.x + vx,
+          y: m.position.y + vy,
+          z: m.position.z + vz,
+          duration: 0.8,
+          ease: "power2.out"
+        });
+
+        gsap.to(m.scale, {
+          x: 0,
+          y: 0,
+          z: 0,
+          duration: 0.8,
+          ease: "power2.in",
+          onComplete: () => {
+            boardGroup.remove(m);
+            mat.dispose();
+          }
+        });
+      }
+      geo.dispose();
+    }
+
+    // --- Victory Fanfare Trigger ---
+    function triggerVictory() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+
+      sound.playVictory();
+
+      let count = 0;
+      const interval = setInterval(() => {
+        spawnSplashParticles(0, 0, colors[count % colors.length]);
+        count++;
+        if (count >= 5) clearInterval(interval);
+      }, 250);
+
+      setTimeout(() => {
+        document.getElementById('vic-moves').innerText = movesCount;
+        document.getElementById('vic-time').innerText = document.getElementById('stat-time').innerText;
+        document.getElementById('modal-victory').classList.remove('hidden');
+      }, 1500);
+    }
+
+    // --- Gameplay Timer Management ---
+    function startGameplayTimer() {
+      if (firstInteractionDone) return;
+      firstInteractionDone = true;
+      startTime = Date.now();
+      timerInterval = setInterval(updateTimerUI, 1000);
+    }
+
+    function resetTimer() {
+      firstInteractionDone = false;
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      document.getElementById('stat-time').innerText = "00:00";
+    }
+
+    function updateTimerUI() {
+      if (!startTime) return;
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+      const seconds = (elapsed % 60).toString().padStart(2, '0');
+      document.getElementById('stat-time').innerText = `${minutes}:${seconds}`;
+    }
+  </script>
+</body>
+</html>
