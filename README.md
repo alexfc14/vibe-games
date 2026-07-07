@@ -10,6 +10,7 @@ Live links to play:
 * [Pong Runner](https://alexfc14.github.io/vibe-games/pong-runner/play.html)
 * [Disk Sort](https://alexfc14.github.io/vibe-games/disk-sort/play.html) | [Donut Version](https://alexfc14.github.io/vibe-games/disk-sort/donuts.html)
 * [Nautilus](https://alexfc14.github.io/vibe-games/nautilus/play.html)
+* [Fruit Tangle](https://alexfc14.github.io/vibe-games/fruit-tangle/play.html)
 
 ----
 # License
