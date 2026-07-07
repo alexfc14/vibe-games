@@ -629,41 +629,31 @@
       return group;
     }
 
-    // --- Build Columns Track Backgrounds (With Alternating Contrast & Opacity) ---
+    // --- Build Columns Track Backgrounds (Subtle Dynamic Green Gradients according to Tangle) ---
     function buildColumnTracks() {
       columnTracks.forEach(track => boardGroup.remove(track));
       columnTracks.length = 0;
 
       const trackHeight = N * CELL_SPACING;
-      // Perfect fit inside the boundaries
+      // Perfect fit inside the boundaries to avoid Z-clipping or outline overlap
       const trackGeo = new THREE.PlaneGeometry(CELL_SPACING * 0.98, trackHeight, 1, 1);
 
       for (let c = 0; c < N; c++) {
         const x = (c - (N - 1) / 2) * CELL_SPACING;
         
-        // Alternating columns to clearly distinguish columns as alignment goals:
-        // Even indices: Darker Gray (Slate-800)
-        // Odd indices: Solid Deep Black (Slate-950)
-        const isEven = (c % 2 === 0);
-        const defaultColor = isEven ? 0x1e293b : 0x090d16;
-        const defaultOpacity = isEven ? 0.35 : 0.65;
-
-        const trackMat = new THREE.MeshStandardMaterial({
-          color: defaultColor,
+        // Initializing with basic solid dark green (to be updated on first grid state check)
+        const trackMat = new THREE.MeshBasicMaterial({
+          color: 0x052417,
           transparent: true,
-          opacity: defaultOpacity,
-          roughness: 0.95,
-          metalness: 0.1
+          opacity: 0.35,
+          side: THREE.DoubleSide
         });
         
         const track = new THREE.Mesh(trackGeo, trackMat);
+        // Positioned explicitly above the main backplate (Z = -0.45) to ensure rendering with no Z-fighting
         track.position.set(x, 0, -0.38);
-        track.receiveShadow = true;
         
-        // Cache initial values
         track.userData = {
-          defaultColor: defaultColor,
-          defaultOpacity: defaultOpacity,
           colIndex: c
         };
 
@@ -672,12 +662,13 @@
       }
     }
 
-    // --- Build Dark Solid Frame and Board Plate ---
+    // --- Build Dark Solid Frame and Board Plate (Pushed Back to Prevent Occlusion) ---
     function buildBoardFrame() {
       if (window.boardFrameBox) boardGroup.remove(window.boardFrameBox);
 
       const size = N * CELL_SPACING;
-      const frameGeo = new THREE.BoxGeometry(size + 0.15, size + 0.15, 0.15);
+      // Thinned depth to 0.05 so the front face lies strictly behind the track layers
+      const frameGeo = new THREE.BoxGeometry(size + 0.15, size + 0.15, 0.05);
       const frameMat = new THREE.MeshStandardMaterial({
         color: 0x0f172a,
         roughness: 0.7,
@@ -685,7 +676,8 @@
       });
       
       const frame = new THREE.Mesh(frameGeo, frameMat);
-      frame.position.set(0, 0, -0.42);
+      // Pushed back to Z = -0.45
+      frame.position.set(0, 0, -0.45);
       frame.receiveShadow = true;
       boardGroup.add(frame);
       window.boardFrameBox = frame;
@@ -982,32 +974,39 @@
       return tangle;
     }
 
-    // --- Solved Column Highlight Track Tweens (Respects Alternating Base Color) ---
+    // --- Solved Column Highlight Track Tweens (Subtle dark-to-light Green Gradient based on Column Tangle) ---
     function updateTrackVisuals() {
       for (let c = 0; c < N; c++) {
-        let colComplete = true;
-        const targetType = fruitsGrid[0][c].type;
-        for (let r = 1; r < N; r++) {
-          if (fruitsGrid[r][c].type !== targetType) {
-            colComplete = false;
-            break;
+        // Calculate local adjacent mismatches for this specific column c
+        let colTangle = 0;
+        for (let r = 0; r < N - 1; r++) {
+          if (fruitsGrid[r][c].type !== fruitsGrid[r + 1][c].type) {
+            colTangle++;
           }
         }
 
+        const maxPossibleTangle = N - 1;
+        // solved ratio: 1.0 is perfectly aligned (no tangle), 0.0 is fully scrambled (tangle on all spots)
+        const solvedRatio = maxPossibleTangle > 0 ? (1.0 - (colTangle / maxPossibleTangle)) : 1.0;
+
         const track = columnTracks[c];
         if (track) {
-          const defaultColorHex = track.userData.defaultColor;
-          const defaultOpacity = track.userData.defaultOpacity;
+          // Dark scrambled green target: RGB(5, 36, 23) -> #052417
+          const darkGreen = { r: 5/255, g: 36/255, b: 23/255 };
+          // Bright solved light green target: RGB(52, 211, 153) -> #34d399
+          const lightGreen = { r: 52/255, g: 211/255, b: 153/255 };
 
-          // Target green color if complete, else restore baseline alternating background shade
-          const targetColor = colComplete 
-            ? { r: 16/255, g: 185/255, b: 129/255 } 
-            : { 
-                r: ((defaultColorHex >> 16) & 255) / 255, 
-                g: ((defaultColorHex >> 8) & 255) / 255, 
-                b: (defaultColorHex & 255) / 255 
-              };
-          
+          // Linear interpolation based on solved ratio
+          const targetColor = {
+            r: darkGreen.r + (lightGreen.r - darkGreen.r) * solvedRatio,
+            g: darkGreen.g + (lightGreen.g - darkGreen.g) * solvedRatio,
+            b: darkGreen.b + (lightGreen.b - darkGreen.b) * solvedRatio
+          };
+
+          // Highly tangled is subtler (opacity 0.35), fully solved is slightly brighter (opacity 0.6)
+          const targetOpacity = 0.35 + (0.6 - 0.35) * solvedRatio;
+
+          // Smoothly tween color values with GSAP
           const currentMatColor = track.material.color;
           const colorProxy = { r: currentMatColor.r, g: currentMatColor.g, b: currentMatColor.b };
           
@@ -1015,7 +1014,7 @@
             r: targetColor.r,
             g: targetColor.g,
             b: targetColor.b,
-            duration: 0.4,
+            duration: 0.45,
             overwrite: 'auto',
             onUpdate: () => {
               track.material.color.setRGB(colorProxy.r, colorProxy.g, colorProxy.b);
@@ -1023,8 +1022,8 @@
           });
           
           gsap.to(track.material, {
-            duration: 0.4,
-            opacity: colComplete ? 0.45 : defaultOpacity,
+            duration: 0.45,
+            opacity: targetOpacity,
             overwrite: 'auto'
           });
         }
@@ -1384,11 +1383,11 @@
         return;
       }
 
-      // Update positions live based on drag axis lock
+      // Update positions live based on drag axis lock (Divided by Board Scale for 1-to-1 movement)
       const totalWidth = N * CELL_SPACING;
 
       if (dragLockedDir === 'horizontal') {
-        const movementUnit = delta.x;
+        const movementUnit = delta.x / boardGroup.scale.x; // Corrected local coordinate scale offset
         const rowFruits = fruitsGrid[dragRowIdx];
         
         rowFruits.forEach((item, c) => {
@@ -1405,7 +1404,7 @@
           dragClones[c * 2 + 1].position.set(targetX + totalWidth, item.mesh.position.y, 0);
         });
       } else if (dragLockedDir === 'vertical') {
-        const movementUnit = delta.y;
+        const movementUnit = delta.y / boardGroup.scale.y; // Corrected local coordinate scale offset
         
         for (let r = 0; r < N; r++) {
           const item = fruitsGrid[r][dragColIdx];
@@ -1475,15 +1474,18 @@
       const delta = dragCurrentWorld.clone().sub(dragStartWorld);
       const totalWidth = N * CELL_SPACING;
 
+      const localDeltaX = delta.x / boardGroup.scale.x;
+      const localDeltaY = delta.y / boardGroup.scale.y;
+
       let shiftAmount = 0;
       if (dragLockedDir === 'horizontal') {
-        shiftAmount = Math.round(delta.x / CELL_SPACING);
+        shiftAmount = Math.round(localDeltaX / CELL_SPACING);
       } else {
-        shiftAmount = Math.round(delta.y / CELL_SPACING);
+        shiftAmount = Math.round(localDeltaY / CELL_SPACING);
       }
 
       const targetSnapOffset = shiftAmount * CELL_SPACING;
-      const snapObj = { offset: (dragLockedDir === 'horizontal') ? delta.x : delta.y };
+      const snapObj = { offset: (dragLockedDir === 'horizontal') ? localDeltaX : localDeltaY };
 
       sound.playSnap();
 
