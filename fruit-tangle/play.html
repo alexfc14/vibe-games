@@ -193,15 +193,19 @@
       </h2>
       <p id="victory-subtitle" class="text-xs text-slate-400 mb-4 font-semibold uppercase tracking-wider">Perfect Alignment Achieved</p>
 
-      <!-- Standard Stats Display (Normally Visible) -->
-      <div id="victory-normal-stats" class="grid grid-cols-2 gap-3 w-full mb-5 shrink-0">
-        <div class="glass-panel p-3 rounded-xl">
-          <span class="block text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-1">Moves</span>
-          <span id="vic-moves" class="text-xl font-black text-emerald-300">24</span>
+      <!-- Standard Stats Display (Now a beautiful 3-Column setup featuring Starting Scramble Tangle) -->
+      <div id="victory-normal-stats" class="grid grid-cols-3 gap-2 w-full mb-5 shrink-0 select-none">
+        <div class="glass-panel p-2.5 rounded-xl">
+          <span class="block text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-1 text-center">Tangle</span>
+          <span id="vic-tangle" class="text-lg font-black text-rose-400 block text-center">12</span>
         </div>
-        <div class="glass-panel p-3 rounded-xl">
-          <span class="block text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-1">Time</span>
-          <span id="vic-time" class="text-xl font-black text-sky-300">01:42</span>
+        <div class="glass-panel p-2.5 rounded-xl">
+          <span class="block text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-1 text-center">Moves</span>
+          <span id="vic-moves" class="text-lg font-black text-emerald-300 block text-center">24</span>
+        </div>
+        <div class="glass-panel p-2.5 rounded-xl">
+          <span class="block text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-1 text-center">Time</span>
+          <span id="vic-time" class="text-lg font-black text-sky-300 block text-center">01:42</span>
         </div>
       </div>
 
@@ -230,7 +234,7 @@
       </div>
 
       <!-- Action Buttons (Standard, consistent sized styling) -->
-      <div class="flex flex-col gap-2 w-full shrink-0">
+      <div class="flex flex-col gap-2 w-full shrink-0 select-none">
         <!-- Replay Speed Recap Option -->
         <button id="btn-victory-replay" class="w-full h-11 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -254,16 +258,6 @@
         </button>
       </div>
     </div>
-  </div>
-
-  <!-- Replay HUD Overlay -->
-  <div id="hud-replay" class="hidden absolute top-6 left-1/2 -translate-x-1/2 z-40 glass-panel px-5 py-3 rounded-2xl border border-indigo-500/40 flex flex-col items-center gap-1.5 animate-pulse text-center">
-    <div class="flex items-center gap-2">
-      <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
-      <span class="text-xs font-bold text-indigo-200 uppercase tracking-widest">Speed Recap Active</span>
-    </div>
-    <span id="hud-replay-step" class="text-sm font-black text-indigo-400">Move 0 / 0</span>
-    <span class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold mt-1">Tap anywhere to skip</span>
   </div>
 
   <!-- Audio Synth Controller -->
@@ -413,6 +407,7 @@
     let moveHistory = []; // Tracks states throughout a game session
     let actionHistory = []; // Tracks explicit moves made: { type: 'row'|'col', index, shift }
     let originalScrambleState = null; // To replicate identical layout initialization
+    let initialTangleValue = 0; // Tracks scramble tangle score
 
     // Pass To Friend Local Multi-player stats
     let isFriendMode = false;
@@ -696,6 +691,19 @@
       window.boardFrameBox = frame;
     }
 
+    // --- Pure Mathematical Scramble Tangle Calculation ---
+    function calculateTangleOnly() {
+      let tangle = 0;
+      for (let c = 0; c < N; c++) {
+        for (let r = 0; r < N - 1; r++) {
+          if (fruitsGrid[r][c].type !== fruitsGrid[r + 1][c].type) {
+            tangle++;
+          }
+        }
+      }
+      return tangle;
+    }
+
     // --- Core Game Initialization ---
     function initGame(sameScramble = false) {
       // Clear current fruits
@@ -723,6 +731,7 @@
             fruitsGrid[r][c] = { type: type, mesh: mesh };
           }
         }
+        initialTangleValue = calculateTangleOnly();
       } else {
         // Generate freshly sorted columns first
         for (let c = 0; c < N; c++) {
@@ -741,6 +750,7 @@
 
         // Track original scramble state so the next player can attempt the exact same starting configuration
         originalScrambleState = fruitsGrid.map(row => row.map(cell => cell.type));
+        initialTangleValue = calculateTangleOnly();
         isFriendMode = false; // Reset multiplayer mode when fresh game starts
         player1Results = null;
         friendResults = null;
@@ -962,7 +972,9 @@
       
       if (tangle === 0) {
         scoreElement.className = "text-2xl font-black text-emerald-400 neon-text-glow";
-        triggerVictory();
+        if (!isReplaying) {
+          triggerVictory();
+        }
       } else {
         scoreElement.className = "text-2xl font-black text-rose-400";
       }
@@ -1588,20 +1600,24 @@
       geo.dispose();
     }
 
-    // --- Cinematic Continuous Slow Motion Recap Mechanism ---
+    // --- Cinematic Continuous Slow Motion Recap Mechanism (With live scoreboard updates) ---
     function startSpeedRecap() {
       if (actionHistory.length === 0) return;
 
       isReplaying = true;
       document.getElementById('modal-victory').classList.add('hidden');
-      
-      const hud = document.getElementById('hud-replay');
-      hud.classList.remove('hidden');
 
       // Reset Board to original initial scrambled configuration before starting replay
       applyStateToGrid(originalScrambleState);
 
+      // Initialize scoreboard display to move 0 status
+      document.getElementById('stat-moves').innerText = "0";
+      document.getElementById('stat-time').innerText = "00:00";
+      updateTangleValue();
+      updateTrackVisuals();
+
       let stepIdx = 0;
+      const totalGameSeconds = elapsedSeconds;
 
       function playNext() {
         if (!isReplaying) return;
@@ -1617,13 +1633,25 @@
         }
 
         const action = actionHistory[stepIdx];
-        document.getElementById('hud-replay-step').innerText = `Move ${stepIdx + 1} / ${actionHistory.length}`;
-        
         sound.playSnap();
 
         // Perform programmatic continuous slide visual animation! (slowed duration to 0.55s for clarity)
         executeSlideAnimation(action.type, action.index, action.shift, 0.55, () => {
           stepIdx++;
+          
+          // Increment moves display live
+          document.getElementById('stat-moves').innerText = stepIdx;
+          
+          // Render proportional timer progression live
+          const currentSeconds = Math.floor((stepIdx / actionHistory.length) * totalGameSeconds);
+          const minutes = Math.floor(currentSeconds / 60).toString().padStart(2, '0');
+          const seconds = (currentSeconds % 60).toString().padStart(2, '0');
+          document.getElementById('stat-time').innerText = `${minutes}:${seconds}`;
+
+          // Recalculate and render Tangle score updates live
+          updateTangleValue();
+          updateTrackVisuals();
+
           // Tiny delay between actions to emphasize individual steps
           setTimeout(playNext, 180);
         });
@@ -1632,15 +1660,20 @@
       playNext();
     }
 
-    // --- Stop Speed Recap & Reset ---
+    // --- Stop Speed Recap & Reset solved configurations ---
     function stopSpeedRecap() {
       isReplaying = false;
-      document.getElementById('hud-replay').classList.add('hidden');
       
       // Instantly restore solved state configurations and trigger victory panel
       applyStateToGrid(moveHistory[moveHistory.length - 1]);
       updateTangleValue();
       updateTrackVisuals();
+
+      // Restore official solved statistics back to the header scoreboard
+      document.getElementById('stat-moves').innerText = movesCount;
+      const minutes = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+      const seconds = (elapsedSeconds % 60).toString().padStart(2, '0');
+      document.getElementById('stat-time').innerText = `${minutes}:${seconds}`;
 
       document.getElementById('modal-victory').classList.remove('hidden');
     }
@@ -1660,6 +1693,7 @@
       }, 250);
 
       setTimeout(() => {
+        document.getElementById('vic-tangle').innerText = initialTangleValue;
         document.getElementById('vic-moves').innerText = movesCount;
         document.getElementById('vic-time').innerText = document.getElementById('stat-time').innerText;
 
