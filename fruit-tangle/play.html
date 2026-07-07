@@ -23,7 +23,13 @@
       overflow: hidden;
       background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
     }
+    /* Fixed canvas sizing to prevent flex-shrink layout bugs */
     canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       display: block;
       outline: none;
     }
@@ -46,12 +52,14 @@
         <h1 class="text-3xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-200">
           TANGLE FRUIT
         </h1>
-        <p class="text-[10px] text-slate-400 tracking-widest uppercase">Align identical fruits in columns</p>
+        <p class="text-[10px] text-slate-400 tracking-widest uppercase font-semibold">Align identical fruits in columns</p>
       </div>
-      <button id="btn-config" class="p-2 rounded-full glass-panel hover:bg-slate-800/80 transition-all">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37( 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      
+      <!-- Modernized Settings/Gear Button -->
+      <button id="btn-config" class="p-2 rounded-full glass-panel hover:bg-slate-800/80 transition-all active:scale-95 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
       </button>
     </div>
@@ -60,29 +68,54 @@
     <div class="flex justify-between w-full mt-1 gap-2">
       <div class="flex-1 glass-panel px-3 py-1.5 rounded-xl flex flex-col items-center">
         <span class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Tangle</span>
-        <span id="score-tangle" class="text-xl font-black text-rose-400 font-mono">12</span>
+        <span id="score-tangle" class="text-xl font-black text-rose-400">12</span>
       </div>
-      <div class="flex-1 glass-panel px-3 py-1.5 rounded-xl flex flex-col items-center">
+      <div class="flex-1 glass-panel px-3 py-1.5 rounded-xl flex flex-col items-center relative overflow-hidden">
         <span class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Moves</span>
-        <span id="stat-moves" class="text-xl font-black text-amber-300 font-mono">0</span>
+        <span id="stat-moves" class="text-xl font-black text-amber-300">0</span>
       </div>
       <div class="flex-1 glass-panel px-3 py-1.5 rounded-xl flex flex-col items-center">
         <span class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Time</span>
-        <span id="stat-time" class="text-xl font-black text-sky-400 font-mono">00:00</span>
+        <span id="stat-time" class="text-xl font-black text-sky-400">00:00</span>
       </div>
     </div>
   </div>
 
-  <!-- Dedicated WebGL Game Container -->
-  <div id="canvas-container" class="w-full flex-grow relative z-0 min-h-0 my-2"></div>
+  <!-- Dedicated WebGL Game Container with Overflow Containment -->
+  <div id="canvas-container" class="w-full flex-grow relative z-0 min-h-0 my-2 overflow-hidden"></div>
 
-  <!-- Bottom Controls -->
-  <div class="w-full max-w-xs mx-auto z-10 flex gap-4 shrink-0 mb-2">
-    <button id="btn-scramble" class="flex-1 py-3 px-4 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl font-bold transition-all flex items-center justify-center gap-2 active:scale-95 shadow-lg">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17" />
+  <!-- Swipe Instruction Alert -->
+  <div id="gesture-hint" class="absolute bottom-24 left-1/2 -translate-x-1/2 z-10 pointer-events-none select-none text-center bg-slate-900/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/10 transition-all duration-500">
+    <p class="text-[11px] font-semibold text-slate-300 flex items-center gap-2">
+      <span>👆 Swipe rows or columns to align them!</span>
+    </p>
+  </div>
+
+  <!-- Bottom Interactive Bar -->
+  <div class="w-full max-w-md mx-auto z-10 flex gap-2.5 shrink-0 mb-2 select-none">
+    
+    <!-- Undo Button -->
+    <button id="btn-undo" class="flex-1 h-11 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg opacity-40 pointer-events-none">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-sky-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
       </svg>
-      Scramble
+      <span class="text-xs">Undo</span>
+    </button>
+
+    <!-- Pause Button -->
+    <button id="btn-pause" class="flex-1 h-11 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg">
+      <svg id="svg-pause" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+      </svg>
+      <span id="txt-pause" class="text-xs">Pause</span>
+    </button>
+
+    <!-- Scramble Button -->
+    <button id="btn-scramble" class="flex-1 h-11 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+      </svg>
+      <span class="text-xs">Scramble</span>
     </button>
   </div>
 
@@ -99,26 +132,26 @@
         Game Options
       </h2>
 
-      <!-- Grid Size Option -->
+      <!-- Compact 4-Grid Size Option (No 2x2) -->
       <div class="mb-6">
         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Grid Size</label>
-        <div class="grid grid-cols-3 gap-2">
-          <button data-size="3" class="btn-size py-3 glass-panel rounded-xl font-bold text-slate-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all">3 x 3</button>
-          <button data-size="4" class="btn-size py-3 glass-panel border-emerald-500 bg-emerald-900/20 text-emerald-300 rounded-xl font-bold transition-all">4 x 4</button>
-          <button data-size="5" class="btn-size py-3 glass-panel rounded-xl font-bold text-slate-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all">5 x 5</button>
+        <div class="grid grid-cols-4 gap-2">
+          <button data-size="3" class="btn-size py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all">3x3</button>
+          <button data-size="4" class="btn-size py-3 text-xs glass-panel border-emerald-500 bg-emerald-900/20 text-emerald-300 rounded-xl font-bold transition-all">4x4</button>
+          <button data-size="5" class="btn-size py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all">5x5</button>
+          <button data-size="6" class="btn-size py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all">6x6</button>
         </div>
       </div>
 
       <!-- Controls Mode Alert -->
       <div class="mb-6 p-4 rounded-xl bg-slate-800/50 border border-slate-700 text-sm text-slate-300 flex flex-col gap-2">
-        <span class="font-bold text-slate-100 flex items-center gap-1">
+        <span class="font-bold text-slate-100 flex items-center gap-1 text-xs">
           💡 How to play:
         </span>
-        <ul class="list-disc pl-4 space-y-1 text-xs text-slate-400">
+        <ul class="list-disc pl-4 space-y-1 text-[11px] text-slate-400">
           <li>Press and drag any fruit horizontally to slide its row.</li>
           <li>Press and drag any fruit vertically to slide its column.</li>
-          <li>Tap the semitransparent triangular arrows to shift by single positions.</li>
-          <li>Match columns fully with identical fruit to solve the puzzle!</li>
+          <li>Rearrange elements so columns hold identical fruits!</li>
         </ul>
       </div>
 
@@ -129,38 +162,108 @@
     </div>
   </div>
 
-  <!-- Victory Overlay Panel -->
-  <div id="modal-victory" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/85 backdrop-blur-md p-4">
+  <!-- Pause Overlay Panel -->
+  <div id="modal-pause" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md p-4">
     <div class="w-full max-w-sm glass-panel rounded-3xl p-8 shadow-2xl relative text-center flex flex-col items-center">
-      <!-- Huge Trophy Icon -->
-      <div class="w-20 h-20 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center justify-center mb-6 animate-bounce">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div class="w-16 h-16 bg-amber-500/20 border border-amber-500/40 rounded-full flex items-center justify-center mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+        </svg>
+      </div>
+      <h2 class="text-2xl font-black text-amber-300 uppercase tracking-widest mb-2">GAME PAUSED</h2>
+      <p class="text-sm text-slate-400 mb-6">Timer and gameplay are suspended.</p>
+      <button id="btn-resume" class="w-full py-4 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-lg rounded-xl shadow-lg shadow-amber-500/20 transition-all uppercase tracking-wider">
+        Resume Game
+      </button>
+    </div>
+  </div>
+
+  <!-- Victory Overlay Panel (Optimized Max-Height to guarantee no clipping) -->
+  <div id="modal-victory" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/85 backdrop-blur-md p-4">
+    <div class="w-full max-w-sm glass-panel rounded-3xl p-6 shadow-2xl relative text-center flex flex-col items-center max-h-[92vh] overflow-y-auto">
+      <!-- Trophy Icon -->
+      <div class="w-14 h-14 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center justify-center mb-3.5 animate-bounce shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
         </svg>
       </div>
 
-      <h2 class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-200 uppercase tracking-widest mb-1">
+      <h2 class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-200 uppercase tracking-widest mb-1">
         PUZZLE SOLVED!
       </h2>
-      <p class="text-sm text-slate-400 mb-6 font-semibold uppercase tracking-wider">Perfect Alignment Achieved</p>
+      <p id="victory-subtitle" class="text-xs text-slate-400 mb-4 font-semibold uppercase tracking-wider">Perfect Alignment Achieved</p>
 
-      <!-- Victory Stats -->
-      <div class="grid grid-cols-2 gap-3 w-full mb-8">
-        <div class="glass-panel p-4 rounded-2xl">
-          <span class="block text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-1">Total Moves</span>
-          <span id="vic-moves" class="text-2xl font-black text-emerald-300 font-mono">24</span>
+      <!-- Standard Stats Display (Normally Visible) -->
+      <div id="victory-normal-stats" class="grid grid-cols-2 gap-3 w-full mb-5 shrink-0">
+        <div class="glass-panel p-3 rounded-xl">
+          <span class="block text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-1">Moves</span>
+          <span id="vic-moves" class="text-xl font-black text-emerald-300">24</span>
         </div>
-        <div class="glass-panel p-4 rounded-2xl">
-          <span class="block text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-1">Total Time</span>
-          <span id="vic-time" class="text-2xl font-black text-sky-300 font-mono">01:42</span>
+        <div class="glass-panel p-3 rounded-xl">
+          <span class="block text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-1">Time</span>
+          <span id="vic-time" class="text-xl font-black text-sky-300">01:42</span>
         </div>
       </div>
 
-      <!-- Play Again button -->
-      <button id="btn-victory-restart" class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-lg rounded-xl shadow-lg shadow-emerald-500/20 transition-all uppercase tracking-wider">
-        Play Again
-      </button>
+      <!-- Comparison Scoreboard Display (Only visible during Friend Mode attempts) -->
+      <div id="victory-comparison-scoreboard" class="hidden flex flex-col gap-3 w-full mb-5 select-none shrink-0">
+        <div class="glass-panel p-3.5 rounded-xl border border-indigo-500/20 bg-indigo-950/20">
+          <span class="text-xs font-bold text-indigo-400 uppercase tracking-widest block mb-2">🏆 Comparison scoreboard</span>
+          <div class="grid grid-cols-2 gap-2 text-left">
+            <!-- Player 1 -->
+            <div class="bg-slate-900/50 p-2.5 rounded-lg border border-white/5">
+              <span class="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">You (P1)</span>
+              <div class="mt-0.5 font-black text-slate-200 text-sm"><span id="p1-moves">0</span> moves</div>
+              <div class="font-bold text-sky-400 text-[11px]"><span id="p1-time">00:00</span></div>
+            </div>
+            <!-- Player 2 -->
+            <div class="bg-indigo-900/40 p-2.5 rounded-lg border border-indigo-500/20">
+              <span class="text-[9px] text-indigo-300 uppercase tracking-wider font-semibold">Friend (P2)</span>
+              <div class="mt-0.5 font-black text-indigo-200 text-sm"><span id="p2-moves">0</span> moves</div>
+              <div class="font-bold text-indigo-400 text-[11px]"><span id="p2-time">00:00</span></div>
+            </div>
+          </div>
+        </div>
+        <div id="victory-winner-banner" class="text-emerald-300 font-extrabold text-xs tracking-wide bg-emerald-500/10 py-2 px-3 rounded-xl border border-emerald-500/20">
+          Player 1 Wins! 🎉
+        </div>
+      </div>
+
+      <!-- Action Buttons (Standard, consistent sized styling) -->
+      <div class="flex flex-col gap-2 w-full shrink-0">
+        <!-- Replay Speed Recap Option -->
+        <button id="btn-victory-replay" class="w-full h-11 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Watch Speed Recap
+        </button>
+
+        <!-- Pass to Friend Button -->
+        <button id="btn-victory-pass-friend" class="w-full h-11 bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-600/25">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          Pass to Friend
+        </button>
+
+        <!-- Play Again Button -->
+        <button id="btn-victory-restart" class="w-full h-11 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl transition-all uppercase tracking-wider shadow-lg shadow-emerald-500/25">
+          Play Again
+        </button>
+      </div>
     </div>
+  </div>
+
+  <!-- Replay HUD Overlay -->
+  <div id="hud-replay" class="hidden absolute top-6 left-1/2 -translate-x-1/2 z-40 glass-panel px-5 py-3 rounded-2xl border border-indigo-500/40 flex flex-col items-center gap-1.5 animate-pulse text-center">
+    <div class="flex items-center gap-2">
+      <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
+      <span class="text-xs font-bold text-indigo-200 uppercase tracking-widest">Speed Recap Active</span>
+    </div>
+    <span id="hud-replay-step" class="text-sm font-black text-indigo-400">Move 0 / 0</span>
+    <span class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold mt-1">Tap anywhere to skip</span>
   </div>
 
   <!-- Audio Synth Controller -->
@@ -294,22 +397,33 @@
   <!-- Game / WebGL Script -->
   <script>
     // --- Global Game State & Configuration ---
-    let N = 4; // Grid size NxN
+    let N = 4; // Grid size NxN (3x3 up to 6x6)
     const CELL_SPACING = 1.3;
     let fruitsGrid = []; // N x N array representation
-    let solvedColumns = []; // Track solved state per column
     let isTransitioning = false;
+    let isPaused = false;
+    let isReplaying = false;
     let movesCount = 0;
     let startTime = null;
     let timerInterval = null;
     let firstInteractionDone = false;
+    let elapsedSeconds = 0;
+
+    // Undo & Replay State Tracking
+    let moveHistory = []; // Tracks states throughout a game session
+    let actionHistory = []; // Tracks explicit moves made: { type: 'row'|'col', index, shift }
+    let originalScrambleState = null; // To replicate identical layout initialization
+
+    // Pass To Friend Local Multi-player stats
+    let isFriendMode = false;
+    let player1Results = null; // { moves, time, seconds }
+    let friendResults = null; // { moves, time, seconds }
 
     // WebGL properties
     let scene, camera, renderer;
     let boardGroup;
     let columnTracks = [];
     let backgroundParticles;
-    const clickArrows = [];
 
     // Drag-to-Rotate tracking vars
     let isDragging = false;
@@ -318,18 +432,17 @@
     let dragLockedDir = null; // 'horizontal', 'vertical', or null
     let dragRowIdx = -1;
     let dragColIdx = -1;
-    let dragFractionalOffset = 0;
     let dragClones = [];
     let initialFruitPositions = [];
 
-    // Visual assets lists
+    // Visual assets lists (Supports up to 6 fruit types for 6x6)
     const colors = [
-      0xef4444, // Red (Apple)
-      0xf97316, // Orange (Orange)
-      0xfacc15, // Yellow (Lemon)
-      0xa855f7, // Purple (Grapes)
-      0x22c55e, // Green (Pear)
-      0x3b82f6  // Blue (Blueberry)
+      0xef4444, // 0: Red (Apple)
+      0xf97316, // 1: Orange (Orange)
+      0xfacc15, // 2: Yellow (Lemon)
+      0xa855f7, // 3: Purple (Grapes)
+      0x22c55e, // 4: Green (Pear)
+      0x3b82f6  // 5: Blue (Blueberry)
     ];
 
     // Setup window load triggers
@@ -405,12 +518,8 @@
       // Render Loop
       function animate() {
         requestAnimationFrame(animate);
-        
         backgroundParticles.rotation.z += 0.0008;
-        
-        // Continuous edge-clipping logic to cleanly hide/shrink wrapped clones
         applyBoundaryClipping();
-        
         renderer.render(scene, camera);
       }
       animate();
@@ -525,89 +634,44 @@
       return group;
     }
 
-    // --- Interactive 3D Directional Arrows Creators ---
-    function build3DArrows() {
-      clickArrows.forEach(arrow => boardGroup.remove(arrow));
-      clickArrows.length = 0;
-
-      const totalWidth = N * CELL_SPACING;
-      const margin = (totalWidth / 2) + 0.45; // Position closely outside the board boundary frame
-
-      // Flat elegant semi-transparent triangle design
-      const shape = new THREE.Shape();
-      shape.moveTo(0, 0.18);
-      shape.lineTo(-0.14, -0.14);
-      shape.lineTo(0.14, -0.14);
-      shape.closePath();
-
-      const arrowGeo = new THREE.ShapeGeometry(shape);
-      const arrowMat = new THREE.MeshBasicMaterial({
-        color: 0x10b981,
-        transparent: true,
-        opacity: 0.4,
-        side: THREE.DoubleSide,
-        depthWrite: false
-      });
-
-      for (let r = 0; r < N; r++) {
-        const y = (r - (N - 1) / 2) * CELL_SPACING;
-
-        // LEFT Arrow pointing RIGHT
-        const arrowL = new THREE.Mesh(arrowGeo, arrowMat.clone());
-        arrowL.position.set(-margin, y, 0.05);
-        arrowL.rotation.z = -Math.PI / 2;
-        arrowL.userData = { isArrow: true, dir: 'horizontal', index: r, shift: 1 };
-        boardGroup.add(arrowL);
-        clickArrows.push(arrowL);
-
-        // RIGHT Arrow pointing LEFT
-        const arrowR = new THREE.Mesh(arrowGeo, arrowMat.clone());
-        arrowR.position.set(margin, y, 0.05);
-        arrowR.rotation.z = Math.PI / 2;
-        arrowR.userData = { isArrow: true, dir: 'horizontal', index: r, shift: -1 };
-        boardGroup.add(arrowR);
-        clickArrows.push(arrowR);
-      }
-
-      for (let c = 0; c < N; c++) {
-        const x = (c - (N - 1) / 2) * CELL_SPACING;
-
-        // TOP Arrow pointing DOWN
-        const arrowT = new THREE.Mesh(arrowGeo, arrowMat.clone());
-        arrowT.position.set(x, margin, 0.05);
-        arrowT.rotation.z = Math.PI;
-        arrowT.userData = { isArrow: true, dir: 'vertical', index: c, shift: -1 };
-        boardGroup.add(arrowT);
-        clickArrows.push(arrowT);
-
-        // BOTTOM Arrow pointing UP
-        const arrowB = new THREE.Mesh(arrowGeo, arrowMat.clone());
-        arrowB.position.set(x, -margin, 0.05);
-        arrowB.rotation.z = 0;
-        arrowB.userData = { isArrow: true, dir: 'vertical', index: c, shift: 1 };
-        boardGroup.add(arrowB);
-        clickArrows.push(arrowB);
-      }
-    }
-
-    // --- Build Columns Track Highlighting Plates ---
+    // --- Build Columns Track Backgrounds (With Alternating Contrast & Opacity) ---
     function buildColumnTracks() {
       columnTracks.forEach(track => boardGroup.remove(track));
       columnTracks.length = 0;
 
       const trackHeight = N * CELL_SPACING;
-      const trackGeo = new THREE.PlaneGeometry(CELL_SPACING * 0.9, trackHeight, 1, 1);
+      // Perfect fit inside the boundaries
+      const trackGeo = new THREE.PlaneGeometry(CELL_SPACING * 0.98, trackHeight, 1, 1);
 
       for (let c = 0; c < N; c++) {
         const x = (c - (N - 1) / 2) * CELL_SPACING;
+        
+        // Alternating columns to clearly distinguish columns as alignment goals:
+        // Even indices: Darker Gray (Slate-800)
+        // Odd indices: Solid Deep Black (Slate-950)
+        const isEven = (c % 2 === 0);
+        const defaultColor = isEven ? 0x1e293b : 0x090d16;
+        const defaultOpacity = isEven ? 0.35 : 0.65;
+
         const trackMat = new THREE.MeshStandardMaterial({
-          color: 0x1e293b,
+          color: defaultColor,
           transparent: true,
-          opacity: 0.15,
-          roughness: 0.9
+          opacity: defaultOpacity,
+          roughness: 0.95,
+          metalness: 0.1
         });
+        
         const track = new THREE.Mesh(trackGeo, trackMat);
-        track.position.set(x, 0, -0.4);
+        track.position.set(x, 0, -0.38);
+        track.receiveShadow = true;
+        
+        // Cache initial values
+        track.userData = {
+          defaultColor: defaultColor,
+          defaultOpacity: defaultOpacity,
+          colIndex: c
+        };
+
         boardGroup.add(track);
         columnTracks.push(track);
       }
@@ -618,7 +682,6 @@
       if (window.boardFrameBox) boardGroup.remove(window.boardFrameBox);
 
       const size = N * CELL_SPACING;
-      
       const frameGeo = new THREE.BoxGeometry(size + 0.15, size + 0.15, 0.15);
       const frameMat = new THREE.MeshStandardMaterial({
         color: 0x0f172a,
@@ -634,46 +697,65 @@
     }
 
     // --- Core Game Initialization ---
-    function initGame() {
-      solvedColumns = new Array(N).fill(false);
-
-      // Clear existing assets safely
+    function initGame(sameScramble = false) {
+      // Clear current fruits
       fruitsGrid.forEach(row => {
-        row.forEach(cell => {
-          if (cell && cell.mesh) boardGroup.remove(cell.mesh);
-        });
+        if (row) {
+          row.forEach(cell => {
+            if (cell && cell.mesh) boardGroup.remove(cell.mesh);
+          });
+        }
       });
       fruitsGrid = [];
 
-      // Populate empty N x N representation
+      // Create new clean grid state representation
       for (let r = 0; r < N; r++) {
         fruitsGrid.push(new Array(N).fill(null));
       }
 
-      // Initialize fruits in perfectly sorted columns first
-      for (let c = 0; c < N; c++) {
+      if (sameScramble && originalScrambleState) {
+        // Restore elements from originalScrambleState (For local multiplayer "Pass to Friend")
         for (let r = 0; r < N; r++) {
-          const type = c; // Column index dictates fruit type
-          const mesh = createFruitMesh(type);
-          boardGroup.add(mesh);
-          
-          fruitsGrid[r][c] = {
-            type: type,
-            mesh: mesh
-          };
+          for (let c = 0; c < N; c++) {
+            const type = originalScrambleState[r][c];
+            const mesh = createFruitMesh(type);
+            boardGroup.add(mesh);
+            fruitsGrid[r][c] = { type: type, mesh: mesh };
+          }
         }
+      } else {
+        // Generate freshly sorted columns first
+        for (let c = 0; c < N; c++) {
+          for (let r = 0; r < N; r++) {
+            const type = c;
+            const mesh = createFruitMesh(type);
+            boardGroup.add(mesh);
+            fruitsGrid[r][c] = { type: type, mesh: mesh };
+          }
+        }
+        // Reset Board to static placements
+        repositionBoardAllStatic();
+
+        // Scramble sequence
+        scrambleBoard();
+
+        // Track original scramble state so the next player can attempt the exact same starting configuration
+        originalScrambleState = fruitsGrid.map(row => row.map(cell => cell.type));
+        isFriendMode = false; // Reset multiplayer mode when fresh game starts
+        player1Results = null;
+        friendResults = null;
       }
 
-      // Realign all elements static coordinates
       repositionBoardAllStatic();
 
       // Build Board components
       buildBoardFrame();
       buildColumnTracks();
-      build3DArrows();
 
-      // Scramble sequence (simulate tens of thousands of logical moves starting from solved state)
-      scrambleBoard();
+      // Reset histories
+      moveHistory = [];
+      actionHistory = [];
+      saveStateToHistory(); // Record start configuration (Move 0)
 
       // Reset statistics
       movesCount = 0;
@@ -682,9 +764,124 @@
 
       updateTangleValue();
       updateTrackVisuals();
+      updateUndoButtonState();
+
+      isPaused = false;
+      isReplaying = false;
+      document.getElementById('modal-pause').classList.add('hidden');
+      document.getElementById('modal-victory').classList.add('hidden');
       
-      // Perform initial responsive scale fit calculation
+      // Scale fit layout to viewport
       resizeCameraAndBoard();
+    }
+
+    // --- Save Current Grid State ---
+    function saveStateToHistory() {
+      const stateCopy = fruitsGrid.map(row => row.map(cell => cell.type));
+      moveHistory.push(stateCopy);
+      updateUndoButtonState();
+    }
+
+    // --- Apply State Directly onto the Board Grid (For Undo & Replay) ---
+    function applyStateToGrid(state) {
+      for (let r = 0; r < N; r++) {
+        for (let c = 0; c < N; c++) {
+          const targetType = state[r][c];
+          const cell = fruitsGrid[r][c];
+          
+          if (cell.type !== targetType) {
+            // Delete mismatched mesh
+            boardGroup.remove(cell.mesh);
+            
+            // Build brand new fruit mesh in place
+            const newMesh = createFruitMesh(targetType);
+            boardGroup.add(newMesh);
+            
+            fruitsGrid[r][c] = {
+              type: targetType,
+              mesh: newMesh
+            };
+          }
+        }
+      }
+      repositionBoardAllStatic();
+    }
+
+    // --- Pass Board State to Another Player ---
+    function passToFriend() {
+      // Record player 1 details
+      player1Results = {
+        moves: movesCount,
+        time: document.getElementById('stat-time').innerText,
+        seconds: elapsedSeconds
+      };
+      isFriendMode = true;
+
+      // Reinitialize board to identical starting layout
+      initGame(true);
+    }
+
+    // --- Toggle Pause Play state ---
+    function togglePause() {
+      if (isTransitioning || isReplaying) return;
+
+      isPaused = !isPaused;
+      const modal = document.getElementById('modal-pause');
+      const txtPause = document.getElementById('txt-pause');
+      const svgPause = document.getElementById('svg-pause');
+
+      if (isPaused) {
+        modal.classList.remove('hidden');
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        txtPause.innerText = "Resume";
+        svgPause.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />`;
+        sound.playSnap();
+      } else {
+        modal.classList.add('hidden');
+        if (firstInteractionDone) {
+          startTime = Date.now() - elapsedSeconds * 1000;
+          timerInterval = setInterval(updateTimerUI, 1000);
+        }
+        txtPause.innerText = "Pause";
+        svgPause.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />`;
+        sound.playSnap();
+      }
+    }
+
+    // --- Execute Undo Step ---
+    function undoLastMove() {
+      if (isTransitioning || isDragging || isPaused || isReplaying) return;
+      if (moveHistory.length <= 1) return; // Cannot undo starting layout
+
+      // Pop state history
+      moveHistory.pop();
+      // Pop action history to keep synchrony
+      actionHistory.pop();
+
+      // Retrieve previous grid configuration
+      const prevState = moveHistory[moveHistory.length - 1];
+      applyStateToGrid(prevState);
+
+      movesCount = Math.max(0, movesCount - 1);
+      document.getElementById('stat-moves').innerText = movesCount;
+
+      sound.playSnap();
+      updateTangleValue();
+      updateTrackVisuals();
+      updateUndoButtonState();
+    }
+
+    // --- Enable or Disable Undo UI elements ---
+    function updateUndoButtonState() {
+      const btnUndo = document.getElementById('btn-undo');
+      if (moveHistory.length <= 1) {
+        btnUndo.classList.add('opacity-40', 'pointer-events-none');
+      } else {
+        btnUndo.classList.remove('opacity-40', 'pointer-events-none');
+      }
     }
 
     // --- Rearrange elements coordinates static ---
@@ -710,17 +907,8 @@
     }
 
     // --- Board Scrambler Mechanism ---
-    // Simulates tens of thousands of quick logical array shifts to guarantee solvability
     function scrambleBoard() {
-      // 1. Reset back to perfectly solved initial column state first
-      for (let c = 0; c < N; c++) {
-        for (let r = 0; r < N; r++) {
-          fruitsGrid[r][c].type = c;
-        }
-      }
-
-      // 2. Perform 20,000 rapid random rotational shifts on the grid array
-      const scrambleSteps = 20000;
+      const scrambleSteps = N * 12;
       for (let s = 0; s < scrambleSteps; s++) {
         const isRow = Math.random() > 0.5;
         const index = Math.floor(Math.random() * N);
@@ -732,20 +920,6 @@
           shiftColImmediate(index, dir);
         }
       }
-
-      // 3. Rebuild/refresh meshes to correspond to the logical scramble output
-      for (let r = 0; r < N; r++) {
-        for (let c = 0; c < N; c++) {
-          const item = fruitsGrid[r][c];
-          if (item && item.mesh) {
-            boardGroup.remove(item.mesh);
-            const newMesh = createFruitMesh(item.type);
-            boardGroup.add(newMesh);
-            item.mesh = newMesh;
-          }
-        }
-      }
-
       repositionBoardAllStatic();
     }
 
@@ -796,7 +970,7 @@
       return tangle;
     }
 
-    // --- Solved Column Highlight Track Tweens & Sparkle Animations ---
+    // --- Solved Column Highlight Track Tweens (Respects Alternating Base Color) ---
     function updateTrackVisuals() {
       for (let c = 0; c < N; c++) {
         let colComplete = true;
@@ -808,90 +982,41 @@
           }
         }
 
-        const wasComplete = solvedColumns[c];
-        solvedColumns[c] = colComplete;
-
         const track = columnTracks[c];
         if (track) {
-          const targetColor = colComplete ? { r: 16/255, g: 185/255, b: 129/255 } : { r: 30/255, g: 41/255, b: 59/255 };
+          const defaultColorHex = track.userData.defaultColor;
+          const defaultOpacity = track.userData.defaultOpacity;
+
+          // Target green color if complete, else restore baseline alternating background shade
+          const targetColor = colComplete 
+            ? { r: 16/255, g: 185/255, b: 129/255 } 
+            : { 
+                r: ((defaultColorHex >> 16) & 255) / 255, 
+                g: ((defaultColorHex >> 8) & 255) / 255, 
+                b: (defaultColorHex & 255) / 255 
+              };
           
-          // Safe uniform upload tween using proxy
           const currentMatColor = track.material.color;
           const colorProxy = { r: currentMatColor.r, g: currentMatColor.g, b: currentMatColor.b };
           
-          // Trigger custom completed column highlight animation
-          if (colComplete && !wasComplete && firstInteractionDone) {
-            sound.playTangleSuccess();
-
-            // Pulsing highlight track animation
-            gsap.timeline()
-              .to(track.material, { opacity: 0.9, duration: 0.15, overwrite: 'auto' })
-              .to(track.material, { opacity: 0.35, duration: 0.35 });
-
-            // Spawn elegant sparkles along the track column
-            spawnColumnSparkles(c);
-          } else {
-            gsap.to(colorProxy, {
-              r: targetColor.r,
-              g: targetColor.g,
-              b: targetColor.b,
-              duration: 0.4,
-              overwrite: 'auto',
-              onUpdate: () => {
-                track.material.color.setRGB(colorProxy.r, colorProxy.g, colorProxy.b);
-              }
-            });
-            gsap.to(track.material, {
-              duration: 0.4,
-              opacity: colComplete ? 0.35 : 0.15,
-              overwrite: 'auto'
-            });
-          }
+          gsap.to(colorProxy, {
+            r: targetColor.r,
+            g: targetColor.g,
+            b: targetColor.b,
+            duration: 0.4,
+            overwrite: 'auto',
+            onUpdate: () => {
+              track.material.color.setRGB(colorProxy.r, colorProxy.g, colorProxy.b);
+            }
+          });
+          
+          gsap.to(track.material, {
+            duration: 0.4,
+            opacity: colComplete ? 0.45 : defaultOpacity,
+            overwrite: 'auto'
+          });
         }
       }
-    }
-
-    // --- Sparkling Particles Rising up Solved Tracks ---
-    function spawnColumnSparkles(colIndex) {
-      const x = (colIndex - (N - 1) / 2) * CELL_SPACING;
-      const trackHeight = N * CELL_SPACING;
-      const halfHeight = trackHeight / 2;
-      
-      const pCount = 18;
-      const geo = new THREE.SphereGeometry(0.045, 6, 6);
-      
-      for (let i = 0; i < pCount; i++) {
-        const mat = new THREE.MeshBasicMaterial({
-          color: 0x34d399,
-          transparent: true,
-          opacity: 0.95
-        });
-        const m = new THREE.Mesh(geo, mat);
-        
-        // Starting points distributed vertically on the track column
-        m.position.set(
-          x + (Math.random() - 0.5) * 0.4, 
-          -halfHeight + (Math.random() * trackHeight), 
-          0.1
-        );
-        boardGroup.add(m);
-        
-        // Rise up and shrink away
-        gsap.to(m.position, {
-          y: `+=${0.6 + Math.random() * 0.9}`,
-          duration: 0.7 + Math.random() * 0.4,
-          ease: "power1.out"
-        });
-        gsap.to(m.scale, {
-          x: 0.1, y: 0.1, z: 0.1,
-          duration: 0.7 + Math.random() * 0.4,
-          onComplete: () => {
-            boardGroup.remove(m);
-            mat.dispose();
-          }
-        });
-      }
-      geo.dispose();
     }
 
     // --- Dynamic Mesh Boundary Scale/Clipping ---
@@ -919,47 +1044,26 @@
       });
     }
 
-    // --- Tap-to-Shift animation trigger for 3D arrow clicking ---
-    function triggerArrowShift(dir, index, shift) {
-      if (isTransitioning) return;
-      isTransitioning = true;
-      startGameplayTimer();
-
-      sound.playSnap();
-
-      // Trigger modern click animation feedback on semitransparent arrow triangle
-      const clickedArrow = clickArrows.find(a => a.userData.dir === dir && a.userData.index === index && a.userData.shift === shift);
-      if (clickedArrow) {
-        gsap.to(clickedArrow.scale, {
-          x: 1.4, y: 1.4, z: 1.4,
-          duration: 0.1,
-          yoyo: true,
-          repeat: 1,
-          ease: "power1.inOut"
-        });
-      }
-
+    // --- Unified Programmable Slide Animation Engine (Rows and Columns) ---
+    function executeSlideAnimation(type, index, shift, duration, onCompleteCallback) {
       const totalWidth = N * CELL_SPACING;
       const movementUnit = shift * CELL_SPACING;
 
-      if (dir === 'horizontal') {
+      if (type === 'row') {
         const rowFruits = fruitsGrid[index];
         const clones = [];
         rowFruits.forEach(item => {
-          // Left Clone
           const c1 = item.mesh.clone();
           c1.position.x -= totalWidth;
           boardGroup.add(c1);
           clones.push(c1);
 
-          // Right Clone
           const c2 = item.mesh.clone();
           c2.position.x += totalWidth;
           boardGroup.add(c2);
           clones.push(c2);
         });
 
-        // GSAP animate shift slide
         const timeline = gsap.timeline({
           onUpdate: () => {
             rowFruits.forEach((item, idx) => {
@@ -972,27 +1076,26 @@
             clones.forEach(c => boardGroup.remove(c));
             shiftRowImmediate(index, shift);
             repositionBoardAllStatic();
-            finalizeMove();
+            if (onCompleteCallback) onCompleteCallback();
           }
         });
 
         rowFruits.forEach(item => {
           timeline.to(item.mesh.position, {
             x: `+=${movementUnit}`,
-            duration: 0.35,
-            ease: "back.out(1.1)"
+            duration: duration,
+            ease: "power2.inOut" // Smooth slide dynamics
           }, 0);
         });
 
         clones.forEach(c => {
           timeline.to(c.position, {
             x: `+=${movementUnit}`,
-            duration: 0.35,
-            ease: "back.out(1.1)"
+            duration: duration,
+            ease: "power2.inOut"
           }, 0);
         });
-
-      } else { // vertical
+      } else { // vertical column
         const colFruits = [];
         for (let r = 0; r < N; r++) colFruits.push(fruitsGrid[r][index]);
 
@@ -1021,35 +1124,46 @@
             clones.forEach(c => boardGroup.remove(c));
             shiftColImmediate(index, shift);
             repositionBoardAllStatic();
-            finalizeMove();
+            if (onCompleteCallback) onCompleteCallback();
           }
         });
 
         colFruits.forEach(item => {
           timeline.to(item.mesh.position, {
             y: `+=${movementUnit}`,
-            duration: 0.35,
-            ease: "back.out(1.1)"
+            duration: duration,
+            ease: "power2.inOut"
           }, 0);
         });
 
         clones.forEach(c => {
           timeline.to(c.position, {
             y: `+=${movementUnit}`,
-            duration: 0.35,
-            ease: "back.out(1.1)"
+            duration: duration,
+            ease: "power2.inOut"
           }, 0);
         });
       }
     }
 
-    // Wrap up shift actions
+    // Wrap up manual drag final actions
     function finalizeMove() {
       movesCount++;
       document.getElementById('stat-moves').innerText = movesCount;
 
-      updateTangleValue();
+      const previousTangle = parseInt(document.getElementById('score-tangle').innerText, 10);
+      const newTangle = updateTangleValue();
+
+      if (newTangle < previousTangle) {
+        sound.playTangleSuccess();
+        spawnSplashParticles(0, 0, 0x10b981);
+      }
+
       updateTrackVisuals();
+
+      // Store current grid configuration to state history
+      saveStateToHistory();
+
       isTransitioning = false;
     }
 
@@ -1070,24 +1184,26 @@
 
       // HTML buttons bindings
       document.getElementById('btn-scramble').addEventListener('click', () => {
+        if (isPaused || isReplaying) return;
         sound.init();
-        scrambleBoard();
-        repositionBoardAllStatic();
-        movesCount = 0;
-        document.getElementById('stat-moves').innerText = movesCount;
-        resetTimer();
-        updateTangleValue();
-        updateTrackVisuals();
-        sound.playSnap();
+        initGame(); // Re-scrambles freshly
       });
 
-      // Config modal
+      // Pause/Resume actions
+      document.getElementById('btn-pause').addEventListener('click', togglePause);
+      document.getElementById('btn-resume').addEventListener('click', togglePause);
+
+      // Undo action binding
+      document.getElementById('btn-undo').addEventListener('click', undoLastMove);
+
+      // Config options
       const btnConfig = document.getElementById('btn-config');
       const modalConfig = document.getElementById('modal-config');
       const closeConfig = document.getElementById('modal-config-close');
       const applyConfig = document.getElementById('modal-config-apply');
 
       btnConfig.addEventListener('click', () => {
+        if (isPaused || isReplaying) return;
         sound.init();
         modalConfig.classList.remove('hidden');
       });
@@ -1106,21 +1222,30 @@
       sizeBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
           sizeBtns.forEach(b => {
-            b.className = "btn-size py-3 glass-panel rounded-xl font-bold text-slate-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all";
+            b.className = "btn-size py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all";
           });
-          btn.className = "btn-size py-3 glass-panel border-emerald-500 bg-emerald-900/20 text-emerald-300 rounded-xl font-bold transition-all";
+          btn.className = "btn-size py-3 text-xs glass-panel border-emerald-500 bg-emerald-900/20 text-emerald-300 rounded-xl font-bold transition-all";
           N = parseInt(btn.getAttribute('data-size'), 10);
         });
       });
 
-      // Victory CTA restart
+      // Victory CTA action button listeners
       document.getElementById('btn-victory-restart').addEventListener('click', () => {
         document.getElementById('modal-victory').classList.add('hidden');
+        isFriendMode = false;
         initGame();
       });
+
+      // Local multiplayer play pass
+      document.getElementById('btn-victory-pass-friend').addEventListener('click', () => {
+        passToFriend();
+      });
+
+      // Watch Replay speed slide show recap click
+      document.getElementById('btn-victory-replay').addEventListener('click', startSpeedRecap);
     }
 
-    // --- Dynamic Camera and Board Fitting ---
+    // --- Dynamic Camera and Board Fitting (Enhanced Closer Crop) ---
     function resizeCameraAndBoard() {
       const container = document.getElementById('canvas-container');
       if (!container) return;
@@ -1132,7 +1257,8 @@
       camera.updateProjectionMatrix();
 
       // Scaled calculations to ensure the board fits nicely
-      const boardSize = N * CELL_SPACING + 1.8; // Board size + arrows footprint
+      // (Arrows footprint removed, board fits much larger on screen)
+      const boardSize = N * CELL_SPACING + 0.65;
       
       const vFOV = camera.fov * Math.PI / 180;
       const visibleHeight = 2 * Math.tan(vFOV / 2) * 7.5;
@@ -1140,7 +1266,9 @@
 
       const scaleY = visibleHeight / boardSize;
       const scaleX = visibleWidth / boardSize;
-      const optimalScale = Math.min(scaleX, scaleY, 1.0) * 0.95; // 5% protective bounds padding
+      
+      // Removed the 1.0 limit so the board can expand beautifully on desktop & tablet
+      const optimalScale = Math.min(scaleX, scaleY) * 0.95; 
 
       boardGroup.scale.set(optimalScale, optimalScale, optimalScale);
     }
@@ -1150,6 +1278,14 @@
       if (isTransitioning) return;
       sound.init();
 
+      // Intercept during automated replay speed recap to close early
+      if (isReplaying) {
+        stopSpeedRecap();
+        return;
+      }
+
+      if (isPaused) return;
+
       const rect = renderer.domElement.getBoundingClientRect();
       touchCoord.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       touchCoord.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -1158,26 +1294,7 @@
       const intersects = raycaster.intersectObjects(boardGroup.children, true);
 
       if (intersects.length > 0) {
-        // Check if 3D Arrow clicked first
-        let arrowHit = null;
-        intersects.forEach(hit => {
-          let curr = hit.object;
-          while (curr && curr !== boardGroup) {
-            if (curr.userData && curr.userData.isArrow) {
-              arrowHit = curr;
-              break;
-            }
-            curr = curr.parent;
-          }
-        });
-
-        if (arrowHit) {
-          const { dir, index, shift } = arrowHit.userData;
-          triggerArrowShift(dir, index, shift);
-          return;
-        }
-
-        // Check if Fruit clicked
+        // Retrieve touched Fruit mesh
         let fruitHit = null;
         intersects.forEach(hit => {
           let curr = hit.object;
@@ -1225,7 +1342,7 @@
 
     // --- Drag Mechanics (continuous loop) ---
     function onPointerMove(e) {
-      if (!isDragging) return;
+      if (!isDragging || isPaused || isReplaying) return;
 
       const rect = renderer.domElement.getBoundingClientRect();
       touchCoord.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -1250,6 +1367,7 @@
             sound.playGrab();
             buildDragClones('col', dragColIdx);
           }
+          document.getElementById('gesture-hint').classList.add('opacity-0');
         }
         return;
       }
@@ -1332,7 +1450,7 @@
 
     // --- Drag Release & Snap Execution ---
     function onPointerUp() {
-      if (!isDragging) return;
+      if (!isDragging || isPaused || isReplaying) return;
       isDragging = false;
       startGameplayTimer();
 
@@ -1398,14 +1516,27 @@
           dragClones.forEach(c => boardGroup.remove(c));
           dragClones.length = 0;
 
-          if (dragLockedDir === 'horizontal') {
-            shiftRowImmediate(dragRowIdx, shiftAmount);
-          } else {
-            shiftColImmediate(dragColIdx, shiftAmount);
-          }
+          if (shiftAmount !== 0) {
+            if (dragLockedDir === 'horizontal') {
+              shiftRowImmediate(dragRowIdx, shiftAmount);
+            } else {
+              shiftColImmediate(dragColIdx, shiftAmount);
+            }
 
-          repositionBoardAllStatic();
-          finalizeMove();
+            // Record action logic to replay recap
+            actionHistory.push({
+              type: dragLockedDir === 'horizontal' ? 'row' : 'col',
+              index: dragLockedDir === 'horizontal' ? dragRowIdx : dragColIdx,
+              shift: shiftAmount
+            });
+
+            repositionBoardAllStatic();
+            finalizeMove();
+          } else {
+            // Canceled nudge drag. Simply realign statically, no move recorded
+            repositionBoardAllStatic();
+            isTransitioning = false;
+          }
         }
       });
     }
@@ -1457,7 +1588,64 @@
       geo.dispose();
     }
 
-    // --- Victory Fanfare Trigger ---
+    // --- Cinematic Continuous Slow Motion Recap Mechanism ---
+    function startSpeedRecap() {
+      if (actionHistory.length === 0) return;
+
+      isReplaying = true;
+      document.getElementById('modal-victory').classList.add('hidden');
+      
+      const hud = document.getElementById('hud-replay');
+      hud.classList.remove('hidden');
+
+      // Reset Board to original initial scrambled configuration before starting replay
+      applyStateToGrid(originalScrambleState);
+
+      let stepIdx = 0;
+
+      function playNext() {
+        if (!isReplaying) return;
+
+        if (stepIdx >= actionHistory.length) {
+          // Recap completed successfully!
+          spawnSplashParticles(0, 0, 0x10b981);
+          sound.playTangleSuccess();
+          setTimeout(() => {
+            stopSpeedRecap();
+          }, 1000);
+          return;
+        }
+
+        const action = actionHistory[stepIdx];
+        document.getElementById('hud-replay-step').innerText = `Move ${stepIdx + 1} / ${actionHistory.length}`;
+        
+        sound.playSnap();
+
+        // Perform programmatic continuous slide visual animation! (slowed duration to 0.55s for clarity)
+        executeSlideAnimation(action.type, action.index, action.shift, 0.55, () => {
+          stepIdx++;
+          // Tiny delay between actions to emphasize individual steps
+          setTimeout(playNext, 180);
+        });
+      }
+
+      playNext();
+    }
+
+    // --- Stop Speed Recap & Reset ---
+    function stopSpeedRecap() {
+      isReplaying = false;
+      document.getElementById('hud-replay').classList.add('hidden');
+      
+      // Instantly restore solved state configurations and trigger victory panel
+      applyStateToGrid(moveHistory[moveHistory.length - 1]);
+      updateTangleValue();
+      updateTrackVisuals();
+
+      document.getElementById('modal-victory').classList.remove('hidden');
+    }
+
+    // --- Victory Fanfare Trigger (With Comparison Scoreboards Support) ---
     function triggerVictory() {
       clearInterval(timerInterval);
       timerInterval = null;
@@ -1474,6 +1662,55 @@
       setTimeout(() => {
         document.getElementById('vic-moves').innerText = movesCount;
         document.getElementById('vic-time').innerText = document.getElementById('stat-time').innerText;
+
+        const normalStats = document.getElementById('victory-normal-stats');
+        const scoreboard = document.getElementById('victory-comparison-scoreboard');
+        const btnPassFriend = document.getElementById('btn-victory-pass-friend');
+        const subtitle = document.getElementById('victory-subtitle');
+
+        if (isFriendMode) {
+          friendResults = {
+            moves: movesCount,
+            time: document.getElementById('stat-time').innerText,
+            seconds: elapsedSeconds
+          };
+
+          // Populate scoreboard values
+          document.getElementById('p1-moves').innerText = player1Results.moves;
+          document.getElementById('p1-time').innerText = player1Results.time;
+          document.getElementById('p2-moves').innerText = friendResults.moves;
+          document.getElementById('p2-time').innerText = friendResults.time;
+
+          // Compute winner metrics
+          let winnerText = "";
+          if (friendResults.moves < player1Results.moves) {
+            winnerText = "Friend (P2) wins! 🏆";
+          } else if (player1Results.moves < friendResults.moves) {
+            winnerText = "You (P1) win! 🏆";
+          } else {
+            // Compare time in total elapsed seconds
+            if (friendResults.seconds < player1Results.seconds) {
+              winnerText = "Friend (P2) wins on time! ⚡";
+            } else if (player1Results.seconds < friendResults.seconds) {
+              winnerText = "You (P1) win on time! ⚡";
+            } else {
+              winnerText = "It's an absolute tie! 🤝";
+            }
+          }
+
+          document.getElementById('victory-winner-banner').innerText = winnerText;
+          subtitle.innerText = "Comparison Results";
+
+          normalStats.classList.add('hidden');
+          scoreboard.classList.remove('hidden');
+          btnPassFriend.classList.add('hidden'); // Turn over
+        } else {
+          subtitle.innerText = "Perfect Alignment Achieved";
+          normalStats.classList.remove('hidden');
+          scoreboard.classList.add('hidden');
+          btnPassFriend.classList.remove('hidden');
+        }
+
         document.getElementById('modal-victory').classList.remove('hidden');
       }, 1500);
     }
@@ -1488,6 +1725,7 @@
 
     function resetTimer() {
       firstInteractionDone = false;
+      elapsedSeconds = 0;
       if (timerInterval) {
         clearInterval(timerInterval);
         timerInterval = null;
@@ -1497,9 +1735,9 @@
 
     function updateTimerUI() {
       if (!startTime) return;
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
-      const seconds = (elapsed % 60).toString().padStart(2, '0');
+      elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+      const minutes = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+      const seconds = (elapsedSeconds % 60).toString().padStart(2, '0');
       document.getElementById('stat-time').innerText = `${minutes}:${seconds}`;
     }
   </script>
