@@ -16,14 +16,25 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   
   <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+    }
     body {
       font-family: 'Outfit', sans-serif;
       user-select: none;
       -webkit-user-select: none;
-      overflow: hidden;
       background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
     }
-    /* Fixed canvas sizing to prevent flex-shrink layout bugs */
+    #canvas-container {
+      touch-action: none;
+    }
+    /* Fixed canvas sizing to prevent flex-shrink layout bugs and lock gestures on mobile */
     canvas {
       position: absolute;
       top: 0;
@@ -32,6 +43,7 @@
       height: 100%;
       display: block;
       outline: none;
+      touch-action: none;
     }
     .neon-text-glow {
       text-shadow: 0 0 10px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.2);
@@ -683,17 +695,19 @@
       window.boardFrameBox = frame;
     }
 
-    // --- Pure Mathematical Scramble Tangle Calculation ---
+    // --- Pure Mathematical Scramble Tangle Calculation (New Definition: Sum of Col Unique Colors minus One) ---
     function calculateTangleOnly() {
-      let tangle = 0;
+      let totalTangle = 0;
       for (let c = 0; c < N; c++) {
-        for (let r = 0; r < N - 1; r++) {
-          if (fruitsGrid[r][c].type !== fruitsGrid[r + 1][c].type) {
-            tangle++;
+        const uniqueColors = new Set();
+        for (let r = 0; r < N; r++) {
+          if (fruitsGrid[r] && fruitsGrid[r][c]) {
+            uniqueColors.add(fruitsGrid[r][c].type);
           }
         }
+        totalTangle += Math.max(0, uniqueColors.size - 1);
       }
-      return tangle;
+      return totalTangle;
     }
 
     // --- Core Game Initialization ---
@@ -948,21 +962,23 @@
       return arr.slice(len - rot).concat(arr.slice(0, len - rot));
     }
 
-    // --- Core Tangle Scoring Logic ---
+    // --- Core Tangle Scoring Logic (Unique Colors in Column minus One) ---
     function updateTangleValue() {
-      let tangle = 0;
+      let totalTangle = 0;
       for (let c = 0; c < N; c++) {
-        for (let r = 0; r < N - 1; r++) {
-          if (fruitsGrid[r][c].type !== fruitsGrid[r + 1][c].type) {
-            tangle++;
+        const uniqueColors = new Set();
+        for (let r = 0; r < N; r++) {
+          if (fruitsGrid[r] && fruitsGrid[r][c]) {
+            uniqueColors.add(fruitsGrid[r][c].type);
           }
         }
+        totalTangle += Math.max(0, uniqueColors.size - 1);
       }
       
       const scoreElement = document.getElementById('score-tangle');
-      scoreElement.innerText = tangle;
+      scoreElement.innerText = totalTangle;
       
-      if (tangle === 0) {
+      if (totalTangle === 0) {
         scoreElement.className = "text-2xl font-black text-emerald-400 neon-text-glow";
         if (!isReplaying) {
           triggerVictory();
@@ -971,22 +987,23 @@
         scoreElement.className = "text-2xl font-black text-rose-400";
       }
 
-      return tangle;
+      return totalTangle;
     }
 
-    // --- Solved Column Highlight Track Tweens (Subtle dark-to-light Green Gradient based on Column Tangle) ---
+    // --- Solved Column Highlight Track Tweens (Respects Alternating Base Color) ---
     function updateTrackVisuals() {
       for (let c = 0; c < N; c++) {
-        // Calculate local adjacent mismatches for this specific column c
-        let colTangle = 0;
-        for (let r = 0; r < N - 1; r++) {
-          if (fruitsGrid[r][c].type !== fruitsGrid[r + 1][c].type) {
-            colTangle++;
+        // Calculate unique colors minus 1 for this specific column
+        const uniqueColors = new Set();
+        for (let r = 0; r < N; r++) {
+          if (fruitsGrid[r] && fruitsGrid[r][c]) {
+            uniqueColors.add(fruitsGrid[r][c].type);
           }
         }
+        const colTangle = Math.max(0, uniqueColors.size - 1);
 
         const maxPossibleTangle = N - 1;
-        // solved ratio: 1.0 is perfectly aligned (no tangle), 0.0 is fully scrambled (tangle on all spots)
+        // solved ratio: 1.0 is perfectly aligned (1 color), 0.0 is fully scrambled (all different colors)
         const solvedRatio = maxPossibleTangle > 0 ? (1.0 - (colTangle / maxPossibleTangle)) : 1.0;
 
         const track = columnTracks[c];
@@ -1157,7 +1174,7 @@
       }
     }
 
-    // Wrap up manual drag final actions
+    // Wrap up manual drag final actions (Play splash celebration ONLY when tangle improves)
     function finalizeMove() {
       movesCount++;
       document.getElementById('stat-moves').innerText = movesCount;
@@ -1185,10 +1202,11 @@
     function setupEvents() {
       const container = document.getElementById('canvas-container');
 
-      // Click / Pointer events
+      // Click / Touch / Pointer events
       container.addEventListener('pointerdown', onPointerDown, { passive: false });
       container.addEventListener('pointermove', onPointerMove, { passive: false });
       window.addEventListener('pointerup', onPointerUp, { passive: false });
+      window.addEventListener('pointercancel', onPointerUp, { passive: false });
 
       // Window resize
       window.addEventListener('resize', resizeCameraAndBoard);
@@ -1256,7 +1274,7 @@
       document.getElementById('btn-victory-replay').addEventListener('click', startSpeedRecap);
     }
 
-    // --- Dynamic Camera and Board Fitting (Enhanced Closer Crop) ---
+    // --- Dynamic Camera and Board Fitting ---
     function resizeCameraAndBoard() {
       const container = document.getElementById('canvas-container');
       if (!container) return;
@@ -1268,7 +1286,6 @@
       camera.updateProjectionMatrix();
 
       // Scaled calculations to ensure the board fits nicely
-      // (Arrows footprint removed, board fits much larger on screen)
       const boardSize = N * CELL_SPACING + 0.65;
       
       const vFOV = camera.fov * Math.PI / 180;
@@ -1278,13 +1295,12 @@
       const scaleY = visibleHeight / boardSize;
       const scaleX = visibleWidth / boardSize;
       
-      // Removed the 1.0 limit so the board can expand beautifully on desktop & tablet
       const optimalScale = Math.min(scaleX, scaleY) * 0.95; 
 
       boardGroup.scale.set(optimalScale, optimalScale, optimalScale);
     }
 
-    // --- Pointerdown Intercept ---
+    // --- Pointerdown Intercept (Mathematical cell-based detection anywhere on the grid) ---
     function onPointerDown(e) {
       if (isTransitioning) return;
       sound.init();
@@ -1297,53 +1313,46 @@
 
       if (isPaused) return;
 
+      // Prevent mobile default gesture interactions
+      if (e.cancelable) e.preventDefault();
+
       const rect = renderer.domElement.getBoundingClientRect();
       touchCoord.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       touchCoord.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.setFromCamera(touchCoord, camera);
-      const intersects = raycaster.intersectObjects(boardGroup.children, true);
+      
+      // Calculate intersection directly on the flat board plane at Z = 0
+      const targetZPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      const intersectPoint = new THREE.Vector3();
+      const hasIntersect = raycaster.ray.intersectPlane(targetZPlane, intersectPoint);
 
-      if (intersects.length > 0) {
-        // Retrieve touched Fruit mesh
-        let fruitHit = null;
-        intersects.forEach(hit => {
-          let curr = hit.object;
-          while (curr && curr !== boardGroup) {
-            if (curr.userData && curr.userData.isFruit) {
-              fruitHit = curr;
-              break;
-            }
-            curr = curr.parent;
-          }
-        });
+      if (hasIntersect) {
+        // Convert world coordinate to local coordinate by adjusting for boardGroup scale
+        const localX = intersectPoint.x / boardGroup.scale.x;
+        const localY = intersectPoint.y / boardGroup.scale.y;
 
-        if (fruitHit) {
-          let hitR = -1, hitC = -1;
+        // Map local coordinate offset directly to Column and Row indices
+        const colIndex = Math.round(localX / CELL_SPACING + (N - 1) / 2);
+        const rowIndex = Math.round(localY / CELL_SPACING + (N - 1) / 2);
+
+        // Check if pointer falls within valid board cell ranges
+        if (colIndex >= 0 && colIndex < N && rowIndex >= 0 && rowIndex < N) {
+          isDragging = true;
+          dragRowIdx = rowIndex;
+          dragColIdx = colIndex;
+          dragLockedDir = null;
+          
+          dragStartWorld.copy(intersectPoint);
+
+          initialFruitPositions = [];
           for (let r = 0; r < N; r++) {
+            initialFruitPositions.push([]);
             for (let c = 0; c < N; c++) {
-              if (fruitsGrid[r][c].mesh === fruitHit) {
-                hitR = r;
-                hitC = c;
-                break;
-              }
-            }
-          }
-
-          if (hitR !== -1 && hitC !== -1) {
-            isDragging = true;
-            dragRowIdx = hitR;
-            dragColIdx = hitC;
-            dragLockedDir = null;
-
-            const targetZPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-            raycaster.ray.intersectPlane(targetZPlane, dragStartWorld);
-
-            initialFruitPositions = [];
-            for (let r = 0; r < N; r++) {
-              initialFruitPositions.push([]);
-              for (let c = 0; c < N; c++) {
+              if (fruitsGrid[r] && fruitsGrid[r][c] && fruitsGrid[r][c].mesh) {
                 initialFruitPositions[r].push(fruitsGrid[r][c].mesh.position.clone());
+              } else {
+                initialFruitPositions[r].push(new THREE.Vector3());
               }
             }
           }
@@ -1354,6 +1363,8 @@
     // --- Drag Mechanics (continuous loop) ---
     function onPointerMove(e) {
       if (!isDragging || isPaused || isReplaying) return;
+
+      if (e.cancelable) e.preventDefault();
 
       const rect = renderer.domElement.getBoundingClientRect();
       touchCoord.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -1387,7 +1398,7 @@
       const totalWidth = N * CELL_SPACING;
 
       if (dragLockedDir === 'horizontal') {
-        const movementUnit = delta.x / boardGroup.scale.x; // Corrected local coordinate scale offset
+        const movementUnit = delta.x / boardGroup.scale.x; 
         const rowFruits = fruitsGrid[dragRowIdx];
         
         rowFruits.forEach((item, c) => {
@@ -1404,7 +1415,7 @@
           dragClones[c * 2 + 1].position.set(targetX + totalWidth, item.mesh.position.y, 0);
         });
       } else if (dragLockedDir === 'vertical') {
-        const movementUnit = delta.y / boardGroup.scale.y; // Corrected local coordinate scale offset
+        const movementUnit = delta.y / boardGroup.scale.y; 
         
         for (let r = 0; r < N; r++) {
           const item = fruitsGrid[r][dragColIdx];
@@ -1602,7 +1613,7 @@
       geo.dispose();
     }
 
-    // --- Cinematic Continuous Slow Motion Recap Mechanism (With live scoreboard updates) ---
+    // --- Cinematic Continuous Slow Motion Recap Mechanism ---
     function startSpeedRecap() {
       if (actionHistory.length === 0) return;
 
