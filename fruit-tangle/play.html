@@ -21,6 +21,7 @@
       padding: 0;
       width: 100%;
       height: 100%;
+      height: 100dvh;
       overflow: hidden;
       touch-action: none;
       -webkit-tap-highlight-color: transparent;
@@ -55,21 +56,21 @@
     }
   </style>
 </head>
-<body class="relative w-screen h-screen flex flex-col justify-between p-4 text-white overflow-hidden">
+<body class="relative w-full h-full flex flex-col justify-between p-3 sm:p-4 text-white overflow-hidden select-none">
 
   <!-- Top Header / Scoreboard -->
-  <div class="w-full max-w-md mx-auto z-10 flex flex-col gap-2 shrink-0 select-none">
+  <div class="w-full max-w-md mx-auto z-10 flex flex-col gap-2 shrink-0">
     <div class="flex items-center justify-between w-full">
       <div class="flex flex-col">
-        <h1 class="text-3xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-200">
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-200">
           TANGLE FRUIT
         </h1>
-        <p class="text-[10px] text-slate-400 tracking-widest uppercase font-semibold">Align identical fruits in columns</p>
+        <p class="text-[9px] sm:text-[10px] text-slate-400 tracking-widest uppercase font-semibold">Align identical fruits in columns</p>
       </div>
       
       <!-- Modernized Settings/Gear Button -->
       <button id="btn-config" class="p-2 rounded-full glass-panel hover:bg-slate-800/80 transition-all active:scale-95 flex items-center justify-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3" />
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
@@ -77,54 +78,54 @@
     </div>
 
     <!-- Quick Stats -->
-    <div class="flex justify-between w-full mt-1 gap-2">
-      <div class="flex-1 glass-panel px-3 py-1.5 rounded-xl flex flex-col items-center">
-        <span class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Tangle</span>
-        <span id="score-tangle" class="text-xl font-black text-rose-400">12</span>
+    <div class="flex justify-between w-full mt-0.5 gap-2">
+      <div class="flex-1 glass-panel px-3 py-1 sm:py-1.5 rounded-xl flex flex-col items-center">
+        <span class="text-[8px] sm:text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Tangle</span>
+        <span id="score-tangle" class="text-lg sm:text-xl font-black text-rose-400">12</span>
       </div>
-      <div class="flex-1 glass-panel px-3 py-1.5 rounded-xl flex flex-col items-center relative overflow-hidden">
-        <span class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Moves</span>
-        <span id="stat-moves" class="text-xl font-black text-amber-300">0</span>
+      <div class="flex-1 glass-panel px-3 py-1 sm:py-1.5 rounded-xl flex flex-col items-center relative overflow-hidden">
+        <span class="text-[8px] sm:text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Moves</span>
+        <span id="stat-moves" class="text-lg sm:text-xl font-black text-amber-300">0</span>
       </div>
-      <div class="flex-1 glass-panel px-3 py-1.5 rounded-xl flex flex-col items-center">
-        <span class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Time</span>
-        <span id="stat-time" class="text-xl font-black text-sky-400">00:00</span>
+      <div class="flex-1 glass-panel px-3 py-1 sm:py-1.5 rounded-xl flex flex-col items-center">
+        <span class="text-[8px] sm:text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Time</span>
+        <span id="stat-time" class="text-lg sm:text-xl font-black text-sky-400">00:00</span>
       </div>
     </div>
   </div>
 
   <!-- Dedicated WebGL Game Container with Overflow Containment -->
-  <div id="canvas-container" class="w-full flex-grow relative z-0 min-h-0 my-2 overflow-hidden"></div>
+  <div id="canvas-container" class="w-full flex-grow relative z-0 min-h-0 my-1 sm:my-2 overflow-hidden"></div>
 
   <!-- Swipe Instruction Alert -->
-  <div id="gesture-hint" class="absolute bottom-24 left-1/2 -translate-x-1/2 z-10 pointer-events-none select-none text-center bg-slate-900/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/10 transition-all duration-500">
-    <p class="text-[11px] font-semibold text-slate-300 flex items-center gap-2">
+  <div id="gesture-hint" class="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-center bg-slate-900/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/10 transition-all duration-500">
+    <p class="text-[10px] sm:text-[11px] font-semibold text-slate-300 flex items-center gap-2">
       <span>👆 Swipe rows or columns to align them!</span>
     </p>
   </div>
 
   <!-- Bottom Interactive Bar -->
-  <div class="w-full max-w-md mx-auto z-10 flex gap-2.5 shrink-0 mb-2 select-none">
+  <div class="w-full max-w-md mx-auto z-10 flex gap-2 shrink-0 mb-1 select-none">
     
     <!-- Undo Button -->
-    <button id="btn-undo" class="flex-1 h-11 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg opacity-40 pointer-events-none">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-sky-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+    <button id="btn-undo" class="flex-1 h-10 sm:h-11 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg opacity-40 pointer-events-none">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 sm:h-5 w-4 sm:w-5 text-sky-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
       </svg>
       <span class="text-xs">Undo</span>
     </button>
 
     <!-- Pause Button -->
-    <button id="btn-pause" class="flex-1 h-11 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg">
-      <svg id="svg-pause" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+    <button id="btn-pause" class="flex-1 h-10 sm:h-11 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg">
+      <svg id="svg-pause" xmlns="http://www.w3.org/2000/svg" class="h-4 sm:h-5 w-4 sm:w-5 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
       </svg>
       <span id="txt-pause" class="text-xs">Pause</span>
     </button>
 
     <!-- Scramble Button -->
-    <button id="btn-scramble" class="flex-1 h-11 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+    <button id="btn-scramble" class="flex-1 h-10 sm:h-11 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 sm:h-5 w-4 sm:w-5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
       </svg>
       <span class="text-xs">Scramble</span>
@@ -695,17 +696,30 @@
       window.boardFrameBox = frame;
     }
 
-    // --- Pure Mathematical Scramble Tangle Calculation (New Definition: Sum of Col Unique Colors minus One) ---
+    // --- Helper to calculate tangle of a single column c ---
+    // Defined as: N - (count of majority color in column c)
+    function getColumnTangle(c) {
+      const counts = {};
+      for (let r = 0; r < N; r++) {
+        if (fruitsGrid[r] && fruitsGrid[r][c]) {
+          const type = fruitsGrid[r][c].type;
+          counts[type] = (counts[type] || 0) + 1;
+        }
+      }
+      let maxCount = 0;
+      for (const type in counts) {
+        if (counts[type] > maxCount) {
+          maxCount = counts[type];
+        }
+      }
+      return N - maxCount;
+    }
+
+    // --- Pure Mathematical Scramble Tangle Calculation ---
     function calculateTangleOnly() {
       let totalTangle = 0;
       for (let c = 0; c < N; c++) {
-        const uniqueColors = new Set();
-        for (let r = 0; r < N; r++) {
-          if (fruitsGrid[r] && fruitsGrid[r][c]) {
-            uniqueColors.add(fruitsGrid[r][c].type);
-          }
-        }
-        totalTangle += Math.max(0, uniqueColors.size - 1);
+        totalTangle += getColumnTangle(c);
       }
       return totalTangle;
     }
@@ -966,13 +980,7 @@
     function updateTangleValue() {
       let totalTangle = 0;
       for (let c = 0; c < N; c++) {
-        const uniqueColors = new Set();
-        for (let r = 0; r < N; r++) {
-          if (fruitsGrid[r] && fruitsGrid[r][c]) {
-            uniqueColors.add(fruitsGrid[r][c].type);
-          }
-        }
-        totalTangle += Math.max(0, uniqueColors.size - 1);
+        totalTangle += getColumnTangle(c);
       }
       
       const scoreElement = document.getElementById('score-tangle');
@@ -990,20 +998,14 @@
       return totalTangle;
     }
 
-    // --- Solved Column Highlight Track Tweens (Respects Alternating Base Color) ---
+    // --- Solved Column Highlight Track Tweens (Subtle dark-to-light Green Gradient based on Column Tangle) ---
     function updateTrackVisuals() {
       for (let c = 0; c < N; c++) {
-        // Calculate unique colors minus 1 for this specific column
-        const uniqueColors = new Set();
-        for (let r = 0; r < N; r++) {
-          if (fruitsGrid[r] && fruitsGrid[r][c]) {
-            uniqueColors.add(fruitsGrid[r][c].type);
-          }
-        }
-        const colTangle = Math.max(0, uniqueColors.size - 1);
+        // Calculate dynamic column tangle
+        const colTangle = getColumnTangle(c);
 
         const maxPossibleTangle = N - 1;
-        // solved ratio: 1.0 is perfectly aligned (1 color), 0.0 is fully scrambled (all different colors)
+        // solved ratio: 1.0 is perfectly aligned (1 majority color), 0.0 is fully scrambled (all different colors)
         const solvedRatio = maxPossibleTangle > 0 ? (1.0 - (colTangle / maxPossibleTangle)) : 1.0;
 
         const track = columnTracks[c];
@@ -1202,7 +1204,7 @@
     function setupEvents() {
       const container = document.getElementById('canvas-container');
 
-      // Click / Touch / Pointer events
+      // Unified Pointer Events - natively prevents phone/touch action issues
       container.addEventListener('pointerdown', onPointerDown, { passive: false });
       container.addEventListener('pointermove', onPointerMove, { passive: false });
       window.addEventListener('pointerup', onPointerUp, { passive: false });
@@ -1285,7 +1287,7 @@
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
 
-      // Scaled calculations to ensure the board fits nicely
+      // Scaled calculations to ensure the board fits nicely within viewport boundaries
       const boardSize = N * CELL_SPACING + 0.65;
       
       const vFOV = camera.fov * Math.PI / 180;
@@ -1313,7 +1315,7 @@
 
       if (isPaused) return;
 
-      // Prevent mobile default gesture interactions
+      // Prevent mobile default screen dragging behaviors completely
       if (e.cancelable) e.preventDefault();
 
       const rect = renderer.domElement.getBoundingClientRect();
@@ -1770,6 +1772,7 @@
       timerInterval = setInterval(updateTimerUI, 1000);
     }
 
+    // --- Reset Timer ---
     function resetTimer() {
       firstInteractionDone = false;
       elapsedSeconds = 0;
@@ -1780,6 +1783,7 @@
       document.getElementById('stat-time').innerText = "00:00";
     }
 
+    // --- Update Timer UI ---
     function updateTimerUI() {
       if (!startTime) return;
       elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
