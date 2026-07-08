@@ -145,8 +145,17 @@
         Puzzle Options
       </h2>
 
+      <!-- Game Mode Selection -->
+      <div class="mb-5">
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Game Mode</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-mode-sudoku" class="py-3 text-xs glass-panel border-amber-500 bg-amber-950/20 text-amber-300 rounded-xl font-bold transition-all">Sudoku</button>
+          <button id="btn-mode-matching" class="py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all">Matching Rings</button>
+        </div>
+      </div>
+
       <!-- Geometry Configuration Buttons -->
-      <div class="mb-6">
+      <div class="mb-5">
         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Geometry Layout</label>
         <div class="grid grid-cols-3 gap-2">
           <button data-layout="triquetra" class="btn-layout py-3 text-xs glass-panel border-amber-500 bg-amber-950/20 text-amber-300 rounded-xl font-bold transition-all">Triquetra (3R)</button>
@@ -155,15 +164,16 @@
         </div>
       </div>
 
-      <!-- Instructions Section -->
-      <div class="mb-6 p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-sm text-slate-300 flex flex-col gap-2">
-        <span class="font-bold text-slate-100 flex items-center gap-1 text-xs">
+      <!-- Dynamic Rules Section -->
+      <div class="mb-6 p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300">
+        <span class="font-bold text-slate-100 block mb-2 flex items-center gap-1">
           💡 Objective:
         </span>
-        <ul class="list-disc pl-4 space-y-1 text-[11px] text-slate-400">
+        <ul id="instructions-list" class="list-disc pl-4 space-y-1.5 text-slate-400">
+          <!-- Dynamic contents populated in setup -->
           <li>Adjacent rings touch tangentially at exactly 1 shared slot intersection.</li>
           <li>Rotate individual rings to swap gems at the intersection points.</li>
-          <li>Ensure <strong>no ring contains repeated gem colors</strong> (Sudoku-style alignment).</li>
+          <li>Ensure <strong>no ring contains repeated gem colors</strong> (Sudoku alignment).</li>
         </ul>
       </div>
 
@@ -411,20 +421,22 @@
       }
     };
 
-    // --- Premium Vibrant Color Palette ---
+    // --- Premium Vibrant Color Palette (Enhanced with 7th Rose Pink option for Lotus) ---
     const GEM_COLORS = [
       0xff3b30, // 0: Ruby Red
-      0xffcc00, // 1: Citrine Yellow
-      0x34c759, // 2: Emerald Green
-      0x007aff, // 3: Sapphire Blue
+      0x34c759, // 1: Emerald Green
+      0x007aff, // 2: Sapphire Blue
+      0xffcc00, // 3: Citrine Yellow
       0xaf52de, // 4: Amethyst Purple
-      0xff9500  // 5: Amber Orange
+      0xff9500, // 5: Amber Orange
+      0xff2d55  // 6: Rose Pink
     ];
 
     // --- State Variables ---
+    let currentGameMode = "sudoku"; // "sudoku" or "matching"
     let currentLayoutId = "triquetra";
     let cells = []; // Unified unique positions: { id, x, y, gemId, mesh, attachments }
-    let rings = []; // Config list with mapped cell IDs: { id, center, radius, cellIds, mesh, solved, group }
+    let rings = []; // Config list with mapped cell IDs: { id, center, radius, cellIds, mesh, solved, group, centerStone }
     
     let isTransitioning = false;
     let isPaused = false;
@@ -517,9 +529,18 @@
       backgroundParticles = new THREE.Points(particleGeo, particleMat);
       scene.add(backgroundParticles);
 
+      // Spin central sigil gems inside the animation loop
       function animate() {
         requestAnimationFrame(animate);
         backgroundParticles.rotation.z += 0.0003;
+
+        rings.forEach(ring => {
+          if (ring.centerStone && ring.centerStone.visible) {
+            ring.centerStone.rotation.y += 0.015;
+            ring.centerStone.rotation.z += 0.007;
+          }
+        });
+
         renderer.render(scene, camera);
       }
       animate();
@@ -642,7 +663,8 @@
           radius: ringConfig.radius,
           cellIds: ringCells.map(c => c.id),
           mesh: null,
-          solved: false
+          solved: false,
+          centerStone: null
         };
       });
 
@@ -662,7 +684,7 @@
         ringGroup.add(torus);
 
         // Center Gold Hub
-        const hubGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.04, 16);
+        const hubGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.04, 16);
         const hubMat = new THREE.MeshStandardMaterial({
           color: 0xd97706,
           metalness: 0.85,
@@ -671,6 +693,24 @@
         const hub = new THREE.Mesh(hubGeo, hubMat);
         hub.rotation.x = Math.PI / 2;
         ringGroup.add(hub);
+
+        // Custom Central Stone indicating this Ring's unique color (For Matching Rings mode)
+        const stoneColorHex = GEM_COLORS[ring.id % GEM_COLORS.length];
+        const stoneGeo = new THREE.OctahedronGeometry(0.12, 1);
+        const stoneMat = new THREE.MeshPhysicalMaterial({
+          color: stoneColorHex,
+          roughness: 0.15,
+          metalness: 0.2,
+          transmission: 0.4,
+          thickness: 0.5,
+          clearcoat: 1.0,
+          emissive: stoneColorHex,
+          emissiveIntensity: 0.25
+        });
+        const centerStone = new THREE.Mesh(stoneGeo, stoneMat);
+        centerStone.position.set(0, 0, 0.06);
+        ringGroup.add(centerStone);
+        ring.centerStone = centerStone;
 
         // Spokes connecting the hub to each slot center
         ring.cellIds.forEach(cellId => {
@@ -708,69 +748,73 @@
 
     // --- Optimized CSP Heuristic Backtracking Sudoku Solver ---
     function generateSolvedState() {
-      const numColors = LAYOUTS[currentLayoutId].colorsCount;
-      
-      // Reset all cells first
-      cells.forEach(c => c.gemId = null);
-
-      function getPossibleColors(cell) {
-        const used = new Set();
-        cell.attachments.forEach(att => {
-          const ring = rings.find(r => r.id === att.ringId);
-          ring.cellIds.forEach(cid => {
-            const other = cells.find(c => c.id === cid);
-            if (other && other.gemId !== null) {
-              used.add(other.gemId);
-            }
-          });
+      if (currentGameMode === "matching") {
+        // MATCHING RINGS MODE:
+        // Assign each cell's color to one of its attached ring colors to ensure perfect initial match.
+        cells.forEach(cell => {
+          const chosenAttachment = cell.attachments[Math.floor(Math.random() * cell.attachments.length)];
+          cell.gemId = chosenAttachment.ringId % GEM_COLORS.length;
         });
-        const possible = [];
-        for (let i = 0; i < numColors; i++) {
-          if (!used.has(i)) possible.push(i);
-        }
-        return possible;
-      }
+      } else {
+        // SUDOKU MODE (Standard unique constraints solver):
+        const numColors = LAYOUTS[currentLayoutId].colorsCount;
+        cells.forEach(c => c.gemId = null);
 
-      function solve() {
-        // Find unassigned cell with minimum remaining values (MRV)
-        let bestCell = null;
-        let minRemaining = Infinity;
-
-        for (let i = 0; i < cells.length; i++) {
-          const cell = cells[i];
-          if (cell.gemId !== null) continue;
-
-          const possible = getPossibleColors(cell);
-          if (possible.length < minRemaining) {
-            minRemaining = possible.length;
-            bestCell = cell;
+        function getPossibleColors(cell) {
+          const used = new Set();
+          cell.attachments.forEach(att => {
+            const ring = rings.find(r => r.id === att.ringId);
+            ring.cellIds.forEach(cid => {
+              const other = cells.find(c => c.id === cid);
+              if (other && other.gemId !== null) {
+                used.add(other.gemId);
+              }
+            });
+          });
+          const possible = [];
+          for (let i = 0; i < numColors; i++) {
+            if (!used.has(i)) possible.push(i);
           }
+          return possible;
         }
 
-        // If no unassigned cells remain, we are done!
-        if (!bestCell) return true;
+        function solve() {
+          let bestCell = null;
+          let minRemaining = Infinity;
 
-        // If a cell has 0 remaining values, this path is a dead end
-        if (minRemaining === 0) return false;
+          for (let i = 0; i < cells.length; i++) {
+            const cell = cells[i];
+            if (cell.gemId !== null) continue;
 
-        const choices = shuffleArray(getPossibleColors(bestCell));
-        for (let col of choices) {
-          bestCell.gemId = col;
-          if (solve()) return true;
-          bestCell.gemId = null; // Backtrack
+            const possible = getPossibleColors(cell);
+            if (possible.length < minRemaining) {
+              minRemaining = possible.length;
+              bestCell = cell;
+            }
+          }
+
+          if (!bestCell) return true;
+          if (minRemaining === 0) return false;
+
+          const choices = shuffleArray(getPossibleColors(bestCell));
+          for (let col of choices) {
+            bestCell.gemId = col;
+            if (solve()) return true;
+            bestCell.gemId = null; 
+          }
+
+          return false;
         }
 
-        return false;
-      }
-
-      const success = solve();
-      if (!success) {
-        console.error("Layout solver failed to find valid configuration!");
-        // Absolute fallback to guarantee no crashes or lockups
-        cells.forEach((c, idx) => c.gemId = idx % numColors);
+        const success = solve();
+        if (!success) {
+          console.error("Layout solver failed to find valid configuration!");
+          cells.forEach((c, idx) => c.gemId = idx % numColors);
+        }
       }
     }
 
+    // Helper function to randomly shuffle an array (Fisher-Yates)
     function shuffleArray(arr) {
       for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -817,30 +861,32 @@
     function scrambleRingsAnimated() {
       isTransitioning = true;
       const totalRings = rings.length;
-      const scrambleSteps = totalRings * 4; // Fast, elegant sequence
+      const scrambleSteps = totalRings * 4; 
       let currentStep = 0;
 
-      // Swap subtitle to notify user
       const subtitle = document.getElementById('game-subtitle');
       subtitle.innerText = "Scrambling board...";
       subtitle.classList.add('text-amber-400');
 
       function runNextScrambleStep() {
         if (currentStep >= scrambleSteps) {
-          // Scramble completed, restore gameplay states
           isTransitioning = false;
           
           stateHistory = [];
           actionHistory = [];
           originalScrambleState = cells.map(c => c.gemId);
-          saveStateToHistory(); // Record scrambled state as base undo state 0
+          saveStateToHistory(); 
 
           updateSolvedStates();
           updateUndoButtonState();
           resetTimer();
 
           // Restore normal subtitle
-          subtitle.innerText = "Avoid repeated colors in the same ring";
+          if (currentGameMode === "matching") {
+            subtitle.innerText = "Match gems to their ring colors";
+          } else {
+            subtitle.innerText = "Avoid repeated colors in the same ring";
+          }
           subtitle.classList.remove('text-amber-400');
           return;
         }
@@ -848,13 +894,11 @@
         const ringIdx = Math.floor(Math.random() * totalRings);
         const dir = Math.random() > 0.5 ? 1 : -1;
         
-        // Execute physical rotation logic instantly, then trigger smooth snap animation
         executeLogicalShift(ringIdx, dir);
         
         const ring = rings[ringIdx];
         const stepAngle = 2 * Math.PI / ring.cellIds.length;
         
-        // Rapid 80ms transitions for snappy starting feel
         animateRingSnapping(ringIdx, -dir * stepAngle, 0, () => {
           currentStep++;
           runNextScrambleStep();
@@ -882,7 +926,6 @@
         actionHistory = [];
         saveStateToHistory(); 
 
-        // Reset statistics
         movesCount = 0;
         document.getElementById('stat-moves').innerText = movesCount;
         resetTimer();
@@ -895,10 +938,8 @@
         document.getElementById('modal-pause').classList.add('hidden');
         document.getElementById('modal-victory').classList.add('hidden');
       } else {
-        // 1. Generate guaranteed solved Sudoku state
         generateSolvedState();
 
-        // 2. Render initial static gem meshes
         cells.forEach(cell => {
           const mesh = createGemMesh(cell.gemId);
           boardGroup.add(mesh);
@@ -907,7 +948,6 @@
 
         positionGemsStatically();
 
-        // Reset statistics
         movesCount = 0;
         document.getElementById('stat-moves').innerText = movesCount;
         resetTimer();
@@ -917,12 +957,19 @@
         document.getElementById('modal-pause').classList.add('hidden');
         document.getElementById('modal-victory').classList.add('hidden');
 
-        // 3. Perform live scramble animation sequence from solved base
+        // Scramble visually
         scrambleRingsAnimated();
 
         isFriendMode = false;
         player1Results = null;
       }
+
+      // Hide or show target center sigil stones depending on active mode
+      rings.forEach(ring => {
+        if (ring.centerStone) {
+          ring.centerStone.visible = (currentGameMode === "matching");
+        }
+      });
 
       resizeCameraToFit();
     }
@@ -1016,21 +1063,39 @@
       let unsolvedCount = 0;
 
       rings.forEach(ring => {
-        const colorsInRing = new Set();
-        ring.cellIds.forEach(cellId => {
-          const cell = cells.find(c => c.id === cellId);
-          if (cell && cell.gemId !== null) {
-            colorsInRing.add(cell.gemId);
-          }
-        });
+        let isRingHappy = false;
 
-        // Unique constraints check: size matches slots count
-        const solved = (colorsInRing.size === ring.cellIds.length);
-        
-        if (!solved) unsolvedCount++;
+        if (currentGameMode === "matching") {
+          // MATCHING RINGS MODE:
+          // A ring is happy if EVERY slot cell currently on this ring holds a happy gem.
+          let happyCount = 0;
+          ring.cellIds.forEach(cellId => {
+            const cell = cells.find(c => c.id === cellId);
+            if (cell && cell.gemId !== null) {
+              const matchesAttachedRing = cell.attachments.some(att => (att.ringId % GEM_COLORS.length) === cell.gemId);
+              if (matchesAttachedRing) {
+                happyCount++;
+              }
+            }
+          });
+          isRingHappy = (happyCount === ring.cellIds.length);
+        } else {
+          // SUDOKU MODE:
+          // A ring is happy if it contains zero duplicate colors.
+          const colorsInRing = new Set();
+          ring.cellIds.forEach(cellId => {
+            const cell = cells.find(c => c.id === cellId);
+            if (cell && cell.gemId !== null) {
+              colorsInRing.add(cell.gemId);
+            }
+          });
+          isRingHappy = (colorsInRing.size === ring.cellIds.length);
+        }
+
+        if (!isRingHappy) unsolvedCount++;
 
         // Visual Aura Highlight Updates
-        if (solved) {
+        if (isRingHappy) {
           ring.mesh.material.color.setHex(0x10b981); // Emerald Green
           ring.mesh.material.emissive.setHex(0x064e3b);
           
@@ -1121,9 +1186,6 @@
     }
 
     // --- Interactive Touch & Drag Engine ---
-    const raycaster = new THREE.Raycaster();
-    const ndcCoord = new THREE.Vector2();
-
     function setupEvents() {
       const container = document.getElementById('canvas-container');
 
@@ -1154,6 +1216,17 @@
       btnConfig.addEventListener('click', () => {
         if (isPaused || isReplaying || isTransitioning) return;
         sound.init();
+        
+        // Sync config UI states
+        document.querySelectorAll('.btn-layout').forEach(b => {
+          if (b.getAttribute('data-layout') === currentLayoutId) {
+            b.className = "btn-layout py-3 text-xs glass-panel border-amber-500 bg-amber-950/20 text-amber-300 rounded-xl font-bold transition-all";
+          } else {
+            b.className = "btn-layout py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all";
+          }
+        });
+
+        syncModeUIButtons();
         modalConfig.classList.remove('hidden');
       });
 
@@ -1178,6 +1251,20 @@
         });
       });
 
+      // Config Game Mode Button Toggles
+      const btnSudoku = document.getElementById('btn-mode-sudoku');
+      const btnMatching = document.getElementById('btn-mode-matching');
+
+      btnSudoku.addEventListener('click', () => {
+        currentGameMode = "sudoku";
+        syncModeUIButtons();
+      });
+
+      btnMatching.addEventListener('click', () => {
+        currentGameMode = "matching";
+        syncModeUIButtons();
+      });
+
       // Connect Victory Buttons
       document.getElementById('btn-victory-restart').addEventListener('click', () => {
         document.getElementById('modal-victory').classList.add('hidden');
@@ -1192,6 +1279,36 @@
       document.getElementById('btn-victory-replay').addEventListener('click', runSpeedRecap);
     }
 
+    // --- Helpers to sync Game Mode Configuration overlays ---
+    function syncModeUIButtons() {
+      const btnSudoku = document.getElementById('btn-mode-sudoku');
+      const btnMatching = document.getElementById('btn-mode-matching');
+      const instructions = document.getElementById('instructions-list');
+      const subtitle = document.getElementById('game-subtitle');
+
+      if (currentGameMode === "matching") {
+        btnMatching.className = "py-3 text-xs glass-panel border-amber-500 bg-amber-950/20 text-amber-300 rounded-xl font-bold transition-all";
+        btnSudoku.className = "py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all";
+        
+        instructions.innerHTML = `
+          <li>Each ring has a target color marked by its central spinning sigil stone.</li>
+          <li>Rotate individual rings to move gems across shared intersection sockets.</li>
+          <li>Ensure <strong>every gem matches the color of at least one of its attached rings</strong>.</li>
+        `;
+        subtitle.innerText = "Match gems to their ring colors";
+      } else {
+        btnSudoku.className = "py-3 text-xs glass-panel border-amber-500 bg-amber-950/20 text-amber-300 rounded-xl font-bold transition-all";
+        btnMatching.className = "py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all";
+        
+        instructions.innerHTML = `
+          <li>Adjacent rings touch tangentially at exactly 1 shared slot intersection.</li>
+          <li>Rotate individual rings to swap gems at the intersection points.</li>
+          <li>Ensure <strong>no ring contains repeated gem colors</strong> (Sudoku-style alignment).</li>
+        `;
+        subtitle.innerText = "Avoid repeated colors in the same ring";
+      }
+    }
+
     // --- Dynamic Resizing to fit layout perfectly in Window space ---
     function resizeCameraToFit() {
       const container = document.getElementById('canvas-container');
@@ -1203,15 +1320,13 @@
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
 
-      // Reset coordinates base
       boardGroup.scale.set(1, 1, 1);
 
-      // Calculate the tight bounding box of current rings and outer gems
       let minX = Infinity, maxX = -Infinity;
       let minY = Infinity, maxY = -Infinity;
 
       rings.forEach(ring => {
-        const boundaryOffset = ring.radius + 0.35; // Include offset for ring thickness + gem profiles
+        const boundaryOffset = ring.radius + 0.35; 
         const left = ring.center.x - boundaryOffset;
         const right = ring.center.x + boundaryOffset;
         const bottom = ring.center.y - boundaryOffset;
@@ -1227,10 +1342,8 @@
       const height = maxY - minY;
       const center = new THREE.Vector3((minX + maxX) / 2, (minY + maxY) / 2, 0);
 
-      // Shift position offset to align physical centers perfectly to camera focal point
       boardGroup.position.set(-center.x, -center.y, 0);
 
-      // Determine viewport coordinates boundaries at distance Z = 7.5
       const vFOV = camera.fov * Math.PI / 180;
       const visibleHeight = 2 * Math.tan(vFOV / 2) * 7.5;
       const visibleWidth = visibleHeight * camera.aspect;
@@ -1238,7 +1351,6 @@
       const scaleX = visibleWidth / width;
       const scaleY = visibleHeight / height;
 
-      // Safe bounds padding multiplier
       const bestScale = Math.min(scaleX, scaleY) * 0.90;
 
       boardGroup.scale.set(bestScale, bestScale, bestScale);
@@ -1246,6 +1358,9 @@
     }
 
     // --- Pointer Events Mechanics (Massive Interactive Areas) ---
+    const raycaster = new THREE.Raycaster();
+    const ndcCoord = new THREE.Vector2();
+
     function onPointerDown(e) {
       if (isTransitioning) return;
       sound.init();
@@ -1270,11 +1385,9 @@
       const hasIntersect = raycaster.ray.intersectPlane(planeZ, touchPoint);
 
       if (hasIntersect) {
-        // Map pointer coordinates correctly back to the centered and scaled boardGroup local space
         const localX = (touchPoint.x - boardGroup.position.x) / boardGroup.scale.x;
         const localY = (touchPoint.y - boardGroup.position.y) / boardGroup.scale.y;
 
-        // Find nearest ring center
         let nearest = null;
         let minDist = Infinity;
 
@@ -1298,7 +1411,6 @@
 
           dragStartAngle = Math.atan2(localY - nearest.center.y, localX - nearest.center.x);
 
-          // Build local coordinates maps for rotating active ring gems
           dragGems = nearest.cellIds.map(cellId => {
             const cell = cells.find(c => c.id === cellId);
             const rx = cell.x - nearest.center.x;
@@ -1337,7 +1449,6 @@
       while (delta < -Math.PI) delta += 2 * Math.PI;
       while (delta > Math.PI) delta -= 2 * Math.PI;
 
-      // Update matching gem positions visually in local space coordinates
       dragGems.forEach(gem => {
         const angle = gem.originalAngle + delta;
         gem.mesh.position.set(
