@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Celestial Rings - Sacred Geometry Puzzle</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <!-- Three.js (v128) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- GSAP for smooth animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: 'Outfit', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      background: radial-gradient(circle at center, #0b0f19 0%, #02040a 100%);
+    }
+    #canvas-container {
+      touch-action: none;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      outline: none;
+      touch-action: none;
+    }
+    .neon-text-glow {
+      text-shadow: 0 0 10px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.2);
+    }
+    .glass-panel {
+      background: rgba(11, 17, 32, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="relative w-full h-full flex flex-col justify-between p-3 sm:p-4 text-white overflow-hidden select-none">
+
+  <!-- Top Header / Scoreboard -->
+  <div class="w-full max-w-md mx-auto z-10 flex flex-col gap-2 shrink-0">
+    <div class="flex items-center justify-between w-full">
+      <div class="flex flex-col">
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-yellow-200">
+          CELESTIAL RINGS
+        </h1>
+        <p id="game-subtitle" class="text-[9px] sm:text-[10px] text-slate-400 tracking-widest uppercase font-semibold transition-colors duration-300">
+          Avoid repeated colors in the same ring
+        </p>
+      </div>
+      
+      <!-- Settings/Gear Button -->
+      <button id="btn-config" class="p-2 rounded-full glass-panel hover:bg-slate-800/80 transition-all active:scale-95 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="flex justify-between w-full mt-0.5 gap-2">
+      <div class="flex-1 glass-panel px-3 py-1 sm:py-1.5 rounded-xl flex flex-col items-center">
+        <span class="text-[8px] sm:text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Tangle</span>
+        <span id="score-tangle" class="text-lg sm:text-xl font-black text-rose-400">3</span>
+      </div>
+      <div class="flex-1 glass-panel px-3 py-1 sm:py-1.5 rounded-xl flex flex-col items-center relative overflow-hidden">
+        <span class="text-[8px] sm:text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Moves</span>
+        <span id="stat-moves" class="text-lg sm:text-xl font-black text-amber-300">0</span>
+      </div>
+      <div class="flex-1 glass-panel px-3 py-1 sm:py-1.5 rounded-xl flex flex-col items-center">
+        <span class="text-[8px] sm:text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Time</span>
+        <span id="stat-time" class="text-lg sm:text-xl font-black text-sky-400">00:00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dedicated WebGL Game Container -->
+  <div id="canvas-container" class="w-full flex-grow relative z-0 min-h-0 my-1 sm:my-2 overflow-hidden"></div>
+
+  <!-- Swipe/Drag Instruction Alert -->
+  <div id="gesture-hint" class="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-center bg-slate-950/80 backdrop-blur-sm px-4 py-2 rounded-full border border-white/10 transition-all duration-500">
+    <p class="text-[10px] sm:text-[11px] font-semibold text-slate-300 flex items-center gap-2">
+      <span>👆 Drag near any ring's edge to rotate it!</span>
+    </p>
+  </div>
+
+  <!-- Bottom Interactive Bar -->
+  <div class="w-full max-w-md mx-auto z-10 flex gap-2 shrink-0 mb-1 select-none">
+    <!-- Undo Button -->
+    <button id="btn-undo" class="flex-1 h-10 sm:h-11 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg opacity-40 pointer-events-none">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 sm:h-5 w-4 sm:w-5 text-sky-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+      </svg>
+      <span class="text-xs">Undo</span>
+    </button>
+
+    <!-- Pause Button -->
+    <button id="btn-pause" class="flex-1 h-10 sm:h-11 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg">
+      <svg id="svg-pause" xmlns="http://www.w3.org/2000/svg" class="h-4 sm:h-5 w-4 sm:w-5 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+      </svg>
+      <span id="txt-pause" class="text-xs">Pause</span>
+    </button>
+
+    <!-- Scramble Button -->
+    <button id="btn-scramble" class="flex-1 h-10 sm:h-11 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 sm:h-5 w-4 sm:w-5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+      </svg>
+      <span class="text-xs">Scramble</span>
+    </button>
+  </div>
+
+  <!-- Options Config Modal -->
+  <div id="modal-config" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+    <div class="w-full max-w-sm glass-panel rounded-2xl p-6 shadow-2xl relative">
+      <button id="modal-config-close" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <h2 class="text-xl font-extrabold text-amber-400 mb-6 flex items-center gap-2">
+        Puzzle Options
+      </h2>
+
+      <!-- Geometry Configuration Buttons -->
+      <div class="mb-6">
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Geometry Layout</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button data-layout="triquetra" class="btn-layout py-3 text-xs glass-panel border-amber-500 bg-amber-950/20 text-amber-300 rounded-xl font-bold transition-all">Triquetra (3R)</button>
+          <button data-layout="quadrant" class="btn-layout py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all">Quadrant (4R)</button>
+          <button data-layout="lotus" class="btn-layout py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all">Lotus (7R)</button>
+        </div>
+      </div>
+
+      <!-- Instructions Section -->
+      <div class="mb-6 p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-sm text-slate-300 flex flex-col gap-2">
+        <span class="font-bold text-slate-100 flex items-center gap-1 text-xs">
+          💡 Objective:
+        </span>
+        <ul class="list-disc pl-4 space-y-1 text-[11px] text-slate-400">
+          <li>Adjacent rings touch tangentially at exactly 1 shared slot intersection.</li>
+          <li>Rotate individual rings to swap gems at the intersection points.</li>
+          <li>Ensure <strong>no ring contains repeated gem colors</strong> (Sudoku-style alignment).</li>
+        </ul>
+      </div>
+
+      <!-- Action Button -->
+      <button id="modal-config-apply" class="w-full py-4 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-lg rounded-xl shadow-lg shadow-amber-500/20 transition-all uppercase tracking-wider">
+        Let's Play
+      </button>
+    </div>
+  </div>
+
+  <!-- Pause Modal Overlay -->
+  <div id="modal-pause" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div class="w-full max-w-sm glass-panel rounded-3xl p-8 shadow-2xl relative text-center flex flex-col items-center">
+      <div class="w-16 h-16 bg-amber-500/20 border border-amber-500/40 rounded-full flex items-center justify-center mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+        </svg>
+      </div>
+      <h2 class="text-2xl font-black text-amber-300 uppercase tracking-widest mb-2">GAME PAUSED</h2>
+      <p class="text-sm text-slate-400 mb-6">Timer and gameplay are suspended.</p>
+      <button id="btn-resume" class="w-full py-4 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-lg rounded-xl shadow-lg shadow-amber-500/20 transition-all uppercase tracking-wider">
+        Resume Game
+      </button>
+    </div>
+  </div>
+
+  <!-- Victory Overlay Panel -->
+  <div id="modal-victory" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/85 backdrop-blur-md p-4">
+    <div class="w-full max-w-sm glass-panel rounded-3xl p-6 shadow-2xl relative text-center flex flex-col items-center max-h-[92vh] overflow-y-auto">
+      <!-- Trophy Icon -->
+      <div class="w-14 h-14 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center justify-center mb-3.5 animate-bounce shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+        </svg>
+      </div>
+
+      <h2 class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-200 uppercase tracking-widest mb-1">
+        PUZZLE SOLVED!
+      </h2>
+      <p id="victory-subtitle" class="text-xs text-slate-400 mb-4 font-semibold uppercase tracking-wider">Perfect Alignment Achieved</p>
+
+      <!-- Stats Display -->
+      <div id="victory-normal-stats" class="grid grid-cols-2 gap-2 w-full mb-5 shrink-0 select-none">
+        <div class="glass-panel p-2.5 rounded-xl">
+          <span class="block text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-1 text-center">Moves</span>
+          <span id="vic-moves" class="text-lg font-black text-emerald-300 block text-center">24</span>
+        </div>
+        <div class="glass-panel p-2.5 rounded-xl">
+          <span class="block text-slate-400 text-[10px] uppercase tracking-widest font-semibold mb-1 text-center">Time</span>
+          <span id="vic-time" class="text-lg font-black text-sky-300 block text-center font-mono">01:42</span>
+        </div>
+      </div>
+
+      <!-- Local Multiplayer Scoreboard -->
+      <div id="victory-comparison-scoreboard" class="hidden flex flex-col gap-3 w-full mb-5 select-none shrink-0">
+        <div class="glass-panel p-3.5 rounded-xl border border-amber-500/20 bg-amber-950/20">
+          <span class="text-xs font-bold text-amber-400 uppercase tracking-widest block mb-2">🏆 Challenge Scoreboard</span>
+          <div class="grid grid-cols-2 gap-2 text-left">
+            <div class="bg-slate-900/50 p-2.5 rounded-lg border border-white/5">
+              <span class="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">You (P1)</span>
+              <div class="mt-0.5 font-black text-slate-200 text-sm"><span id="p1-moves">0</span> moves</div>
+              <div class="font-bold text-sky-400 text-[11px]"><span id="p1-time">00:00</span></div>
+            </div>
+            <div class="bg-amber-900/40 p-2.5 rounded-lg border border-amber-500/20">
+              <span class="text-[9px] text-amber-300 uppercase tracking-wider font-semibold">Friend (P2)</span>
+              <div class="mt-0.5 font-black text-amber-200 text-sm"><span id="p2-moves">0</span> moves</div>
+              <div class="font-bold text-amber-400 text-[11px]"><span id="p2-time">00:00</span></div>
+            </div>
+          </div>
+        </div>
+        <div id="victory-winner-banner" class="text-emerald-300 font-extrabold text-xs tracking-wide bg-emerald-500/10 py-2 px-3 rounded-xl border border-emerald-500/20">
+          Player 1 Wins! 🎉
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col gap-2 w-full shrink-0 select-none">
+        <button id="btn-victory-replay" class="w-full h-11 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Watch Speed Recap
+        </button>
+
+        <button id="btn-victory-pass-friend" class="w-full h-11 bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-600/25">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          Pass to Friend
+        </button>
+
+        <button id="btn-victory-restart" class="w-full h-11 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl transition-all uppercase tracking-wider shadow-lg shadow-emerald-500/25">
+          Play Again
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Synth Controller -->
+  <script>
+    class SoundSynth {
+      constructor() {
+        this.ctx = null;
+        this.enabled = false;
+      }
+
+      init() {
+        if (this.ctx) return;
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContextClass();
+          
+          if (navigator.audioSession) {
+            navigator.audioSession.type = "playback";
+          }
+          this.enabled = true;
+        } catch (e) {
+          console.warn('Web Audio API not supported', e);
+        }
+      }
+
+      resume() {
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playGrab() {
+        if (!this.enabled) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(220, now + 0.08);
+
+        gain.gain.setValueAtTime(0.06, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+
+      playSnap() {
+        if (!this.enabled) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.12);
+
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.12);
+      }
+
+      playRingResolved() {
+        if (!this.enabled) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        const notes = [440, 554.37, 659.25, 880]; // A major chime
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const t = now + idx * 0.05;
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, t);
+          osc.frequency.exponentialRampToValueAtTime(freq * 1.01, t + 0.3);
+
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(0.06, t + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.35);
+        });
+      }
+
+      playVictory() {
+        if (!this.enabled) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50]; // Beautiful C major arpeggio
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const t = now + idx * 0.1;
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, t);
+
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(0.08, t + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.7);
+        });
+      }
+    }
+
+    const sound = new SoundSynth();
+  </script>
+
+  <!-- Main Game WebGL Controller -->
+  <script>
+    // --- Layout Configuration Constants ---
+    const LAYOUTS = {
+      triquetra: {
+        id: "triquetra",
+        name: "Triquetra (3 Rings)",
+        colorsCount: 6,
+        slotsPerRing: 6
+      },
+      quadrant: {
+        id: "quadrant",
+        name: "Quadrant (4 Rings)",
+        colorsCount: 4,
+        slotsPerRing: 4
+      },
+      lotus: {
+        id: "lotus",
+        name: "Lotus (7 Rings)",
+        colorsCount: 6,
+        slotsPerRing: 6
+      }
+    };
+
+    // --- Premium Vibrant Color Palette ---
+    const GEM_COLORS = [
+      0xff3b30, // 0: Ruby Red
+      0xffcc00, // 1: Citrine Yellow
+      0x34c759, // 2: Emerald Green
+      0x007aff, // 3: Sapphire Blue
+      0xaf52de, // 4: Amethyst Purple
+      0xff9500  // 5: Amber Orange
+    ];
+
+    // --- State Variables ---
+    let currentLayoutId = "triquetra";
+    let cells = []; // Unified unique positions: { id, x, y, gemId, mesh, attachments }
+    let rings = []; // Config list with mapped cell IDs: { id, center, radius, cellIds, mesh, solved, group }
+    
+    let isTransitioning = false;
+    let isPaused = false;
+    let isReplaying = false;
+    let movesCount = 0;
+    let startTime = null;
+    let timerInterval = null;
+    let firstInteractionDone = false;
+    let elapsedSeconds = 0;
+
+    // Undo & Action History Tracker
+    let stateHistory = []; // list of gemId states
+    let actionHistory = []; // list of executed moves: { ringId, direction }
+    let originalScrambleState = null; // matching gemIds configuration for local multiplayer replay
+
+    // Multiplayer State
+    let isFriendMode = false;
+    let player1Results = null;
+
+    // WebGL Objects
+    let scene, camera, renderer, boardGroup, backgroundParticles;
+    
+    // Interaction State Tracking
+    let isDragging = false;
+    let activeRing = null;
+    let dragStartAngle = 0;
+    let dragCurrentAngle = 0;
+    let dragGems = []; // Gems currently occupying the active ring track
+
+    // Load Game Loop
+    window.onload = () => {
+      initEngine();
+      initGame();
+      setupEvents();
+    };
+
+    // --- WebGL Engine Setup ---
+    function initEngine() {
+      const container = document.getElementById('canvas-container');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x02040a, 0.08);
+
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+      camera.position.set(0, 0, 7.5);
+      camera.lookAt(0, 0, 0);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(width, height);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      boardGroup = new THREE.Group();
+      scene.add(boardGroup);
+
+      // Lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+      scene.add(ambientLight);
+
+      const mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
+      mainLight.position.set(5, 5, 8);
+      mainLight.castShadow = true;
+      scene.add(mainLight);
+
+      const fillLight = new THREE.DirectionalLight(0xec4899, 0.3); // Neon pink fill
+      fillLight.position.set(-6, -3, 3);
+      scene.add(fillLight);
+
+      // Starfield background
+      const particleGeo = new THREE.BufferGeometry();
+      const count = 120;
+      const positions = new Float32Array(count * 3);
+      for (let i = 0; i < count * 3; i += 3) {
+        positions[i] = (Math.random() - 0.5) * 14;
+        positions[i + 1] = (Math.random() - 0.5) * 14;
+        positions[i + 2] = -2 - Math.random() * 5;
+      }
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const particleMat = new THREE.PointsMaterial({
+        color: 0x6366f1,
+        size: 0.04,
+        transparent: true,
+        opacity: 0.5,
+        blending: THREE.AdditiveBlending
+      });
+      backgroundParticles = new THREE.Points(particleGeo, particleMat);
+      scene.add(backgroundParticles);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        backgroundParticles.rotation.z += 0.0003;
+        renderer.render(scene, camera);
+      }
+      animate();
+    }
+
+    // --- Mathematical Proximity Layout Solver ---
+    function buildLayout() {
+      // 1. Clear any current scene meshes
+      cells.forEach(c => { if (c.mesh) boardGroup.remove(c.mesh); });
+      rings.forEach(r => { if (r.group) boardGroup.remove(r.group); });
+
+      const config = LAYOUTS[currentLayoutId];
+      const rawCandidates = [];
+
+      // Generate precise coordinates where adjacent circles are mutually tangent (exactly one point of contact)
+      let computedRings = [];
+      if (currentLayoutId === "triquetra") {
+        const R = 1.15;
+        // Centers forming an equilateral triangle with side length 2R
+        const h = R / Math.sqrt(3);
+        computedRings = [
+          { id: 0, center: { x: 0, y: 2 * h }, radius: R, offset: 0 },
+          { id: 1, center: { x: -R, y: -h }, radius: R, offset: 0 },
+          { id: 2, center: { x: R, y: -h }, radius: R, offset: 0 }
+        ];
+      } else if (currentLayoutId === "quadrant") {
+        const R = 1.0;
+        // Centers forming a square with side length 2R
+        computedRings = [
+          { id: 0, center: { x: -R, y: R }, radius: R, offset: 0 },
+          { id: 1, center: { x: R, y: R }, radius: R, offset: 0 },
+          { id: 2, center: { x: R, y: -R }, radius: R, offset: 0 },
+          { id: 3, center: { x: -R, y: -R }, radius: R, offset: 0 }
+        ];
+      } else if (currentLayoutId === "lotus") {
+        const R = 1.0;
+        // 1 central ring + 6 mutually tangent surrounding rings
+        const dy = R * Math.sqrt(3);
+        computedRings = [
+          { id: 0, center: { x: 0, y: 0 }, radius: R, offset: 0 },
+          { id: 1, center: { x: 2 * R, y: 0 }, radius: R, offset: 0 },
+          { id: 2, center: { x: R, y: dy }, radius: R, offset: 0 },
+          { id: 3, center: { x: -R, y: dy }, radius: R, offset: 0 },
+          { id: 4, center: { x: -2 * R, y: 0 }, radius: R, offset: 0 },
+          { id: 5, center: { x: -R, y: -dy }, radius: R, offset: 0 },
+          { id: 6, center: { x: R, y: -dy }, radius: R, offset: 0 }
+        ];
+      }
+
+      // Generate slots evenly around each ring's tangent geometry
+      computedRings.forEach(ringConfig => {
+        const S = config.slotsPerRing;
+        for (let k = 0; k < S; k++) {
+          const angle = ringConfig.offset + k * (2 * Math.PI / S);
+          const px = ringConfig.center.x + ringConfig.radius * Math.cos(angle);
+          const py = ringConfig.center.y + ringConfig.radius * Math.sin(angle);
+          rawCandidates.push({
+            ringId: ringConfig.id,
+            slotIdx: k,
+            x: px,
+            y: py
+          });
+        }
+      });
+
+      // Merge nodes falling on the exact same tangential coordinates (strict tolerance of 0.05)
+      const mergedNodes = [];
+      const tolerance = 0.05;
+
+      rawCandidates.forEach(cand => {
+        let matchedNode = mergedNodes.find(node => {
+          const dx = node.x - cand.x;
+          const dy = node.y - cand.y;
+          return Math.sqrt(dx * dx + dy * dy) < tolerance;
+        });
+
+        if (matchedNode) {
+          matchedNode.attachments.push({ ringId: cand.ringId, slotIdx: cand.slotIdx });
+          // Align coordinate values to prevent floating point differences
+          let sumX = 0, sumY = 0;
+          matchedNode.rawPoints.push({ x: cand.x, y: cand.y });
+          matchedNode.rawPoints.forEach(p => { sumX += p.x; sumY += p.y; });
+          matchedNode.x = sumX / matchedNode.rawPoints.length;
+          matchedNode.y = sumY / matchedNode.rawPoints.length;
+        } else {
+          mergedNodes.push({
+            id: mergedNodes.length,
+            x: cand.x,
+            y: cand.y,
+            attachments: [{ ringId: cand.ringId, slotIdx: cand.slotIdx }],
+            rawPoints: [{ x: cand.x, y: cand.y }]
+          });
+        }
+      });
+
+      cells = mergedNodes.map(node => ({
+        id: node.id,
+        x: node.x,
+        y: node.y,
+        attachments: node.attachments,
+        gemId: null,
+        mesh: null
+      }));
+
+      rings = computedRings.map(ringConfig => {
+        const ringCells = cells.filter(cell => 
+          cell.attachments.some(att => att.ringId === ringConfig.id)
+        );
+
+        // Sort cells in clockwise order around this ring's center
+        ringCells.sort((a, b) => {
+          const angleA = Math.atan2(a.y - ringConfig.center.y, a.x - ringConfig.center.x);
+          const angleB = Math.atan2(b.y - ringConfig.center.y, b.x - ringConfig.center.x);
+          return angleA - angleB;
+        });
+
+        return {
+          id: ringConfig.id,
+          center: ringConfig.center,
+          radius: ringConfig.radius,
+          cellIds: ringCells.map(c => c.id),
+          mesh: null,
+          solved: false
+        };
+      });
+
+      // Build Golden Torus Ring Meshes with Spokes & Hubs
+      rings.forEach(ring => {
+        const ringGroup = new THREE.Group();
+
+        // 3D torus ring track
+        const torusGeo = new THREE.TorusGeometry(ring.radius, 0.05, 16, 80);
+        const torusMat = new THREE.MeshStandardMaterial({
+          color: 0xd97706, // Gold/Bronze
+          metalness: 0.9,
+          roughness: 0.15
+        });
+        const torus = new THREE.Mesh(torusGeo, torusMat);
+        torus.receiveShadow = true;
+        ringGroup.add(torus);
+
+        // Center Gold Hub
+        const hubGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.04, 16);
+        const hubMat = new THREE.MeshStandardMaterial({
+          color: 0xd97706,
+          metalness: 0.85,
+          roughness: 0.2
+        });
+        const hub = new THREE.Mesh(hubGeo, hubMat);
+        hub.rotation.x = Math.PI / 2;
+        ringGroup.add(hub);
+
+        // Spokes connecting the hub to each slot center
+        ring.cellIds.forEach(cellId => {
+          const cell = cells.find(c => c.id === cellId);
+          const vx = cell.x - ring.center.x;
+          const vy = cell.y - ring.center.y;
+          const len = Math.sqrt(vx * vx + vy * vy);
+
+          const spokeGeo = new THREE.CylinderGeometry(0.015, 0.015, len);
+          const spokeMat = new THREE.MeshStandardMaterial({
+            color: 0xb45309,
+            metalness: 0.8,
+            roughness: 0.3
+          });
+          const spoke = new THREE.Mesh(spokeGeo, spokeMat);
+          
+          spoke.position.set(vx / 2, vy / 2, -0.01);
+          const angle = Math.atan2(vy, vx);
+          spoke.rotation.z = angle - Math.PI / 2;
+          ringGroup.add(spoke);
+
+          // Small socket container at cell coordinate
+          const socketGeo = new THREE.TorusGeometry(0.08, 0.015, 8, 24);
+          const socket = new THREE.Mesh(socketGeo, torusMat);
+          socket.position.set(vx, vy, 0.015);
+          ringGroup.add(socket);
+        });
+
+        ringGroup.position.set(ring.center.x, ring.center.y, -0.05);
+        boardGroup.add(ringGroup);
+        ring.mesh = torus;
+        ring.group = ringGroup;
+      });
+    }
+
+    // --- Optimized CSP Heuristic Backtracking Sudoku Solver ---
+    function generateSolvedState() {
+      const numColors = LAYOUTS[currentLayoutId].colorsCount;
+      
+      // Reset all cells first
+      cells.forEach(c => c.gemId = null);
+
+      function getPossibleColors(cell) {
+        const used = new Set();
+        cell.attachments.forEach(att => {
+          const ring = rings.find(r => r.id === att.ringId);
+          ring.cellIds.forEach(cid => {
+            const other = cells.find(c => c.id === cid);
+            if (other && other.gemId !== null) {
+              used.add(other.gemId);
+            }
+          });
+        });
+        const possible = [];
+        for (let i = 0; i < numColors; i++) {
+          if (!used.has(i)) possible.push(i);
+        }
+        return possible;
+      }
+
+      function solve() {
+        // Find unassigned cell with minimum remaining values (MRV)
+        let bestCell = null;
+        let minRemaining = Infinity;
+
+        for (let i = 0; i < cells.length; i++) {
+          const cell = cells[i];
+          if (cell.gemId !== null) continue;
+
+          const possible = getPossibleColors(cell);
+          if (possible.length < minRemaining) {
+            minRemaining = possible.length;
+            bestCell = cell;
+          }
+        }
+
+        // If no unassigned cells remain, we are done!
+        if (!bestCell) return true;
+
+        // If a cell has 0 remaining values, this path is a dead end
+        if (minRemaining === 0) return false;
+
+        const choices = shuffleArray(getPossibleColors(bestCell));
+        for (let col of choices) {
+          bestCell.gemId = col;
+          if (solve()) return true;
+          bestCell.gemId = null; // Backtrack
+        }
+
+        return false;
+      }
+
+      const success = solve();
+      if (!success) {
+        console.error("Layout solver failed to find valid configuration!");
+        // Absolute fallback to guarantee no crashes or lockups
+        cells.forEach((c, idx) => c.gemId = idx % numColors);
+      }
+    }
+
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // --- Interactive Visual Gems Creator (Faceted Octahedrons) ---
+    function createGemMesh(colorIdx) {
+      const color = GEM_COLORS[colorIdx % GEM_COLORS.length];
+      const geo = new THREE.OctahedronGeometry(0.18, 1);
+      
+      const mat = new THREE.MeshPhysicalMaterial({
+        color: color,
+        roughness: 0.1,
+        metalness: 0.1,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.05,
+        transmission: 0.55, 
+        thickness: 0.4,
+        ior: 1.5,
+        emissive: color,
+        emissiveIntensity: 0.15
+      });
+
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.castShadow = true;
+      return mesh;
+    }
+
+    // --- Physical position lock coordinates helper ---
+    function positionGemsStatically() {
+      cells.forEach(cell => {
+        if (cell.mesh) {
+          cell.mesh.position.set(cell.x, cell.y, 0.12);
+          cell.mesh.rotation.set(0, 0, 0);
+          cell.mesh.scale.set(1, 1, 1);
+        }
+      });
+    }
+
+    // --- Smooth Fast Scrambling Sequence (Guarantees Solvability) ---
+    function scrambleRingsAnimated() {
+      isTransitioning = true;
+      const totalRings = rings.length;
+      const scrambleSteps = totalRings * 4; // Fast, elegant sequence
+      let currentStep = 0;
+
+      // Swap subtitle to notify user
+      const subtitle = document.getElementById('game-subtitle');
+      subtitle.innerText = "Scrambling board...";
+      subtitle.classList.add('text-amber-400');
+
+      function runNextScrambleStep() {
+        if (currentStep >= scrambleSteps) {
+          // Scramble completed, restore gameplay states
+          isTransitioning = false;
+          
+          stateHistory = [];
+          actionHistory = [];
+          originalScrambleState = cells.map(c => c.gemId);
+          saveStateToHistory(); // Record scrambled state as base undo state 0
+
+          updateSolvedStates();
+          updateUndoButtonState();
+          resetTimer();
+
+          // Restore normal subtitle
+          subtitle.innerText = "Avoid repeated colors in the same ring";
+          subtitle.classList.remove('text-amber-400');
+          return;
+        }
+
+        const ringIdx = Math.floor(Math.random() * totalRings);
+        const dir = Math.random() > 0.5 ? 1 : -1;
+        
+        // Execute physical rotation logic instantly, then trigger smooth snap animation
+        executeLogicalShift(ringIdx, dir);
+        
+        const ring = rings[ringIdx];
+        const stepAngle = 2 * Math.PI / ring.cellIds.length;
+        
+        // Rapid 80ms transitions for snappy starting feel
+        animateRingSnapping(ringIdx, -dir * stepAngle, 0, () => {
+          currentStep++;
+          runNextScrambleStep();
+        }, 0.08); 
+      }
+
+      runNextScrambleStep();
+    }
+
+    // --- Init or Scramble Board Setup ---
+    function initGame(restoreFromP1Scramble = false) {
+      buildLayout();
+
+      if (restoreFromP1Scramble && originalScrambleState) {
+        cells.forEach((cell, idx) => {
+          cell.gemId = originalScrambleState[idx];
+          const mesh = createGemMesh(cell.gemId);
+          boardGroup.add(mesh);
+          cell.mesh = mesh;
+        });
+        positionGemsStatically();
+
+        // Reset histories
+        stateHistory = [];
+        actionHistory = [];
+        saveStateToHistory(); 
+
+        // Reset statistics
+        movesCount = 0;
+        document.getElementById('stat-moves').innerText = movesCount;
+        resetTimer();
+
+        updateSolvedStates();
+        updateUndoButtonState();
+
+        isPaused = false;
+        isReplaying = false;
+        document.getElementById('modal-pause').classList.add('hidden');
+        document.getElementById('modal-victory').classList.add('hidden');
+      } else {
+        // 1. Generate guaranteed solved Sudoku state
+        generateSolvedState();
+
+        // 2. Render initial static gem meshes
+        cells.forEach(cell => {
+          const mesh = createGemMesh(cell.gemId);
+          boardGroup.add(mesh);
+          cell.mesh = mesh;
+        });
+
+        positionGemsStatically();
+
+        // Reset statistics
+        movesCount = 0;
+        document.getElementById('stat-moves').innerText = movesCount;
+        resetTimer();
+
+        isPaused = false;
+        isReplaying = false;
+        document.getElementById('modal-pause').classList.add('hidden');
+        document.getElementById('modal-victory').classList.add('hidden');
+
+        // 3. Perform live scramble animation sequence from solved base
+        scrambleRingsAnimated();
+
+        isFriendMode = false;
+        player1Results = null;
+      }
+
+      resizeCameraToFit();
+    }
+
+    // --- Save Gem configuration state to History list ---
+    function saveStateToHistory() {
+      const stateCopy = cells.map(c => c.gemId);
+      stateHistory.push(stateCopy);
+      updateUndoButtonState();
+    }
+
+    // --- Undo state restorer helper ---
+    function applyHistoryState(state) {
+      cells.forEach((cell, idx) => {
+        const targetGemId = state[idx];
+        if (cell.gemId !== targetGemId) {
+          if (cell.mesh) boardGroup.remove(cell.mesh);
+          cell.gemId = targetGemId;
+          const newMesh = createGemMesh(targetGemId);
+          boardGroup.add(newMesh);
+          cell.mesh = newMesh;
+        }
+      });
+      positionGemsStatically();
+      updateSolvedStates();
+    }
+
+    function undoMove() {
+      if (isTransitioning || isDragging || isPaused || isReplaying) return;
+      if (stateHistory.length <= 1) return;
+
+      stateHistory.pop(); 
+      actionHistory.pop(); 
+
+      const prevState = stateHistory[stateHistory.length - 1];
+      applyHistoryState(prevState);
+
+      movesCount = Math.max(0, movesCount - 1);
+      document.getElementById('stat-moves').innerText = movesCount;
+
+      sound.playSnap();
+      updateUndoButtonState();
+    }
+
+    function updateUndoButtonState() {
+      const btn = document.getElementById('btn-undo');
+      if (stateHistory.length <= 1) {
+        btn.classList.add('opacity-40', 'pointer-events-none');
+      } else {
+        btn.classList.remove('opacity-40', 'pointer-events-none');
+      }
+    }
+
+    // --- Core Ring Gem Index Swapping Mechanics ---
+    function executeLogicalShift(ringId, steps) {
+      const ring = rings.find(r => r.id === ringId);
+      const len = ring.cellIds.length;
+      
+      const shift = ((steps % len) + len) % len;
+      if (shift === 0) return;
+
+      // Extract current gem IDs on selected ring's cells
+      const currentGemIds = ring.cellIds.map(cellId => {
+        const cell = cells.find(c => c.id === cellId);
+        return cell.gemId;
+      });
+
+      const shiftedGemIds = [];
+      for (let i = 0; i < len; i++) {
+        const sourceIdx = (i - shift + len) % len;
+        shiftedGemIds[i] = currentGemIds[sourceIdx];
+      }
+
+      // Write back modified gem IDs onto cells and recreate meshes
+      ring.cellIds.forEach((cellId, i) => {
+        const cell = cells.find(c => c.id === cellId);
+        const targetGemId = shiftedGemIds[i];
+
+        if (cell.gemId !== targetGemId) {
+          cell.gemId = targetGemId;
+          if (cell.mesh) boardGroup.remove(cell.mesh);
+          const newMesh = createGemMesh(targetGemId);
+          boardGroup.add(newMesh);
+          cell.mesh = newMesh;
+        }
+      });
+    }
+
+    // --- Game status and resolved ring validation ---
+    function updateSolvedStates() {
+      let unsolvedCount = 0;
+
+      rings.forEach(ring => {
+        const colorsInRing = new Set();
+        ring.cellIds.forEach(cellId => {
+          const cell = cells.find(c => c.id === cellId);
+          if (cell && cell.gemId !== null) {
+            colorsInRing.add(cell.gemId);
+          }
+        });
+
+        // Unique constraints check: size matches slots count
+        const solved = (colorsInRing.size === ring.cellIds.length);
+        
+        if (!solved) unsolvedCount++;
+
+        // Visual Aura Highlight Updates
+        if (solved) {
+          ring.mesh.material.color.setHex(0x10b981); // Emerald Green
+          ring.mesh.material.emissive.setHex(0x064e3b);
+          
+          if (!ring.solved) {
+            ring.solved = true;
+            sound.playRingResolved();
+            spawnGemSparks(ring.center.x, ring.center.y, 0x10b981);
+          }
+        } else {
+          ring.mesh.material.color.setHex(0xd97706); // Amber Golden
+          ring.mesh.material.emissive.setHex(0x451a03);
+          ring.solved = false;
+        }
+      });
+
+      const scoreElement = document.getElementById('score-tangle');
+      scoreElement.innerText = unsolvedCount;
+
+      if (unsolvedCount === 0) {
+        scoreElement.className = "text-xl sm:text-2xl font-black text-emerald-400 neon-text-glow";
+        if (!isReplaying) {
+          triggerVictorySequence();
+        }
+      } else {
+        scoreElement.className = "text-xl sm:text-2xl font-black text-rose-400";
+      }
+
+      return unsolvedCount;
+    }
+
+    // --- GSAP Controlled Slide Snapping ---
+    function animateRingSnapping(ringId, deltaAngle, totalSteps, onCompleteCallback, duration = 0.35) {
+      const ring = rings.find(r => r.id === ringId);
+      const angleStep = 2 * Math.PI / ring.cellIds.length;
+      const targetAngle = totalSteps * angleStep;
+
+      const animationState = { angle: deltaAngle };
+
+      // Cache start coordinates for each gem relative to ring center
+      const gemsData = ring.cellIds.map(cellId => {
+        const cell = cells.find(c => c.id === cellId);
+        const rx = cell.x - ring.center.x;
+        const ry = cell.y - ring.center.y;
+        return {
+          mesh: cell.mesh,
+          originalAngle: Math.atan2(ry, rx)
+        };
+      });
+
+      gsap.to(animationState, {
+        angle: targetAngle,
+        duration: duration,
+        ease: duration < 0.2 ? "power2.out" : "back.out(1.1)",
+        onUpdate: () => {
+          gemsData.forEach(gem => {
+            const currentAngle = gem.originalAngle + animationState.angle;
+            gem.mesh.position.set(
+              ring.center.x + ring.radius * Math.cos(currentAngle),
+              ring.center.y + ring.radius * Math.sin(currentAngle),
+              0.15
+            );
+          });
+        },
+        onComplete: () => {
+          if (totalSteps !== 0) {
+            executeLogicalShift(ringId, totalSteps);
+          }
+          positionGemsStatically();
+          if (onCompleteCallback) onCompleteCallback();
+        }
+      });
+    }
+
+    // --- Solved Step Completion Handlers ---
+    function finalizeMove() {
+      movesCount++;
+      document.getElementById('stat-moves').innerText = movesCount;
+
+      const beforeTangle = parseInt(document.getElementById('score-tangle').innerText, 10);
+      const afterTangle = updateSolvedStates();
+
+      if (afterTangle < beforeTangle) {
+        sound.playRingResolved();
+      }
+
+      saveStateToHistory();
+      isTransitioning = false;
+    }
+
+    // --- Interactive Touch & Drag Engine ---
+    const raycaster = new THREE.Raycaster();
+    const ndcCoord = new THREE.Vector2();
+
+    function setupEvents() {
+      const container = document.getElementById('canvas-container');
+
+      container.addEventListener('pointerdown', onPointerDown, { passive: false });
+      container.addEventListener('pointermove', onPointerMove, { passive: false });
+      window.addEventListener('pointerup', onPointerUp, { passive: false });
+      window.addEventListener('pointercancel', onPointerUp, { passive: false });
+
+      window.addEventListener('resize', resizeCameraToFit);
+
+      // Connect HUD Buttons
+      document.getElementById('btn-scramble').addEventListener('click', () => {
+        if (isPaused || isReplaying || isTransitioning) return;
+        sound.init();
+        initGame();
+      });
+
+      document.getElementById('btn-pause').addEventListener('click', togglePauseState);
+      document.getElementById('btn-resume').addEventListener('click', togglePauseState);
+      document.getElementById('btn-undo').addEventListener('click', undoMove);
+
+      // Connect Config Modal
+      const btnConfig = document.getElementById('btn-config');
+      const modalConfig = document.getElementById('modal-config');
+      const closeConfig = document.getElementById('modal-config-close');
+      const applyConfig = document.getElementById('modal-config-apply');
+
+      btnConfig.addEventListener('click', () => {
+        if (isPaused || isReplaying || isTransitioning) return;
+        sound.init();
+        modalConfig.classList.remove('hidden');
+      });
+
+      closeConfig.addEventListener('click', () => {
+        modalConfig.classList.add('hidden');
+      });
+
+      applyConfig.addEventListener('click', () => {
+        modalConfig.classList.add('hidden');
+        initGame();
+      });
+
+      // Config Options Layout Switchers
+      const layoutBtns = document.querySelectorAll('.btn-layout');
+      layoutBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          layoutBtns.forEach(b => {
+            b.className = "btn-layout py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all";
+          });
+          btn.className = "btn-layout py-3 text-xs glass-panel border-amber-500 bg-amber-950/20 text-amber-300 rounded-xl font-bold transition-all";
+          currentLayoutId = btn.getAttribute('data-layout');
+        });
+      });
+
+      // Connect Victory Buttons
+      document.getElementById('btn-victory-restart').addEventListener('click', () => {
+        document.getElementById('modal-victory').classList.add('hidden');
+        isFriendMode = false;
+        initGame();
+      });
+
+      document.getElementById('btn-victory-pass-friend').addEventListener('click', () => {
+        passTurnToFriend();
+      });
+
+      document.getElementById('btn-victory-replay').addEventListener('click', runSpeedRecap);
+    }
+
+    // --- Dynamic Resizing to fit layout perfectly in Window space ---
+    function resizeCameraToFit() {
+      const container = document.getElementById('canvas-container');
+      if (!container) return;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+
+      // Reset coordinates base
+      boardGroup.scale.set(1, 1, 1);
+
+      // Calculate the tight bounding box of current rings and outer gems
+      let minX = Infinity, maxX = -Infinity;
+      let minY = Infinity, maxY = -Infinity;
+
+      rings.forEach(ring => {
+        const boundaryOffset = ring.radius + 0.35; // Include offset for ring thickness + gem profiles
+        const left = ring.center.x - boundaryOffset;
+        const right = ring.center.x + boundaryOffset;
+        const bottom = ring.center.y - boundaryOffset;
+        const top = ring.center.y + boundaryOffset;
+
+        if (left < minX) minX = left;
+        if (right > maxX) maxX = right;
+        if (bottom < minY) minY = bottom;
+        if (top > maxY) maxY = top;
+      });
+
+      const width = maxX - minX;
+      const height = maxY - minY;
+      const center = new THREE.Vector3((minX + maxX) / 2, (minY + maxY) / 2, 0);
+
+      // Shift position offset to align physical centers perfectly to camera focal point
+      boardGroup.position.set(-center.x, -center.y, 0);
+
+      // Determine viewport coordinates boundaries at distance Z = 7.5
+      const vFOV = camera.fov * Math.PI / 180;
+      const visibleHeight = 2 * Math.tan(vFOV / 2) * 7.5;
+      const visibleWidth = visibleHeight * camera.aspect;
+
+      const scaleX = visibleWidth / width;
+      const scaleY = visibleHeight / height;
+
+      // Safe bounds padding multiplier
+      const bestScale = Math.min(scaleX, scaleY) * 0.90;
+
+      boardGroup.scale.set(bestScale, bestScale, bestScale);
+      boardGroup.position.multiplyScalar(bestScale);
+    }
+
+    // --- Pointer Events Mechanics (Massive Interactive Areas) ---
+    function onPointerDown(e) {
+      if (isTransitioning) return;
+      sound.init();
+
+      if (isReplaying) {
+        exitSpeedRecap();
+        return;
+      }
+
+      if (isPaused) return;
+
+      if (e.cancelable) e.preventDefault();
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      ndcCoord.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      ndcCoord.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(ndcCoord, camera);
+      
+      const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      const touchPoint = new THREE.Vector3();
+      const hasIntersect = raycaster.ray.intersectPlane(planeZ, touchPoint);
+
+      if (hasIntersect) {
+        // Map pointer coordinates correctly back to the centered and scaled boardGroup local space
+        const localX = (touchPoint.x - boardGroup.position.x) / boardGroup.scale.x;
+        const localY = (touchPoint.y - boardGroup.position.y) / boardGroup.scale.y;
+
+        // Find nearest ring center
+        let nearest = null;
+        let minDist = Infinity;
+
+        rings.forEach(ring => {
+          const dx = localX - ring.center.x;
+          const dy = localY - ring.center.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist < ring.radius * 1.5) {
+            if (dist < minDist) {
+              minDist = dist;
+              nearest = ring;
+            }
+          }
+        });
+
+        if (nearest) {
+          isDragging = true;
+          activeRing = nearest;
+          sound.playGrab();
+
+          dragStartAngle = Math.atan2(localY - nearest.center.y, localX - nearest.center.x);
+
+          // Build local coordinates maps for rotating active ring gems
+          dragGems = nearest.cellIds.map(cellId => {
+            const cell = cells.find(c => c.id === cellId);
+            const rx = cell.x - nearest.center.x;
+            const ry = cell.y - nearest.center.y;
+            return {
+              mesh: cell.mesh,
+              originalAngle: Math.atan2(ry, rx)
+            };
+          });
+
+          document.getElementById('gesture-hint').classList.add('opacity-0');
+        }
+      }
+    }
+
+    function onPointerMove(e) {
+      if (!isDragging || isPaused || isReplaying) return;
+
+      if (e.cancelable) e.preventDefault();
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      ndcCoord.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      ndcCoord.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(ndcCoord, camera);
+      const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      const touchPoint = new THREE.Vector3();
+      raycaster.ray.intersectPlane(planeZ, touchPoint);
+
+      const localX = (touchPoint.x - boardGroup.position.x) / boardGroup.scale.x;
+      const localY = (touchPoint.y - boardGroup.position.y) / boardGroup.scale.y;
+
+      dragCurrentAngle = Math.atan2(localY - activeRing.center.y, localX - activeRing.center.x);
+      
+      let delta = dragCurrentAngle - dragStartAngle;
+      while (delta < -Math.PI) delta += 2 * Math.PI;
+      while (delta > Math.PI) delta -= 2 * Math.PI;
+
+      // Update matching gem positions visually in local space coordinates
+      dragGems.forEach(gem => {
+        const angle = gem.originalAngle + delta;
+        gem.mesh.position.set(
+          activeRing.center.x + activeRing.radius * Math.cos(angle),
+          activeRing.center.y + activeRing.radius * Math.sin(angle),
+          0.15
+        );
+      });
+    }
+
+    function onPointerUp() {
+      if (!isDragging || isPaused || isReplaying) return;
+      isDragging = false;
+      activateGameplayTimer();
+
+      isTransitioning = true;
+
+      let delta = dragCurrentAngle - dragStartAngle;
+      while (delta < -Math.PI) delta += 2 * Math.PI;
+      while (delta > Math.PI) delta -= 2 * Math.PI;
+
+      const angleStep = 2 * Math.PI / activeRing.cellIds.length;
+      const stepsShifted = Math.round(delta / angleStep);
+
+      sound.playSnap();
+
+      animateRingSnapping(activeRing.id, delta, stepsShifted, () => {
+        if (stepsShifted !== 0) {
+          actionHistory.push({
+            ringId: activeRing.id,
+            direction: stepsShifted
+          });
+          finalizeMove();
+        } else {
+          isTransitioning = false;
+        }
+      });
+    }
+
+    // --- Spark Explosion VFX on Rings Resolved ---
+    function spawnGemSparks(cx, cy, hexColor) {
+      const count = 25;
+      const geo = new THREE.SphereGeometry(0.04, 8, 8);
+      const meshes = [];
+
+      for (let i = 0; i < count; i++) {
+        const mat = new THREE.MeshStandardMaterial({
+          color: hexColor,
+          emissive: hexColor,
+          emissiveIntensity: 0.8
+        });
+        const m = new THREE.Mesh(geo, mat);
+        m.position.set(cx + (Math.random() - 0.5) * 1.5, cy + (Math.random() - 0.5) * 1.5, 0.2);
+        boardGroup.add(m);
+        meshes.push(m);
+
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1.0 + Math.random() * 2.0;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+        const vz = (Math.random() - 0.2) * 1.5;
+
+        gsap.to(m.position, {
+          x: m.position.x + vx,
+          y: m.position.y + vy,
+          z: m.position.z + vz,
+          duration: 0.65,
+          ease: "power2.out"
+        });
+
+        gsap.to(m.scale, {
+          x: 0, y: 0, z: 0,
+          duration: 0.65,
+          ease: "power2.in",
+          onComplete: () => {
+            boardGroup.remove(m);
+            mat.dispose();
+          }
+        });
+      }
+      geo.dispose();
+    }
+
+    // --- Interactive Cinematic Speed Recap ---
+    function runSpeedRecap() {
+      if (actionHistory.length === 0) return;
+
+      isReplaying = true;
+      document.getElementById('modal-victory').classList.add('hidden');
+
+      // Reset to original puzzle layout state 0
+      applyHistoryState(stateHistory[0]);
+
+      // Zero-out HUD
+      document.getElementById('stat-moves').innerText = "0";
+      document.getElementById('stat-time').innerText = "00:00";
+      updateSolvedStates();
+
+      let stepIdx = 0;
+      const totalTimeSeconds = elapsedSeconds;
+
+      function playNextStep() {
+        if (!isReplaying) return;
+
+        if (stepIdx >= actionHistory.length) {
+          sound.playVictory();
+          spawnGemSparks(0, 0, 0x10b981);
+          setTimeout(() => {
+            exitSpeedRecap();
+          }, 1000);
+          return;
+        }
+
+        const action = actionHistory[stepIdx];
+        sound.playSnap();
+
+        // Perform automated slide animation
+        animateRingSnapping(action.ringId, 0, action.direction, () => {
+          stepIdx++;
+
+          // Live Stats increments
+          document.getElementById('stat-moves').innerText = stepIdx;
+          
+          const curSecs = Math.floor((stepIdx / actionHistory.length) * totalTimeSeconds);
+          const mins = Math.floor(curSecs / 60).toString().padStart(2, '0');
+          const secs = (curSecs % 60).toString().padStart(2, '0');
+          document.getElementById('stat-time').innerText = `${mins}:${secs}`;
+
+          updateSolvedStates();
+
+          setTimeout(playNextStep, 250);
+        });
+      }
+
+      playNextStep();
+    }
+
+    function exitSpeedRecap() {
+      isReplaying = false;
+      
+      // Jump instantly to fully solved state
+      applyHistoryState(stateHistory[stateHistory.length - 1]);
+      updateSolvedStates();
+
+      // Restore actual stats values
+      document.getElementById('stat-moves').innerText = movesCount;
+      const mins = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+      const secs = (elapsedSeconds % 60).toString().padStart(2, '0');
+      document.getElementById('stat-time').innerText = `${mins}:${secs}`;
+
+      document.getElementById('modal-victory').classList.remove('hidden');
+    }
+
+    // --- Toggle Pause Actions ---
+    function togglePauseState() {
+      if (isTransitioning || isReplaying) return;
+
+      isPaused = !isPaused;
+      const modal = document.getElementById('modal-pause');
+      const txt = document.getElementById('txt-pause');
+      const svg = document.getElementById('svg-pause');
+
+      if (isPaused) {
+        modal.classList.remove('hidden');
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        txt.innerText = "Resume";
+        svg.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />`;
+        sound.playSnap();
+      } else {
+        modal.classList.add('hidden');
+        if (firstInteractionDone) {
+          startTime = Date.now() - elapsedSeconds * 1000;
+          timerInterval = setInterval(updateTimerUI, 1000);
+        }
+        txt.innerText = "Pause";
+        svg.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />`;
+        sound.playSnap();
+      }
+    }
+
+    // --- Local Multiplayer Pass-turn Trigger ---
+    function passTurnToFriend() {
+      player1Results = {
+        moves: movesCount,
+        time: document.getElementById('stat-time').innerText,
+        seconds: elapsedSeconds
+      };
+      isFriendMode = true;
+
+      // Reset identical starting scrambled layout
+      initGame(true);
+    }
+
+    // --- Victory Modal Triggers ---
+    function triggerVictorySequence() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+
+      sound.playVictory();
+
+      let count = 0;
+      const burst = setInterval(() => {
+        spawnGemSparks(
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2,
+          GEM_COLORS[count % GEM_COLORS.length]
+        );
+        count++;
+        if (count >= 5) clearInterval(burst);
+      }, 250);
+
+      setTimeout(() => {
+        document.getElementById('vic-moves').innerText = movesCount;
+        document.getElementById('vic-time').innerText = document.getElementById('stat-time').innerText;
+
+        const normalStats = document.getElementById('victory-normal-stats');
+        const scoreboard = document.getElementById('victory-comparison-scoreboard');
+        const btnPassFriend = document.getElementById('btn-victory-pass-friend');
+        const subtitle = document.getElementById('victory-subtitle');
+
+        if (isFriendMode) {
+          const friendResults = {
+            moves: movesCount,
+            time: document.getElementById('stat-time').innerText,
+            seconds: elapsedSeconds
+          };
+
+          document.getElementById('p1-moves').innerText = player1Results.moves;
+          document.getElementById('p1-time').innerText = player1Results.time;
+          document.getElementById('p2-moves').innerText = friendResults.moves;
+          document.getElementById('p2-time').innerText = friendResults.time;
+
+          let winnerStr = "";
+          if (friendResults.moves < player1Results.moves) {
+            winnerStr = "Friend (P2) Wins! 🏆";
+          } else if (player1Results.moves < friendResults.moves) {
+            winnerStr = "You (P1) Win! 🏆";
+          } else {
+            if (friendResults.seconds < player1Results.seconds) {
+              winnerStr = "Friend (P2) Wins on time! ⚡";
+            } else if (player1Results.seconds < friendResults.seconds) {
+              winnerStr = "You (P1) Win on time! ⚡";
+            } else {
+              winnerStr = "Perfect Tie! 🤝";
+            }
+          }
+
+          document.getElementById('victory-winner-banner').innerText = winnerStr;
+          subtitle.innerText = "Comparison Scoreboard";
+
+          normalStats.classList.add('hidden');
+          scoreboard.classList.remove('hidden');
+          btnPassFriend.classList.add('hidden');
+        } else {
+          subtitle.innerText = "Perfect Alignment Achieved";
+          normalStats.classList.remove('hidden');
+          scoreboard.classList.add('hidden');
+          btnPassFriend.classList.remove('hidden');
+        }
+
+        document.getElementById('modal-victory').classList.remove('hidden');
+      }, 1500);
+    }
+
+    // --- Gameplay Timers ---
+    function activateGameplayTimer() {
+      if (firstInteractionDone) return;
+      firstInteractionDone = true;
+      startTime = Date.now();
+      timerInterval = setInterval(updateTimerUI, 1000);
+    }
+
+    function resetTimer() {
+      firstInteractionDone = false;
+      elapsedSeconds = 0;
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      document.getElementById('stat-time').innerText = "00:00";
+    }
+
+    function updateTimerUI() {
+      if (!startTime) return;
+      elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+      const mins = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+      const secs = (elapsedSeconds % 60).toString().padStart(2, '0');
+      document.getElementById('stat-time').innerText = `${mins}:${secs}`;
+    }
+  </script>
+</body>
+</html>
