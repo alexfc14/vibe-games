@@ -163,7 +163,8 @@
           <button data-layout="quadrant" class="btn-layout py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-slate-800/10 hover:border-amber-500/30 transition-all">Quadrant (4R)</button>
           <button data-layout="rhombus" class="btn-layout py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-slate-800/10 hover:border-amber-500/30 transition-all">Rhombus (4R)</button>
           <button data-layout="triangle6" class="btn-layout py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-slate-800/10 hover:border-amber-500/30 transition-all">Triangle (6R)</button>
-          <button data-layout="lotus" class="btn-layout py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-slate-800/10 hover:border-amber-500/30 transition-all col-span-2">Lotus (7R)</button>
+          <button data-layout="lotus" class="btn-layout py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-slate-800/10 hover:border-amber-500/30 transition-all">Lotus (7R)</button>
+          <button data-layout="square9" class="btn-layout py-3 text-xs glass-panel rounded-xl font-bold text-slate-300 hover:bg-slate-800/10 hover:border-amber-500/30 transition-all col-span-3">Grid (3x3R)</button>
         </div>
       </div>
 
@@ -254,6 +255,14 @@
 
       <!-- Action Buttons -->
       <div class="flex flex-col gap-2 w-full shrink-0 select-none">
+        <!-- Next Layout Progression Button -->
+        <button id="btn-victory-next" class="w-full h-11 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+          </svg>
+          Next Layout
+        </button>
+
         <button id="btn-victory-replay" class="w-full h-11 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -465,23 +474,33 @@
         name: "Lotus (7 Rings)",
         colorsCount: 7, 
         slotsPerRing: 6
+      },
+      square9: {
+        id: "square9",
+        name: "Grid (3x3R)",
+        colorsCount: 9, // All 9 colors are utilized uniquely in Match Rings!
+        slotsPerRing: 4
       }
     };
 
-    // --- Premium Saturated High-Contrast Color Palette ---
-    // Recalibrated yellow and green to prevent overexposure clipping to white
+    // Progression index mapping for victory modal navigation
+    const LAYOUT_ORDER = ["triquetra", "petal4", "quadrant", "rhombus", "triangle6", "lotus", "square9"];
+
+    // --- Premium Expanded High-Contrast Color Palette (9 Unique Jewels) ---
     const GEM_COLORS = [
       0xff003c, // 0: Ruby Red (Saturated, crisp crimson red)
-      0x009e2a, // 1: Emerald Green (Rich Forest Green - dark base prevents clipping to light-green/white)
+      0x009e2a, // 1: Emerald Green (Rich Forest Green)
       0x0022ff, // 2: Sapphire Blue (Pure deep royal cobalt blue)
-      0xffa200, // 3: Citrine Yellow (Golden amber/canary - prevents white reflection clash)
+      0xffa200, // 3: Citrine Yellow (Golden amber/canary)
       0xaa00ff, // 4: Amethyst Purple (Deep rich violet purple)
-      0xff4500, // 5: Sunset Orange (Pure, hot carnelian orange - no yellow overlap)
-      0x00ccd0  // 6: Aquamarine Cyan (Vibrant light cyan-teal)
+      0xff4500, // 5: Sunset Orange (Pure, hot carnelian orange)
+      0x00ccd0, // 6: Aquamarine Cyan (Vibrant light cyan-teal)
+      0x024515, // 7: Dark Deep Green (Rich, deep tropical jungle forest)
+      0x54000f  // 8: Maroon Garnet (Elegant, deep luxury burgundy wine)
     ];
 
     // --- State Variables ---
-    let currentGameMode = "matching"; // DEFAULT IS MATCHING RINGS MODE
+    let currentGameMode = "matching"; 
     let currentLayoutId = "triquetra";
     let cells = []; // Unified unique positions: { id, x, y, gemId, mesh, attachments, rotationZ }
     let rings = []; // Config list with mapped cell IDs: { id, center, radius, cellIds, mesh, solved, group, centerStone, auraMesh }
@@ -494,7 +513,7 @@
     // Undo & Action History Tracker
     let stateHistory = []; // list of gemId states
     let actionHistory = []; // list of executed moves: { ringId, direction }
-    let originalScrambleState = null; // matching gemIds configuration for multiplayer
+    let originalScrambleState = null; 
 
     // Multiplayer State
     let isFriendMode = false;
@@ -508,8 +527,8 @@
     let activeRing = null;
     let dragStartAngle = 0;
     let dragCurrentAngle = 0;
-    let dragGems = []; // Gems currently occupying the active ring track
-    let activeRingStartGroupRotationZ = 0; // Track physical gold wheel start rotations
+    let dragGems = []; 
+    let activeRingStartGroupRotationZ = 0; 
 
     // Load Game Loop
     window.onload = () => {
@@ -534,30 +553,24 @@
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(width, height);
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       container.appendChild(renderer.domElement);
 
       boardGroup = new THREE.Group();
       scene.add(boardGroup);
 
       // --- HIGH CONTRAST STUDIO LIGHTING SETUP ---
-      // Drastically reduced ambient and fill lights to create deep, dark shaded facets.
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.28); 
       scene.add(ambientLight);
 
-      // Heightened directional key light highlights the brilliant cut facet angles.
       const mainLight = new THREE.DirectionalLight(0xffffff, 1.75);
       mainLight.position.set(5, 5, 8);
       mainLight.castShadow = true;
       scene.add(mainLight);
 
-      // Subtle, dark fill light preserves deep physical jewelry setting shadows.
       const fillLight = new THREE.DirectionalLight(0xffffff, 0.12); 
       fillLight.position.set(-6, -3, 3);
       scene.add(fillLight);
 
-      // Front highlight light helps map the elevated table pyramid facets elegantly.
       const frontSpecLight = new THREE.DirectionalLight(0xffffff, 0.35);
       frontSpecLight.position.set(0, 0, 10);
       scene.add(frontSpecLight);
@@ -577,14 +590,13 @@
       envCtx.fillStyle = bgGrad;
       envCtx.fillRect(0, 0, 512, 256);
 
-      // Glowing warm gold studio lights reflecting across physical facets
       envCtx.fillStyle = '#ffffff';
       envCtx.fillRect(50, 10, 80, 236);
       envCtx.fillRect(300, 30, 60, 196);
       
-      envCtx.fillStyle = '#f59e0b'; // Amber Gold light
+      envCtx.fillStyle = '#f59e0b'; 
       envCtx.beginPath(); envCtx.arc(220, 120, 45, 0, Math.PI * 2); envCtx.fill();
-      envCtx.fillStyle = '#d97706'; // Bronze warm light
+      envCtx.fillStyle = '#d97706'; 
       envCtx.beginPath(); envCtx.arc(420, 80, 35, 0, Math.PI * 2); envCtx.fill();
 
       const envTexture = new THREE.CanvasTexture(envCanvas);
@@ -620,7 +632,6 @@
 
         rings.forEach(ring => {
           if (ring.auraMesh && ring.auraMesh.visible) {
-            // Soft glowing pulse breathing effect
             ring.auraMesh.scale.setScalar(1.0 + 0.03 * Math.sin(time));
             ring.auraMesh.material.opacity = 0.35 + 0.15 * Math.cos(time);
           }
@@ -649,13 +660,12 @@
           { id: 2, center: { x: R, y: -h }, radius: R, offset: 0 }
         ];
       } else if (currentLayoutId === "petal4") {
-        // --- Symmetrical 4-Petal configuration intersecting at center (0,0) ---
         const R = 1.15;
         computedRings = [
-          { id: 0, center: { x: 0, y: R }, radius: R, offset: 0 },    // Top Circle
-          { id: 1, center: { x: R, y: 0 }, radius: R, offset: 0 },    // Right Circle
-          { id: 2, center: { x: 0, y: -R }, radius: R, offset: 0 },   // Bottom Circle
-          { id: 3, center: { x: -R, y: 0 }, radius: R, offset: 0 }    // Left Circle
+          { id: 0, center: { x: 0, y: R }, radius: R, offset: 0 },    
+          { id: 1, center: { x: R, y: 0 }, radius: R, offset: 0 },    
+          { id: 2, center: { x: 0, y: -R }, radius: R, offset: 0 },   
+          { id: 3, center: { x: -R, y: 0 }, radius: R, offset: 0 }    
         ];
       } else if (currentLayoutId === "quadrant") {
         const R = 1.0;
@@ -673,6 +683,20 @@
           { id: 1, center: { x: -R, y: -h }, radius: R, offset: 0 },
           { id: 2, center: { x: R, y: -h }, radius: R, offset: 0 },
           { id: 3, center: { x: 0, y: -4 * h }, radius: R, offset: 0 } 
+        ];
+      } else if (currentLayoutId === "square9") {
+        // --- Grid (3x3R) - Symmetrical Grid Layout with 9 Rings and 4 slots each ---
+        const R = 1.0;
+        computedRings = [
+          { id: 0, center: { x: -2*R, y: 2*R }, radius: R, offset: 0 }, // Top-Left
+          { id: 1, center: { x: 0, y: 2*R }, radius: R, offset: 0 },    // Top-Mid
+          { id: 2, center: { x: 2*R, y: 2*R }, radius: R, offset: 0 },   // Top-Right
+          { id: 3, center: { x: -2*R, y: 0 }, radius: R, offset: 0 },    // Mid-Left
+          { id: 4, center: { x: 0, y: 0 }, radius: R, offset: 0 },       // Center
+          { id: 5, center: { x: 2*R, y: 0 }, radius: R, offset: 0 },     // Mid-Right
+          { id: 6, center: { x: -2*R, y: -2*R }, radius: R, offset: 0 }, // Bot-Left
+          { id: 7, center: { x: 0, y: -2*R }, radius: R, offset: 0 },    // Bot-Mid
+          { id: 8, center: { x: 2*R, y: -2*R }, radius: R, offset: 0 }   // Bot-Right
         ];
       } else if (currentLayoutId === "triangle6") {
         const R = 1.0;
@@ -794,7 +818,6 @@
       rings.forEach(ring => {
         const ringGroup = new THREE.Group();
 
-        // Highly polished static jewelry gold material
         const goldMaterial = new THREE.MeshStandardMaterial({
           color: 0xe5971a,     
           metalness: 1.0,      
@@ -809,7 +832,7 @@
           roughness: 0.22
         });
 
-        // 1. Thick, layered golden ring tracks
+        // 1. Layered golden ring tracks
         const trackMain = new THREE.Mesh(new THREE.TorusGeometry(ring.radius, 0.075, 12, 100), goldMaterial);
         trackMain.receiveShadow = true;
         ringGroup.add(trackMain);
@@ -822,7 +845,7 @@
         trackOuter.position.z = -0.012;
         ringGroup.add(trackOuter);
 
-        // 2. Symmetrical Engraved Perimeter Serrations
+        // 2. Serration notches
         const notchGeo = new THREE.BoxGeometry(0.05, 0.025, 0.05);
         const notchCount = 36;
         for (let n = 0; n < notchCount; n++) {
@@ -847,14 +870,14 @@
         hubRim.position.z = 0.025;
         ringGroup.add(hubRim);
 
-        // Central target indicators for matching mode (locked visually, no idle rotation)
+        // Central target stone indicators
         const centerStone = createGemMesh(ring.id, true);
         centerStone.position.set(0, 0, 0.08);
         centerStone.rotation.set(0, 0, 0);
         ringGroup.add(centerStone);
         ring.centerStone = centerStone;
 
-        // 4. Filigree spokes and bezel setting armatures
+        // 4. Spokes and bezel claw settings
         ring.cellIds.forEach(cellId => {
           const cell = cells.find(c => c.id === cellId);
           const vx = cell.x - ring.center.x;
@@ -873,7 +896,6 @@
           ornament.position.set(vx / 2, vy / 2, 0.005);
           ringGroup.add(ornament);
 
-          // Crown claw Settings embedding crystals
           const settingGroup = new THREE.Group();
           settingGroup.position.set(vx, vy, 0.01);
 
@@ -902,7 +924,7 @@
           ringGroup.add(settingGroup);
         });
 
-        // 5. SOLVED AURA HALO INDICATOR (Underglow breath mesh)
+        // 5. SOLVED AURA HALO INDICATOR
         const auraGeo = new THREE.TorusGeometry(ring.radius, 0.04, 8, 80);
         const auraMat = new THREE.MeshBasicMaterial({
           color: 0x10b981,
@@ -924,7 +946,6 @@
     }
 
     // --- Premium 3D Round Brilliant Gemstone Cut Geometry ---
-    // Calculates the ideal Hearts & Arrows brilliant cut diamond mesh.
     // Elevated flat crown table into an elegant 8-sided pyramid table cap to deflect glare away from camera.
     function createBrilliantGeometry(scale = 1.0) {
       const params = {
@@ -999,7 +1020,7 @@
           vertices.push(v2[0], v2[2], v2[1]);
       }
 
-      // --- CROWN BUILD (Top Side) ---
+      // --- CROWN BUILD ---
       for (let i = 0; i < 8; i++) {
           addTriangle(V_tc, T[i], T[(i + 1) % 8]);
       }
@@ -1025,14 +1046,14 @@
           addTriangle(sCurr, GT[gtRight], GT[gtMid]);
       }
 
-      // --- GIRDLE WALL BUILD (Girdle Rim) ---
+      // --- GIRDLE WALL BUILD ---
       for (let j = 0; j < 16; j++) {
           const nextJ = (j + 1) % 16;
           addTriangle(GT[j], GB[j], GB[nextJ]);
           addTriangle(GT[j], GB[nextJ], GT[nextJ]);
       }
 
-      // --- PAVILION BUILD (Bottom Side) ---
+      // --- PAVILION BUILD ---
       for (let i = 0; i < 8; i++) {
           const ip = (i + 1) % 8;
           const gbLeft = i * 2;
@@ -1062,7 +1083,6 @@
       const color = GEM_COLORS[colorIdx % GEM_COLORS.length];
       const geo = getGemGeometry(colorIdx, isCenterStone ? 0.75 : 1.0);
       
-      // Custom overrides to make clear/bright colors (Yellow, Green, Aqua) stay deep and saturated
       let transmissionVal = 0.15; 
       let roughnessVal = 0.02;
       let emissiveVal = 0x000000;
@@ -1070,34 +1090,42 @@
 
       const relativeIdx = colorIdx % GEM_COLORS.length;
       if (relativeIdx === 3) { // Citrine Yellow
-        transmissionVal = 0.03;  // Solidify the core body color to prevent light leaking
-        roughnessVal = 0.01;     // Sharpen facets to increase specular reflection clarity
-        emissiveVal = 0x221100;  // Warm golden backup tint
+        transmissionVal = 0.03;  
+        roughnessVal = 0.01;     
+        emissiveVal = 0x221100;  
         metalnessVal = 0.1;
       } else if (relativeIdx === 1) { // Emerald Green
         transmissionVal = 0.05;
         roughnessVal = 0.01;
-        emissiveVal = 0x002205;  // Deep green backing glow
+        emissiveVal = 0x002205;  
       } else if (relativeIdx === 6) { // Aquamarine Cyan
         transmissionVal = 0.06;
         roughnessVal = 0.01;
         emissiveVal = 0x001a1a;
+      } else if (relativeIdx === 7) { // Dark Deep Green
+        transmissionVal = 0.05;
+        roughnessVal = 0.01;
+        emissiveVal = 0x001805;
+      } else if (relativeIdx === 8) { // Maroon Garnet
+        transmissionVal = 0.05;
+        roughnessVal = 0.01;
+        emissiveVal = 0x1f0003;
       }
 
       const mat = new THREE.MeshPhysicalMaterial({
         color: color,
-        metalness: 0.08,             // Elevated metallic factor gives high light-and-shade contrast
+        metalness: 0.08,             
         roughness: roughnessVal,
         transmission: transmissionVal,
-        ior: 2.417,                  // Authentic Diamond refractive index
+        ior: 2.417,                  
         thickness: 0.22,             
-        clearcoat: 1.0,              // Crisp crystal protective outer glaze
+        clearcoat: 1.0,              
         clearcoatRoughness: 0.02,
         attenuationDistance: 0.25,
         attenuationColor: color,
         emissive: emissiveVal,             
-        emissiveIntensity: 0.45,     // Soft, color-matched glow depth
-        flatShading: true,           // Ensures geometric facets stand out sharply
+        emissiveIntensity: 0.45,     
+        flatShading: true,           
         side: THREE.DoubleSide,      
         depthWrite: true,
         transparent: true,
@@ -1113,7 +1141,6 @@
     function positionGemsStatically() {
       cells.forEach(cell => {
         if (cell.mesh) {
-          // Embed the physical gem deeper within bezel settings and lock to its custom slot spoke angle
           cell.mesh.position.set(cell.x, cell.y, 0.04);
           cell.mesh.scale.set(1, 1, 1);
           cell.mesh.rotation.set(0, 0, cell.rotationZ || 0);
@@ -1637,15 +1664,7 @@
                 gsap.to(mat, {
                   emissiveIntensity: baseEmissive,
                   clearcoat: 1.0,
-                  transmission: mat.transmission,
-                  opacity: 1.0,
-                  duration: 0.85,
-                  ease: "power2.inOut",
-                  onComplete: () => {
-                    mat.emissiveIntensity = baseEmissive;
-                    mat.clearcoat = 1.0;
-                    mat.opacity = 1.0;
-                  }
+                  opacity: 1.0
                 });
               }
             });
@@ -1719,7 +1738,7 @@
         });
       });
 
-      // Config Game Mode Button Toggles
+      // Config Game Mode Toggles
       const btnSudoku = document.getElementById('btn-mode-sudoku');
       const btnMatching = document.getElementById('btn-mode-matching');
 
@@ -1745,6 +1764,17 @@
       });
 
       document.getElementById('btn-victory-replay').addEventListener('click', runSpeedRecap);
+
+      // Connect Next Layout Progression Button
+      document.getElementById('btn-victory-next').addEventListener('click', () => {
+        const curIdx = LAYOUT_ORDER.indexOf(currentLayoutId);
+        if (curIdx !== -1 && curIdx < LAYOUT_ORDER.length - 1) {
+          currentLayoutId = LAYOUT_ORDER[curIdx + 1];
+          document.getElementById('modal-victory').classList.add('hidden');
+          isFriendMode = false;
+          initGame();
+        }
+      });
     }
 
     // Helpers to sync Game Mode Configuration overlays
@@ -2162,7 +2192,7 @@
       initGame(true);
     }
 
-    // --- Victory Fanfare with 1.5-Second Post-Solve Appreciation Window ---
+    // --- Victory Fanfare with Post-Solve Appreciation Window ---
     function triggerVictorySequence() {
       if (timerInterval) {
         clearInterval(timerInterval);
@@ -2193,6 +2223,16 @@
         const scoreboard = document.getElementById('victory-comparison-scoreboard');
         const btnPassFriend = document.getElementById('btn-victory-pass-friend');
         const subtitle = document.getElementById('victory-subtitle');
+
+        const btnNext = document.getElementById('btn-victory-next');
+        const curIdx = LAYOUT_ORDER.indexOf(currentLayoutId);
+
+        // Hide Next Level button if it is the very last level layout in our progression index
+        if (curIdx !== -1 && curIdx < LAYOUT_ORDER.length - 1) {
+          btnNext.classList.remove('hidden');
+        } else {
+          btnNext.classList.add('hidden');
+        }
 
         if (isFriendMode) {
           const friendResults = {
