@@ -486,7 +486,7 @@
     // Progression index mapping for victory modal navigation
     const LAYOUT_ORDER = ["triquetra", "petal4", "quadrant", "rhombus", "triangle6", "lotus", "square9"];
 
-    // --- Premium Expanded High-Contrast Color Palette (9 Unique Jewels) ---
+    // --- Premium Saturated High-Contrast Color Palette (9 Unique Jewels) ---
     const GEM_COLORS = [
       0xff003c, // 0: Ruby Red (Saturated, crisp crimson red)
       0x009e2a, // 1: Emerald Green (Rich Forest Green)
@@ -506,6 +506,7 @@
     let rings = []; // Config list with mapped cell IDs: { id, center, radius, cellIds, mesh, solved, group, centerStone, auraMesh }
     
     let isTransitioning = false;
+    let isScrambling = false; // Dedicated scrambling state flag
     let isPaused = false;
     let isReplaying = false;
     let movesCount = 0;
@@ -946,7 +947,6 @@
     }
 
     // --- Premium 3D Round Brilliant Gemstone Cut Geometry ---
-    // Elevated flat crown table into an elegant 8-sided pyramid table cap to deflect glare away from camera.
     function createBrilliantGeometry(scale = 1.0) {
       const params = {
           tableWidth: 0.56,
@@ -1224,6 +1224,7 @@
     // --- Snappy visual scramble routines ---
     function scrambleRingsAnimated() {
       isTransitioning = true;
+      isScrambling = true;
       const totalRings = rings.length;
       const scrambleSteps = totalRings * 12; 
       let currentStep = 0;
@@ -1233,7 +1234,12 @@
       subtitle.className = "text-[9px] sm:text-[10px] tracking-widest uppercase font-semibold text-amber-400";
 
       function runNextScrambleStep() {
+        if (!isScrambling) {
+          isTransitioning = false;
+          return;
+        }
         if (currentStep >= scrambleSteps) {
+          isScrambling = false;
           isTransitioning = false;
           
           stateHistory = [];
@@ -1298,6 +1304,7 @@
 
         isPaused = false;
         isReplaying = false;
+        isScrambling = false;
         document.getElementById('modal-pause').classList.add('hidden');
         document.getElementById('modal-victory').classList.add('hidden');
       } else {
@@ -1317,6 +1324,7 @@
 
         isPaused = false;
         isReplaying = false;
+        isScrambling = false;
         document.getElementById('modal-pause').classList.add('hidden');
         document.getElementById('modal-victory').classList.add('hidden');
 
@@ -1338,9 +1346,13 @@
     }
 
     // Save Gem configuration state to History list
-    function saveStateToHistory() {
+    function saveStateToHistory(overwrite = false) {
       const stateCopy = cells.map(c => c.gemId);
-      stateHistory.push(stateCopy);
+      if (overwrite && stateHistory.length > 1) {
+        stateHistory[stateHistory.length - 1] = stateCopy;
+      } else {
+        stateHistory.push(stateCopy);
+      }
       updateUndoButtonState();
     }
 
@@ -1363,11 +1375,11 @@
     // --- Traceable, Smooth Reverse Rotation for UNDO ---
     function undoMove() {
       if (isTransitioning || isDragging || isPaused || isReplaying) return;
-      if (stateHistory.length <= 1) return;
+      if (stateHistory.length <= 1 || actionHistory.length === 0) return;
 
       isTransitioning = true;
       const lastAction = actionHistory.pop();
-      stateHistory.pop(); // Remove current state
+      stateHistory.pop(); // Remove the current state, leaving the previous state
 
       sound.playSnap();
 
@@ -1384,7 +1396,8 @@
 
     function updateUndoButtonState() {
       const btn = document.getElementById('btn-undo');
-      if (stateHistory.length <= 1) {
+      if (!btn) return;
+      if (stateHistory.length <= 1 || actionHistory.length === 0) {
         btn.classList.add('opacity-40', 'pointer-events-none');
       } else {
         btn.classList.remove('opacity-40', 'pointer-events-none');
@@ -1572,7 +1585,7 @@
       // Execute premium feedback animations for matching and duplicate states
       triggerFeedbackAnimations();
 
-      saveStateToHistory();
+      saveStateToHistory(isMerged);
       isTransitioning = false;
     }
 
@@ -1702,7 +1715,24 @@
       const applyConfig = document.getElementById('modal-config-apply');
 
       btnConfig.addEventListener('click', () => {
-        if (isPaused || isReplaying || isTransitioning) return;
+        if (isPaused || isReplaying) return;
+        
+        // INTERACTION SCR_FIX: Interrupt/Cancel any active scramble sequences cleanly
+        if (isScrambling) {
+          isScrambling = false;
+          isTransitioning = false;
+          gsap.killTweensOf("*");
+          rings.forEach(ring => {
+            ring.group.rotation.z = 0;
+          });
+          positionGemsStatically();
+          updateSolvedStates();
+          updateUndoButtonState();
+          resetTimer();
+        } else if (isTransitioning) {
+          return; // Block opening during normal drag snaps to protect coordination loops
+        }
+
         sound.init();
         
         document.querySelectorAll('.btn-layout').forEach(b => {
@@ -2029,6 +2059,7 @@
             movesCount = Math.max(0, movesCount - 1);
             document.getElementById('stat-moves').innerText = movesCount;
             updateSolvedStates();
+            updateUndoButtonState();
             isTransitioning = false;
           } else {
             finalizeMove(isMerged);
@@ -2116,7 +2147,7 @@
         const action = actionHistory[stepIdx];
         sound.playSnap();
 
-        // Automated majestic rotation slide with smooth custom velocity limit
+        // Slower majestic speed recap slide with custom velocity limits
         animateRingSnapping(action.ringId, 0, action.direction, () => {
           stepIdx++;
 
@@ -2133,7 +2164,12 @@
         }, null); 
       }
 
-      playNextStep();
+      // UX_RECAP_FIX: Wait exactly 1.2 seconds before starting the first move
+      setTimeout(() => {
+        if (isReplaying) {
+          playNextStep();
+        }
+      }, 1200);
     }
 
     function exitSpeedRecap() {
