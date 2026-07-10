@@ -11,7 +11,7 @@ Live links to play:
 * [Disk Sort](https://alexfc14.github.io/vibe-games/disk-sort/play.html) | [Donut Version](https://alexfc14.github.io/vibe-games/disk-sort/donuts.html)
 * [Nautilus](https://alexfc14.github.io/vibe-games/nautilus/play.html)
 * [Fruit Tangle](https://alexfc14.github.io/vibe-games/fruit-tangle/play.html)
-* [Ring Sudoku](https://alexfc14.github.io/vibe-games/rings/play.html)
+* [Ring Sudoku](https://alexfc14.github.io/vibe-games/rings/play.html) | [Flowers](https://alexfc14.github.io/vibe-games/rings/petals.html)
 
 ----
 # License
