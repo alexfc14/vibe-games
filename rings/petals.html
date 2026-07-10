@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Meadow Petals - Botanical Solitaire</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <!-- Three.js (v128) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- GSAP for smooth animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: 'Outfit', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      background: radial-gradient(circle at center, #0c2012 0%, #030a05 100%);
+    }
+    #canvas-container {
+      touch-action: none;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      outline: none;
+      touch-action: none;
+    }
+    .soft-text-glow {
+      text-shadow: 0 0 10px rgba(165, 214, 167, 0.4), 0 0 20px rgba(165, 214, 167, 0.2);
+    }
+    .botanical-panel {
+      background: rgba(14, 28, 20, 0.65);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</head>
+<body class="relative w-full h-full flex flex-col justify-between p-3 sm:p-4 text-emerald-100 overflow-hidden select-none">
+
+  <!-- Floating WebGL Canvas Recording HUD Indicator -->
+  <div id="recording-pill" class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-emerald-600/90 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold tracking-wider animate-pulse shadow-lg border border-emerald-500/20">
+    <span class="w-2 h-2 bg-white rounded-full"></span>
+    <span>⏺ RECORDING SWAY RECAP (Saves on exit)</span>
+  </div>
+
+  <!-- Top Header / Scoreboard -->
+  <div class="w-full max-w-md mx-auto z-10 flex flex-col gap-2 shrink-0">
+    <div class="flex items-center justify-between w-full">
+      <div class="flex flex-col">
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-emerald-300 to-amber-200">
+          MEADOW PETALS
+        </h1>
+        <p id="game-subtitle" class="text-[9px] sm:text-[10px] text-emerald-400/70 tracking-widest uppercase font-semibold transition-colors duration-300">
+          Gather matching petals onto each flower center
+        </p>
+      </div>
+      
+      <!-- Settings/Gear Button -->
+      <button id="btn-config" class="p-2 rounded-full botanical-panel hover:bg-emerald-950/40 transition-all active:scale-95 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="flex justify-between w-full mt-0.5 gap-2">
+      <div class="flex-1 botanical-panel px-3 py-1 sm:py-1.5 rounded-xl flex flex-col items-center">
+        <span class="text-[8px] sm:text-[9px] text-emerald-400/60 uppercase tracking-widest font-semibold">Restless</span>
+        <span id="score-tangle" class="text-lg sm:text-xl font-bold text-rose-300">3</span>
+      </div>
+      <div class="flex-1 botanical-panel px-3 py-1 sm:py-1.5 rounded-xl flex flex-col items-center relative overflow-hidden">
+        <span class="text-[8px] sm:text-[9px] text-emerald-400/60 uppercase tracking-widest font-semibold">Sways</span>
+        <span id="stat-moves" class="text-lg sm:text-xl font-bold text-amber-200">0</span>
+      </div>
+      <div class="flex-1 botanical-panel px-3 py-1 sm:py-1.5 rounded-xl flex flex-col items-center">
+        <span class="text-[8px] sm:text-[9px] text-emerald-400/60 uppercase tracking-widest font-semibold">Zen</span>
+        <span id="stat-time" class="text-lg sm:text-xl font-bold text-emerald-200">00:00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dedicated WebGL Game Container -->
+  <div id="canvas-container" class="w-full flex-grow relative z-0 min-h-0 my-1 sm:my-2 overflow-hidden"></div>
+
+  <!-- Gentle Swipe/Drag Instruction Alert -->
+  <div id="gesture-hint" class="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-center bg-emerald-950/70 backdrop-blur-sm px-4 py-2 rounded-full border border-emerald-500/10 transition-all duration-500">
+    <p class="text-[10px] sm:text-[11px] font-semibold text-emerald-200/80 flex items-center gap-2">
+      <span>🍃 Drag near any flower center to sway and rotate its petals</span>
+    </p>
+  </div>
+
+  <!-- Bottom Calm Interactive Controls -->
+  <div class="w-full max-w-md mx-auto z-10 flex gap-2 shrink-0 mb-1 select-none">
+    <!-- Undo Button -->
+    <button id="btn-undo" class="flex-1 h-10 sm:h-11 botanical-panel hover:bg-emerald-950/40 text-emerald-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg opacity-40 pointer-events-none">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 sm:h-5 w-4 sm:w-5 text-emerald-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+      </svg>
+      <span class="text-xs">Undo</span>
+    </button>
+
+    <!-- Pause Button -->
+    <button id="btn-pause" class="flex-1 h-10 sm:h-11 botanical-panel hover:bg-emerald-950/40 text-emerald-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg">
+      <svg id="svg-pause" xmlns="http://www.w3.org/2000/svg" class="h-4 sm:h-5 w-4 sm:w-5 text-amber-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+      </svg>
+      <span id="txt-pause" class="text-xs">Unwind</span>
+    </button>
+
+    <!-- Scramble Button -->
+    <button id="btn-scramble" class="flex-1 h-10 sm:h-11 botanical-panel hover:bg-emerald-950/40 text-emerald-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 sm:h-5 w-4 sm:w-5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+      </svg>
+      <span class="text-xs">Sift</span>
+    </button>
+  </div>
+
+  <!-- Options Config Modal -->
+  <div id="modal-config" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div class="w-full max-w-sm botanical-panel rounded-3xl p-6 shadow-2xl relative border border-emerald-500/10">
+      <button id="modal-config-close" class="absolute top-4 right-4 text-emerald-400 hover:text-white transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <h2 class="text-xl font-bold text-amber-200 mb-6 flex items-center gap-2">
+        Meadow Alignment
+      </h2>
+
+      <!-- Game Mode Selection -->
+      <div class="mb-5">
+        <label class="block text-xs font-semibold text-emerald-400/80 uppercase tracking-widest mb-3">Garden Mode</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-mode-matching" class="py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-200 rounded-xl font-bold transition-all">Overlapping Blooms</button>
+          <button id="btn-mode-sudoku" class="py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Petal Solitaire</button>
+        </div>
+      </div>
+
+      <!-- Geometry Configuration Buttons -->
+      <div class="mb-5">
+        <label class="block text-xs font-semibold text-emerald-400/80 uppercase tracking-widest mb-3">Floral Layout</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button data-layout="triquetra" class="btn-layout py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all">Triquetra (3F)</button>
+          <button data-layout="quadrant" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Quadrant (4F)</button>
+          <button data-layout="rhombus" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Rhombus (4F)</button>
+          <button data-layout="triangle6" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Triangle (6F)</button>
+          <button data-layout="lotus" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Lotus (7F)</button>
+          <button data-layout="square9" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all col-span-3">Grid (3x3F)</button>
+        </div>
+      </div>
+
+      <!-- Dynamic Rules Section -->
+      <div class="mb-6 p-4 rounded-xl bg-emerald-950/40 border border-emerald-900/30 text-xs text-emerald-100">
+        <span class="font-bold text-amber-200 block mb-2 flex items-center gap-1">
+          💡 Objective:
+        </span>
+        <ul id="instructions-list" class="list-disc pl-4 space-y-1.5 text-emerald-200/80">
+          <!-- Dynamic contents populated in setup -->
+          <li>Shared petals connect adjacent flower centers directly.</li>
+          <li>Sway flowers around their center disc to transfer petals.</li>
+          <li>Ensure <strong>every petal matches its central stigma color</strong>.</li>
+        </ul>
+      </div>
+
+      <!-- Action Button -->
+      <button id="modal-config-apply" class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-emerald-950 font-bold text-base rounded-xl shadow-lg shadow-emerald-500/10 transition-all uppercase tracking-wider">
+        Enter Meadow
+      </button>
+    </div>
+  </div>
+
+  <!-- Pause Modal Overlay -->
+  <div id="modal-pause" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div class="w-full max-w-sm botanical-panel rounded-3xl p-8 shadow-2xl relative text-center flex flex-col items-center border border-emerald-500/10">
+      <div class="w-16 h-16 bg-emerald-500/20 border border-emerald-500/30 rounded-full flex items-center justify-center mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+        </svg>
+      </div>
+      <h2 class="text-2xl font-bold text-emerald-300 uppercase tracking-widest mb-2">MEADOW RESTING</h2>
+      <p class="text-sm text-emerald-200/70 mb-6">Breeze and stems are suspended.</p>
+      <button id="btn-resume" class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-emerald-950 font-bold text-base rounded-xl shadow-lg shadow-emerald-500/10 transition-all uppercase tracking-wider">
+        Resume Sway
+      </button>
+    </div>
+  </div>
+
+  <!-- Victory Overlay Panel -->
+  <div id="modal-victory" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/85 backdrop-blur-md p-4">
+    <div class="w-full max-w-sm botanical-panel rounded-3xl p-6 shadow-2xl relative text-center flex flex-col items-center border border-emerald-500/10 max-h-[92vh] overflow-y-auto">
+      <!-- Trophy Icon -->
+      <div class="w-14 h-14 bg-emerald-500/20 border border-emerald-500/30 rounded-full flex items-center justify-center mb-3.5 animate-bounce shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+        </svg>
+      </div>
+
+      <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-300 to-teal-100 uppercase tracking-widest mb-1">
+        BLOOM COMPLETE
+      </h2>
+      <p id="victory-subtitle" class="text-xs text-emerald-400/80 mb-4 font-semibold uppercase tracking-wider">Perfect Meadow Alignment</p>
+
+      <!-- Stats Display -->
+      <div id="victory-normal-stats" class="grid grid-cols-2 gap-2 w-full mb-5 shrink-0 select-none">
+        <div class="glass-panel p-2.5 rounded-xl border border-emerald-900/20">
+          <span class="block text-emerald-400/70 text-[10px] uppercase tracking-widest font-semibold mb-1 text-center">Sways</span>
+          <span id="vic-moves" class="text-lg font-bold text-emerald-300 block text-center">24</span>
+        </div>
+        <div class="glass-panel p-2.5 rounded-xl border border-emerald-900/20">
+          <span class="block text-emerald-400/70 text-[10px] uppercase tracking-widest font-semibold mb-1 text-center">Zen</span>
+          <span id="vic-time" class="text-lg font-bold text-sky-300 block text-center font-mono">01:42</span>
+        </div>
+      </div>
+
+      <!-- Local Multiplayer Scoreboard -->
+      <div id="victory-comparison-scoreboard" class="hidden flex flex-col gap-3 w-full mb-5 select-none shrink-0">
+        <div class="botanical-panel p-3.5 rounded-xl border border-amber-500/20 bg-amber-950/20">
+          <span class="text-xs font-bold text-amber-300 uppercase tracking-widest block mb-2">🏆 Challenge Scoreboard</span>
+          <div class="grid grid-cols-2 gap-2 text-left">
+            <div class="bg-emerald-950/30 p-2.5 rounded-lg border border-white/5">
+              <span class="text-[9px] text-emerald-400 uppercase tracking-wider font-semibold">You (P1)</span>
+              <div class="mt-0.5 font-bold text-emerald-200 text-sm"><span id="p1-moves">0</span> sways</div>
+              <div class="font-semibold text-sky-400 text-[11px]"><span id="p1-time">00:00</span></div>
+            </div>
+            <div class="bg-amber-950/30 p-2.5 rounded-lg border border-amber-500/10">
+              <span class="text-[9px] text-amber-300 uppercase tracking-wider font-semibold">Friend (P2)</span>
+              <div class="mt-0.5 font-bold text-amber-200 text-sm"><span id="p2-moves">0</span> sways</div>
+              <div class="font-semibold text-amber-400 text-[11px]"><span id="p2-time">00:00</span></div>
+            </div>
+          </div>
+        </div>
+        <div id="victory-winner-banner" class="text-emerald-300 font-extrabold text-xs tracking-wide bg-emerald-500/10 py-2 px-3 rounded-xl border border-emerald-500/20">
+          Player 1 Wins! 🎉
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col gap-2 w-full shrink-0 select-none">
+        <!-- Next Layout Progression Button -->
+        <button id="btn-victory-next" class="w-full h-11 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-emerald-950 font-bold text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+          </svg>
+          Next Meadow Layout
+        </button>
+
+        <button id="btn-victory-replay" class="w-full h-11 bg-indigo-900/60 hover:bg-indigo-900/80 active:scale-95 text-indigo-100 font-bold text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Sway Recap Video
+        </button>
+
+        <button id="btn-victory-pass-friend" class="w-full h-11 bg-amber-700/60 hover:bg-amber-700 active:scale-95 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          Sway With Friend
+        </button>
+
+        <button id="btn-victory-restart" class="w-full h-11 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider shadow-lg">
+          Tangle Again
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Consolidated Game Mechanics Engine -->
+  <script>
+    // --- GLOBAL CONFIGS & STAGES ---
+    const LAYOUTS = {
+      triquetra: { id: "triquetra", name: "Triquetra (3 Flowers)", colorsCount: 6, slotsPerRing: 6 },
+      quadrant:  { id: "quadrant",  name: "Quadrant (4 Flowers)",  colorsCount: 4, slotsPerRing: 4 },
+      rhombus:   { id: "rhombus",   name: "Rhombus (4 Flowers)",   colorsCount: 6, slotsPerRing: 6 },
+      triangle6: { id: "triangle6", name: "Triangle (6 Flowers)",  colorsCount: 6, slotsPerRing: 6 },
+      lotus:     { id: "lotus",     name: "Lotus (7 Flowers)",     colorsCount: 7, slotsPerRing: 6 },
+      square9:   { id: "square9",   name: "Grid (3x3F)",           colorsCount: 9, slotsPerRing: 4 }
+    };
+
+    const LAYOUT_ORDER = ["triquetra", "quadrant", "rhombus", "triangle6", "lotus", "square9"];
+
+    const GEM_COLORS = [
+      0xff3366, // 0: Coral Rose Pink
+      0x00cc66, // 1: Clover Mint Green
+      0x3366ff, // 2: Blue Hydrangea
+      0xffcc00, // 3: Dandelion Gold
+      0xb366ff, // 4: Wild Violet
+      0xff6600, // 5: Tiger Lily Orange
+      0x00e5ff, // 6: Forget-Me-Not Blue
+      0x0a5c1e, // 7: Moss Sage Green
+      0x800020  // 8: Burgundy Dahlia Red
+    ];
+
+    let currentGameMode = "matching"; 
+    let currentLayoutId = "triquetra";
+    let cells = []; 
+    let rings = []; 
+    let flowers = []; 
+    
+    let isTransitioning = false;
+    let isScrambling = false; 
+    let isPaused = false;
+    let isReplaying = false;
+    let movesCount = 0;
+
+    let stateHistory = []; 
+    let actionHistory = []; 
+    let originalScrambleState = null; 
+
+    let isFriendMode = false;
+    let player1Results = null;
+
+    let scene, camera, renderer, boardGroup, backgroundParticles;
+    
+    let isDragging = false;
+    let activeRing = null;
+    let dragStartAngle = 0;
+    let dragCurrentAngle = 0;
+    let dragGems = []; 
+    let activeRingStartRotationZ = 0; 
+
+    let canvasRecorder = null;
+    let recordedVideoChunks = [];
+
+    // --- TIMERS ---
+    let startTime = null;
+    let timerInterval = null;
+    let firstInteractionDone = false;
+    let elapsedSeconds = 0;
+
+    function resetTimer() {
+      firstInteractionDone = false;
+      elapsedSeconds = 0;
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      const statTime = document.getElementById('stat-time');
+      if (statTime) statTime.innerText = "00:00";
+    }
+
+    function updateTimerUI() {
+      if (!startTime) return;
+      elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+      const mins = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+      const secs = (elapsedSeconds % 60).toString().padStart(2, '0');
+      const statTime = document.getElementById('stat-time');
+      if (statTime) statTime.innerText = `${mins}:${secs}`;
+    }
+
+    // --- SOUND CONTROLLER ---
+    class SoundSynth {
+      constructor() { this.ctx = null; this.enabled = false; }
+      init() {
+        if (this.ctx) return;
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContextClass();
+          if (navigator.audioSession) { navigator.audioSession.type = "playback"; }
+          this.enabled = true;
+        } catch (e) { console.warn('Web Audio API not supported', e); }
+      }
+      resume() { if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); }
+      playGrab() {
+        if (!this.enabled) return; this.resume();
+        const now = this.ctx.currentTime, osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(160, now + 0.12);
+        gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.connect(gain); gain.connect(this.ctx.destination); osc.start(now); osc.stop(now + 0.15);
+      }
+      playSnap() {
+        if (!this.enabled) return; this.resume();
+        const now = this.ctx.currentTime, osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(260, now); osc.frequency.exponentialRampToValueAtTime(130, now + 0.18);
+        gain.gain.setValueAtTime(0.06, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        osc.connect(gain); gain.connect(this.ctx.destination); osc.start(now); osc.stop(now + 0.2);
+      }
+      playRingResolved() {
+        if (!this.enabled) return; this.resume();
+        const now = this.ctx.currentTime, notes = [329.63, 392.00, 440.00, 523.25, 659.25];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator(), gain = this.ctx.createGain(), t = now + idx * 0.08;
+          osc.type = 'sine'; osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(0.05, t + 0.04); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+          osc.connect(gain); gain.connect(this.ctx.destination); osc.start(t); osc.stop(t + 0.5);
+        });
+      }
+      playVictory() {
+        if (!this.enabled) return; this.resume();
+        const now = this.ctx.currentTime, notes = [196.00, 261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator(), gain = this.ctx.createGain(), t = now + idx * 0.14;
+          osc.type = 'sine'; osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(0.06, t + 0.06); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+          osc.connect(gain); gain.connect(this.ctx.destination); osc.start(t); osc.stop(t + 0.9);
+        });
+      }
+    }
+    const sound = new SoundSynth();
+
+    function spawnPetalSparks(cx, cy, hexColor) {
+      if (typeof boardGroup === "undefined") return;
+      const count = 25;
+      const geo = new THREE.SphereGeometry(0.04, 8, 8);
+      for (let i = 0; i < count; i++) {
+        const mat = new THREE.MeshStandardMaterial({ color: hexColor, emissive: hexColor, emissiveIntensity: 0.8 });
+        const m = new THREE.Mesh(geo, mat);
+        m.position.set(cx + (Math.random() - 0.5) * 1.5, cy + (Math.random() - 0.5) * 1.5, 0.2);
+        boardGroup.add(m);
+        const angle = Math.random() * Math.PI * 2, speed = 1.0 + Math.random() * 2.0;
+        gsap.to(m.position, {
+          x: m.position.x + Math.cos(angle) * speed, y: m.position.y + Math.sin(angle) * speed, z: m.position.z + (Math.random() - 0.2) * 1.5,
+          duration: 0.65, ease: "power2.out"
+        });
+        gsap.to(m.scale, {
+          x: 0, y: 0, z: 0, duration: 0.65, ease: "power2.in", onComplete: () => { boardGroup.remove(m); mat.dispose(); }
+        });
+      }
+    }
+
+    // --- MAIN ENGINE INITIALIZER ---
+    window.onload = () => {
+      initEngine();
+      initGame();
+      setupEvents();
+    };
+
+    function initEngine() {
+      const container = document.getElementById('canvas-container');
+      const width = container.clientWidth, height = container.clientHeight;
+
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x02040a, 0.08);
+
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+      camera.position.set(0, 0, 7.5);
+      camera.lookAt(0, 0, 0);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, preserveDrawingBuffer: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(width, height);
+      container.appendChild(renderer.domElement);
+
+      boardGroup = new THREE.Group();
+      scene.add(boardGroup);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+      
+      const mainLight = new THREE.DirectionalLight(0xffffff, 1.45);
+      mainLight.position.set(5, 5, 8);
+      scene.add(mainLight);
+      
+      const fillLight = new THREE.DirectionalLight(0xffffff, 0.15);
+      fillLight.position.set(-6, -3, 3);
+      scene.add(fillLight);
+      
+      const frontSpecLight = new THREE.DirectionalLight(0xffffff, 0.35);
+      frontSpecLight.position.set(0, 0, 10);
+      scene.add(frontSpecLight);
+
+      const envCanvas = document.createElement('canvas');
+      envCanvas.width = 512; envCanvas.height = 256;
+      const envCtx = envCanvas.getContext('2d');
+      const bgGrad = envCtx.createLinearGradient(0, 0, 0, 256);
+      bgGrad.addColorStop(0, '#020617'); bgGrad.addColorStop(0.5, '#1e293b'); bgGrad.addColorStop(1, '#020617');
+      envCtx.fillStyle = bgGrad; envCtx.fillRect(0, 0, 512, 256);
+      envCtx.fillStyle = '#ffffff'; envCtx.fillRect(50, 10, 80, 236);
+      const envTexture = new THREE.CanvasTexture(envCanvas);
+      envTexture.mapping = THREE.EquirectangularReflectionMapping;
+      scene.environment = envTexture;
+
+      // Spores / Pollen drifting background
+      const particleGeo = new THREE.BufferGeometry();
+      const positions = new Float32Array(360);
+      for (let i = 0; i < 360; i += 3) {
+        positions[i] = (Math.random() - 0.5) * 14;
+        positions[i+1] = (Math.random() - 0.5) * 14;
+        positions[i+2] = -2 - Math.random() * 5;
+      }
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      backgroundParticles = new THREE.Points(particleGeo, new THREE.PointsMaterial({
+        color: 0xa5d6a7, size: 0.05, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending
+      }));
+      scene.add(backgroundParticles);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const pos = backgroundParticles.geometry.attributes.position.array;
+        const time = Date.now() * 0.001;
+        for (let i = 0; i < pos.length; i += 3) {
+          pos[i] += Math.sin(time + i) * 0.002;
+          pos[i+1] += 0.003;
+          if (pos[i+1] > 6) { pos[i+1] = -6; pos[i] = (Math.random() - 0.5) * 14; }
+        }
+        backgroundParticles.geometry.attributes.position.needsUpdate = true;
+        rings.forEach(ring => {
+          if (ring.auraMesh && ring.auraMesh.visible) {
+            ring.auraMesh.scale.setScalar(1.0 + 0.03 * Math.sin(time * 3));
+            ring.auraMesh.material.opacity = 0.35 + 0.15 * Math.cos(time * 3);
+          }
+        });
+        renderer.render(scene, camera);
+      }
+      animate();
+    }
+
+    // --- STEM RENDERER ---
+    function createStemMesh(toX, toY) {
+      const curve = new THREE.QuadraticBezierCurve3(
+        new THREE.Vector3(toX - 0.45, -4.5, -0.4),
+        new THREE.Vector3(toX - 0.15, toY / 2, -0.2),
+        new THREE.Vector3(toX, toY, -0.15)
+      );
+      return new THREE.Mesh(
+        new THREE.TubeGeometry(new THREE.CatmullRomCurve3(curve.getPoints(16)), 16, 0.026, 8, false),
+        new THREE.MeshStandardMaterial({ color: 0x1a331c, roughness: 0.85, metalness: 0.05 })
+      );
+    }
+
+    // --- PROCEDURAL PETALS ---
+    // Creates a velvety, beautiful double-curved petal mesh extending outward.
+    // Length is set to exactly 2R (2 * 1.15 = 2.3) so it reaches center-to-center seamlessly.
+    function createPetalGeometry(length = 2.3) {
+      const geom = new THREE.BufferGeometry(), vertices = [], indices = [];
+      const N = 10, M = 10;
+      for (let i = 0; i <= N; i++) {
+        const t = i / N;
+        const lengthY = t * length;
+        const width = Math.sin(t * Math.PI) * 0.28; 
+        const thick = Math.sin(t * Math.PI) * 0.04; 
+        const bend = Math.sin(t * Math.PI) * 0.03;
+        for (let j = 0; j < M; j++) {
+          const a = (j / M) * Math.PI * 2;
+          vertices.push(Math.cos(a) * width, lengthY, Math.sin(a) * thick - bend);
+        }
+      }
+      for (let i = 0; i < N; i++) {
+        for (let j = 0; j < M; j++) {
+          const row = i * M, next = (i + 1) * M, nextCol = (j + 1) % M;
+          indices.push(row + j, next + j, row + nextCol, row + nextCol, next + j, next + nextCol);
+        }
+      }
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      geom.setIndex(indices); geom.computeVertexNormals();
+      return geom;
+    }
+
+    function createPetalMesh(colorIdx, scale = 1.0) {
+      const color = GEM_COLORS[colorIdx % GEM_COLORS.length];
+      let tVal = 0.15, rVal = 0.02, eVal = 0x000000;
+      const rel = colorIdx % GEM_COLORS.length;
+      if (rel === 3) { tVal = 0.03; rVal = 0.01; eVal = 0x221100; }
+      else if (rel === 1) { tVal = 0.05; rVal = 0.01; eVal = 0x002205; }
+      else if (rel === 6) { tVal = 0.06; rVal = 0.01; eVal = 0x001a1a; }
+      else if (rel === 7) { tVal = 0.05; rVal = 0.01; eVal = 0x001805; }
+      else if (rel === 8) { tVal = 0.05; rVal = 0.01; eVal = 0x1f0003; }
+
+      // We use a base length of 2.3 for ideal center-to-center petal reach
+      return new THREE.Mesh(createPetalGeometry(2.3 * scale), new THREE.MeshPhysicalMaterial({
+        color: color, metalness: 0.08, roughness: rVal, transmission: tVal, ior: 2.417, thickness: 0.22,
+        clearcoat: 1.0, clearcoatRoughness: 0.02, attenuationDistance: 0.25, attenuationColor: color,
+        emissive: eVal, emissiveIntensity: 0.45, flatShading: true, side: THREE.DoubleSide, depthWrite: true, transparent: true
+      }));
+    }
+
+    function buildMeadowLayout() {
+      flowers.forEach(f => {
+        if (f.stigmaMesh) boardGroup.remove(f.stigmaMesh);
+        if (f.stemMesh) boardGroup.remove(f.stemMesh);
+        f.petalMeshes.forEach(pm => { if (pm) boardGroup.remove(pm); });
+      });
+      cells.forEach(c => { if (c.mesh) boardGroup.remove(c.mesh); });
+      rings.forEach(r => { if (r.group) boardGroup.remove(r.group); });
+
+      flowers = []; cells = []; rings = [];
+      const config = LAYOUTS[currentLayoutId];
+      const rawCandidates = [];
+      let computedRings = [];
+      const R = 1.15;
+
+      if (currentLayoutId === "triquetra") {
+        const h = R / Math.sqrt(3);
+        computedRings = [{ id: 0, center: { x: 0, y: 2 * h }, radius: R, offset: 0 }, { id: 1, center: { x: -R, y: -h }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: -h }, radius: R, offset: 0 }];
+      } else if (currentLayoutId === "quadrant") {
+        computedRings = [{ id: 0, center: { x: -R, y: R }, radius: R, offset: 0 }, { id: 1, center: { x: R, y: R }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: -R }, radius: R, offset: 0 }, { id: 3, center: { x: -R, y: -R }, radius: R, offset: 0 }];
+      } else if (currentLayoutId === "rhombus") {
+        const h = R / Math.sqrt(3);
+        computedRings = [{ id: 0, center: { x: 0, y: 2 * h }, radius: R, offset: 0 }, { id: 1, center: { x: -R, y: -h }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: -h }, radius: R, offset: 0 }, { id: 3, center: { x: 0, y: -4 * h }, radius: R, offset: 0 }];
+      } else if (currentLayoutId === "triangle6") {
+        const h = R / Math.sqrt(3);
+        computedRings = [
+          { id: 0, center: { x: 0, y: 2 * h }, radius: R, offset: 0 }, { id: 1, center: { x: -R, y: -h }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: -h }, radius: R, offset: 0 },
+          { id: 3, center: { x: 0, y: -4 * h }, radius: R, offset: 0 }, { id: 4, center: { x: -2 * R, y: 2 * h }, radius: R, offset: 0 }, { id: 5, center: { x: 2 * R, y: 2 * h }, radius: R, offset: 0 }
+        ];
+      } else if (currentLayoutId === "lotus") {
+        const dy = R * Math.sqrt(3);
+        computedRings = [
+          { id: 0, center: { x: 0, y: 0 }, radius: R, offset: 0 }, { id: 1, center: { x: 2 * R, y: 0 }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: dy }, radius: R, offset: 0 },
+          { id: 3, center: { x: -R, y: dy }, radius: R, offset: 0 }, { id: 4, center: { x: -2 * R, y: 0 }, radius: R, offset: 0 }, { id: 5, center: { x: -R, y: -dy }, radius: R, offset: 0 },
+          { id: 6, center: { x: R, y: -dy }, radius: R, offset: 0 }
+        ];
+      } else if (currentLayoutId === "square9") {
+        computedRings = [
+          { id: 0, center: { x: -2*R, y: 2*R }, radius: R, offset: 0 }, { id: 1, center: { x: 0, y: 2*R }, radius: R, offset: 0 }, { id: 2, center: { x: 2*R, y: 2*R }, radius: R, offset: 0 },
+          { id: 3, center: { x: -2*R, y: 0 }, radius: R, offset: 0 }, { id: 4, center: { x: 0, y: 0 }, radius: R, offset: 0 }, { id: 5, center: { x: 2*R, y: 0 }, radius: R, offset: 0 },
+          { id: 6, center: { x: -2*R, y: -2*R }, radius: R, offset: 0 }, { id: 7, center: { x: 0, y: -2*R }, radius: R, offset: 0 }, { id: 8, center: { x: 2*R, y: -2*R }, radius: R, offset: 0 }
+        ];
+      }
+
+      computedRings.forEach(rc => {
+        const S = config.slotsPerRing;
+        for (let k = 0; k < S; k++) {
+          const a = rc.offset + k * (2 * Math.PI / S);
+          rawCandidates.push({ ringId: rc.id, slotIdx: k, x: rc.center.x + rc.radius * Math.cos(a), y: rc.center.y + rc.radius * Math.sin(a) });
+        }
+      });
+
+      const mergedNodes = [];
+      const tolerance = 0.05; // Restored tolerance definition
+      
+      rawCandidates.forEach(cand => {
+        let match = mergedNodes.find(n => Math.sqrt((n.x - cand.x)**2 + (n.y - cand.y)**2) < tolerance);
+        if (match) {
+          match.attachments.push({ ringId: cand.ringId, slotIdx: cand.slotIdx });
+          match.rawPoints.push({ x: cand.x, y: cand.y });
+          let sx = 0, sy = 0; match.rawPoints.forEach(p => { sx += p.x; sy += p.y; });
+          match.x = sx / match.rawPoints.length; match.y = sy / match.rawPoints.length;
+        } else {
+          mergedNodes.push({ id: mergedNodes.length, x: cand.x, y: cand.y, attachments: [{ ringId: cand.ringId, slotIdx: cand.slotIdx }], rawPoints: [{ x: cand.x, y: cand.y }] });
+        }
+      });
+
+      cells = mergedNodes.map(n => ({ id: n.id, x: n.x, y: n.y, attachments: n.attachments, gemId: null, mesh: null, hostRingId: n.attachments[0].ringId, rotationZ: 0 }));
+      cells.forEach(c => {
+        const r = computedRings.find(cr => cr.id === c.hostRingId);
+        if (r) c.rotationZ = Math.atan2(c.y - r.center.y, c.x - r.center.x);
+      });
+
+      rings = computedRings.map(rc => {
+        const ringCells = cells.filter(c => c.attachments.some(att => att.ringId === rc.id));
+        ringCells.sort((a,b) => Math.atan2(a.y - rc.center.y, a.x - rc.center.x) - Math.atan2(b.y - rc.center.y, b.x - rc.center.x));
+
+        const group = new THREE.Group(); group.position.set(rc.center.x, rc.center.y, 0);
+        const stemMesh = createStemMesh(rc.center.x, rc.center.y); boardGroup.add(stemMesh);
+
+        const stigmaMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.04, 16), new THREE.MeshStandardMaterial({
+          color: GEM_COLORS[rc.id % GEM_COLORS.length], roughness: 0.65, metalness: 0.05
+        }));
+        stigmaMesh.rotation.x = Math.PI / 2; stigmaMesh.position.set(0, 0, 0.06); group.add(stigmaMesh);
+
+        const stCount = config.slotsPerRing;
+        for (let s = 0; s < stCount; s++) {
+          const sa = s * (2 * Math.PI / stCount);
+          const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.4), new THREE.MeshStandardMaterial({ color: 0x1d3d20, roughness: 0.8 }));
+          spoke.position.set(0.2 * Math.cos(sa), 0.2 * Math.sin(sa), 0.02); spoke.rotation.z = sa - Math.PI / 2; spoke.rotation.x = Math.PI / 2; group.add(spoke);
+          const anther = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffa200, roughness: 0.9 }));
+          anther.position.set(0.38 * Math.cos(sa), 0.38 * Math.sin(sa), 0.03); group.add(anther);
+        }
+
+        // REMOVED: Unnecessary centerStone petal mesh. The central stigma cylinder already defines the target color.
+
+        const auraMesh = new THREE.Mesh(new THREE.TorusGeometry(rc.radius, 0.04, 8, 80), new THREE.MeshBasicMaterial({ color: 0x00e640, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending }));
+        auraMesh.position.set(0, 0, -0.06); auraMesh.visible = false; group.add(auraMesh);
+
+        boardGroup.add(group);
+
+        return { id: rc.id, center: rc.center, radius: rc.radius, cellIds: ringCells.map(c=>c.id), mesh: stigmaMesh, group: group, solved: false, stigmaMesh: stigmaMesh, stemMesh: stemMesh, auraMesh: auraMesh, petalMeshes: [] };
+      });
+
+      flowers = rings;
+    }
+
+    function positionGemsStatically() {
+      cells.forEach(c => {
+        if (c.mesh) {
+          const r = rings.find(flower => flower.id === c.hostRingId);
+          if (r) {
+            // Anchor petal base directly to its current host flower center
+            c.mesh.position.set(r.center.x, r.center.y, 0.04);
+            const angle = Math.atan2(c.y - r.center.y, c.x - r.center.x);
+            c.mesh.rotation.set(0, 0, angle - Math.PI / 2);
+          }
+        }
+      });
+    }
+
+    function generateSolvedState() {
+      if (currentGameMode === "matching") {
+        cells.forEach(c => {
+          const chosen = c.attachments[Math.floor(Math.random() * c.attachments.length)];
+          c.gemId = chosen.ringId % GEM_COLORS.length;
+        });
+      } else {
+        const numColors = LAYOUTS[currentLayoutId].colorsCount;
+        cells.forEach(c => c.gemId = null);
+
+        function getPossibleColors(cell) {
+          const used = new Set();
+          cell.attachments.forEach(att => {
+            const ring = rings.find(r => r.id === att.ringId);
+            ring.cellIds.forEach(cid => {
+              const other = cells.find(c => c.id === cid);
+              if (other && other.gemId !== null) used.add(other.gemId);
+            });
+          });
+          const possible = [];
+          for (let i = 0; i < numColors; i++) { if (!used.has(i)) possible.push(i); }
+          return possible;
+        }
+
+        function solve() {
+          let best = null, minRem = Infinity;
+          for (let i = 0; i < cells.length; i++) {
+            const cell = cells[i]; if (cell.gemId !== null) continue;
+            const poss = getPossibleColors(cell);
+            if (poss.length < minRem) { minRem = poss.length; best = cell; }
+          }
+          if (!best) return true;
+          if (minRem === 0) return false;
+          const choices = shuffleArray(getPossibleColors(best));
+          for (let col of choices) {
+            best.gemId = col;
+            if (solve()) return true;
+            best.gemId = null;
+          }
+          return false;
+        }
+        if (!solve()) { cells.forEach((c, idx) => c.gemId = idx % numColors); }
+      }
+    }
+
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function scrambleRingsAnimated() {
+      isTransitioning = true; isScrambling = true;
+      const totalRings = rings.length, scrambleSteps = totalRings * 12;
+      let currentStep = 0;
+
+      const subtitle = document.getElementById('game-subtitle');
+      subtitle.innerText = "Scrambling board...";
+      subtitle.className = "text-[9px] sm:text-[10px] tracking-widest uppercase font-semibold text-emerald-400";
+
+      function runNextScrambleStep() {
+        if (!isScrambling) { isTransitioning = false; return; }
+        if (currentStep >= scrambleSteps) {
+          isScrambling = false; isTransitioning = false;
+          stateHistory = []; actionHistory = []; originalScrambleState = cells.map(c => c.gemId);
+          saveStateToHistory(); updateSolvedStates(); updateUndoButtonState(); resetTimer();
+          subtitle.innerText = currentGameMode === "matching" ? "Gather matching petals onto each flower center" : "Avoid duplicate petal colors on the same stem";
+          subtitle.className = "text-[9px] sm:text-[10px] text-emerald-400/70 tracking-widest uppercase font-semibold transition-colors duration-300";
+          return;
+        }
+        const rIdx = Math.floor(Math.random() * totalRings);
+        const ring = rings[rIdx], maxSlots = ring.cellIds.length;
+        const shiftSteps = (Math.floor(Math.random() * 3) + 1) * (Math.random() > 0.5 ? 1 : -1);
+        executeLogicalShift(ring.id, shiftSteps);
+        animateRingSnapping(ring.id, -shiftSteps * (2 * Math.PI / maxSlots), 0, () => {
+          currentStep++; runNextScrambleStep();
+        }, 0.05);
+      }
+      runNextScrambleStep();
+    }
+
+    function syncModeUIButtons() {
+      const btnSudoku = document.getElementById('btn-mode-sudoku');
+      const btnMatching = document.getElementById('btn-mode-matching');
+      const instructions = document.getElementById('instructions-list');
+      const subtitle = document.getElementById('game-subtitle');
+      if (!btnSudoku || !btnMatching || !instructions || !subtitle) return;
+
+      if (currentGameMode === "matching") {
+        btnMatching.className = "py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all";
+        btnSudoku.className = "py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/45 transition-all";
+        instructions.innerHTML = `
+          <li>Shared petals connect adjacent flower centers directly.</li>
+          <li>Sway flowers around their center disc to transfer petals.</li>
+          <li>Ensure <strong>every petal matches its central stigma color</strong>.</li>
+        `;
+        subtitle.innerText = "Gather matching petals onto each flower center";
+      } else {
+        btnSudoku.className = "py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all";
+        btnMatching.className = "py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/45 transition-all";
+        instructions.innerHTML = `
+          <li>Shared petals connect adjacent flower centers directly.</li>
+          <li>Sway flowers around their center disc to transfer petals.</li>
+          <li>Ensure <strong>no flower contains repeated petal colors</strong> (Solitaire alignment).</li>
+        `;
+        subtitle.innerText = "Avoid duplicate petal colors on the same stem";
+      }
+    }
+
+    function initGame(restoreFromP1Scramble = false) {
+      buildMeadowLayout();
+      if (restoreFromP1Scramble && originalScrambleState) {
+        cells.forEach((cell, idx) => {
+          cell.gemId = originalScrambleState[idx];
+          const mesh = createPetalMesh(cell.gemId); boardGroup.add(mesh); cell.mesh = mesh;
+        });
+        positionGemsStatically();
+        stateHistory = []; actionHistory = []; saveStateToHistory();
+        movesCount = 0; document.getElementById('stat-moves').innerText = movesCount; resetTimer();
+        updateSolvedStates(); updateUndoButtonState();
+        isPaused = false; isReplaying = false; isScrambling = false;
+        document.getElementById('modal-pause').classList.add('hidden'); document.getElementById('modal-victory').classList.add('hidden');
+      } else {
+        generateSolvedState();
+        cells.forEach(cell => {
+          const mesh = createPetalMesh(cell.gemId); boardGroup.add(mesh); cell.mesh = mesh;
+        });
+        positionGemsStatically();
+        movesCount = 0; document.getElementById('stat-moves').innerText = movesCount; resetTimer();
+        isPaused = false; isReplaying = false; isScrambling = false;
+        document.getElementById('modal-pause').classList.add('hidden'); document.getElementById('modal-victory').classList.add('hidden');
+        scrambleRingsAnimated();
+        isFriendMode = false; player1Results = null;
+      }
+      rings.forEach(ring => {
+        if (ring.centerStone) ring.centerStone.visible = (currentGameMode === "matching");
+      });
+      syncModeUIButtons();
+      resizeCameraToFit();
+    }
+
+    function saveStateToHistory(overwrite = false) {
+      const stateCopy = cells.map(c => c.gemId);
+      if (overwrite && stateHistory.length > 1) {
+        stateHistory[stateHistory.length - 1] = stateCopy;
+      } else {
+        stateHistory.push(stateCopy);
+      }
+      updateUndoButtonState();
+    }
+
+    function applyHistoryState(state) {
+      cells.forEach((cell, idx) => {
+        const targetGemId = state[idx];
+        if (cell.gemId !== targetGemId) {
+          if (cell.mesh) boardGroup.remove(cell.mesh);
+          cell.gemId = targetGemId;
+          const newMesh = createPetalMesh(targetGemId); boardGroup.add(newMesh); cell.mesh = newMesh;
+        }
+      });
+      positionGemsStatically(); updateSolvedStates();
+    }
+
+    function undoMove() {
+      if (isTransitioning || isDragging || isPaused || isReplaying) return;
+      if (stateHistory.length <= 1 || actionHistory.length === 0) return;
+      isTransitioning = true;
+      const lastAction = actionHistory.pop(); stateHistory.pop();
+      sound.playSnap();
+      animateRingSnapping(lastAction.ringId, 0, -lastAction.direction, () => {
+        movesCount = Math.max(0, movesCount - 1); document.getElementById('stat-moves').innerText = movesCount;
+        updateSolvedStates(); updateUndoButtonState(); isTransitioning = false;
+      }, 'undo');
+    }
+
+    function updateUndoButtonState() {
+      const btn = document.getElementById('btn-undo'); if (!btn) return;
+      if (stateHistory.length <= 1 || actionHistory.length === 0) {
+        btn.classList.add('opacity-40', 'pointer-events-none');
+      } else {
+        btn.classList.remove('opacity-40', 'pointer-events-none');
+      }
+    }
+
+    function executeLogicalShift(ringId, steps) {
+      const ring = rings.find(r => r.id === ringId), len = ring.cellIds.length;
+      const shift = ((steps % len) + len) % len; if (shift === 0) return;
+      const currentGemIds = ring.cellIds.map(cellId => cells.find(c => c.id === cellId).gemId);
+      const shiftedGemIds = [];
+      for (let i = 0; i < len; i++) { shiftedGemIds[i] = currentGemIds[(i - shift + len) % len]; }
+      ring.cellIds.forEach((cellId, i) => {
+        const cell = cells.find(c => c.id === cellId), targetGemId = shiftedGemIds[i];
+        if (cell.gemId !== targetGemId) {
+          cell.gemId = targetGemId; if (cell.mesh) boardGroup.remove(cell.mesh);
+          const newMesh = createPetalMesh(targetGemId); boardGroup.add(newMesh); cell.mesh = newMesh;
+        }
+      });
+    }
+
+    function updateSolvedStates() {
+      let unsolvedCount = 0;
+      rings.forEach(ring => {
+        let isRingHappy = false;
+        if (currentGameMode === "matching") {
+          let happyCount = 0;
+          ring.cellIds.forEach(cellId => {
+            const cell = cells.find(c => c.id === cellId);
+            if (cell && cell.gemId !== null) {
+              if (cell.attachments.some(att => (att.ringId % GEM_COLORS.length) === cell.gemId)) happyCount++;
+            }
+          });
+          isRingHappy = (happyCount === ring.cellIds.length);
+        } else {
+          const colorsInRing = new Set();
+          ring.cellIds.forEach(cellId => {
+            const cell = cells.find(c => c.id === cellId);
+            if (cell && cell.gemId !== null) colorsInRing.add(cell.gemId);
+          });
+          isRingHappy = (colorsInRing.size === ring.cellIds.length);
+        }
+        if (!isRingHappy) unsolvedCount++;
+        if (isRingHappy) {
+          if (ring.auraMesh) ring.auraMesh.visible = true;
+          if (!ring.solved) {
+            ring.solved = true; sound.playRingResolved();
+            spawnPetalSparks(ring.center.x, ring.center.y, GEM_COLORS[ring.id % GEM_COLORS.length]);
+          }
+        } else {
+          if (ring.auraMesh) ring.auraMesh.visible = false;
+          ring.solved = false;
+        }
+      });
+
+      const scoreElement = document.getElementById('score-tangle');
+      scoreElement.innerText = unsolvedCount;
+      if (unsolvedCount === 0) {
+        scoreElement.className = "text-xl sm:text-2xl font-bold text-emerald-300 soft-text-glow";
+        if (!isReplaying) triggerVictorySequence();
+      } else {
+        scoreElement.className = "text-xl sm:text-2xl font-bold text-rose-300";
+      }
+      return unsolvedCount;
+    }
+
+    function animateRingSnapping(ringId, deltaAngle, totalSteps, onCompleteCallback, customDuration = null) {
+      const ring = rings.find(r => r.id === ringId), angleStep = 2 * Math.PI / ring.cellIds.length, targetAngle = totalSteps * angleStep;
+      let duration = customDuration;
+      if (duration === null) {
+        const sweepAngle = Math.abs(targetAngle - deltaAngle);
+        duration = isReplaying ? Math.max(0.55, Math.min(1.8, sweepAngle / 1.3)) : Math.max(0.22, Math.min(0.9, sweepAngle / 3.8));
+      } else if (duration === 'undo') {
+        duration = Math.max(0.45, Math.min(1.3, Math.abs(targetAngle - deltaAngle) / 2.2));
+      }
+
+      const animationState = { angle: deltaAngle };
+      
+      const gemsData = ring.cellIds.map(cellId => {
+        const cell = cells.find(c => c.id === cellId);
+        cell.hostRingId = ringId; // Dynamically swap host ID to active flower center
+        const rx = cell.x - ring.center.x, ry = cell.y - ring.center.y;
+        
+        // CRITICAL RE-MATH FIX: Instead of subtracting deltaAngle (which causes snapbacks),
+        // we capture the true base angle relative to the unrotated coordinate slots.
+        return { mesh: cell.mesh, baseAngle: Math.atan2(ry, rx) };
+      });
+
+      gsap.to(animationState, {
+        angle: targetAngle, duration: duration, ease: duration < 0.15 ? "power2.out" : "back.out(1.1)",
+        onUpdate: () => {
+          ring.group.rotation.z = animationState.angle;
+          gemsData.forEach(gem => {
+            gem.mesh.position.set(ring.center.x, ring.center.y, 0.04);
+            // Symmetrical radial rotation update (perfect start-to-finish tracking)
+            gem.mesh.rotation.z = gem.baseAngle + animationState.angle - Math.PI / 2;
+          });
+        },
+        onComplete: () => {
+          if (totalSteps !== 0) executeLogicalShift(ringId, totalSteps);
+          ring.group.rotation.z = 0; // RESET GROUP TO 0 to prevent previous move accumulation
+          positionGemsStatically();
+          if (onCompleteCallback) onCompleteCallback();
+        }
+      });
+    }
+
+    function finalizeMove(isMerged = false) {
+      if (!isMerged) { movesCount++; document.getElementById('stat-moves').innerText = movesCount; }
+      const beforeTangle = parseInt(document.getElementById('score-tangle').innerText, 10);
+      const afterTangle = updateSolvedStates();
+      if (afterTangle < beforeTangle) sound.playRingResolved();
+      triggerFeedbackAnimations();
+      saveStateToHistory(isMerged); isTransitioning = false;
+    }
+
+    function triggerFeedbackAnimations() {
+      if (currentGameMode === "matching") {
+        cells.forEach(cell => {
+          if (cell.mesh) {
+            if (cell.attachments.some(att => (att.ringId % GEM_COLORS.length) === cell.gemId)) {
+              const mat = cell.mesh.material, baseEmissive = mat.emissiveIntensity;
+              gsap.killTweensOf(cell.mesh.scale);
+              gsap.fromTo(cell.mesh.scale, { x: 1.0, y: 1.0, z: 1.0 }, { x: 1.13, y: 1.13, z: 1.13, duration: 0.16, yoyo: true, repeat: 1, ease: "power2.out" });
+              gsap.killTweensOf(mat);
+              gsap.fromTo(mat, { emissiveIntensity: baseEmissive, clearcoatRoughness: 0.02 }, {
+                emissiveIntensity: baseEmissive * 2.5, clearcoatRoughness: 0.0, duration: 0.18, yoyo: true, repeat: 1, ease: "power1.out",
+                onComplete: () => { mat.emissiveIntensity = baseEmissive; mat.clearcoatRoughness = 0.02; }
+              });
+            }
+          }
+        });
+      } else {
+        const duplicateCellIds = new Set();
+        rings.forEach(ring => {
+          const colorMap = {};
+          ring.cellIds.forEach(cellId => {
+            const cell = cells.find(c => c.id === cellId);
+            if (cell && cell.gemId !== null) {
+              if (!colorMap[cell.gemId]) colorMap[cell.gemId] = [];
+              colorMap[cell.gemId].push(cellId);
+            }
+          });
+          Object.keys(colorMap).forEach(col => { if (colorMap[col].length > 1) colorMap[col].forEach(id => duplicateCellIds.add(id)); });
+        });
+
+        duplicateCellIds.forEach(cellId => {
+          const cell = cells.find(c => c.id === cellId);
+          if (cell && cell.mesh) {
+            const mat = cell.mesh.material, baseEmissive = mat.emissiveIntensity;
+            gsap.killTweensOf(cell.mesh.scale);
+            gsap.to(cell.mesh.scale, {
+              x: 0.88, y: 0.88, z: 0.88, duration: 0.2, ease: "power2.out",
+              onComplete: () => { gsap.to(cell.mesh.scale, { x: 1.0, y: 1.0, z: 1.0, duration: 0.7, ease: "back.out(1.1)" }); }
+            });
+            gsap.killTweensOf(mat);
+            gsap.to(mat, {
+              emissiveIntensity: 0.02, clearcoat: 0.05, transmission: 0.02, opacity: 0.45, duration: 0.25, ease: "power2.out",
+              onComplete: () => { gsap.to(mat, { emissiveIntensity: baseEmissive, clearcoat: 1.0, opacity: 1.0 }); }
+            });
+          }
+        });
+      }
+    }
+
+    function startCanvasRecording() {
+      recordedVideoChunks = []; const canvas = renderer.domElement;
+      const pill = document.getElementById('recording-pill'); if (pill) pill.classList.remove('hidden');
+      try {
+        const stream = canvas.captureStream ? canvas.captureStream(30) : canvas.webkitCaptureStream(30);
+        try {
+          canvasRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+        } catch (e) {
+          try { canvasRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' }); } catch (e2) { canvasRecorder = new MediaRecorder(stream); }
+        }
+        canvasRecorder.ondataavailable = (ev) => { if (ev.data && ev.data.size > 0) recordedVideoChunks.push(ev.data); };
+        canvasRecorder.onstop = () => {
+          if (recordedVideoChunks.length > 0) {
+            const url = URL.createObjectURL(new Blob(recordedVideoChunks, { type: 'video/webm' }));
+            const a = document.createElement('a'); a.href = url; a.download = `MeadowPetals_Recap_${Date.now()}.webm`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            showToast("Recap video downloaded! 🎥");
+          }
+        };
+        canvasRecorder.start();
+      } catch (err) { console.warn("Canvas recording failed: ", err); }
+    }
+
+    function stopCanvasRecording() {
+      const pill = document.getElementById('recording-pill'); if (pill) pill.classList.add('hidden');
+      if (canvasRecorder && canvasRecorder.state !== 'inactive') {
+        try { canvasRecorder.stop(); } catch (err) { console.error(err); }
+      }
+      canvasRecorder = null;
+    }
+
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-slate-950 px-4 py-2.5 rounded-xl font-bold text-xs tracking-wider shadow-lg flex items-center gap-2 border border-emerald-400';
+      toast.innerHTML = `<span>✨ ${message}</span>`; document.body.appendChild(toast);
+      setTimeout(() => { gsap.to(toast, { opacity: 0, y: 20, duration: 0.5, onComplete: () => toast.remove() }); }, 3000);
+    }
+
+    function runSpeedRecap() {
+      if (actionHistory.length === 0) return;
+      isReplaying = true; document.getElementById('modal-victory').classList.add('hidden');
+      applyHistoryState(stateHistory[0]);
+      document.getElementById('stat-moves').innerText = "0"; document.getElementById('stat-time').innerText = "00:00";
+      updateSolvedStates(); startCanvasRecording();
+      let stepIdx = 0; const totalTimeSeconds = elapsedSeconds;
+
+      function playNextStep() {
+        if (!isReplaying) return;
+        if (stepIdx >= actionHistory.length) {
+          sound.playVictory(); spawnPetalSparks(0, 0, 0x10b981);
+          setTimeout(() => { exitSpeedRecap(); }, 1000); return;
+        }
+        const action = actionHistory[stepIdx]; sound.playSnap();
+        animateRingSnapping(action.ringId, 0, action.direction, () => {
+          stepIdx++; document.getElementById('stat-moves').innerText = stepIdx;
+          const curSecs = Math.floor((stepIdx / actionHistory.length) * totalTimeSeconds);
+          const mins = Math.floor(curSecs / 60).toString().padStart(2, '0'), secs = (curSecs % 60).toString().padStart(2, '0');
+          document.getElementById('stat-time').innerText = `${mins}:${secs}`;
+          updateSolvedStates(); setTimeout(playNextStep, 450);
+        }, null);
+      }
+      setTimeout(() => { if (isReplaying) playNextStep(); }, 1200);
+    }
+
+    function exitSpeedRecap() {
+      isReplaying = false; stopCanvasRecording();
+      applyHistoryState(stateHistory[stateHistory.length - 1]); updateSolvedStates();
+      document.getElementById('stat-moves').innerText = movesCount;
+      const mins = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0'), secs = (elapsedSeconds % 60).toString().padStart(2, '0');
+      document.getElementById('stat-time').innerText = `${mins}:${secs}`;
+      document.getElementById('modal-victory').classList.remove('hidden');
+    }
+
+    function togglePauseState() {
+      if (isTransitioning || isReplaying) return;
+      isPaused = !isPaused;
+      const modal = document.getElementById('modal-pause'), txt = document.getElementById('txt-pause'), svg = document.getElementById('svg-pause');
+      if (isPaused) {
+        modal.classList.remove('hidden');
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+        txt.innerText = "Resume";
+        svg.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />`;
+        sound.playSnap();
+      } else {
+        modal.classList.add('hidden');
+        if (firstInteractionDone) {
+          startTime = Date.now() - elapsedSeconds * 1000;
+          timerInterval = setInterval(updateTimerUI, 1000);
+        }
+        txt.innerText = "Unwind";
+        svg.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />`;
+        sound.playSnap();
+      }
+    }
+
+    function passTurnToFriend() {
+      player1Results = { moves: movesCount, time: document.getElementById('stat-time').innerText, seconds: elapsedSeconds };
+      isFriendMode = true; initGame(true);
+    }
+
+    function triggerVictorySequence() {
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+      sound.playVictory();
+      let count = 0;
+      const burst = setInterval(() => {
+        spawnPetalSparks((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, GEM_COLORS[count % GEM_COLORS.length]);
+        count++; if (count >= 5) clearInterval(burst);
+      }, 300);
+
+      const popupDelay = (currentGameMode === "sudoku") ? 3500 : 1500;
+      setTimeout(() => {
+        document.getElementById('vic-moves').innerText = movesCount;
+        document.getElementById('vic-time').innerText = document.getElementById('stat-time').innerText;
+        const normalStats = document.getElementById('victory-normal-stats'), scoreboard = document.getElementById('victory-comparison-scoreboard'), btnPassFriend = document.getElementById('btn-victory-pass-friend'), subtitle = document.getElementById('victory-subtitle'), btnNext = document.getElementById('btn-victory-next');
+        const curIdx = LAYOUT_ORDER.indexOf(currentLayoutId);
+
+        if (curIdx !== -1 && curIdx < LAYOUT_ORDER.length - 1) btnNext.classList.remove('hidden');
+        else btnNext.classList.add('hidden');
+
+        if (isFriendMode) {
+          const friendResults = { moves: movesCount, time: document.getElementById('stat-time').innerText, seconds: elapsedSeconds };
+          document.getElementById('p1-moves').innerText = player1Results.moves;
+          document.getElementById('p1-time').innerText = player1Results.time;
+          document.getElementById('p2-moves').innerText = friendResults.moves;
+          document.getElementById('p2-time').innerText = friendResults.time;
+
+          let winnerStr = "";
+          if (friendResults.moves < player1Results.moves) winnerStr = "Friend (P2) Wins! 🏆";
+          else if (player1Results.moves < friendResults.moves) winnerStr = "You (P1) Win! 🏆";
+          else {
+            if (friendResults.seconds < player1Results.seconds) winnerStr = "Friend (P2) Wins on time! ⚡";
+            else if (player1Results.seconds < friendResults.seconds) winnerStr = "You (P1) Win on time! ⚡";
+            else winnerStr = "Perfect Tie! 🤝";
+          }
+          document.getElementById('victory-winner-banner').innerText = winnerStr;
+          subtitle.innerText = "Comparison Scoreboard";
+          normalStats.classList.add('hidden'); scoreboard.classList.remove('hidden'); btnPassFriend.classList.add('hidden');
+        } else {
+          subtitle.innerText = "Perfect Alignment Achieved";
+          normalStats.classList.remove('hidden'); scoreboard.classList.add('hidden'); btnPassFriend.classList.remove('hidden');
+        }
+        document.getElementById('modal-victory').classList.remove('hidden');
+      }, popupDelay);
+    }
+
+    // Dynamic Resizing to fit layout perfectly in Window space
+    function resizeCameraToFit() {
+      const container = document.getElementById('canvas-container');
+      if (!container) return;
+      const w = container.clientWidth, h = container.clientHeight;
+
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+
+      boardGroup.scale.set(1, 1, 1);
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+
+      rings.forEach(ring => {
+        const boundaryOffset = ring.radius + 0.35; 
+        const left = ring.center.x - boundaryOffset;
+        const right = ring.center.x + boundaryOffset;
+        const bottom = ring.center.y - boundaryOffset;
+        const top = ring.center.y + boundaryOffset;
+
+        if (left < minX) minX = left;
+        if (right > maxX) maxX = right;
+        if (bottom < minY) minY = bottom;
+        if (top > maxY) maxY = top;
+      });
+
+      const width = maxX - minX, height = maxY - minY;
+      const center = new THREE.Vector3((minX + maxX) / 2, (minY + maxY) / 2, 0);
+
+      boardGroup.position.set(-center.x, -center.y, 0);
+      const vFOV = camera.fov * Math.PI / 180;
+      const visibleHeight = 2 * Math.tan(vFOV / 2) * 7.5, visibleWidth = visibleHeight * camera.aspect;
+
+      const scaleX = visibleWidth / width, scaleY = visibleHeight / height;
+      const bestScale = Math.min(scaleX, scaleY) * 0.90;
+
+      boardGroup.scale.set(bestScale, bestScale, bestScale);
+      boardGroup.position.multiplyScalar(bestScale);
+    }
+
+    // --- Pointer Coordinate Resolution ---
+    const raycaster = new THREE.Raycaster();
+    const ndcCoord = new THREE.Vector2();
+
+    function onPointerDown(e) {
+      if (isTransitioning) return;
+      sound.init(); if (isReplaying) { exitSpeedRecap(); return; }
+      if (isPaused) return;
+      if (e.cancelable) e.preventDefault();
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      ndcCoord.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      ndcCoord.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(ndcCoord, camera);
+      const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      const touchPoint = new THREE.Vector3();
+      const hasIntersect = raycaster.ray.intersectPlane(planeZ, touchPoint);
+
+      if (hasIntersect) {
+        const localX = (touchPoint.x - boardGroup.position.x) / boardGroup.scale.x;
+        const localY = (touchPoint.y - boardGroup.position.y) / boardGroup.scale.y;
+        let nearest = null, minDist = Infinity;
+
+        rings.forEach(ring => {
+          const dist = Math.sqrt((localX - ring.center.x)**2 + (localY - ring.center.y)**2);
+          if (dist < ring.radius * 1.5 && dist < minDist) { minDist = dist; nearest = ring; }
+        });
+
+        if (nearest) {
+          isDragging = true; activeRing = nearest; sound.playGrab();
+          dragStartAngle = Math.atan2(localY - nearest.center.y, localX - nearest.center.x);
+          dragCurrentAngle = dragStartAngle; activeRingStartRotationZ = nearest.group.rotation.z;
+
+          dragGems = nearest.cellIds.map(cellId => {
+            const cell = cells.find(c => c.id === cellId);
+            cell.hostRingId = nearest.id; // Dynamically update the host to the active flower center
+            return { mesh: cell.mesh, originalAngle: Math.atan2(cell.y - nearest.center.y, cell.x - nearest.center.x), originalRotationZ: cell.mesh.rotation.z };
+          });
+          document.getElementById('gesture-hint').classList.add('opacity-0');
+        }
+      }
+    }
+
+    function onPointerMove(e) {
+      if (!isDragging || isPaused || isReplaying) return;
+      if (e.cancelable) e.preventDefault();
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      ndcCoord.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      ndcCoord.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(ndcCoord, camera);
+      const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), touchPoint = new THREE.Vector3();
+      raycaster.ray.intersectPlane(planeZ, touchPoint);
+
+      const localX = (touchPoint.x - boardGroup.position.x) / boardGroup.scale.x;
+      const localY = (touchPoint.y - boardGroup.position.y) / boardGroup.scale.y;
+
+      dragCurrentAngle = Math.atan2(localY - activeRing.center.y, localX - activeRing.center.x);
+      let delta = dragCurrentAngle - dragStartAngle;
+      while (delta < -Math.PI) delta += 2 * Math.PI;
+      while (delta > Math.PI) delta -= 2 * Math.PI;
+
+      activeRing.group.rotation.z = activeRingStartRotationZ + delta;
+      dragGems.forEach(gem => {
+        const angle = gem.originalAngle + delta;
+        gem.mesh.position.set(activeRing.center.x, activeRing.center.y, 0.04);
+        gem.mesh.rotation.z = gem.originalAngle + delta - Math.PI / 2;
+      });
+    }
+
+    function onPointerUp() {
+      if (!isDragging || isPaused || isReplaying) return;
+      isDragging = false;
+      if (!firstInteractionDone) {
+        firstInteractionDone = true; startTime = Date.now(); timerInterval = setInterval(updateTimerUI, 1000);
+      }
+      isTransitioning = true;
+
+      let delta = dragCurrentAngle - dragStartAngle;
+      while (delta < -Math.PI) delta += 2 * Math.PI;
+      while (delta > Math.PI) delta -= 2 * Math.PI;
+
+      const angleStep = 2 * Math.PI / activeRing.cellIds.length, stepsShifted = Math.round(delta / angleStep);
+      sound.playSnap();
+
+      animateRingSnapping(activeRing.id, delta, stepsShifted, () => {
+        if (stepsShifted !== 0) {
+          const slots = activeRing.cellIds.length;
+          let isMerged = false, isCanceled = false;
+
+          if (actionHistory.length > 0) {
+            const lastAction = actionHistory[actionHistory.length - 1];
+            if (lastAction.ringId === activeRing.id) {
+              let mergedDirection = Math.round(((lastAction.direction + stepsShifted + slots / 2) % slots + slots) % slots - slots / 2);
+              if (mergedDirection === 0) { actionHistory.pop(); stateHistory.pop(); isCanceled = true; }
+              else { lastAction.direction = mergedDirection; stateHistory[stateHistory.length - 1] = cells.map(c => c.gemId); }
+              isMerged = true;
+            }
+          }
+
+          if (!isMerged) { actionHistory.push({ ringId: activeRing.id, direction: stepsShifted }); saveStateToHistory(); }
+
+          if (isCanceled) {
+            movesCount = Math.max(0, movesCount - 1); document.getElementById('stat-moves').innerText = movesCount;
+            updateSolvedStates(); updateUndoButtonState(); isTransitioning = false;
+          } else {
+            finalizeMove(isMerged);
+          }
+        } else {
+          isTransitioning = false;
+        }
+      }, null); 
+    }
+
+    function setupEvents() {
+      document.getElementById('btn-scramble').addEventListener('click', () => { if (isPaused || isReplaying || isTransitioning) return; sound.init(); initGame(); });
+      document.getElementById('btn-pause').addEventListener('click', togglePauseState);
+      document.getElementById('btn-resume').addEventListener('click', togglePauseState);
+      document.getElementById('btn-undo').addEventListener('click', undoMove);
+
+      const btnConfig = document.getElementById('btn-config'), modalConfig = document.getElementById('modal-config'), closeConfig = document.getElementById('modal-config-close'), applyConfig = document.getElementById('modal-config-apply');
+
+      btnConfig.addEventListener('click', () => {
+        if (isPaused || isReplaying) return;
+        if (isScrambling) {
+          isScrambling = false; isTransitioning = false; gsap.killTweensOf("*");
+          rings.forEach(ring => { ring.group.rotation.z = 0; });
+          positionGemsStatically(); updateSolvedStates(); updateUndoButtonState(); resetTimer();
+        } else if (isTransitioning) {
+          return; 
+        }
+        sound.init();
+        document.querySelectorAll('.btn-layout').forEach(b => {
+          b.className = b.getAttribute('data-layout') === currentLayoutId ? "btn-layout py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all" : "btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/40 transition-all";
+        });
+        syncModeUIButtons(); modalConfig.classList.remove('hidden');
+      });
+
+      closeConfig.addEventListener('click', () => { modalConfig.classList.add('hidden'); });
+      applyConfig.addEventListener('click', () => { modalConfig.classList.add('hidden'); initGame(); });
+
+      document.querySelectorAll('.btn-layout').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.btn-layout').forEach(b => b.className = "btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/40 transition-all");
+          btn.className = "btn-layout py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all";
+          currentLayoutId = btn.getAttribute('data-layout');
+        });
+      });
+
+      document.getElementById('btn-mode-sudoku').addEventListener('click', () => { currentGameMode = "sudoku"; syncModeUIButtons(); });
+      document.getElementById('btn-mode-matching').addEventListener('click', () => { currentGameMode = "matching"; syncModeUIButtons(); });
+      document.getElementById('btn-victory-restart').addEventListener('click', () => { document.getElementById('modal-victory').classList.add('hidden'); isFriendMode = false; initGame(); });
+      document.getElementById('btn-victory-pass-friend').addEventListener('click', passTurnToFriend);
+      document.getElementById('btn-victory-replay').addEventListener('click', runSpeedRecap);
+      document.getElementById('btn-victory-next').addEventListener('click', () => {
+        const curIdx = LAYOUT_ORDER.indexOf(currentLayoutId);
+        if (curIdx !== -1 && curIdx < LAYOUT_ORDER.length - 1) { currentLayoutId = LAYOUT_ORDER[curIdx + 1]; document.getElementById('modal-victory').classList.add('hidden'); isFriendMode = false; initGame(); }
+      });
+
+      const container = document.getElementById('canvas-container');
+      container.addEventListener('pointerdown', onPointerDown, { passive: false });
+      container.addEventListener('pointermove', onPointerMove, { passive: false });
+      window.addEventListener('pointerup', onPointerUp, { passive: false });
+      window.addEventListener('pointercancel', onPointerUp, { passive: false });
+      window.addEventListener('resize', resizeCameraToFit);
+    }
+  </script>
+</body>
+</html>
