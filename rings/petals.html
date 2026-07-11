@@ -9,7 +9,7 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght=300;400;600;800&display=swap" rel="stylesheet">
   <!-- Three.js (v128) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <!-- GSAP for smooth animations -->
@@ -148,7 +148,6 @@
         </svg>
       </button>
 
-      <!-- Settings Menu Text Simplification -->
       <h2 class="text-xl font-bold text-amber-200 mb-6 flex items-center gap-2 uppercase tracking-wider">
         settings
       </h2>
@@ -179,7 +178,6 @@
           💡 Objective:
         </span>
         <ul id="instructions-list" class="list-disc pl-4 space-y-1.5 text-emerald-200/80">
-          <!-- Dynamic contents populated in setup -->
           <li>Shared petals connect adjacent flower centers directly.</li>
           <li>Sway flowers around their center disc to transfer petals.</li>
           <li>Ensure <strong>every petal matches its central stigma color</strong>.</li>
@@ -208,7 +206,7 @@
     </div>
   </div>
 
-  <!-- Custom Dialog Recap Option Modal (Before Playing Recap Video) -->
+  <!-- Custom Dialog Recap Option Modal -->
   <div id="modal-recap-prompt" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
     <div class="w-full max-w-xs botanical-panel rounded-3xl p-6 shadow-2xl relative border border-emerald-500/10 text-center flex flex-col items-center">
       <h3 class="text-base font-bold text-emerald-300 uppercase tracking-widest mb-4">download recap video?</h3>
@@ -229,14 +227,12 @@
   <!-- Victory Overlay Panel -->
   <div id="modal-victory" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/85 backdrop-blur-md p-4">
     <div class="w-full max-w-sm botanical-panel rounded-3xl p-6 shadow-2xl relative text-center flex flex-col items-center border border-emerald-500/10 max-h-[92vh] overflow-y-auto">
-      <!-- Trophy Icon -->
       <div class="w-14 h-14 bg-emerald-500/20 border border-emerald-500/30 rounded-full flex items-center justify-center mb-3.5 animate-bounce shrink-0">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
         </svg>
       </div>
 
-      <!-- Simplified Solved Text Verbatim -->
       <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-300 to-teal-100 uppercase tracking-widest mb-1">
         solved
       </h2>
@@ -278,7 +274,6 @@
 
       <!-- Action Buttons -->
       <div class="flex flex-col gap-2 w-full shrink-0 select-none">
-        <!-- Next Layout Progression Button -->
         <button id="btn-victory-next" class="w-full h-11 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-emerald-950 font-bold text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
@@ -347,6 +342,20 @@
       0x008080  // 9: Teal
     ];
 
+    // CSS styling strings matching GEM_COLORS exactly for canvas textured drawings
+    const GEM_CANVAS_COLORS = [
+      "#ff3366", "#00cc66", "#3366ff", "#ffcc00", "#b366ff",
+      "#ff6600", "#00e5ff", "#0a5c1e", "#800020", "#008080"
+    ];
+
+    // Rich, dark, organic colors representing matching darker nerve stripes on each petal
+    const GEM_CANVAS_COLORS_DARK = [
+      "#7f0026", "#005924", "#0a1c8c", "#8c5800", "#4a0e80",
+      "#8c2300", "#005b66", "#021a07", "#38000f", "#002e2e"
+    ];
+
+    const petalTextureCache = {};
+
     let currentGameMode = "matching"; 
     let currentLayoutId = "triquetra";
     let cells = []; 
@@ -383,6 +392,64 @@
     let timerInterval = null;
     let firstInteractionDone = false;
     let elapsedSeconds = 0;
+
+    // Generates a seamless, organic nerve pattern on demand per color index and caches it
+    function getPetalTexture(colorIdx) {
+      const cacheKey = colorIdx % GEM_COLORS.length;
+      if (petalTextureCache[cacheKey]) return petalTextureCache[cacheKey];
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      const baseColor = GEM_CANVAS_COLORS[cacheKey];
+      const darkColor = GEM_CANVAS_COLORS_DARK[cacheKey];
+
+      // Fill rich base petal tone
+      ctx.fillStyle = baseColor;
+      ctx.fillRect(0, 0, 512, 512);
+
+      // Symmetrical front side (centered at x = 128) and back side (centered at x = 384) nerve coordinates
+      const centers = [128, 384];
+      centers.forEach(cx => {
+        // Draw the central straight structural nerve
+        ctx.strokeStyle = darkColor;
+        ctx.lineWidth = 6;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(cx, 0);
+        ctx.lineTo(cx, 512);
+        ctx.stroke();
+
+        // Draw curved side nerves (symmetric head-to-tail / matching curved contour)
+        const spacing = 28;      // Spacing between the adjacent nerve bases
+        const bendFactor = 1.75; // Bow outwards coefficient towards the side margins
+
+        for (let k of [-3, -2, -1, 1, 2, 3]) {
+          const x_base = cx + k * spacing;
+          const x_mid = cx + k * spacing * bendFactor;
+
+          ctx.beginPath();
+          ctx.moveTo(x_base, 0);
+          // Perfectly symmetrical head-to-tail bend using mid-control bezier math
+          ctx.quadraticCurveTo(x_mid, 256, x_base, 512);
+          
+          const absK = Math.abs(k);
+          // Nerves get thinner and slightly more delicate towards the margins
+          ctx.lineWidth = Math.max(1.5, 4.5 - absK * 0.8);
+          ctx.globalAlpha = 0.85;
+          ctx.stroke();
+          ctx.globalAlpha = 1.0;
+        }
+      });
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      petalTextureCache[cacheKey] = texture;
+      return texture;
+    }
 
     function resetTimer() {
       firstInteractionDone = false;
@@ -575,45 +642,53 @@
 
     // --- PROCEDURAL PETALS ---
     function createPetalGeometry(length = 2.3) {
-      const geom = new THREE.BufferGeometry(), vertices = [], indices = [];
-      const N = 10, M = 10;
+      const geom = new THREE.BufferGeometry(), vertices = [], indices = [], uvs = [];
+      const N = 10, M = 12; // Segment subdivisions: M + 1 vertices per row for a perfect seamless UV cylinder wrap
       for (let i = 0; i <= N; i++) {
         const t = i / N;
         const lengthY = t * length;
-        const width = Math.sin(t * Math.PI) * 0.28; 
-        const thick = Math.sin(t * Math.PI) * 0.04; 
-        const bend = Math.sin(t * Math.PI) * 0.03;
-        for (let j = 0; j < M; j++) {
+        
+        // PETAL_THICKNESS_ENHANCEMENT: Widened the petal base and midsection to close all dark gaps between petals at the core
+        const width = Math.sin(t * Math.PI) * 0.52 + 0.08 * (1 - t); 
+        const thick = Math.sin(t * Math.PI) * 0.05 + 0.01; 
+        const bend = Math.sin(t * Math.PI) * 0.04;
+        
+        for (let j = 0; j <= M; j++) {
           const a = (j / M) * Math.PI * 2;
           vertices.push(Math.cos(a) * width, lengthY, Math.sin(a) * thick - bend);
+          
+          // Maps seamless wrapping coordinate system (U: 0.0 to 1.0 around, V: 0.0 to 1.0 along the length)
+          uvs.push(j / M, t);
         }
       }
       for (let i = 0; i < N; i++) {
         for (let j = 0; j < M; j++) {
-          const row = i * M, next = (i + 1) * M, nextCol = (j + 1) % M;
-          indices.push(row + j, next + j, row + nextCol, row + nextCol, next + j, next + nextCol);
+          const row = i * (M + 1), next = (i + 1) * (M + 1);
+          indices.push(
+            row + j, next + j, row + j + 1,
+            row + j + 1, next + j, next + j + 1
+          );
         }
       }
       geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
       geom.setIndex(indices); geom.computeVertexNormals();
       return geom;
     }
 
     function createPetalMesh(colorIdx, scale = 1.0) {
-      const color = GEM_COLORS[colorIdx % GEM_COLORS.length];
-      let tVal = 0.15, rVal = 0.02, eVal = 0x000000;
-      const rel = colorIdx % GEM_COLORS.length;
-      if (rel === 3) { tVal = 0.03; rVal = 0.01; eVal = 0x221100; }
-      else if (rel === 1) { tVal = 0.05; rVal = 0.01; eVal = 0x002205; }
-      else if (rel === 6) { tVal = 0.06; rVal = 0.01; eVal = 0x001a1a; }
-      else if (rel === 7) { tVal = 0.05; rVal = 0.01; eVal = 0x001805; }
-      else if (rel === 8) { tVal = 0.05; rVal = 0.01; eVal = 0x1f0003; }
+      const texture = getPetalTexture(colorIdx);
 
-      // We use a base length of 2.3 for ideal center-to-center petal reach
-      return new THREE.Mesh(createPetalGeometry(2.3 * scale), new THREE.MeshPhysicalMaterial({
-        color: color, metalness: 0.08, roughness: rVal, transmission: tVal, ior: 2.417, thickness: 0.22,
-        clearcoat: 1.0, clearcoatRoughness: 0.02, attenuationDistance: 0.25, attenuationColor: color,
-        emissive: eVal, emissiveIntensity: 0.45, flatShading: true, side: THREE.DoubleSide, depthWrite: true, transparent: true
+      // Matte, organic surface setting (high roughness, completely zero plastic clearcoat or specular white hot spots)
+      return new THREE.Mesh(createPetalGeometry(2.3 * scale), new THREE.MeshStandardMaterial({
+        map: texture,
+        roughness: 0.75,         // Suede/velvet matte botanical skin feeling
+        metalness: 0.0,          // Organic leaf tissues do not contain metallicity
+        emissive: 0x333333,      // Subtle glowing ambiance
+        emissiveIntensity: 0.1,  // Dynamic lighting flare threshold
+        transparent: true,
+        side: THREE.DoubleSide,
+        depthWrite: true
       }));
     }
 
@@ -656,7 +731,6 @@
       } else if (currentLayoutId === "supertriangle") {
         const dy = R * Math.sqrt(3);
         computedRings = [
-          // Hexagonal Lotus (7 Flowers)
           { id: 0, center: { x: 0, y: 0 }, radius: R, offset: 0 },
           { id: 1, center: { x: 2 * R, y: 0 }, radius: R, offset: 0 },
           { id: 2, center: { x: R, y: dy }, radius: R, offset: 0 },
@@ -664,10 +738,9 @@
           { id: 4, center: { x: -2 * R, y: 0 }, radius: R, offset: 0 },
           { id: 5, center: { x: -R, y: -dy }, radius: R, offset: 0 },
           { id: 6, center: { x: R, y: -dy }, radius: R, offset: 0 },
-          // Plus 3 outer corners to make a perfect large triangle (10 Flowers total)
-          { id: 7, center: { x: 0, y: 2 * dy }, radius: R, offset: 0 },       // Top Vertex
-          { id: 8, center: { x: -3 * R, y: -dy }, radius: R, offset: 0 },     // Bottom Left Vertex
-          { id: 9, center: { x: 3 * R, y: -dy }, radius: R, offset: 0 }       // Bottom Right Vertex
+          { id: 7, center: { x: 0, y: 2 * dy }, radius: R, offset: 0 },
+          { id: 8, center: { x: -3 * R, y: -dy }, radius: R, offset: 0 },
+          { id: 9, center: { x: 3 * R, y: -dy }, radius: R, offset: 0 }
         ];
       } else if (currentLayoutId === "square9") {
         computedRings = [
@@ -715,18 +788,21 @@
 
         // SUDOKU_COLOR_FIX: Center stigma disc is white (0xffffff) in Sudoku, matching color in Matching blooms mode
         const stigmaColor = (currentGameMode === "matching") ? GEM_COLORS[rc.id % GEM_COLORS.length] : 0xffffff;
-        const stigmaMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.04, 16), new THREE.MeshStandardMaterial({
+        
+        // STIGMA_SIZE_ENHANCEMENT: Enlarged stigma central cylinder (from 0.16 to 0.26 radius) to improve match visibility dramatically
+        const stigmaMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.05, 24), new THREE.MeshStandardMaterial({
           color: stigmaColor, roughness: 0.65, metalness: 0.05
         }));
         stigmaMesh.rotation.x = Math.PI / 2; stigmaMesh.position.set(0, 0, 0.06); group.add(stigmaMesh);
 
+        // STAMENS_AND_ANTHERS_SCALING: Shifted outward proportionally (from 0.2/0.38 to 0.28/0.48) to prevent overlaps with the enlarged stigma
         const stCount = config.slotsPerRing;
         for (let s = 0; s < stCount; s++) {
           const sa = s * (2 * Math.PI / stCount);
-          const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.4), new THREE.MeshStandardMaterial({ color: 0x1d3d20, roughness: 0.8 }));
-          spoke.position.set(0.2 * Math.cos(sa), 0.2 * Math.sin(sa), 0.02); spoke.rotation.z = sa - Math.PI / 2; spoke.rotation.x = Math.PI / 2; group.add(spoke);
-          const anther = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffa200, roughness: 0.9 }));
-          anther.position.set(0.38 * Math.cos(sa), 0.38 * Math.sin(sa), 0.03); group.add(anther);
+          const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.35), new THREE.MeshStandardMaterial({ color: 0x1d3d20, roughness: 0.8 }));
+          spoke.position.set(0.28 * Math.cos(sa), 0.28 * Math.sin(sa), 0.02); spoke.rotation.z = sa - Math.PI / 2; spoke.rotation.x = Math.PI / 2; group.add(spoke);
+          const anther = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffa200, roughness: 0.9 }));
+          anther.position.set(0.48 * Math.cos(sa), 0.48 * Math.sin(sa), 0.03); group.add(anther);
         }
 
         const auraMesh = new THREE.Mesh(new THREE.TorusGeometry(rc.radius, 0.04, 8, 80), new THREE.MeshBasicMaterial({ color: 0x00e640, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending }));
@@ -745,8 +821,7 @@
         if (c.mesh) {
           const r = rings.find(flower => flower.id === c.hostRingId);
           if (r) {
-            // Anchor petal base directly to its current host flower center
-            c.mesh.position.set(r.center.x, r.center.y, 0.04);
+            c.mesh.position.set(r.center.x, r.center.y, r.group.position.z + 0.04);
             const angle = Math.atan2(c.y - r.center.y, c.x - r.center.x);
             c.mesh.rotation.set(0, 0, angle - Math.PI / 2);
           }
@@ -1029,19 +1104,39 @@
         return { mesh: cell.mesh, baseAngle: Math.atan2(ry, rx) };
       });
 
+      // ACTIVE_FLOWER_ON_TOP: Set high renderOrder on snapping elements to guarantee overlay over standard flowers
+      ring.group.renderOrder = 10;
+      ring.group.children.forEach(child => child.renderOrder = 10);
+      gemsData.forEach(gem => {
+        if (gem.mesh) gem.mesh.renderOrder = 11;
+      });
+
+      // ACTIVE_FLOWER_ON_TOP: Simultaneously animate descent back to meadow baseline Z = 0
+      gsap.killTweensOf(ring.group.position);
+      gsap.to(ring.group.position, { z: 0, duration: duration, ease: "power2.out" });
+
       gsap.to(animationState, {
         angle: targetAngle, duration: duration, ease: duration < 0.15 ? "power2.out" : "back.out(1.1)",
         onUpdate: () => {
           ring.group.rotation.z = animationState.angle;
           gemsData.forEach(gem => {
-            gem.mesh.position.set(ring.center.x, ring.center.y, 0.04);
-            // Symmetrical radial rotation update (perfect start-to-finish tracking)
+            // Symmetrical radial rotation update (perfect start-to-finish tracking with Z height)
+            gem.mesh.position.set(ring.center.x, ring.center.y, ring.group.position.z + 0.04);
             gem.mesh.rotation.z = gem.baseAngle + animationState.angle - Math.PI / 2;
           });
         },
         onComplete: () => {
           if (totalSteps !== 0) executeLogicalShift(ringId, totalSteps);
           ring.group.rotation.z = 0; // RESET GROUP TO 0 to prevent previous move accumulation
+          
+          // ACTIVE_FLOWER_ON_TOP: Restore depth write render orders back to default 0 upon landing
+          ring.group.renderOrder = 0;
+          ring.group.children.forEach(child => child.renderOrder = 0);
+          ring.cellIds.forEach(cellId => {
+            const cell = cells.find(c => c.id === cellId);
+            if (cell && cell.mesh) cell.mesh.renderOrder = 0;
+          });
+
           positionGemsStatically();
           if (onCompleteCallback) onCompleteCallback();
         }
@@ -1062,13 +1157,13 @@
         cells.forEach(cell => {
           if (cell.mesh) {
             if (cell.attachments.some(att => (att.ringId % GEM_COLORS.length) === cell.gemId)) {
-              const mat = cell.mesh.material, baseEmissive = mat.emissiveIntensity;
+              const mat = cell.mesh.material, baseEmissive = mat.emissiveIntensity || 0.1;
               gsap.killTweensOf(cell.mesh.scale);
               gsap.fromTo(cell.mesh.scale, { x: 1.0, y: 1.0, z: 1.0 }, { x: 1.13, y: 1.13, z: 1.13, duration: 0.16, yoyo: true, repeat: 1, ease: "power2.out" });
               gsap.killTweensOf(mat);
-              gsap.fromTo(mat, { emissiveIntensity: baseEmissive, clearcoatRoughness: 0.02 }, {
-                emissiveIntensity: baseEmissive * 2.5, clearcoatRoughness: 0.0, duration: 0.18, yoyo: true, repeat: 1, ease: "power1.out",
-                onComplete: () => { mat.emissiveIntensity = baseEmissive; mat.clearcoatRoughness = 0.02; }
+              gsap.fromTo(mat, { emissiveIntensity: baseEmissive }, {
+                emissiveIntensity: baseEmissive * 3.5, duration: 0.18, yoyo: true, repeat: 1, ease: "power1.out",
+                onComplete: () => { mat.emissiveIntensity = baseEmissive; }
               });
             }
           }
@@ -1090,7 +1185,7 @@
         duplicateCellIds.forEach(cellId => {
           const cell = cells.find(c => c.id === cellId);
           if (cell && cell.mesh) {
-            const mat = cell.mesh.material, baseEmissive = mat.emissiveIntensity;
+            const mat = cell.mesh.material, baseEmissive = mat.emissiveIntensity || 0.1;
             gsap.killTweensOf(cell.mesh.scale);
             gsap.to(cell.mesh.scale, {
               x: 0.88, y: 0.88, z: 0.88, duration: 0.2, ease: "power2.out",
@@ -1098,8 +1193,8 @@
             });
             gsap.killTweensOf(mat);
             gsap.to(mat, {
-              emissiveIntensity: 0.02, clearcoat: 0.05, transmission: 0.02, opacity: 0.45, duration: 0.25, ease: "power2.out",
-              onComplete: () => { gsap.to(mat, { emissiveIntensity: baseEmissive, clearcoat: 1.0, opacity: 1.0 }); }
+              emissiveIntensity: 0.02, opacity: 0.45, duration: 0.25, ease: "power2.out",
+              onComplete: () => { gsap.to(mat, { emissiveIntensity: baseEmissive, opacity: 1.0 }); }
             });
           }
         });
@@ -1144,13 +1239,11 @@
       setTimeout(() => { gsap.to(toast, { opacity: 0, y: 20, duration: 0.5, onComplete: () => toast.remove() }); }, 3000);
     }
 
-    // RECAP_PROMPT_DOWNLOAD: Starts the recap with recording active
     function startRecapWithDownload() {
       document.getElementById('modal-recap-prompt').classList.add('hidden');
       runSpeedRecap(true);
     }
 
-    // RECAP_PROMPT_WATCH: Starts recap only
     function startRecapJustWatch() {
       document.getElementById('modal-recap-prompt').classList.add('hidden');
       runSpeedRecap(false);
@@ -1271,7 +1364,6 @@
       }, popupDelay);
     }
 
-    // Dynamic Resizing to fit layout perfectly in Window space (Optimized to scale defensively at 0.72)
     function resizeCameraToFit() {
       const container = document.getElementById('canvas-container');
       if (!container) return;
@@ -1311,7 +1403,6 @@
       boardGroup.position.multiplyScalar(bestScale);
     }
 
-    // --- Pointer Coordinate Resolution ---
     const raycaster = new THREE.Raycaster();
     const ndcCoord = new THREE.Vector2();
 
@@ -1345,11 +1436,34 @@
           dragStartAngle = Math.atan2(localY - nearest.center.y, localX - nearest.center.x);
           dragCurrentAngle = dragStartAngle; activeRingStartRotationZ = nearest.group.rotation.z;
 
+          // ACTIVE_FLOWER_ON_TOP: Set high priority renderOrder on active ring group and its components
+          activeRing.group.renderOrder = 10;
+          activeRing.group.children.forEach(child => child.renderOrder = 10);
+
           dragGems = nearest.cellIds.map(cellId => {
             const cell = cells.find(c => c.id === cellId);
             cell.hostRingId = nearest.id; // Dynamically update the host to the active flower center
+            
+            // ACTIVE_FLOWER_ON_TOP: Petals render slightly higher than stigma to clear sorting visual layers
+            if (cell.mesh) cell.mesh.renderOrder = 11;
             return { mesh: cell.mesh, originalAngle: Math.atan2(cell.y - nearest.center.y, cell.x - nearest.center.x), originalRotationZ: cell.mesh.rotation.z };
           });
+
+          // ACTIVE_FLOWER_ON_TOP: Smoothly lift active flower group forward on Z-axis using GSAP
+          gsap.killTweensOf(activeRing.group.position);
+          gsap.to(activeRing.group.position, {
+            z: 0.5,
+            duration: 0.22,
+            ease: "power2.out",
+            onUpdate: () => {
+              if (isDragging && activeRing && dragGems) {
+                dragGems.forEach(gem => {
+                  if (gem.mesh) gem.mesh.position.z = activeRing.group.position.z + 0.04;
+                });
+              }
+            }
+          });
+
           document.getElementById('gesture-hint').classList.add('opacity-0');
         }
       }
@@ -1377,9 +1491,12 @@
 
       activeRing.group.rotation.z = activeRingStartRotationZ + delta;
       dragGems.forEach(gem => {
-        const angle = gem.originalAngle + delta;
-        gem.mesh.position.set(activeRing.center.x, activeRing.center.y, 0.04);
-        gem.mesh.rotation.z = gem.originalAngle + delta - Math.PI / 2;
+        if (gem.mesh) {
+          const angle = gem.originalAngle + delta;
+          // ACTIVE_FLOWER_ON_TOP: Tracks dynamic Z-offset so petals stay perfectly flat on the elevated plane
+          gem.mesh.position.set(activeRing.center.x, activeRing.center.y, activeRing.group.position.z + 0.04);
+          gem.mesh.rotation.z = gem.originalAngle + delta - Math.PI / 2;
+        }
       });
     }
 
@@ -1465,7 +1582,6 @@
       document.getElementById('btn-mode-sudoku').addEventListener('click', () => { currentGameMode = "sudoku"; syncModeUIButtons(); });
       document.getElementById('btn-mode-matching').addEventListener('click', () => { currentGameMode = "matching"; syncModeUIButtons(); });
       
-      // RECAP_PROMPT_LISTENERS
       document.getElementById('btn-victory-replay').addEventListener('click', () => {
         document.getElementById('modal-victory').classList.add('hidden');
         document.getElementById('modal-recap-prompt').classList.remove('hidden');
