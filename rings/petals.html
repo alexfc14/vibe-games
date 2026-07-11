@@ -67,8 +67,9 @@
   <div class="w-full max-w-md mx-auto z-10 flex flex-col gap-2 shrink-0">
     <div class="flex items-center justify-between w-full">
       <div class="flex flex-col">
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-emerald-300 to-amber-200">
-          MEADOW PETALS
+        <!-- Level Name / Progression Number Header -->
+        <h1 id="game-level-header" class="text-xl sm:text-2xl font-extrabold tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-emerald-300 to-amber-200 uppercase">
+          LEVEL 1: TRIQUETRA
         </h1>
         <p id="game-subtitle" class="text-[9px] sm:text-[10px] text-emerald-400/70 tracking-widest uppercase font-semibold transition-colors duration-300">
           Gather matching petals onto each flower center
@@ -87,15 +88,15 @@
     <!-- Quick Stats -->
     <div class="flex justify-between w-full mt-0.5 gap-2">
       <div class="flex-1 botanical-panel px-3 py-1 sm:py-1.5 rounded-xl flex flex-col items-center">
-        <span class="text-[8px] sm:text-[9px] text-emerald-400/60 uppercase tracking-widest font-semibold">Restless</span>
+        <span class="text-[8px] sm:text-[9px] text-emerald-400/60 uppercase tracking-widest font-semibold">tangle</span>
         <span id="score-tangle" class="text-lg sm:text-xl font-bold text-rose-300">3</span>
       </div>
       <div class="flex-1 botanical-panel px-3 py-1 sm:py-1.5 rounded-xl flex flex-col items-center relative overflow-hidden">
-        <span class="text-[8px] sm:text-[9px] text-emerald-400/60 uppercase tracking-widest font-semibold">Sways</span>
+        <span class="text-[8px] sm:text-[9px] text-emerald-400/60 uppercase tracking-widest font-semibold">moves</span>
         <span id="stat-moves" class="text-lg sm:text-xl font-bold text-amber-200">0</span>
       </div>
       <div class="flex-1 botanical-panel px-3 py-1 sm:py-1.5 rounded-xl flex flex-col items-center">
-        <span class="text-[8px] sm:text-[9px] text-emerald-400/60 uppercase tracking-widest font-semibold">Zen</span>
+        <span class="text-[8px] sm:text-[9px] text-emerald-400/60 uppercase tracking-widest font-semibold">time</span>
         <span id="stat-time" class="text-lg sm:text-xl font-bold text-emerald-200">00:00</span>
       </div>
     </div>
@@ -147,33 +148,32 @@
         </svg>
       </button>
 
-      <h2 class="text-xl font-bold text-amber-200 mb-6 flex items-center gap-2">
-        Meadow Alignment
+      <!-- Settings Menu Text Simplification -->
+      <h2 class="text-xl font-bold text-amber-200 mb-6 flex items-center gap-2 uppercase tracking-wider">
+        settings
       </h2>
 
-      <!-- Game Mode Selection -->
       <div class="mb-5">
-        <label class="block text-xs font-semibold text-emerald-400/80 uppercase tracking-widest mb-3">Garden Mode</label>
+        <label class="block text-xs font-semibold text-emerald-400/80 uppercase tracking-widest mb-3">mode</label>
         <div class="grid grid-cols-2 gap-2">
-          <button id="btn-mode-matching" class="py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-200 rounded-xl font-bold transition-all">Overlapping Blooms</button>
-          <button id="btn-mode-sudoku" class="py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Petal Solitaire</button>
+          <button id="btn-mode-matching" class="py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-200 rounded-xl font-bold transition-all">match</button>
+          <button id="btn-mode-sudoku" class="py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">sudoku</button>
         </div>
       </div>
-
       <!-- Geometry Configuration Buttons -->
       <div class="mb-5">
-        <label class="block text-xs font-semibold text-emerald-400/80 uppercase tracking-widest mb-3">Floral Layout</label>
+        <label class="block text-xs font-semibold text-emerald-400/80 uppercase tracking-widest mb-3">layout</label>
         <div class="grid grid-cols-3 gap-2">
           <button data-layout="triquetra" class="btn-layout py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all">Triquetra (3F)</button>
           <button data-layout="quadrant" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Quadrant (4F)</button>
           <button data-layout="rhombus" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Rhombus (4F)</button>
           <button data-layout="triangle6" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Triangle (6F)</button>
           <button data-layout="lotus" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Lotus (7F)</button>
-          <button data-layout="square9" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all col-span-3">Grid (3x3F)</button>
+          <button data-layout="square9" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Grid (3x3F)</button>
+          <button data-layout="supertriangle" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all col-span-3">Triangle (10F)</button>
         </div>
       </div>
 
-      <!-- Dynamic Rules Section -->
       <div class="mb-6 p-4 rounded-xl bg-emerald-950/40 border border-emerald-900/30 text-xs text-emerald-100">
         <span class="font-bold text-amber-200 block mb-2 flex items-center gap-1">
           💡 Objective:
@@ -186,9 +186,8 @@
         </ul>
       </div>
 
-      <!-- Action Button -->
       <button id="modal-config-apply" class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-emerald-950 font-bold text-base rounded-xl shadow-lg shadow-emerald-500/10 transition-all uppercase tracking-wider">
-        Enter Meadow
+        play
       </button>
     </div>
   </div>
@@ -209,6 +208,24 @@
     </div>
   </div>
 
+  <!-- Custom Dialog Recap Option Modal (Before Playing Recap Video) -->
+  <div id="modal-recap-prompt" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div class="w-full max-w-xs botanical-panel rounded-3xl p-6 shadow-2xl relative border border-emerald-500/10 text-center flex flex-col items-center">
+      <h3 class="text-base font-bold text-emerald-300 uppercase tracking-widest mb-4">download recap video?</h3>
+      <div class="flex flex-col gap-2 w-full select-none">
+        <button id="btn-recap-download" class="w-full h-11 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-emerald-950 font-bold text-xs rounded-xl transition-all uppercase tracking-wider">
+          download & watch
+        </button>
+        <button id="btn-recap-justwatch" class="w-full h-11 bg-emerald-800 hover:bg-emerald-700 active:scale-95 text-emerald-100 font-bold text-xs rounded-xl transition-all uppercase tracking-wider">
+          just watch
+        </button>
+        <button id="btn-recap-cancel" class="w-full h-11 bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-zinc-300 font-bold text-xs rounded-xl transition-all uppercase tracking-wider">
+          cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Victory Overlay Panel -->
   <div id="modal-victory" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/85 backdrop-blur-md p-4">
     <div class="w-full max-w-sm botanical-panel rounded-3xl p-6 shadow-2xl relative text-center flex flex-col items-center border border-emerald-500/10 max-h-[92vh] overflow-y-auto">
@@ -219,19 +236,20 @@
         </svg>
       </div>
 
+      <!-- Simplified Solved Text Verbatim -->
       <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-300 to-teal-100 uppercase tracking-widest mb-1">
-        BLOOM COMPLETE
+        solved
       </h2>
-      <p id="victory-subtitle" class="text-xs text-emerald-400/80 mb-4 font-semibold uppercase tracking-wider">Perfect Meadow Alignment</p>
+      <p id="victory-subtitle" class="text-xs text-emerald-400/80 mb-4 font-semibold uppercase tracking-wider">petals matched</p>
 
       <!-- Stats Display -->
       <div id="victory-normal-stats" class="grid grid-cols-2 gap-2 w-full mb-5 shrink-0 select-none">
         <div class="glass-panel p-2.5 rounded-xl border border-emerald-900/20">
-          <span class="block text-emerald-400/70 text-[10px] uppercase tracking-widest font-semibold mb-1 text-center">Sways</span>
+          <span class="block text-emerald-400/70 text-[10px] uppercase tracking-widest font-semibold mb-1 text-center">moves</span>
           <span id="vic-moves" class="text-lg font-bold text-emerald-300 block text-center">24</span>
         </div>
         <div class="glass-panel p-2.5 rounded-xl border border-emerald-900/20">
-          <span class="block text-emerald-400/70 text-[10px] uppercase tracking-widest font-semibold mb-1 text-center">Zen</span>
+          <span class="block text-emerald-400/70 text-[10px] uppercase tracking-widest font-semibold mb-1 text-center">time</span>
           <span id="vic-time" class="text-lg font-bold text-sky-300 block text-center font-mono">01:42</span>
         </div>
       </div>
@@ -265,7 +283,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
           </svg>
-          Next Meadow Layout
+          next layout
         </button>
 
         <button id="btn-victory-replay" class="w-full h-11 bg-indigo-900/60 hover:bg-indigo-900/80 active:scale-95 text-indigo-100 font-bold text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg">
@@ -273,18 +291,18 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Sway Recap Video
+          recap
         </button>
 
         <button id="btn-victory-pass-friend" class="w-full h-11 bg-amber-700/60 hover:bg-amber-700 active:scale-95 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
-          Sway With Friend
+          pass to friend
         </button>
 
         <button id="btn-victory-restart" class="w-full h-11 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs rounded-xl transition-all uppercase tracking-wider shadow-lg">
-          Tangle Again
+          scramble again
         </button>
       </div>
     </div>
@@ -299,10 +317,22 @@
       rhombus:   { id: "rhombus",   name: "Rhombus (4 Flowers)",   colorsCount: 6, slotsPerRing: 6 },
       triangle6: { id: "triangle6", name: "Triangle (6 Flowers)",  colorsCount: 6, slotsPerRing: 6 },
       lotus:     { id: "lotus",     name: "Lotus (7 Flowers)",     colorsCount: 7, slotsPerRing: 6 },
-      square9:   { id: "square9",   name: "Grid (3x3F)",           colorsCount: 9, slotsPerRing: 4 }
+      square9:   { id: "square9",   name: "Grid (3x3F)",           colorsCount: 9, slotsPerRing: 4 },
+      supertriangle: { id: "supertriangle", name: "Super Triangle (10 Flowers)", colorsCount: 10, slotsPerRing: 6 }
     };
 
-    const LAYOUT_ORDER = ["triquetra", "quadrant", "rhombus", "triangle6", "lotus", "square9"];
+    const LAYOUT_ORDER = ["triquetra", "quadrant", "rhombus", "triangle6", "lotus", "square9", "supertriangle"];
+    
+    // Level numbering lookup
+    const LEVEL_NAMES = {
+      triquetra: "Level 1: Triquetra",
+      quadrant: "Level 2: Quadrant",
+      rhombus: "Level 3: Rhombus",
+      triangle6: "Level 4: Triangle",
+      lotus: "Level 5: Lotus",
+      square9: "Level 6: Grid (3x3R)",
+      supertriangle: "Level 7: Super Triangle"
+    };
 
     const GEM_COLORS = [
       0xff3366, // 0: Coral Rose Pink
@@ -313,7 +343,8 @@
       0xff6600, // 5: Tiger Lily Orange
       0x00e5ff, // 6: Forget-Me-Not Blue
       0x0a5c1e, // 7: Moss Sage Green
-      0x800020  // 8: Burgundy Dahlia Red
+      0x800020, // 8: Burgundy Dahlia Red
+      0x008080  // 9: Teal
     ];
 
     let currentGameMode = "matching"; 
@@ -543,8 +574,6 @@
     }
 
     // --- PROCEDURAL PETALS ---
-    // Creates a velvety, beautiful double-curved petal mesh extending outward.
-    // Length is set to exactly 2R (2 * 1.15 = 2.3) so it reaches center-to-center seamlessly.
     function createPetalGeometry(length = 2.3) {
       const geom = new THREE.BufferGeometry(), vertices = [], indices = [];
       const N = 10, M = 10;
@@ -624,6 +653,22 @@
           { id: 3, center: { x: -R, y: dy }, radius: R, offset: 0 }, { id: 4, center: { x: -2 * R, y: 0 }, radius: R, offset: 0 }, { id: 5, center: { x: -R, y: -dy }, radius: R, offset: 0 },
           { id: 6, center: { x: R, y: -dy }, radius: R, offset: 0 }
         ];
+      } else if (currentLayoutId === "supertriangle") {
+        const dy = R * Math.sqrt(3);
+        computedRings = [
+          // Hexagonal Lotus (7 Flowers)
+          { id: 0, center: { x: 0, y: 0 }, radius: R, offset: 0 },
+          { id: 1, center: { x: 2 * R, y: 0 }, radius: R, offset: 0 },
+          { id: 2, center: { x: R, y: dy }, radius: R, offset: 0 },
+          { id: 3, center: { x: -R, y: dy }, radius: R, offset: 0 },
+          { id: 4, center: { x: -2 * R, y: 0 }, radius: R, offset: 0 },
+          { id: 5, center: { x: -R, y: -dy }, radius: R, offset: 0 },
+          { id: 6, center: { x: R, y: -dy }, radius: R, offset: 0 },
+          // Plus 3 outer corners to make a perfect large triangle (10 Flowers total)
+          { id: 7, center: { x: 0, y: 2 * dy }, radius: R, offset: 0 },       // Top Vertex
+          { id: 8, center: { x: -3 * R, y: -dy }, radius: R, offset: 0 },     // Bottom Left Vertex
+          { id: 9, center: { x: 3 * R, y: -dy }, radius: R, offset: 0 }       // Bottom Right Vertex
+        ];
       } else if (currentLayoutId === "square9") {
         computedRings = [
           { id: 0, center: { x: -2*R, y: 2*R }, radius: R, offset: 0 }, { id: 1, center: { x: 0, y: 2*R }, radius: R, offset: 0 }, { id: 2, center: { x: 2*R, y: 2*R }, radius: R, offset: 0 },
@@ -641,7 +686,7 @@
       });
 
       const mergedNodes = [];
-      const tolerance = 0.05; // Restored tolerance definition
+      const tolerance = 0.05;
       
       rawCandidates.forEach(cand => {
         let match = mergedNodes.find(n => Math.sqrt((n.x - cand.x)**2 + (n.y - cand.y)**2) < tolerance);
@@ -668,8 +713,10 @@
         const group = new THREE.Group(); group.position.set(rc.center.x, rc.center.y, 0);
         const stemMesh = createStemMesh(rc.center.x, rc.center.y); boardGroup.add(stemMesh);
 
+        // SUDOKU_COLOR_FIX: Center stigma disc is white (0xffffff) in Sudoku, matching color in Matching blooms mode
+        const stigmaColor = (currentGameMode === "matching") ? GEM_COLORS[rc.id % GEM_COLORS.length] : 0xffffff;
         const stigmaMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.04, 16), new THREE.MeshStandardMaterial({
-          color: GEM_COLORS[rc.id % GEM_COLORS.length], roughness: 0.65, metalness: 0.05
+          color: stigmaColor, roughness: 0.65, metalness: 0.05
         }));
         stigmaMesh.rotation.x = Math.PI / 2; stigmaMesh.position.set(0, 0, 0.06); group.add(stigmaMesh);
 
@@ -681,8 +728,6 @@
           const anther = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffa200, roughness: 0.9 }));
           anther.position.set(0.38 * Math.cos(sa), 0.38 * Math.sin(sa), 0.03); group.add(anther);
         }
-
-        // REMOVED: Unnecessary centerStone petal mesh. The central stigma cylinder already defines the target color.
 
         const auraMesh = new THREE.Mesh(new THREE.TorusGeometry(rc.radius, 0.04, 8, 80), new THREE.MeshBasicMaterial({ color: 0x00e640, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending }));
         auraMesh.position.set(0, 0, -0.06); auraMesh.visible = false; group.add(auraMesh);
@@ -800,7 +845,7 @@
       if (!btnSudoku || !btnMatching || !instructions || !subtitle) return;
 
       if (currentGameMode === "matching") {
-        btnMatching.className = "py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all";
+        btnMatching.className = "py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-200 rounded-xl font-bold transition-all";
         btnSudoku.className = "py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/45 transition-all";
         instructions.innerHTML = `
           <li>Shared petals connect adjacent flower centers directly.</li>
@@ -845,10 +890,17 @@
         scrambleRingsAnimated();
         isFriendMode = false; player1Results = null;
       }
+
+      // SUDOKU_COLOR_FIX: center stigma discs is white (0xffffff) in Sudoku, matching color in matching blooms mode
       rings.forEach(ring => {
-        if (ring.centerStone) ring.centerStone.visible = (currentGameMode === "matching");
+        ring.stigmaMesh.material.color.setHex((currentGameMode === "matching") ? GEM_COLORS[ring.id % GEM_COLORS.length] : 0xffffff);
       });
+
       syncModeUIButtons();
+
+      // HEADER_FIX: Display actual progression Level Number and Layout Name instead of game title
+      document.getElementById('game-level-header').innerText = LEVEL_NAMES[currentLayoutId].toUpperCase();
+
       resizeCameraToFit();
     }
 
@@ -965,7 +1017,7 @@
         duration = Math.max(0.45, Math.min(1.3, Math.abs(targetAngle - deltaAngle) / 2.2));
       }
 
-      const animationState = { angle: deltaAngle };
+      const animationState = { angle: deltaAngle }, startGroupZ = ring.group.rotation.z - deltaAngle;
       
       const gemsData = ring.cellIds.map(cellId => {
         const cell = cells.find(c => c.id === cellId);
@@ -1092,19 +1144,36 @@
       setTimeout(() => { gsap.to(toast, { opacity: 0, y: 20, duration: 0.5, onComplete: () => toast.remove() }); }, 3000);
     }
 
-    function runSpeedRecap() {
+    // RECAP_PROMPT_DOWNLOAD: Starts the recap with recording active
+    function startRecapWithDownload() {
+      document.getElementById('modal-recap-prompt').classList.add('hidden');
+      runSpeedRecap(true);
+    }
+
+    // RECAP_PROMPT_WATCH: Starts recap only
+    function startRecapJustWatch() {
+      document.getElementById('modal-recap-prompt').classList.add('hidden');
+      runSpeedRecap(false);
+    }
+
+    function runSpeedRecap(shouldDownload = false) {
       if (actionHistory.length === 0) return;
-      isReplaying = true; document.getElementById('modal-victory').classList.add('hidden');
+      isReplaying = true; 
       applyHistoryState(stateHistory[0]);
       document.getElementById('stat-moves').innerText = "0"; document.getElementById('stat-time').innerText = "00:00";
-      updateSolvedStates(); startCanvasRecording();
+      updateSolvedStates(); 
+      
+      if (shouldDownload) {
+        startCanvasRecording();
+      }
+      
       let stepIdx = 0; const totalTimeSeconds = elapsedSeconds;
 
       function playNextStep() {
         if (!isReplaying) return;
         if (stepIdx >= actionHistory.length) {
           sound.playVictory(); spawnPetalSparks(0, 0, 0x10b981);
-          setTimeout(() => { exitSpeedRecap(); }, 1000); return;
+          setTimeout(() => { exitSpeedRecap(shouldDownload); }, 1000); return;
         }
         const action = actionHistory[stepIdx]; sound.playSnap();
         animateRingSnapping(action.ringId, 0, action.direction, () => {
@@ -1118,8 +1187,11 @@
       setTimeout(() => { if (isReplaying) playNextStep(); }, 1200);
     }
 
-    function exitSpeedRecap() {
-      isReplaying = false; stopCanvasRecording();
+    function exitSpeedRecap(wasRecording = false) {
+      isReplaying = false; 
+      if (wasRecording) {
+        stopCanvasRecording();
+      }
       applyHistoryState(stateHistory[stateHistory.length - 1]); updateSolvedStates();
       document.getElementById('stat-moves').innerText = movesCount;
       const mins = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0'), secs = (elapsedSeconds % 60).toString().padStart(2, '0');
@@ -1192,14 +1264,14 @@
           subtitle.innerText = "Comparison Scoreboard";
           normalStats.classList.add('hidden'); scoreboard.classList.remove('hidden'); btnPassFriend.classList.add('hidden');
         } else {
-          subtitle.innerText = "Perfect Alignment Achieved";
+          subtitle.innerText = "petals matched";
           normalStats.classList.remove('hidden'); scoreboard.classList.add('hidden'); btnPassFriend.classList.remove('hidden');
         }
         document.getElementById('modal-victory').classList.remove('hidden');
       }, popupDelay);
     }
 
-    // Dynamic Resizing to fit layout perfectly in Window space
+    // Dynamic Resizing to fit layout perfectly in Window space (Optimized to scale defensively at 0.72)
     function resizeCameraToFit() {
       const container = document.getElementById('canvas-container');
       if (!container) return;
@@ -1233,7 +1305,7 @@
       const visibleHeight = 2 * Math.tan(vFOV / 2) * 7.5, visibleWidth = visibleHeight * camera.aspect;
 
       const scaleX = visibleWidth / width, scaleY = visibleHeight / height;
-      const bestScale = Math.min(scaleX, scaleY) * 0.90;
+      const bestScale = Math.min(scaleX, scaleY) * 0.72; // Optimized to scale defensively to prevent any layout Cuts
 
       boardGroup.scale.set(bestScale, bestScale, bestScale);
       boardGroup.position.multiplyScalar(bestScale);
@@ -1392,9 +1464,21 @@
 
       document.getElementById('btn-mode-sudoku').addEventListener('click', () => { currentGameMode = "sudoku"; syncModeUIButtons(); });
       document.getElementById('btn-mode-matching').addEventListener('click', () => { currentGameMode = "matching"; syncModeUIButtons(); });
+      
+      // RECAP_PROMPT_LISTENERS
+      document.getElementById('btn-victory-replay').addEventListener('click', () => {
+        document.getElementById('modal-victory').classList.add('hidden');
+        document.getElementById('modal-recap-prompt').classList.remove('hidden');
+      });
+      document.getElementById('btn-recap-download').addEventListener('click', startRecapWithDownload);
+      document.getElementById('btn-recap-justwatch').addEventListener('click', startRecapJustWatch);
+      document.getElementById('btn-recap-cancel').addEventListener('click', () => {
+        document.getElementById('modal-recap-prompt').classList.add('hidden');
+        document.getElementById('modal-victory').classList.remove('hidden');
+      });
+
       document.getElementById('btn-victory-restart').addEventListener('click', () => { document.getElementById('modal-victory').classList.add('hidden'); isFriendMode = false; initGame(); });
       document.getElementById('btn-victory-pass-friend').addEventListener('click', passTurnToFriend);
-      document.getElementById('btn-victory-replay').addEventListener('click', runSpeedRecap);
       document.getElementById('btn-victory-next').addEventListener('click', () => {
         const curIdx = LAYOUT_ORDER.indexOf(currentLayoutId);
         if (curIdx !== -1 && curIdx < LAYOUT_ORDER.length - 1) { currentLayoutId = LAYOUT_ORDER[curIdx + 1]; document.getElementById('modal-victory').classList.add('hidden'); isFriendMode = false; initGame(); }
