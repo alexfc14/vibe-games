@@ -366,6 +366,14 @@
     let isScrambling = false; 
     let isPaused = false;
     let isReplaying = false;
+    let isReplayPaused = false;
+    let replayStepIdx = 0;
+    let replayTotalTimeSeconds = 0;
+    let recapTimeoutId = null;
+    let activeSnapTween = null;
+    let shouldDownloadRecap = false;
+    let preModalLayoutId = "";
+    let preModalGameMode = "";
     let movesCount = 0;
 
     let stateHistory = []; 
@@ -795,6 +803,14 @@
         }));
         stigmaMesh.rotation.x = Math.PI / 2; stigmaMesh.position.set(0, 0, 0.06); group.add(stigmaMesh);
 
+        // Subtle decorative "nerve" line hugging around the outer contour of the stigma circle
+        const darkHexColor = (currentGameMode === "matching") ? parseInt(GEM_CANVAS_COLORS_DARK[rc.id % GEM_COLORS.length].replace('#', '0x')) : 0x14532d;
+        const stigmaNerveMesh = new THREE.Mesh(new THREE.TorusGeometry(0.275, 0.009, 6, 24), new THREE.MeshStandardMaterial({
+          color: darkHexColor, roughness: 0.8, metalness: 0.1
+        }));
+        stigmaNerveMesh.position.set(0, 0, 0.085);
+        group.add(stigmaNerveMesh);
+
         // STAMENS_AND_ANTHERS_SCALING: Shifted outward proportionally (from 0.2/0.38 to 0.28/0.48) to prevent overlaps with the enlarged stigma
         const stCount = config.slotsPerRing;
         for (let s = 0; s < stCount; s++) {
@@ -966,14 +982,12 @@
         isFriendMode = false; player1Results = null;
       }
 
-      // SUDOKU_COLOR_FIX: center stigma discs is white (0xffffff) in Sudoku, matching color in matching blooms mode
       rings.forEach(ring => {
         ring.stigmaMesh.material.color.setHex((currentGameMode === "matching") ? GEM_COLORS[ring.id % GEM_COLORS.length] : 0xffffff);
       });
 
       syncModeUIButtons();
 
-      // HEADER_FIX: Display actual progression Level Number and Layout Name instead of game title
       document.getElementById('game-level-header').innerText = LEVEL_NAMES[currentLayoutId].toUpperCase();
 
       resizeCameraToFit();
@@ -1092,7 +1106,7 @@
         duration = Math.max(0.45, Math.min(1.3, Math.abs(targetAngle - deltaAngle) / 2.2));
       }
 
-      const animationState = { angle: deltaAngle }, startGroupZ = ring.group.rotation.z - deltaAngle;
+      const animationState = { angle: deltaAngle };
       
       const gemsData = ring.cellIds.map(cellId => {
         const cell = cells.find(c => c.id === cellId);
@@ -1104,18 +1118,25 @@
         return { mesh: cell.mesh, baseAngle: Math.atan2(ry, rx) };
       });
 
-      // ACTIVE_FLOWER_ON_TOP: Set high renderOrder on snapping elements to guarantee overlay over standard flowers
-      ring.group.renderOrder = 10;
-      ring.group.children.forEach(child => child.renderOrder = 10);
+      // ACTIVE_FLOWER_ON_TOP & REPLAY SUBMERGE FLOW
+      // If we are replaying recap, the moving flower goes slightly below the rest of the meadow (Z < 0, renderOrder < 0).
+      // If we are standard dragging/snapping, the active flower hovers above the baseline (Z > 0, renderOrder > 0).
+      const isUnder = isReplaying;
+      const renderOrderBase = isUnder ? -10 : 10;
+      const renderOrderPetal = isUnder ? -9 : 11;
+      const targetZ = isUnder ? -0.35 : 0;
+
+      ring.group.renderOrder = renderOrderBase;
+      ring.group.children.forEach(child => child.renderOrder = renderOrderBase);
       gemsData.forEach(gem => {
-        if (gem.mesh) gem.mesh.renderOrder = 11;
+        if (gem.mesh) gem.mesh.renderOrder = renderOrderPetal;
       });
 
-      // ACTIVE_FLOWER_ON_TOP: Simultaneously animate descent back to meadow baseline Z = 0
       gsap.killTweensOf(ring.group.position);
-      gsap.to(ring.group.position, { z: 0, duration: duration, ease: "power2.out" });
+      
+      activeSnapTween = gsap.to(ring.group.position, { z: targetZ, duration: duration, ease: "power2.out" });
 
-      gsap.to(animationState, {
+      const rotTween = gsap.to(animationState, {
         angle: targetAngle, duration: duration, ease: duration < 0.15 ? "power2.out" : "back.out(1.1)",
         onUpdate: () => {
           ring.group.rotation.z = animationState.angle;
@@ -1126,10 +1147,11 @@
           });
         },
         onComplete: () => {
+          activeSnapTween = null;
           if (totalSteps !== 0) executeLogicalShift(ringId, totalSteps);
           ring.group.rotation.z = 0; // RESET GROUP TO 0 to prevent previous move accumulation
           
-          // ACTIVE_FLOWER_ON_TOP: Restore depth write render orders back to default 0 upon landing
+          // Restore depth write render orders back to default 0 upon landing
           ring.group.renderOrder = 0;
           ring.group.children.forEach(child => child.renderOrder = 0);
           ring.cellIds.forEach(cellId => {
@@ -1137,10 +1159,21 @@
             if (cell && cell.mesh) cell.mesh.renderOrder = 0;
           });
 
+          ring.group.position.z = 0; // Ensure Z resets perfectly to meadow plane Z = 0
+
           positionGemsStatically();
           if (onCompleteCallback) onCompleteCallback();
         }
       });
+
+      // Keep both tweens synced if paused during recap setting-toggle
+      if (isReplaying) {
+        activeSnapTween = {
+          pause: () => { rotTween.pause(); gsap.killTweensOf(ring.group.position); },
+          resume: () => { rotTween.resume(); gsap.to(ring.group.position, { z: targetZ, duration: rotTween.duration() - rotTween.time(), ease: "power2.out" }); },
+          kill: () => { rotTween.kill(); gsap.killTweensOf(ring.group.position); }
+        };
+      }
     }
 
     function finalizeMove(isMerged = false) {
@@ -1252,43 +1285,95 @@
     function runSpeedRecap(shouldDownload = false) {
       if (actionHistory.length === 0) return;
       isReplaying = true; 
+      isReplayPaused = false;
+      replayStepIdx = 0;
+      replayTotalTimeSeconds = elapsedSeconds;
+      shouldDownloadRecap = shouldDownload;
+
+      // Disable standard UI buttons visually
+      updateControlsReplayState();
+
       applyHistoryState(stateHistory[0]);
-      document.getElementById('stat-moves').innerText = "0"; document.getElementById('stat-time').innerText = "00:00";
+      document.getElementById('stat-moves').innerText = "0"; 
+      document.getElementById('stat-time').innerText = "00:00";
       updateSolvedStates(); 
       
       if (shouldDownload) {
         startCanvasRecording();
       }
-      
-      let stepIdx = 0; const totalTimeSeconds = elapsedSeconds;
 
-      function playNextStep() {
-        if (!isReplaying) return;
-        if (stepIdx >= actionHistory.length) {
-          sound.playVictory(); spawnPetalSparks(0, 0, 0x10b981);
-          setTimeout(() => { exitSpeedRecap(shouldDownload); }, 1000); return;
-        }
-        const action = actionHistory[stepIdx]; sound.playSnap();
-        animateRingSnapping(action.ringId, 0, action.direction, () => {
-          stepIdx++; document.getElementById('stat-moves').innerText = stepIdx;
-          const curSecs = Math.floor((stepIdx / actionHistory.length) * totalTimeSeconds);
-          const mins = Math.floor(curSecs / 60).toString().padStart(2, '0'), secs = (curSecs % 60).toString().padStart(2, '0');
-          document.getElementById('stat-time').innerText = `${mins}:${secs}`;
-          updateSolvedStates(); setTimeout(playNextStep, 450);
-        }, null);
+      recapTimeoutId = setTimeout(() => {
+        if (isReplaying && !isReplayPaused) playNextReplayStep();
+      }, 1200);
+    }
+
+    function playNextReplayStep() {
+      if (!isReplaying || isReplayPaused) return;
+      if (replayStepIdx >= actionHistory.length) {
+        sound.playVictory(); spawnPetalSparks(0, 0, 0x10b981);
+        recapTimeoutId = setTimeout(() => { exitSpeedRecap(shouldDownloadRecap); }, 1000); 
+        return;
       }
-      setTimeout(() => { if (isReplaying) playNextStep(); }, 1200);
+      const action = actionHistory[replayStepIdx]; 
+      sound.playSnap();
+      animateRingSnapping(action.ringId, 0, action.direction, () => {
+        if (isReplayPaused) return; // Prevent callback scheduling next step if we paused mid-rotation
+        replayStepIdx++; 
+        document.getElementById('stat-moves').innerText = replayStepIdx;
+        const curSecs = Math.floor((replayStepIdx / actionHistory.length) * replayTotalTimeSeconds);
+        const mins = Math.floor(curSecs / 60).toString().padStart(2, '0'), secs = (curSecs % 60).toString().padStart(2, '0');
+        document.getElementById('stat-time').innerText = `${mins}:${secs}`;
+        updateSolvedStates(); 
+        
+        recapTimeoutId = setTimeout(() => {
+          if (isReplaying && !isReplayPaused) playNextReplayStep();
+        }, 450);
+      }, null);
+    }
+
+    function resumeRecap() {
+      isReplayPaused = false;
+      showToast("Resuming Recap ▶");
+      updateControlsReplayState();
+      if (activeSnapTween) {
+        activeSnapTween.resume();
+      } else {
+        playNextReplayStep();
+      }
+    }
+
+    function updateControlsReplayState() {
+      const btnUndo = document.getElementById('btn-undo');
+      const btnPause = document.getElementById('btn-pause');
+      const btnScramble = document.getElementById('btn-scramble');
+      if (isReplaying) {
+        btnUndo.classList.add('opacity-40', 'pointer-events-none');
+        btnPause.classList.add('opacity-40', 'pointer-events-none');
+        btnScramble.classList.add('opacity-40', 'pointer-events-none');
+      } else {
+        btnUndo.classList.remove('opacity-40', 'pointer-events-none');
+        btnPause.classList.remove('opacity-40', 'pointer-events-none');
+        btnScramble.classList.remove('opacity-40', 'pointer-events-none');
+        updateUndoButtonState();
+      }
     }
 
     function exitSpeedRecap(wasRecording = false) {
       isReplaying = false; 
+      isReplayPaused = false;
       if (wasRecording) {
         stopCanvasRecording();
       }
-      applyHistoryState(stateHistory[stateHistory.length - 1]); updateSolvedStates();
+      if (recapTimeoutId) { clearTimeout(recapTimeoutId); recapTimeoutId = null; }
+      if (activeSnapTween) { activeSnapTween.kill(); activeSnapTween = null; }
+      
+      applyHistoryState(stateHistory[stateHistory.length - 1]); 
+      updateSolvedStates();
       document.getElementById('stat-moves').innerText = movesCount;
       const mins = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0'), secs = (elapsedSeconds % 60).toString().padStart(2, '0');
       document.getElementById('stat-time').innerText = `${mins}:${secs}`;
+      
+      updateControlsReplayState();
       document.getElementById('modal-victory').classList.remove('hidden');
     }
 
@@ -1408,7 +1493,7 @@
 
     function onPointerDown(e) {
       if (isTransitioning) return;
-      sound.init(); if (isReplaying) { exitSpeedRecap(); return; }
+      sound.init(); if (isReplaying) { exitSpeedRecap(shouldDownloadRecap); return; }
       if (isPaused) return;
       if (e.cancelable) e.preventDefault();
 
@@ -1553,7 +1638,24 @@
       const btnConfig = document.getElementById('btn-config'), modalConfig = document.getElementById('modal-config'), closeConfig = document.getElementById('modal-config-close'), applyConfig = document.getElementById('modal-config-apply');
 
       btnConfig.addEventListener('click', () => {
-        if (isPaused || isReplaying) return;
+        if (isPaused) return;
+        if (isReplaying) {
+          // Pause the active recap progression
+          isReplayPaused = true;
+          if (activeSnapTween) activeSnapTween.pause();
+          if (recapTimeoutId) { clearTimeout(recapTimeoutId); recapTimeoutId = null; }
+          showToast("Recap Paused ⏸");
+          
+          // Open settings and backup selected configuration targets
+          preModalLayoutId = currentLayoutId;
+          preModalGameMode = currentGameMode;
+          document.querySelectorAll('.btn-layout').forEach(b => {
+            b.className = b.getAttribute('data-layout') === currentLayoutId ? "btn-layout py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all" : "btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/40 transition-all";
+          });
+          syncModeUIButtons();
+          modalConfig.classList.remove('hidden');
+          return;
+        }
         if (isScrambling) {
           isScrambling = false; isTransitioning = false; gsap.killTweensOf("*");
           rings.forEach(ring => { ring.group.rotation.z = 0; });
@@ -1562,14 +1664,42 @@
           return; 
         }
         sound.init();
+        preModalLayoutId = currentLayoutId;
+        preModalGameMode = currentGameMode;
         document.querySelectorAll('.btn-layout').forEach(b => {
           b.className = b.getAttribute('data-layout') === currentLayoutId ? "btn-layout py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all" : "btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/40 transition-all";
         });
         syncModeUIButtons(); modalConfig.classList.remove('hidden');
       });
 
-      closeConfig.addEventListener('click', () => { modalConfig.classList.add('hidden'); });
-      applyConfig.addEventListener('click', () => { modalConfig.classList.add('hidden'); initGame(); });
+      closeConfig.addEventListener('click', () => {
+        modalConfig.classList.add('hidden');
+        // Restore pre-modal selection if player discards changes
+        currentLayoutId = preModalLayoutId;
+        currentGameMode = preModalGameMode;
+        if (isReplaying && isReplayPaused) {
+          resumeRecap();
+        }
+      });
+      
+      applyConfig.addEventListener('click', () => {
+        modalConfig.classList.add('hidden');
+        if (isReplaying) {
+          if (currentLayoutId !== preModalLayoutId || currentGameMode !== preModalGameMode) {
+            // Replay exited because modes or layouts changed
+            isReplaying = false;
+            isReplayPaused = false;
+            if (recapTimeoutId) { clearTimeout(recapTimeoutId); recapTimeoutId = null; }
+            if (activeSnapTween) { activeSnapTween.kill(); activeSnapTween = null; }
+            updateControlsReplayState();
+            initGame();
+          } else {
+            resumeRecap();
+          }
+        } else {
+          initGame();
+        }
+      });
 
       document.querySelectorAll('.btn-layout').forEach(btn => {
         btn.addEventListener('click', () => {
