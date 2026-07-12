@@ -163,13 +163,15 @@
       <div class="mb-5">
         <label class="block text-xs font-semibold text-emerald-400/80 uppercase tracking-widest mb-3">layout</label>
         <div class="grid grid-cols-3 gap-2">
-          <button data-layout="triquetra" class="btn-layout py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all">Triquetra (3F)</button>
-          <button data-layout="quadrant" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Quadrant (4F)</button>
-          <button data-layout="rhombus" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Rhombus (4F)</button>
-          <button data-layout="triangle6" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Triangle (6F)</button>
-          <button data-layout="lotus" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Lotus (7F)</button>
-          <button data-layout="square9" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Grid (3x3F)</button>
-          <button data-layout="supertriangle" class="btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all col-span-3">Triangle (10F)</button>
+          <button data-layout="triquetra" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all">Triquetra (3F)</button>
+          <button data-layout="tricycle" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Tricycle (6F, 3P)</button>
+          <button data-layout="quadrant" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Quadrant (4F)</button>
+          <button data-layout="rhombus" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Rhombus (4F)</button>
+          <button data-layout="triangle6" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Triangle (6F)</button>
+          <button data-layout="tricycle12" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Snowflake (12F, 3P)</button>
+          <button data-layout="lotus" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Lotus (7F)</button>
+          <button data-layout="square9" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Grid (3x3F)</button>
+          <button data-layout="supertriangle" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Triangle (10F)</button>
         </div>
       </div>
 
@@ -307,26 +309,30 @@
   <script>
     // --- GLOBAL CONFIGS & STAGES ---
     const LAYOUTS = {
-      triquetra: { id: "triquetra", name: "Triquetra (3 Flowers)", colorsCount: 6, slotsPerRing: 6 },
-      quadrant:  { id: "quadrant",  name: "Quadrant (4 Flowers)",  colorsCount: 4, slotsPerRing: 4 },
-      rhombus:   { id: "rhombus",   name: "Rhombus (4 Flowers)",   colorsCount: 6, slotsPerRing: 6 },
-      triangle6: { id: "triangle6", name: "Triangle (6 Flowers)",  colorsCount: 6, slotsPerRing: 6 },
-      lotus:     { id: "lotus",     name: "Lotus (7 Flowers)",     colorsCount: 7, slotsPerRing: 6 },
-      square9:   { id: "square9",   name: "Grid (3x3F)",           colorsCount: 9, slotsPerRing: 4 },
+      triquetra:   { id: "triquetra",  name: "Triquetra (3 Flowers)", colorsCount: 6, slotsPerRing: 6 },
+      tricycle:    { id: "tricycle",   name: "Tricycle Ring (6 Flowers)", colorsCount: 6, slotsPerRing: 3 },
+      tricycle12:  { id: "tricycle12", name: "Snowflake (12 Flowers)", colorsCount: 12, slotsPerRing: 3 },
+      quadrant:    { id: "quadrant",   name: "Quadrant (4 Flowers)",  colorsCount: 4, slotsPerRing: 4 },
+      rhombus:     { id: "rhombus",    name: "Rhombus (4 Flowers)",   colorsCount: 6, slotsPerRing: 6 },
+      triangle6:   { id: "triangle6",  name: "Triangle (6 Flowers)",  colorsCount: 6, slotsPerRing: 6 },
+      lotus:       { id: "lotus",      name: "Lotus (7 Flowers)",     colorsCount: 7, slotsPerRing: 6 },
+      square9:     { id: "square9",    name: "Grid (3x3F)",           colorsCount: 9, slotsPerRing: 4 },
       supertriangle: { id: "supertriangle", name: "Super Triangle (10 Flowers)", colorsCount: 10, slotsPerRing: 6 }
     };
 
-    const LAYOUT_ORDER = ["triquetra", "quadrant", "rhombus", "triangle6", "lotus", "square9", "supertriangle"];
+    const LAYOUT_ORDER = ["triquetra", "tricycle", "quadrant", "rhombus", "triangle6", "tricycle12", "lotus", "square9", "supertriangle"];
     
     // Level numbering lookup
     const LEVEL_NAMES = {
       triquetra: "Level 1: Triquetra",
-      quadrant: "Level 2: Quadrant",
-      rhombus: "Level 3: Rhombus",
-      triangle6: "Level 4: Triangle",
-      lotus: "Level 5: Lotus",
-      square9: "Level 6: Grid (3x3R)",
-      supertriangle: "Level 7: Super Triangle"
+      tricycle: "Level 2: Tricycle Ring",
+      quadrant: "Level 3: Quadrant",
+      rhombus: "Level 4: Rhombus",
+      triangle6: "Level 5: Triangle",
+      tricycle12: "Level 6: Snowflake",
+      lotus: "Level 7: Lotus",
+      square9: "Level 8: Grid (3x3R)",
+      supertriangle: "Level 9: Super Triangle"
     };
 
     const GEM_COLORS = [
@@ -339,19 +345,24 @@
       0x00e5ff, // 6: Forget-Me-Not Blue
       0x0a5c1e, // 7: Moss Sage Green
       0x800020, // 8: Burgundy Dahlia Red
-      0x008080  // 9: Teal
+      0x008080, // 9: Teal
+      0xf8f7f3, // 10: Broken White
+      0x8547ff  // 11: Blueish Purple
     ];
 
     // CSS styling strings matching GEM_COLORS exactly for canvas textured drawings
     const GEM_CANVAS_COLORS = [
       "#ff3366", "#00cc66", "#3366ff", "#ffcc00", "#b366ff",
-      "#ff6600", "#00e5ff", "#0a5c1e", "#800020", "#008080"
+      "#ff6600", "#00e5ff", "#0a5c1e", "#800020", "#008080",
+      "#f8f7f3", "#8547ff"
     ];
 
     // Rich, dark, organic colors representing matching darker nerve stripes on each petal
+    // Color 10 (Broken White) dark nerves updated to a richer, dark chocolate rose-gray taupe for maximum visibility
     const GEM_CANVAS_COLORS_DARK = [
       "#7f0026", "#005924", "#0a1c8c", "#8c5800", "#4a0e80",
-      "#8c2300", "#005b66", "#021a07", "#38000f", "#002e2e"
+      "#8c2300", "#005b66", "#021a07", "#38000f", "#002e2e",
+      "#543b37", "#2c0573"
     ];
 
     const petalTextureCache = {};
@@ -445,8 +456,15 @@
           
           const absK = Math.abs(k);
           // Nerves get thinner and slightly more delicate towards the margins
-          ctx.lineWidth = Math.max(1.5, 4.5 - absK * 0.8);
-          ctx.globalAlpha = 0.85;
+          let strokeWidth = Math.max(1.5, 4.5 - absK * 0.8);
+          let currentAlpha = 0.85;
+          if (cacheKey === 10) {
+            // Bolder side curves and higher opacity specifically for color index 10 (Broken White)
+            strokeWidth = Math.max(2.8, 5.8 - absK * 0.7);
+            currentAlpha = 0.95;
+          }
+          ctx.lineWidth = strokeWidth;
+          ctx.globalAlpha = currentAlpha;
           ctx.stroke();
           ctx.globalAlpha = 1.0;
         }
@@ -718,6 +736,40 @@
       if (currentLayoutId === "triquetra") {
         const h = R / Math.sqrt(3);
         computedRings = [{ id: 0, center: { x: 0, y: 2 * h }, radius: R, offset: 0 }, { id: 1, center: { x: -R, y: -h }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: -h }, radius: R, offset: 0 }];
+      } else if (currentLayoutId === "tricycle") {
+        // TRICYCLE LAYOUT (6 Flowers, 3-Petals each):
+        // Positioned hex-aligned in a gorgeous ring of radius 2R, sharing one petal with left & right neighbors
+        for (let i = 0; i < 6; i++) {
+          const theta = i * Math.PI / 3;
+          computedRings.push({
+            id: i,
+            center: { x: 2 * R * Math.cos(theta), y: 2 * R * Math.sin(theta) },
+            radius: R,
+            offset: theta
+          });
+        }
+      } else if (currentLayoutId === "tricycle12") {
+        // LEVEL 3: SNOWFLAKE LAYOUT (12 Flowers, 3-Petals each)
+        // Inner 6 (distance 2R, hex-aligned)
+        for (let i = 0; i < 6; i++) {
+          const theta = i * Math.PI / 3;
+          computedRings.push({
+            id: i,
+            center: { x: 2 * R * Math.cos(theta), y: 2 * R * Math.sin(theta) },
+            radius: R,
+            offset: theta
+          });
+        }
+        // Outer 6 (distance 4R, hex-aligned directly extended from the inner ring)
+        for (let i = 0; i < 6; i++) {
+          const theta = i * Math.PI / 3;
+          computedRings.push({
+            id: 6 + i,
+            center: { x: 4 * R * Math.cos(theta), y: 4 * R * Math.sin(theta) },
+            radius: R,
+            offset: theta + Math.PI // Pointing inwards to share the radial petal correctly
+          });
+        }
       } else if (currentLayoutId === "quadrant") {
         computedRings = [{ id: 0, center: { x: -R, y: R }, radius: R, offset: 0 }, { id: 1, center: { x: R, y: R }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: -R }, radius: R, offset: 0 }, { id: 3, center: { x: -R, y: -R }, radius: R, offset: 0 }];
       } else if (currentLayoutId === "rhombus") {
@@ -812,9 +864,10 @@
         group.add(stigmaNerveMesh);
 
         // STAMENS_AND_ANTHERS_SCALING: Shifted outward proportionally (from 0.2/0.38 to 0.28/0.48) to prevent overlaps with the enlarged stigma
+        // Updated to dynamically include rc.offset so stamens match the initial petal rotations perfectly
         const stCount = config.slotsPerRing;
         for (let s = 0; s < stCount; s++) {
-          const sa = s * (2 * Math.PI / stCount);
+          const sa = rc.offset + s * (2 * Math.PI / stCount);
           const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.35), new THREE.MeshStandardMaterial({ color: 0x1d3d20, roughness: 0.8 }));
           spoke.position.set(0.28 * Math.cos(sa), 0.28 * Math.sin(sa), 0.02); spoke.rotation.z = sa - Math.PI / 2; spoke.rotation.x = Math.PI / 2; group.add(spoke);
           const anther = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffa200, roughness: 0.9 }));
@@ -837,8 +890,8 @@
         if (c.mesh) {
           const r = rings.find(flower => flower.id === c.hostRingId);
           if (r) {
-            c.mesh.position.set(r.center.x, r.center.y, r.group.position.z + 0.04);
             const angle = Math.atan2(c.y - r.center.y, c.x - r.center.x);
+            c.mesh.position.set(r.center.x, r.center.y, r.group.position.z + 0.04);
             c.mesh.rotation.set(0, 0, angle - Math.PI / 2);
           }
         }
@@ -898,6 +951,7 @@
       return arr;
     }
 
+    // Runs scrambling animation
     function scrambleRingsAnimated() {
       isTransitioning = true; isScrambling = true;
       const totalRings = rings.length, scrambleSteps = totalRings * 12;
@@ -958,10 +1012,12 @@
 
     function initGame(restoreFromP1Scramble = false) {
       buildMeadowLayout();
+      const scale = LAYOUTS[currentLayoutId].petalScale || 1.0;
+
       if (restoreFromP1Scramble && originalScrambleState) {
         cells.forEach((cell, idx) => {
           cell.gemId = originalScrambleState[idx];
-          const mesh = createPetalMesh(cell.gemId); boardGroup.add(mesh); cell.mesh = mesh;
+          const mesh = createPetalMesh(cell.gemId, scale); boardGroup.add(mesh); cell.mesh = mesh;
         });
         positionGemsStatically();
         stateHistory = []; actionHistory = []; saveStateToHistory();
@@ -972,7 +1028,7 @@
       } else {
         generateSolvedState();
         cells.forEach(cell => {
-          const mesh = createPetalMesh(cell.gemId); boardGroup.add(mesh); cell.mesh = mesh;
+          const mesh = createPetalMesh(cell.gemId, scale); boardGroup.add(mesh); cell.mesh = mesh;
         });
         positionGemsStatically();
         movesCount = 0; document.getElementById('stat-moves').innerText = movesCount; resetTimer();
@@ -1004,12 +1060,13 @@
     }
 
     function applyHistoryState(state) {
+      const scale = LAYOUTS[currentLayoutId].petalScale || 1.0;
       cells.forEach((cell, idx) => {
         const targetGemId = state[idx];
         if (cell.gemId !== targetGemId) {
           if (cell.mesh) boardGroup.remove(cell.mesh);
           cell.gemId = targetGemId;
-          const newMesh = createPetalMesh(targetGemId); boardGroup.add(newMesh); cell.mesh = newMesh;
+          const newMesh = createPetalMesh(targetGemId, scale); boardGroup.add(newMesh); cell.mesh = newMesh;
         }
       });
       positionGemsStatically(); updateSolvedStates();
@@ -1037,6 +1094,7 @@
     }
 
     function executeLogicalShift(ringId, steps) {
+      const scale = LAYOUTS[currentLayoutId].petalScale || 1.0;
       const ring = rings.find(r => r.id === ringId), len = ring.cellIds.length;
       const shift = ((steps % len) + len) % len; if (shift === 0) return;
       const currentGemIds = ring.cellIds.map(cellId => cells.find(c => c.id === cellId).gemId);
@@ -1046,7 +1104,7 @@
         const cell = cells.find(c => c.id === cellId), targetGemId = shiftedGemIds[i];
         if (cell.gemId !== targetGemId) {
           cell.gemId = targetGemId; if (cell.mesh) boardGroup.remove(cell.mesh);
-          const newMesh = createPetalMesh(targetGemId); boardGroup.add(newMesh); cell.mesh = newMesh;
+          const newMesh = createPetalMesh(targetGemId, scale); boardGroup.add(newMesh); cell.mesh = newMesh;
         }
       });
     }
@@ -1118,13 +1176,12 @@
         return { mesh: cell.mesh, baseAngle: Math.atan2(ry, rx) };
       });
 
-      // ACTIVE_FLOWER_ON_TOP & REPLAY SUBMERGE FLOW
-      // If we are replaying recap, the moving flower goes slightly below the rest of the meadow (Z < 0, renderOrder < 0).
-      // If we are standard dragging/snapping, the active flower hovers above the baseline (Z > 0, renderOrder > 0).
-      const isUnder = isReplaying;
-      const renderOrderBase = isUnder ? -10 : 10;
-      const renderOrderPetal = isUnder ? -9 : 11;
-      const targetZ = isUnder ? -0.35 : 0;
+      // ACTIVE_FLOWER_ON_TOP & REPLAY OVER-FLOW FIX:
+      // We force the active rotating flower to ALWAYS stay on top (renderOrder = 10, targetZ = 0.5) 
+      // even during replay / speed-recap. It will never submerge below other flower meshes or stems.
+      const renderOrderBase = 10;
+      const renderOrderPetal = 11;
+      const targetZ = 0.5;
 
       ring.group.renderOrder = renderOrderBase;
       ring.group.children.forEach(child => child.renderOrder = renderOrderBase);
@@ -1141,9 +1198,10 @@
         onUpdate: () => {
           ring.group.rotation.z = animationState.angle;
           gemsData.forEach(gem => {
-            // Symmetrical radial rotation update (perfect start-to-finish tracking with Z height)
+            // Symmetrical radial rotation update starting exactly from center
+            const currentAngle = gem.baseAngle + animationState.angle;
             gem.mesh.position.set(ring.center.x, ring.center.y, ring.group.position.z + 0.04);
-            gem.mesh.rotation.z = gem.baseAngle + animationState.angle - Math.PI / 2;
+            gem.mesh.rotation.z = currentAngle - Math.PI / 2;
           });
         },
         onComplete: () => {
@@ -1580,11 +1638,12 @@
           const angle = gem.originalAngle + delta;
           // ACTIVE_FLOWER_ON_TOP: Tracks dynamic Z-offset so petals stay perfectly flat on the elevated plane
           gem.mesh.position.set(activeRing.center.x, activeRing.center.y, activeRing.group.position.z + 0.04);
-          gem.mesh.rotation.z = gem.originalAngle + delta - Math.PI / 2;
+          gem.mesh.rotation.z = angle - Math.PI / 2;
         }
       });
     }
 
+    // Runs snapping routine on pointer release
     function onPointerUp() {
       if (!isDragging || isPaused || isReplaying) return;
       isDragging = false;
@@ -1650,7 +1709,7 @@
           preModalLayoutId = currentLayoutId;
           preModalGameMode = currentGameMode;
           document.querySelectorAll('.btn-layout').forEach(b => {
-            b.className = b.getAttribute('data-layout') === currentLayoutId ? "btn-layout py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all" : "btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/40 transition-all";
+            b.className = b.getAttribute('data-layout') === currentLayoutId ? "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all" : "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/40 transition-all";
           });
           syncModeUIButtons();
           modalConfig.classList.remove('hidden');
@@ -1667,7 +1726,7 @@
         preModalLayoutId = currentLayoutId;
         preModalGameMode = currentGameMode;
         document.querySelectorAll('.btn-layout').forEach(b => {
-          b.className = b.getAttribute('data-layout') === currentLayoutId ? "btn-layout py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all" : "btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/40 transition-all";
+          b.className = b.getAttribute('data-layout') === currentLayoutId ? "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all" : "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/40 transition-all";
         });
         syncModeUIButtons(); modalConfig.classList.remove('hidden');
       });
@@ -1703,8 +1762,8 @@
 
       document.querySelectorAll('.btn-layout').forEach(btn => {
         btn.addEventListener('click', () => {
-          document.querySelectorAll('.btn-layout').forEach(b => b.className = "btn-layout py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/40 transition-all");
-          btn.className = "btn-layout py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all";
+          document.querySelectorAll('.btn-layout').forEach(b => b.className = "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/40 transition-all");
+          btn.className = "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all";
           currentLayoutId = btn.getAttribute('data-layout');
         });
       });
