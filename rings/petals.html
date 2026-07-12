@@ -165,13 +165,14 @@
         <div class="grid grid-cols-3 gap-2">
           <button data-layout="triquetra" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all">Triquetra (3F)</button>
           <button data-layout="tricycle" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Tricycle (6F, 3P)</button>
+          <button data-layout="tricycle12" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Snowflake (12F, 3P)</button>
+          <button data-layout="triring" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Tri-ring (13F, 3P)</button>
           <button data-layout="quadrant" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Quadrant (4F)</button>
           <button data-layout="rhombus" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Rhombus (4F)</button>
           <button data-layout="triangle6" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Triangle (6F)</button>
-          <button data-layout="tricycle12" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Snowflake (12F, 3P)</button>
           <button data-layout="lotus" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Lotus (7F)</button>
           <button data-layout="square9" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Grid (3x3F)</button>
-          <button data-layout="supertriangle" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Triangle (10F)</button>
+          <button data-layout="supertriangle" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all col-span-3">Triangle (10F)</button>
         </div>
       </div>
 
@@ -312,6 +313,7 @@
       triquetra:   { id: "triquetra",  name: "Triquetra (3 Flowers)", colorsCount: 6, slotsPerRing: 6 },
       tricycle:    { id: "tricycle",   name: "Tricycle Ring (6 Flowers)", colorsCount: 6, slotsPerRing: 3 },
       tricycle12:  { id: "tricycle12", name: "Snowflake (12 Flowers)", colorsCount: 12, slotsPerRing: 3 },
+      triring:     { id: "triring",    name: "Tri-ring (13 Flowers)", colorsCount: 13, slotsPerRing: 3 },
       quadrant:    { id: "quadrant",   name: "Quadrant (4 Flowers)",  colorsCount: 4, slotsPerRing: 4 },
       rhombus:     { id: "rhombus",    name: "Rhombus (4 Flowers)",   colorsCount: 6, slotsPerRing: 6 },
       triangle6:   { id: "triangle6",  name: "Triangle (6 Flowers)",  colorsCount: 6, slotsPerRing: 6 },
@@ -320,19 +322,20 @@
       supertriangle: { id: "supertriangle", name: "Super Triangle (10 Flowers)", colorsCount: 10, slotsPerRing: 6 }
     };
 
-    const LAYOUT_ORDER = ["triquetra", "tricycle", "quadrant", "rhombus", "triangle6", "tricycle12", "lotus", "square9", "supertriangle"];
+    const LAYOUT_ORDER = ["triquetra", "tricycle", "quadrant", "rhombus", "triangle6", "tricycle12", "triring", "lotus", "square9", "supertriangle"];
     
     // Level numbering lookup
     const LEVEL_NAMES = {
       triquetra: "Level 1: Triquetra",
       tricycle: "Level 2: Tricycle Ring",
-      quadrant: "Level 3: Quadrant",
-      rhombus: "Level 4: Rhombus",
-      triangle6: "Level 5: Triangle",
-      tricycle12: "Level 6: Snowflake",
-      lotus: "Level 7: Lotus",
-      square9: "Level 8: Grid (3x3R)",
-      supertriangle: "Level 9: Super Triangle"
+      tricycle12: "Level 3: Snowflake",
+      triring: "Level 4: Tri-ring",
+      quadrant: "Level 5: Quadrant",
+      rhombus: "Level 6: Rhombus",
+      triangle6: "Level 7: Triangle",
+      lotus: "Level 8: Lotus",
+      square9: "Level 9: Grid (3x3R)",
+      supertriangle: "Level 10: Super Triangle"
     };
 
     const GEM_COLORS = [
@@ -347,22 +350,24 @@
       0x800020, // 8: Burgundy Dahlia Red
       0x008080, // 9: Teal
       0xf8f7f3, // 10: Broken White
-      0x8547ff  // 11: Blueish Purple
+      0x8547ff, // 11: Blueish Purple
+      0xff6b59  // 12: Salmon Pink
     ];
 
     // CSS styling strings matching GEM_COLORS exactly for canvas textured drawings
     const GEM_CANVAS_COLORS = [
       "#ff3366", "#00cc66", "#3366ff", "#ffcc00", "#b366ff",
       "#ff6600", "#00e5ff", "#0a5c1e", "#800020", "#008080",
-      "#f8f7f3", "#8547ff"
+      "#f8f7f3", "#8547ff", "#ff6b59"
     ];
 
     // Rich, dark, organic colors representing matching darker nerve stripes on each petal
-    // Color 10 (Broken White) dark nerves updated to a richer, dark chocolate rose-gray taupe for maximum visibility
+    // Color 10 (Broken White) dark nerves updated to a rich warm rose-gray taupe with deep red undertones
+    // Color 12 (Salmon Pink) dark nerves updated to deep clay rust for contrast
     const GEM_CANVAS_COLORS_DARK = [
       "#7f0026", "#005924", "#0a1c8c", "#8c5800", "#4a0e80",
       "#8c2300", "#005b66", "#021a07", "#38000f", "#002e2e",
-      "#543b37", "#2c0573"
+      "#8a746e", "#2c0573", "#802c1a"
     ];
 
     const petalTextureCache = {};
@@ -749,7 +754,7 @@
           });
         }
       } else if (currentLayoutId === "tricycle12") {
-        // LEVEL 3: SNOWFLAKE LAYOUT (12 Flowers, 3-Petals each)
+        // LEVEL 6: SNOWFLAKE LAYOUT (12 Flowers, 3-Petals each)
         // Inner 6 (distance 2R, hex-aligned)
         for (let i = 0; i < 6; i++) {
           const theta = i * Math.PI / 3;
@@ -770,6 +775,25 @@
             offset: theta + Math.PI // Pointing inwards to share the radial petal correctly
           });
         }
+      } else if (currentLayoutId === "triring") {
+        // LEVEL 7: TRI-RING LAYOUT (13 Flowers, 3-Petals each, 3 merged tricycles interlocking)
+        // Positioned perfectly using precise hexagonal geometry sharing a single central flower.
+        const h = R * Math.sqrt(3);
+        computedRings = [
+          { id: 0, center: { x: 0, y: 0 }, radius: R, offset: Math.PI / 6 }, // Central flower
+          { id: 1, center: { x: -h, y: R }, radius: R, offset: Math.PI / 2 }, // Shared 1
+          { id: 2, center: { x: h, y: R }, radius: R, offset: Math.PI / 2 }, // Shared 2
+          { id: 3, center: { x: 0, y: -2 * R }, radius: R, offset: Math.PI / 2 }, // Shared 3
+          { id: 4, center: { x: h, y: 3 * R }, radius: R, offset: Math.PI / 6 }, // Out 1
+          { id: 5, center: { x: 0, y: 4 * R }, radius: R, offset: Math.PI / 2 }, // Out 2
+          { id: 6, center: { x: -h, y: 3 * R }, radius: R, offset: Math.PI / 6 }, // Out 3
+          { id: 7, center: { x: -2 * h, y: 0 }, radius: R, offset: Math.PI / 6 }, // Out 4
+          { id: 8, center: { x: -2 * h, y: -2 * R }, radius: R, offset: Math.PI / 2 }, // Out 5
+          { id: 9, center: { x: -h, y: -3 * R }, radius: R, offset: Math.PI / 6 }, // Out 6
+          { id: 10, center: { x: 2 * h, y: 0 }, radius: R, offset: Math.PI / 6 }, // Out 7
+          { id: 11, center: { x: h, y: -3 * R }, radius: R, offset: Math.PI / 6 }, // Out 8
+          { id: 12, center: { x: 2 * h, y: -2 * R }, radius: R, offset: Math.PI / 2 } // Out 9
+        ];
       } else if (currentLayoutId === "quadrant") {
         computedRings = [{ id: 0, center: { x: -R, y: R }, radius: R, offset: 0 }, { id: 1, center: { x: R, y: R }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: -R }, radius: R, offset: 0 }, { id: 3, center: { x: -R, y: -R }, radius: R, offset: 0 }];
       } else if (currentLayoutId === "rhombus") {
@@ -900,9 +924,45 @@
 
     function generateSolvedState() {
       if (currentGameMode === "matching") {
+        // Initialize all cells to empty/unassigned
+        cells.forEach(c => c.gemId = null);
+
+        // Guarantee that every single flower gets at least one petal of its matching color
+        const shuffledRings = shuffleArray([...rings]);
+        shuffledRings.forEach(ring => {
+          const targetColor = ring.id % GEM_COLORS.length;
+          
+          // Verify if this ring already has a petal assigned to its native color (via adjacent ring sharing)
+          const hasMatchingCell = ring.cellIds.some(cellId => {
+            const cell = cells.find(c => c.id === cellId);
+            return cell && cell.gemId === targetColor;
+          });
+
+          if (!hasMatchingCell) {
+            // Find unassigned slots surrounding this flower
+            const emptyCells = ring.cellIds
+              .map(cellId => cells.find(c => c.id === cellId))
+              .filter(cell => cell && cell.gemId === null);
+
+            if (emptyCells.length > 0) {
+              // Pre-assign one random slot to this ring's native color
+              const chosenCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+              chosenCell.gemId = targetColor;
+            } else {
+              // Fail-safe override: If all shared cells are somehow occupied, force one to match
+              const ringCells = ring.cellIds.map(cellId => cells.find(c => c.id === cellId));
+              const chosenCell = ringCells[Math.floor(Math.random() * ringCells.length)];
+              chosenCell.gemId = targetColor;
+            }
+          }
+        });
+
+        // Fill remaining unassigned petals using the standard random-attachment logic
         cells.forEach(c => {
-          const chosen = c.attachments[Math.floor(Math.random() * c.attachments.length)];
-          c.gemId = chosen.ringId % GEM_COLORS.length;
+          if (c.gemId === null) {
+            const chosen = c.attachments[Math.floor(Math.random() * c.attachments.length)];
+            c.gemId = chosen.ringId % GEM_COLORS.length;
+          }
         });
       } else {
         const numColors = LAYOUTS[currentLayoutId].colorsCount;
