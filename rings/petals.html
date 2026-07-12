@@ -165,14 +165,14 @@
         <div class="grid grid-cols-3 gap-2">
           <button data-layout="triquetra" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all">Triquetra (3F)</button>
           <button data-layout="tricycle" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Tricycle (6F, 3P)</button>
-          <button data-layout="tricycle12" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Snowflake (12F, 3P)</button>
-          <button data-layout="triring" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Tri-ring (13F, 3P)</button>
           <button data-layout="quadrant" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Quadrant (4F)</button>
           <button data-layout="rhombus" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Rhombus (4F)</button>
           <button data-layout="triangle6" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Triangle (6F)</button>
           <button data-layout="lotus" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Lotus (7F)</button>
           <button data-layout="square9" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Grid (3x3F)</button>
-          <button data-layout="supertriangle" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all col-span-3">Triangle (10F)</button>
+          <button data-layout="supertriangle" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Triangle (10F)</button>
+          <button data-layout="tricycle12" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Snowflake (12F)</button>
+          <button data-layout="triring" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all col-span-3">Tri-ring (13F)</button>
         </div>
       </div>
 
@@ -181,9 +181,7 @@
           💡 Objective:
         </span>
         <ul id="instructions-list" class="list-disc pl-4 space-y-1.5 text-emerald-200/80">
-          <li>Shared petals connect adjacent flower centers directly.</li>
-          <li>Sway flowers around their center disc to transfer petals.</li>
-          <li>Ensure <strong>every petal matches its central stigma color</strong>.</li>
+          <li>Turn flowers to match petals to their central color.</li>
         </ul>
       </div>
 
@@ -319,23 +317,23 @@
       triangle6:   { id: "triangle6",  name: "Triangle (6 Flowers)",  colorsCount: 6, slotsPerRing: 6 },
       lotus:       { id: "lotus",      name: "Lotus (7 Flowers)",     colorsCount: 7, slotsPerRing: 6 },
       square9:     { id: "square9",    name: "Grid (3x3F)",           colorsCount: 9, slotsPerRing: 4 },
-      supertriangle: { id: "supertriangle", name: "Super Triangle (10 Flowers)", colorsCount: 10, slotsPerRing: 6 }
+      supertriangle: { id: "supertriangle", name: "Triangle (10 Flowers)", colorsCount: 10, slotsPerRing: 6 }
     };
 
-    const LAYOUT_ORDER = ["triquetra", "tricycle", "quadrant", "rhombus", "triangle6", "tricycle12", "triring", "lotus", "square9", "supertriangle"];
+    const LAYOUT_ORDER = ["triquetra", "tricycle", "quadrant", "rhombus", "triangle6", "lotus", "square9", "supertriangle", "tricycle12", "triring"];
     
     // Level numbering lookup
     const LEVEL_NAMES = {
       triquetra: "Level 1: Triquetra",
       tricycle: "Level 2: Tricycle Ring",
-      tricycle12: "Level 3: Snowflake",
-      triring: "Level 4: Tri-ring",
-      quadrant: "Level 5: Quadrant",
-      rhombus: "Level 6: Rhombus",
-      triangle6: "Level 7: Triangle",
-      lotus: "Level 8: Lotus",
-      square9: "Level 9: Grid (3x3R)",
-      supertriangle: "Level 10: Super Triangle"
+      quadrant: "Level 3: Quadrant",
+      rhombus: "Level 4: Rhombus",
+      triangle6: "Level 5: Triangle",
+      lotus: "Level 6: Lotus",
+      square9: "Level 7: Grid (3x3R)",
+      supertriangle: "Level 8: Super Triangle",
+      tricycle12: "Level 9: Snowflake (12F)",
+      triring: "Level 10: Tri-ring (13F)"
     };
 
     const GEM_COLORS = [
@@ -573,12 +571,6 @@
     }
 
     // --- MAIN ENGINE INITIALIZER ---
-    window.onload = () => {
-      initEngine();
-      initGame();
-      setupEvents();
-    };
-
     function initEngine() {
       const container = document.getElementById('canvas-container');
       const width = container.clientWidth, height = container.clientHeight;
@@ -672,15 +664,16 @@
     }
 
     // --- PROCEDURAL PETALS ---
-    function createPetalGeometry(length = 2.3) {
+    function createPetalGeometry(length = 2.3, widthMultiplier = 1.0) {
       const geom = new THREE.BufferGeometry(), vertices = [], indices = [], uvs = [];
-      const N = 10, M = 12; // Segment subdivisions: M + 1 vertices per row for a perfect seamless UV cylinder wrap
+      const N = 10, M = 12; // Segment subdivisions
       for (let i = 0; i <= N; i++) {
         const t = i / N;
         const lengthY = t * length;
         
         // PETAL_THICKNESS_ENHANCEMENT: Widened the petal base and midsection to close all dark gaps between petals at the core
-        const width = Math.sin(t * Math.PI) * 0.52 + 0.08 * (1 - t); 
+        const baseWidth = Math.sin(t * Math.PI) * 0.52 + 0.08 * (1 - t); 
+        const width = baseWidth * widthMultiplier;
         const thick = Math.sin(t * Math.PI) * 0.05 + 0.01; 
         const bend = Math.sin(t * Math.PI) * 0.04;
         
@@ -688,7 +681,7 @@
           const a = (j / M) * Math.PI * 2;
           vertices.push(Math.cos(a) * width, lengthY, Math.sin(a) * thick - bend);
           
-          // Maps seamless wrapping coordinate system (U: 0.0 to 1.0 around, V: 0.0 to 1.0 along the length)
+          // Maps seamless wrapping coordinate system
           uvs.push(j / M, t);
         }
       }
@@ -709,9 +702,13 @@
 
     function createPetalMesh(colorIdx, scale = 1.0) {
       const texture = getPetalTexture(colorIdx);
+      const config = LAYOUTS[currentLayoutId];
+      // Make 3-petal flower leaves (petals) look 1.35x wider for visual richness
+      const isThreePetal = (config && config.slotsPerRing === 3);
+      const widthMultiplier = isThreePetal ? 1.35 : 1.0;
 
-      // Matte, organic surface setting (high roughness, completely zero plastic clearcoat or specular white hot spots)
-      return new THREE.Mesh(createPetalGeometry(2.3 * scale), new THREE.MeshStandardMaterial({
+      // Matte, organic surface setting (high roughness)
+      return new THREE.Mesh(createPetalGeometry(2.3 * scale, widthMultiplier), new THREE.MeshStandardMaterial({
         map: texture,
         roughness: 0.75,         // Suede/velvet matte botanical skin feeling
         metalness: 0.0,          // Organic leaf tissues do not contain metallicity
@@ -754,7 +751,7 @@
           });
         }
       } else if (currentLayoutId === "tricycle12") {
-        // LEVEL 6: SNOWFLAKE LAYOUT (12 Flowers, 3-Petals each)
+        // LEVEL 9: SNOWFLAKE LAYOUT (12 Flowers, 3-Petals each)
         // Inner 6 (distance 2R, hex-aligned)
         for (let i = 0; i < 6; i++) {
           const theta = i * Math.PI / 3;
@@ -776,7 +773,7 @@
           });
         }
       } else if (currentLayoutId === "triring") {
-        // LEVEL 7: TRI-RING LAYOUT (13 Flowers, 3-Petals each, 3 merged tricycles interlocking)
+        // LEVEL 10: TRI-RING LAYOUT (13 Flowers, 3-Petals each, 3 merged tricycles interlocking)
         // Positioned perfectly using precise hexagonal geometry sharing a single central flower.
         const h = R * Math.sqrt(3);
         computedRings = [
@@ -873,29 +870,35 @@
         // SUDOKU_COLOR_FIX: Center stigma disc is white (0xffffff) in Sudoku, matching color in Matching blooms mode
         const stigmaColor = (currentGameMode === "matching") ? GEM_COLORS[rc.id % GEM_COLORS.length] : 0xffffff;
         
-        // STIGMA_SIZE_ENHANCEMENT: Enlarged stigma central cylinder (from 0.16 to 0.26 radius) to improve match visibility dramatically
-        const stigmaMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.05, 24), new THREE.MeshStandardMaterial({
+        // STIGMA_SIZE_ENHANCEMENT: Enlarged stigma central cylinder to improve match visibility dramatically.
+        // Make centers slightly larger on 3-petal layouts (0.35 radius instead of 0.26).
+        const isThreePetal = (config.slotsPerRing === 3);
+        const stigmaRadius = isThreePetal ? 0.35 : 0.26;
+        
+        const stigmaMesh = new THREE.Mesh(new THREE.CylinderGeometry(stigmaRadius, stigmaRadius, 0.05, 24), new THREE.MeshStandardMaterial({
           color: stigmaColor, roughness: 0.65, metalness: 0.05
         }));
         stigmaMesh.rotation.x = Math.PI / 2; stigmaMesh.position.set(0, 0, 0.06); group.add(stigmaMesh);
 
         // Subtle decorative "nerve" line hugging around the outer contour of the stigma circle
         const darkHexColor = (currentGameMode === "matching") ? parseInt(GEM_CANVAS_COLORS_DARK[rc.id % GEM_COLORS.length].replace('#', '0x')) : 0x14532d;
-        const stigmaNerveMesh = new THREE.Mesh(new THREE.TorusGeometry(0.275, 0.009, 6, 24), new THREE.MeshStandardMaterial({
+        const stigmaNerveMesh = new THREE.Mesh(new THREE.TorusGeometry(stigmaRadius + 0.015, 0.009, 6, 24), new THREE.MeshStandardMaterial({
           color: darkHexColor, roughness: 0.8, metalness: 0.1
         }));
         stigmaNerveMesh.position.set(0, 0, 0.085);
         group.add(stigmaNerveMesh);
 
-        // STAMENS_AND_ANTHERS_SCALING: Shifted outward proportionally (from 0.2/0.38 to 0.28/0.48) to prevent overlaps with the enlarged stigma
-        // Updated to dynamically include rc.offset so stamens match the initial petal rotations perfectly
+        // STAMENS_AND_ANTHERS_SCALING: Shifted outward proportionally (adapt to larger centers on 3-petal flowers)
+        const spokeInnerRadius = isThreePetal ? 0.37 : 0.28;
+        const antherRadius = isThreePetal ? 0.57 : 0.48;
+        
         const stCount = config.slotsPerRing;
         for (let s = 0; s < stCount; s++) {
           const sa = rc.offset + s * (2 * Math.PI / stCount);
           const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.35), new THREE.MeshStandardMaterial({ color: 0x1d3d20, roughness: 0.8 }));
-          spoke.position.set(0.28 * Math.cos(sa), 0.28 * Math.sin(sa), 0.02); spoke.rotation.z = sa - Math.PI / 2; spoke.rotation.x = Math.PI / 2; group.add(spoke);
+          spoke.position.set(spokeInnerRadius * Math.cos(sa), spokeInnerRadius * Math.sin(sa), 0.02); spoke.rotation.z = sa - Math.PI / 2; spoke.rotation.x = Math.PI / 2; group.add(spoke);
           const anther = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffa200, roughness: 0.9 }));
-          anther.position.set(0.48 * Math.cos(sa), 0.48 * Math.sin(sa), 0.03); group.add(anther);
+          anther.position.set(antherRadius * Math.cos(sa), antherRadius * Math.sin(sa), 0.03); group.add(anther);
         }
 
         const auraMesh = new THREE.Mesh(new THREE.TorusGeometry(rc.radius, 0.04, 8, 80), new THREE.MeshBasicMaterial({ color: 0x00e640, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending }));
@@ -1053,9 +1056,7 @@
         btnMatching.className = "py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-200 rounded-xl font-bold transition-all";
         btnSudoku.className = "py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/45 transition-all";
         instructions.innerHTML = `
-          <li>Shared petals connect adjacent flower centers directly.</li>
-          <li>Sway flowers around their center disc to transfer petals.</li>
-          <li>Ensure <strong>every petal matches its central stigma color</strong>.</li>
+          <li>Turn flowers to match petals to their central color.</li>
         `;
         subtitle.innerText = "Gather matching petals onto each flower center";
       } else {
@@ -1703,7 +1704,6 @@
       });
     }
 
-    // Runs snapping routine on pointer release
     function onPointerUp() {
       if (!isDragging || isPaused || isReplaying) return;
       isDragging = false;
@@ -1769,7 +1769,7 @@
           preModalLayoutId = currentLayoutId;
           preModalGameMode = currentGameMode;
           document.querySelectorAll('.btn-layout').forEach(b => {
-            b.className = b.getAttribute('data-layout') === currentLayoutId ? "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all" : "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/40 transition-all";
+            b.className = b.getAttribute('data-layout') === currentLayoutId ? "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all" : "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all";
           });
           syncModeUIButtons();
           modalConfig.classList.remove('hidden');
@@ -1786,7 +1786,7 @@
         preModalLayoutId = currentLayoutId;
         preModalGameMode = currentGameMode;
         document.querySelectorAll('.btn-layout').forEach(b => {
-          b.className = b.getAttribute('data-layout') === currentLayoutId ? "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all" : "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/40 transition-all";
+          b.className = b.getAttribute('data-layout') === currentLayoutId ? "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all" : "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all";
         });
         syncModeUIButtons(); modalConfig.classList.remove('hidden');
       });
@@ -1822,7 +1822,7 @@
 
       document.querySelectorAll('.btn-layout').forEach(btn => {
         btn.addEventListener('click', () => {
-          document.querySelectorAll('.btn-layout').forEach(b => b.className = "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/40 transition-all");
+          document.querySelectorAll('.btn-layout').forEach(b => b.className = "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all");
           btn.className = "btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all";
           currentLayoutId = btn.getAttribute('data-layout');
         });
@@ -1855,6 +1855,18 @@
       window.addEventListener('pointerup', onPointerUp, { passive: false });
       window.addEventListener('pointercancel', onPointerUp, { passive: false });
       window.addEventListener('resize', resizeCameraToFit);
+    }
+
+    if (document.readyState === "complete" || document.readyState === "interactive") {
+      initEngine();
+      initGame();
+      setupEvents();
+    } else {
+      window.onload = function () {
+        initEngine();
+        initGame();
+        setupEvents();
+      };
     }
   </script>
 </body>
