@@ -72,7 +72,7 @@
           LEVEL 1: TRIQUETRA
         </h1>
         <p id="game-subtitle" class="text-[9px] sm:text-[10px] text-emerald-400/70 tracking-widest uppercase font-semibold transition-colors duration-300">
-          Gather matching petals onto each flower center
+          Turn flowers to match petals to their central color
         </p>
       </div>
       
@@ -159,20 +159,23 @@
           <button id="btn-mode-sudoku" class="py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">sudoku</button>
         </div>
       </div>
-      <!-- Geometry Configuration Buttons -->
+      <!-- Geometry Configuration Buttons (Sorted by Progressive Flower Count) -->
       <div class="mb-5">
         <label class="block text-xs font-semibold text-emerald-400/80 uppercase tracking-widest mb-3">layout</label>
         <div class="grid grid-cols-3 gap-2">
           <button data-layout="triquetra" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all">Triquetra (3F)</button>
-          <button data-layout="tricycle" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Tricycle (6F, 3P)</button>
           <button data-layout="quadrant" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Quadrant (4F)</button>
           <button data-layout="rhombus" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Rhombus (4F)</button>
+          <button data-layout="monotile" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Monotile (5F)</button>
+          <button data-layout="bitile" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Bitile (5F)</button>
+          <button data-layout="tricycle" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Tricycle (6F)</button>
           <button data-layout="triangle6" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Triangle (6F)</button>
           <button data-layout="lotus" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Lotus (7F)</button>
           <button data-layout="square9" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Grid (3x3F)</button>
           <button data-layout="supertriangle" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Triangle (10F)</button>
-          <button data-layout="tricycle12" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Snowflake (12F)</button>
-          <button data-layout="triring" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all col-span-3">Tri-ring (13F)</button>
+          <button data-layout="tricycle12" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all col-span-1">Snowflake (12F)</button>
+          <button data-layout="triring" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all col-span-1">Tri-ring (13F)</button>
+          <button data-layout="tile" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all col-span-1">Tritile (13F)</button>
         </div>
       </div>
 
@@ -263,7 +266,7 @@
             </div>
             <div class="bg-amber-950/30 p-2.5 rounded-lg border border-amber-500/10">
               <span class="text-[9px] text-amber-300 uppercase tracking-wider font-semibold">Friend (P2)</span>
-              <div class="mt-0.5 font-bold text-amber-200 text-sm"><span id="p2-moves">0</span> sways</div>
+              <div class="mt-0.5 font-bold text-emerald-200 text-sm"><span id="p2-moves">0</span> sways</div>
               <div class="font-semibold text-amber-400 text-[11px]"><span id="p2-time">00:00</span></div>
             </div>
           </div>
@@ -309,31 +312,38 @@
     // --- GLOBAL CONFIGS & STAGES ---
     const LAYOUTS = {
       triquetra:   { id: "triquetra",  name: "Triquetra (3 Flowers)", colorsCount: 6, slotsPerRing: 6 },
-      tricycle:    { id: "tricycle",   name: "Tricycle Ring (6 Flowers)", colorsCount: 6, slotsPerRing: 3 },
-      tricycle12:  { id: "tricycle12", name: "Snowflake (12 Flowers)", colorsCount: 12, slotsPerRing: 3 },
-      triring:     { id: "triring",    name: "Tri-ring (13 Flowers)", colorsCount: 13, slotsPerRing: 3 },
       quadrant:    { id: "quadrant",   name: "Quadrant (4 Flowers)",  colorsCount: 4, slotsPerRing: 4 },
       rhombus:     { id: "rhombus",    name: "Rhombus (4 Flowers)",   colorsCount: 6, slotsPerRing: 6 },
+      monotile:    { id: "monotile",   name: "Monotile (5 Flowers)",  colorsCount: 5, slotsPerRing: null },
+      bitile:      { id: "bitile",     name: "Bitile (5 Flowers)",    colorsCount: 6, slotsPerRing: null },
+      tricycle:    { id: "tricycle",   name: "Tricycle Ring (6 Flowers)", colorsCount: 6, slotsPerRing: 3 },
       triangle6:   { id: "triangle6",  name: "Triangle (6 Flowers)",  colorsCount: 6, slotsPerRing: 6 },
       lotus:       { id: "lotus",      name: "Lotus (7 Flowers)",     colorsCount: 7, slotsPerRing: 6 },
       square9:     { id: "square9",    name: "Grid (3x3F)",           colorsCount: 9, slotsPerRing: 4 },
-      supertriangle: { id: "supertriangle", name: "Triangle (10 Flowers)", colorsCount: 10, slotsPerRing: 6 }
+      supertriangle: { id: "supertriangle", name: "Triangle (10 Flowers)", colorsCount: 10, slotsPerRing: 6 },
+      tricycle12:  { id: "tricycle12", name: "Snowflake (12 Flowers)", colorsCount: 12, slotsPerRing: 3 },
+      triring:     { id: "triring",    name: "Tri-ring (13 Flowers)", colorsCount: 13, slotsPerRing: 3 },
+      tile:        { id: "tile",       name: "Tritile (13 Flowers)",  colorsCount: 13, slotsPerRing: null }
     };
 
-    const LAYOUT_ORDER = ["triquetra", "tricycle", "quadrant", "rhombus", "triangle6", "lotus", "square9", "supertriangle", "tricycle12", "triring"];
+    // Progression difficulty order rearranged strictly by progressive flower count (Monotile & Bitile placed between 4F and 6F ones)
+    const LAYOUT_ORDER = ["triquetra", "quadrant", "rhombus", "monotile", "bitile", "tricycle", "triangle6", "lotus", "square9", "supertriangle", "tricycle12", "triring", "tile"];
     
     // Level numbering lookup
     const LEVEL_NAMES = {
       triquetra: "Level 1: Triquetra",
-      tricycle: "Level 2: Tricycle Ring",
-      quadrant: "Level 3: Quadrant",
-      rhombus: "Level 4: Rhombus",
-      triangle6: "Level 5: Triangle",
-      lotus: "Level 6: Lotus",
-      square9: "Level 7: Grid (3x3R)",
-      supertriangle: "Level 8: Super Triangle",
-      tricycle12: "Level 9: Snowflake (12F)",
-      triring: "Level 10: Tri-ring (13F)"
+      quadrant: "Level 2: Quadrant",
+      rhombus: "Level 3: Rhombus",
+      monotile: "Level 4: Monotile (5F)",
+      bitile: "Level 5: Bitile (5F)",
+      tricycle: "Level 6: Tricycle Ring",
+      triangle6: "Level 7: Triangle (6F)",
+      lotus: "Level 8: Lotus (7F)",
+      square9: "Level 9: Grid (3x3R)",
+      supertriangle: "Level 10: Super Triangle",
+      tricycle12: "Level 11: Snowflake (12F)",
+      triring: "Level 12: Tri-ring (13F)",
+      tile: "Level 13: Tritile (13F)"
     };
 
     const GEM_COLORS = [
@@ -343,7 +353,7 @@
       0xffcc00, // 3: Dandelion Gold
       0xb366ff, // 4: Wild Violet
       0xff6600, // 5: Tiger Lily Orange
-      0x00e5ff, // 6: Forget-Me-Not Blue
+      0x00e5ff, // 6: Forget-Me-Not Blue / Turquoise
       0x0a5c1e, // 7: Moss Sage Green
       0x800020, // 8: Burgundy Dahlia Red
       0x008080, // 9: Teal
@@ -360,15 +370,16 @@
     ];
 
     // Rich, dark, organic colors representing matching darker nerve stripes on each petal
-    // Color 10 (Broken White) dark nerves updated to a rich warm rose-gray taupe with deep red undertones
-    // Color 12 (Salmon Pink) dark nerves updated to deep clay rust for contrast
+    // Color 10 (Broken White) dark nerves updated to a charcoal earthy-dark "#2a1e1a" for high contrast
+    // Color 6 (Turquoise) dark nerves restored to original "#005b66" for soft organic harmony
     const GEM_CANVAS_COLORS_DARK = [
       "#7f0026", "#005924", "#0a1c8c", "#8c5800", "#4a0e80",
       "#8c2300", "#005b66", "#021a07", "#38000f", "#002e2e",
-      "#8a746e", "#2c0573", "#802c1a"
+      "#2a1e1a", "#2c0573", "#802c1a"
     ];
 
     const petalTextureCache = {};
+    const stigmaTextureCache = {};
 
     let currentGameMode = "matching"; 
     let currentLayoutId = "triquetra";
@@ -437,7 +448,8 @@
       centers.forEach(cx => {
         // Draw the central straight structural nerve
         ctx.strokeStyle = darkColor;
-        ctx.lineWidth = 6;
+        // Adjusted central nerve weights to keep white and turquoise cohesive and single-petaled
+        ctx.lineWidth = (cacheKey === 10) ? 8.5 : 6;
         ctx.lineCap = "round";
         ctx.beginPath();
         ctx.moveTo(cx, 0);
@@ -462,9 +474,13 @@
           let strokeWidth = Math.max(1.5, 4.5 - absK * 0.8);
           let currentAlpha = 0.85;
           if (cacheKey === 10) {
-            // Bolder side curves and higher opacity specifically for color index 10 (Broken White)
-            strokeWidth = Math.max(2.8, 5.8 - absK * 0.7);
+            // Balanced side curves specifically for color index 10 (Broken White) to prevent splitting look
+            strokeWidth = Math.max(2.8, 5.8 - absK * 0.8);
             currentAlpha = 0.95;
+          } else if (cacheKey === 6) {
+            // Symmetrical original nerve style for color index 6 (Turquoise)
+            strokeWidth = Math.max(1.8, 4.8 - absK * 0.8);
+            currentAlpha = 0.85;
           }
           ctx.lineWidth = strokeWidth;
           ctx.globalAlpha = currentAlpha;
@@ -477,6 +493,61 @@
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.ClampToEdgeWrapping;
       petalTextureCache[cacheKey] = texture;
+      return texture;
+    }
+
+    // Generates the hollow central ring for octagon centers to look visually light and nested
+    function getStigmaTexture(colorIdx, slots) {
+      const cacheKey = `${colorIdx}_${slots}`;
+      if (stigmaTextureCache[cacheKey]) return stigmaTextureCache[cacheKey];
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      const baseColor = (colorIdx === -1) ? "#f8f7f3" : GEM_CANVAS_COLORS[colorIdx % GEM_COLORS.length];
+      
+      if (slots === 8) {
+        // HOLLOW RING IMPLEMENTATION: Ring width is equivalent to the diameter of the square flower circle
+        // Square diameter (2 * 0.55 = 1.1) to octagon radius (R * sqrt(2) + 0.32 ~ 1.946)
+        const outerR = 250;
+        const ringWidth = outerR * (1.10 / 1.946); // equivalent diameter proportion in pixels
+        const innerR = outerR - ringWidth;
+
+        // Clear canvas to make middle hollow section fully transparent
+        ctx.clearRect(0, 0, 512, 512);
+
+        // Draw the filled color ring using overlapping clockwise and counter-clockwise sub-paths
+        ctx.fillStyle = baseColor;
+        ctx.beginPath();
+        ctx.arc(256, 256, outerR, 0, Math.PI * 2, false);
+        ctx.arc(256, 256, innerR, 0, Math.PI * 2, true); // cuts out the central hole
+        ctx.fill();
+
+        // Stroke both boundaries with equivalent structural color lines
+        ctx.strokeStyle = (colorIdx === -1) ? "#475569" : GEM_CANVAS_COLORS_DARK[colorIdx % GEM_COLORS.length];
+        ctx.lineWidth = 5.5;
+
+        // Outer boundary
+        ctx.beginPath();
+        ctx.arc(256, 256, outerR, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Inner boundary
+        ctx.beginPath();
+        ctx.arc(256, 256, innerR, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        // Standard solid filled center disk for non-octagon elements
+        ctx.fillStyle = baseColor;
+        ctx.beginPath();
+        ctx.arc(256, 256, 254, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const texture = new THREE.CanvasTexture(canvas);
+      stigmaTextureCache[cacheKey] = texture;
       return texture;
     }
 
@@ -671,7 +742,7 @@
         const t = i / N;
         const lengthY = t * length;
         
-        // PETAL_THICKNESS_ENHANCEMENT: Widened the petal base and midsection to close all dark gaps between petals at the core
+        // Widened the petal base and midsection to close all dark gaps between petals at the core
         const baseWidth = Math.sin(t * Math.PI) * 0.52 + 0.08 * (1 - t); 
         const width = baseWidth * widthMultiplier;
         const thick = Math.sin(t * Math.PI) * 0.05 + 0.01; 
@@ -712,8 +783,6 @@
         map: texture,
         roughness: 0.75,         // Suede/velvet matte botanical skin feeling
         metalness: 0.0,          // Organic leaf tissues do not contain metallicity
-        emissive: 0x333333,      // Subtle glowing ambiance
-        emissiveIntensity: 0.1,  // Dynamic lighting flare threshold
         transparent: true,
         side: THREE.DoubleSide,
         depthWrite: true
@@ -738,9 +807,120 @@
       if (currentLayoutId === "triquetra") {
         const h = R / Math.sqrt(3);
         computedRings = [{ id: 0, center: { x: 0, y: 2 * h }, radius: R, offset: 0 }, { id: 1, center: { x: -R, y: -h }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: -h }, radius: R, offset: 0 }];
+      } else if (currentLayoutId === "quadrant") {
+        computedRings = [{ id: 0, center: { x: -R, y: R }, radius: R, offset: 0 }, { id: 1, center: { x: R, y: R }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: -R }, radius: R, offset: 0 }, { id: 3, center: { x: -R, y: -R }, radius: R, offset: 0 }];
+      } else if (currentLayoutId === "rhombus") {
+        const h = R / Math.sqrt(3);
+        computedRings = [{ id: 0, center: { x: 0, y: 2 * h }, radius: R, offset: 0 }, { id: 1, center: { x: -R, y: -h }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: -h }, radius: R, offset: 0 }, { id: 3, center: { x: 0, y: -4 * h }, radius: R, offset: 0 }];
+      } else if (currentLayoutId === "monotile") {
+        // MONOTILE LAYOUT (5 Flowers: 1 Octagon at center, 4 Squares on diagonal corners)
+        const u = 2.3;
+        const H = u * (1 + Math.sqrt(2));
+        let idCounter = 0;
+
+        // 1 central Octagon
+        const X = 0, Y = 0;
+        const slotPoints = [];
+        const r_diag = R * Math.sqrt(2);
+        const r_orth = H / 2;
+        for (let k = 0; k < 8; k++) {
+          const a = k * Math.PI / 4;
+          const r_val = (k % 2 === 1) ? r_diag : r_orth;
+          slotPoints.push({ x: X + r_val * Math.cos(a), y: Y + r_val * Math.sin(a) });
+        }
+        computedRings.push({
+          id: idCounter++,
+          center: { x: X, y: Y },
+          radius: R,
+          offset: 0,
+          slots: 8,
+          petalOffset: R * Math.sqrt(2),
+          stigmaRadius: R * Math.sqrt(2) + 0.32,
+          interactionRadius: R * Math.sqrt(2) + 2.3 + 0.10,
+          slotPoints: slotPoints
+        });
+
+        // 4 Squares in the diagonal gaps
+        const squareCenters = [
+          { x: -H / 2, y: -H / 2 },
+          { x: H / 2,  y: -H / 2 },
+          { x: -H / 2, y: H / 2 },
+          { x: H / 2,  y: H / 2 }
+        ];
+        squareCenters.forEach(sc => {
+          const sqSlotPoints = [];
+          for (let k = 0; k < 4; k++) {
+            const a = Math.PI / 4 + k * Math.PI / 2;
+            sqSlotPoints.push({ x: sc.x + 2.3 * Math.cos(a), y: sc.y + 2.3 * Math.sin(a) });
+          }
+          computedRings.push({
+            id: idCounter++,
+            center: sc,
+            radius: R,
+            offset: Math.PI / 4,
+            slots: 4,
+            petalOffset: 0,
+            stigmaRadius: 0.72, // Enlarged square center stigma disc
+            interactionRadius: 2.3 + 0.10,
+            slotPoints: sqSlotPoints
+          });
+        });
+
+      } else if (currentLayoutId === "bitile") {
+        // BITILE LAYOUT (5 Flowers: 4 Octagons in 2x2 layout, 1 Square at center gap)
+        const u = 2.3;
+        const H = u * (1 + Math.sqrt(2));
+        let idCounter = 0;
+
+        // 4 Octagons
+        const octagonCenters = [
+          { x: -H / 2, y: -H / 2 },
+          { x: H / 2,  y: -H / 2 },
+          { x: -H / 2, y: H / 2 },
+          { x: H / 2,  y: H / 2 }
+        ];
+        octagonCenters.forEach(oc => {
+          const slotPoints = [];
+          const r_diag = R * Math.sqrt(2);
+          const r_orth = H / 2;
+          for (let k = 0; k < 8; k++) {
+            const a = k * Math.PI / 4;
+            const r_val = (k % 2 === 1) ? r_diag : r_orth;
+            slotPoints.push({ x: oc.x + r_val * Math.cos(a), y: oc.y + r_val * Math.sin(a) });
+          }
+          computedRings.push({
+            id: idCounter++,
+            center: oc,
+            radius: R,
+            offset: 0,
+            slots: 8,
+            petalOffset: R * Math.sqrt(2),
+            stigmaRadius: R * Math.sqrt(2) + 0.32,
+            interactionRadius: R * Math.sqrt(2) + 2.3 + 0.10,
+            slotPoints: slotPoints
+          });
+        });
+
+        // 1 central Square
+        const sc = { x: 0, y: 0 };
+        const sqSlotPoints = [];
+        for (let k = 0; k < 4; k++) {
+          const a = Math.PI / 4 + k * Math.PI / 2;
+          sqSlotPoints.push({ x: sc.x + 2.3 * Math.cos(a), y: sc.y + 2.3 * Math.sin(a) });
+        }
+        computedRings.push({
+          id: idCounter++,
+          center: sc,
+          radius: R,
+          offset: Math.PI / 4,
+          slots: 4,
+          petalOffset: 0,
+          stigmaRadius: 0.72, // Enlarged square center stigma disc
+          interactionRadius: 2.3 + 0.10,
+          slotPoints: sqSlotPoints
+        });
+
       } else if (currentLayoutId === "tricycle") {
-        // TRICYCLE LAYOUT (6 Flowers, 3-Petals each):
-        // Positioned hex-aligned in a gorgeous ring of radius 2R, sharing one petal with left & right neighbors
         for (let i = 0; i < 6; i++) {
           const theta = i * Math.PI / 3;
           computedRings.push({
@@ -750,9 +930,40 @@
             offset: theta
           });
         }
+      } else if (currentLayoutId === "triangle6") {
+        const h = R / Math.sqrt(3);
+        computedRings = [
+          { id: 0, center: { x: 0, y: 2 * h }, radius: R, offset: 0 }, { id: 1, center: { x: -R, y: -h }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: -h }, radius: R, offset: 0 },
+          { id: 3, center: { x: 0, y: -4 * h }, radius: R, offset: 0 }, { id: 4, center: { x: -2 * R, y: 2 * h }, radius: R, offset: 0 }, { id: 5, center: { x: 2 * R, y: 2 * h }, radius: R, offset: 0 }
+        ];
+      } else if (currentLayoutId === "lotus") {
+        const dy = R * Math.sqrt(3);
+        computedRings = [
+          { id: 0, center: { x: 0, y: 0 }, radius: R, offset: 0 }, { id: 1, center: { x: 2 * R, y: 0 }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: dy }, radius: R, offset: 0 },
+          { id: 3, center: { x: -R, y: dy }, radius: R, offset: 0 }, { id: 4, center: { x: -2 * R, y: 0 }, radius: R, offset: 0 }, { id: 5, center: { x: -R, y: -dy }, radius: R, offset: 0 },
+          { id: 6, center: { x: R, y: -dy }, radius: R, offset: 0 }
+        ];
+      } else if (currentLayoutId === "square9") {
+        computedRings = [
+          { id: 0, center: { x: -2*R, y: 2*R }, radius: R, offset: 0 }, { id: 1, center: { x: 0, y: 2*R }, radius: R, offset: 0 }, { id: 2, center: { x: 2*R, y: 2*R }, radius: R, offset: 0 },
+          { id: 3, center: { x: -2*R, y: 0 }, radius: R, offset: 0 }, { id: 4, center: { x: 0, y: 0 }, radius: R, offset: 0 }, { id: 5, center: { x: 2*R, y: 0 }, radius: R, offset: 0 },
+          { id: 6, center: { x: -2*R, y: -2*R }, radius: R, offset: 0 }, { id: 7, center: { x: 0, y: -2*R }, radius: R, offset: 0 }, { id: 8, center: { x: 2*R, y: -2*R }, radius: R, offset: 0 }
+        ];
+      } else if (currentLayoutId === "supertriangle") {
+        const dy = R * Math.sqrt(3);
+        computedRings = [
+          { id: 0, center: { x: 0, y: 0 }, radius: R, offset: 0 },
+          { id: 1, center: { x: 2 * R, y: 0 }, radius: R, offset: 0 },
+          { id: 2, center: { x: R, y: dy }, radius: R, offset: 0 },
+          { id: 3, center: { x: -R, y: dy }, radius: R, offset: 0 },
+          { id: 4, center: { x: -2 * R, y: 0 }, radius: R, offset: 0 },
+          { id: 5, center: { x: -R, y: -dy }, radius: R, offset: 0 },
+          { id: 6, center: { x: R, y: -dy }, radius: R, offset: 0 },
+          { id: 7, center: { x: 0, y: 2 * dy }, radius: R, offset: 0 },
+          { id: 8, center: { x: -3 * R, y: -dy }, radius: R, offset: 0 },
+          { id: 9, center: { x: 3 * R, y: -dy }, radius: R, offset: 0 }
+        ];
       } else if (currentLayoutId === "tricycle12") {
-        // LEVEL 9: SNOWFLAKE LAYOUT (12 Flowers, 3-Petals each)
-        // Inner 6 (distance 2R, hex-aligned)
         for (let i = 0; i < 6; i++) {
           const theta = i * Math.PI / 3;
           computedRings.push({
@@ -762,19 +973,16 @@
             offset: theta
           });
         }
-        // Outer 6 (distance 4R, hex-aligned directly extended from the inner ring)
         for (let i = 0; i < 6; i++) {
           const theta = i * Math.PI / 3;
           computedRings.push({
             id: 6 + i,
             center: { x: 4 * R * Math.cos(theta), y: 4 * R * Math.sin(theta) },
             radius: R,
-            offset: theta + Math.PI // Pointing inwards to share the radial petal correctly
+            offset: theta + Math.PI
           });
         }
       } else if (currentLayoutId === "triring") {
-        // LEVEL 10: TRI-RING LAYOUT (13 Flowers, 3-Petals each, 3 merged tricycles interlocking)
-        // Positioned perfectly using precise hexagonal geometry sharing a single central flower.
         const h = R * Math.sqrt(3);
         computedRings = [
           { id: 0, center: { x: 0, y: 0 }, radius: R, offset: Math.PI / 6 }, // Central flower
@@ -791,51 +999,84 @@
           { id: 11, center: { x: h, y: -3 * R }, radius: R, offset: Math.PI / 6 }, // Out 8
           { id: 12, center: { x: 2 * h, y: -2 * R }, radius: R, offset: Math.PI / 2 } // Out 9
         ];
-      } else if (currentLayoutId === "quadrant") {
-        computedRings = [{ id: 0, center: { x: -R, y: R }, radius: R, offset: 0 }, { id: 1, center: { x: R, y: R }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: -R }, radius: R, offset: 0 }, { id: 3, center: { x: -R, y: -R }, radius: R, offset: 0 }];
-      } else if (currentLayoutId === "rhombus") {
-        const h = R / Math.sqrt(3);
-        computedRings = [{ id: 0, center: { x: 0, y: 2 * h }, radius: R, offset: 0 }, { id: 1, center: { x: -R, y: -h }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: -h }, radius: R, offset: 0 }, { id: 3, center: { x: 0, y: -4 * h }, radius: R, offset: 0 }];
-      } else if (currentLayoutId === "triangle6") {
-        const h = R / Math.sqrt(3);
-        computedRings = [
-          { id: 0, center: { x: 0, y: 2 * h }, radius: R, offset: 0 }, { id: 1, center: { x: -R, y: -h }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: -h }, radius: R, offset: 0 },
-          { id: 3, center: { x: 0, y: -4 * h }, radius: R, offset: 0 }, { id: 4, center: { x: -2 * R, y: 2 * h }, radius: R, offset: 0 }, { id: 5, center: { x: 2 * R, y: 2 * h }, radius: R, offset: 0 }
+      } else if (currentLayoutId === "tile") {
+        // TRITILE LAYOUT (13 Flowers: 9 Octagons arranged in a 3x3 grid, 4 Squares in the diagonal gaps)
+        const u = 2.3;
+        const H = u * (1 + Math.sqrt(2));
+        
+        let idCounter = 0;
+        for (let i = -1; i <= 1; i++) {
+          for (let j = -1; j <= 1; j++) {
+            const X = i * H;
+            const Y = j * H;
+            
+            const slotPoints = [];
+            const r_diag = R * Math.sqrt(2);
+            const r_orth = H / 2;
+            for (let k = 0; k < 8; k++) {
+              const a = k * Math.PI / 4;
+              const r_val = (k % 2 === 1) ? r_diag : r_orth;
+              slotPoints.push({ x: X + r_val * Math.cos(a), y: Y + r_val * Math.sin(a) });
+            }
+
+            computedRings.push({
+              id: idCounter++,
+              center: { x: X, y: Y },
+              radius: R,
+              offset: 0,
+              slots: 8,
+              petalOffset: R * Math.sqrt(2),
+              stigmaRadius: R * Math.sqrt(2) + 0.32, 
+              interactionRadius: R * Math.sqrt(2) + 2.3 + 0.10,
+              slotPoints: slotPoints
+            });
+          }
+        }
+
+        const squareCenters = [
+          { x: -H / 2, y: -H / 2 },
+          { x: H / 2,  y: -H / 2 },
+          { x: -H / 2, y: H / 2 },
+          { x: H / 2,  y: H / 2 }
         ];
-      } else if (currentLayoutId === "lotus") {
-        const dy = R * Math.sqrt(3);
-        computedRings = [
-          { id: 0, center: { x: 0, y: 0 }, radius: R, offset: 0 }, { id: 1, center: { x: 2 * R, y: 0 }, radius: R, offset: 0 }, { id: 2, center: { x: R, y: dy }, radius: R, offset: 0 },
-          { id: 3, center: { x: -R, y: dy }, radius: R, offset: 0 }, { id: 4, center: { x: -2 * R, y: 0 }, radius: R, offset: 0 }, { id: 5, center: { x: -R, y: -dy }, radius: R, offset: 0 },
-          { id: 6, center: { x: R, y: -dy }, radius: R, offset: 0 }
-        ];
-      } else if (currentLayoutId === "supertriangle") {
-        const dy = R * Math.sqrt(3);
-        computedRings = [
-          { id: 0, center: { x: 0, y: 0 }, radius: R, offset: 0 },
-          { id: 1, center: { x: 2 * R, y: 0 }, radius: R, offset: 0 },
-          { id: 2, center: { x: R, y: dy }, radius: R, offset: 0 },
-          { id: 3, center: { x: -R, y: dy }, radius: R, offset: 0 },
-          { id: 4, center: { x: -2 * R, y: 0 }, radius: R, offset: 0 },
-          { id: 5, center: { x: -R, y: -dy }, radius: R, offset: 0 },
-          { id: 6, center: { x: R, y: -dy }, radius: R, offset: 0 },
-          { id: 7, center: { x: 0, y: 2 * dy }, radius: R, offset: 0 },
-          { id: 8, center: { x: -3 * R, y: -dy }, radius: R, offset: 0 },
-          { id: 9, center: { x: 3 * R, y: -dy }, radius: R, offset: 0 }
-        ];
-      } else if (currentLayoutId === "square9") {
-        computedRings = [
-          { id: 0, center: { x: -2*R, y: 2*R }, radius: R, offset: 0 }, { id: 1, center: { x: 0, y: 2*R }, radius: R, offset: 0 }, { id: 2, center: { x: 2*R, y: 2*R }, radius: R, offset: 0 },
-          { id: 3, center: { x: -2*R, y: 0 }, radius: R, offset: 0 }, { id: 4, center: { x: 0, y: 0 }, radius: R, offset: 0 }, { id: 5, center: { x: 2*R, y: 0 }, radius: R, offset: 0 },
-          { id: 6, center: { x: -2*R, y: -2*R }, radius: R, offset: 0 }, { id: 7, center: { x: 0, y: -2*R }, radius: R, offset: 0 }, { id: 8, center: { x: 2*R, y: -2*R }, radius: R, offset: 0 }
-        ];
+        squareCenters.forEach(sc => {
+          const slotPoints = [];
+          for (let k = 0; k < 4; k++) {
+            const a = Math.PI / 4 + k * Math.PI / 2;
+            slotPoints.push({ x: sc.x + 2.3 * Math.cos(a), y: sc.y + 2.3 * Math.sin(a) });
+          }
+
+          computedRings.push({
+            id: idCounter++,
+            center: sc,
+            radius: R,
+            offset: Math.PI / 4,
+            slots: 4,
+            petalOffset: 0,
+            stigmaRadius: 0.72, // Enlarged square center stigma disc
+            interactionRadius: 2.3 + 0.10,
+            slotPoints: slotPoints
+          });
+        });
       }
 
       computedRings.forEach(rc => {
-        const S = config.slotsPerRing;
-        for (let k = 0; k < S; k++) {
-          const a = rc.offset + k * (2 * Math.PI / S);
-          rawCandidates.push({ ringId: rc.id, slotIdx: k, x: rc.center.x + rc.radius * Math.cos(a), y: rc.center.y + rc.radius * Math.sin(a) });
+        if (rc.slots === undefined) rc.slots = config.slotsPerRing;
+        if (rc.petalOffset === undefined) rc.petalOffset = 0;
+        if (rc.stigmaRadius === undefined) {
+          rc.stigmaRadius = (rc.slots === 3) ? 0.35 : 0.26;
+        }
+
+        if (rc.slotPoints) {
+          rc.slotPoints.forEach((sp, k) => {
+            rawCandidates.push({ ringId: rc.id, slotIdx: k, x: sp.x, y: sp.y });
+          });
+        } else {
+          const S = rc.slots;
+          for (let k = 0; k < S; k++) {
+            const a = rc.offset + k * (2 * Math.PI / S);
+            rawCandidates.push({ ringId: rc.id, slotIdx: k, x: rc.center.x + rc.radius * Math.cos(a), y: rc.center.y + rc.radius * Math.sin(a) });
+          }
         }
       });
 
@@ -867,32 +1108,29 @@
         const group = new THREE.Group(); group.position.set(rc.center.x, rc.center.y, 0);
         const stemMesh = createStemMesh(rc.center.x, rc.center.y); boardGroup.add(stemMesh);
 
-        // SUDOKU_COLOR_FIX: Center stigma disc is white (0xffffff) in Sudoku, matching color in Matching blooms mode
-        const stigmaColor = (currentGameMode === "matching") ? GEM_COLORS[rc.id % GEM_COLORS.length] : 0xffffff;
-        
-        // STIGMA_SIZE_ENHANCEMENT: Enlarged stigma central cylinder to improve match visibility dramatically.
-        // Make centers slightly larger on 3-petal layouts (0.35 radius instead of 0.26).
-        const isThreePetal = (config.slotsPerRing === 3);
-        const stigmaRadius = isThreePetal ? 0.35 : 0.26;
-        
-        const stigmaMesh = new THREE.Mesh(new THREE.CylinderGeometry(stigmaRadius, stigmaRadius, 0.05, 24), new THREE.MeshStandardMaterial({
-          color: stigmaColor, roughness: 0.65, metalness: 0.05
+        // Stigma texture generates hollow ring for octagons, standard circles for smaller stems
+        const stigmaColorIdx = (currentGameMode === "matching") ? (rc.id % GEM_COLORS.length) : -1;
+        const stigmaTexture = getStigmaTexture(stigmaColorIdx, rc.slots);
+
+        // STIGMA HOLLOW MESH: We add transparent: true so that WebGL can render the alpha hollow cutouts beautifully
+        const stigmaMesh = new THREE.Mesh(new THREE.CylinderGeometry(rc.stigmaRadius, rc.stigmaRadius, 0.05, 32), new THREE.MeshStandardMaterial({
+          map: stigmaTexture, roughness: 0.65, metalness: 0.05, color: 0xffffff, transparent: true
         }));
         stigmaMesh.rotation.x = Math.PI / 2; stigmaMesh.position.set(0, 0, 0.06); group.add(stigmaMesh);
 
         // Subtle decorative "nerve" line hugging around the outer contour of the stigma circle
         const darkHexColor = (currentGameMode === "matching") ? parseInt(GEM_CANVAS_COLORS_DARK[rc.id % GEM_COLORS.length].replace('#', '0x')) : 0x14532d;
-        const stigmaNerveMesh = new THREE.Mesh(new THREE.TorusGeometry(stigmaRadius + 0.015, 0.009, 6, 24), new THREE.MeshStandardMaterial({
+        const stigmaNerveMesh = new THREE.Mesh(new THREE.TorusGeometry(rc.stigmaRadius + 0.015, 0.009, 6, 24), new THREE.MeshStandardMaterial({
           color: darkHexColor, roughness: 0.8, metalness: 0.1
         }));
         stigmaNerveMesh.position.set(0, 0, 0.085);
         group.add(stigmaNerveMesh);
 
-        // STAMENS_AND_ANTHERS_SCALING: Shifted outward proportionally (adapt to larger centers on 3-petal flowers)
-        const spokeInnerRadius = isThreePetal ? 0.37 : 0.28;
-        const antherRadius = isThreePetal ? 0.57 : 0.48;
+        // STAMENS_AND_ANTHERS_SCALING
+        const spokeInnerRadius = rc.stigmaRadius + 0.02;
+        const antherRadius = rc.stigmaRadius + 0.22;
         
-        const stCount = config.slotsPerRing;
+        const stCount = rc.slots;
         for (let s = 0; s < stCount; s++) {
           const sa = rc.offset + s * (2 * Math.PI / stCount);
           const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.35), new THREE.MeshStandardMaterial({ color: 0x1d3d20, roughness: 0.8 }));
@@ -906,7 +1144,22 @@
 
         boardGroup.add(group);
 
-        return { id: rc.id, center: rc.center, radius: rc.radius, cellIds: ringCells.map(c=>c.id), mesh: stigmaMesh, group: group, solved: false, stigmaMesh: stigmaMesh, stemMesh: stemMesh, auraMesh: auraMesh, petalMeshes: [] };
+        return { 
+          id: rc.id, 
+          center: rc.center, 
+          radius: rc.radius, 
+          cellIds: ringCells.map(c=>c.id), 
+          mesh: stigmaMesh, 
+          group: group, 
+          solved: false, 
+          stigmaMesh: stigmaMesh, 
+          stemMesh: stemMesh, 
+          auraMesh: auraMesh, 
+          petalMeshes: [], 
+          petalOffset: rc.petalOffset,
+          interactionRadius: rc.interactionRadius || 2.4,
+          slots: rc.slots
+        };
       });
 
       flowers = rings;
@@ -918,7 +1171,10 @@
           const r = rings.find(flower => flower.id === c.hostRingId);
           if (r) {
             const angle = Math.atan2(c.y - r.center.y, c.x - r.center.x);
-            c.mesh.position.set(r.center.x, r.center.y, r.group.position.z + 0.04);
+            const offset = r.petalOffset || 0;
+            const px = r.center.x + offset * Math.cos(angle);
+            const py = r.center.y + offset * Math.sin(angle);
+            c.mesh.position.set(px, py, r.group.position.z + 0.04);
             c.mesh.rotation.set(0, 0, angle - Math.PI / 2);
           }
         }
@@ -927,7 +1183,6 @@
 
     function generateSolvedState() {
       if (currentGameMode === "matching") {
-        // Initialize all cells to empty/unassigned
         cells.forEach(c => c.gemId = null);
 
         // Guarantee that every single flower gets at least one petal of its matching color
@@ -935,24 +1190,20 @@
         shuffledRings.forEach(ring => {
           const targetColor = ring.id % GEM_COLORS.length;
           
-          // Verify if this ring already has a petal assigned to its native color (via adjacent ring sharing)
           const hasMatchingCell = ring.cellIds.some(cellId => {
             const cell = cells.find(c => c.id === cellId);
             return cell && cell.gemId === targetColor;
           });
 
           if (!hasMatchingCell) {
-            // Find unassigned slots surrounding this flower
             const emptyCells = ring.cellIds
               .map(cellId => cells.find(c => c.id === cellId))
               .filter(cell => cell && cell.gemId === null);
 
             if (emptyCells.length > 0) {
-              // Pre-assign one random slot to this ring's native color
               const chosenCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
               chosenCell.gemId = targetColor;
             } else {
-              // Fail-safe override: If all shared cells are somehow occupied, force one to match
               const ringCells = ring.cellIds.map(cellId => cells.find(c => c.id === cellId));
               const chosenCell = ringCells[Math.floor(Math.random() * ringCells.length)];
               chosenCell.gemId = targetColor;
@@ -960,7 +1211,6 @@
           }
         });
 
-        // Fill remaining unassigned petals using the standard random-attachment logic
         cells.forEach(c => {
           if (c.gemId === null) {
             const chosen = c.attachments[Math.floor(Math.random() * c.attachments.length)];
@@ -985,6 +1235,7 @@
           return possible;
         }
 
+        // Standard Sudoku Solver
         function solve() {
           let best = null, minRem = Infinity;
           for (let i = 0; i < cells.length; i++) {
@@ -1014,7 +1265,6 @@
       return arr;
     }
 
-    // Runs scrambling animation
     function scrambleRingsAnimated() {
       isTransitioning = true; isScrambling = true;
       const totalRings = rings.length, scrambleSteps = totalRings * 12;
@@ -1054,14 +1304,14 @@
 
       if (currentGameMode === "matching") {
         btnMatching.className = "py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-200 rounded-xl font-bold transition-all";
-        btnSudoku.className = "py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/45 transition-all";
+        btnSudoku.className = "py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all";
         instructions.innerHTML = `
           <li>Turn flowers to match petals to their central color.</li>
         `;
         subtitle.innerText = "Gather matching petals onto each flower center";
       } else {
         btnSudoku.className = "py-3 text-xs botanical-panel border-emerald-500 bg-emerald-950/20 text-emerald-300 rounded-xl font-bold transition-all";
-        btnMatching.className = "py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/45 transition-all";
+        btnMatching.className = "py-3 text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all";
         instructions.innerHTML = `
           <li>Shared petals connect adjacent flower centers directly.</li>
           <li>Sway flowers around their center disc to transfer petals.</li>
@@ -1100,7 +1350,7 @@
       }
 
       rings.forEach(ring => {
-        ring.stigmaMesh.material.color.setHex((currentGameMode === "matching") ? GEM_COLORS[ring.id % GEM_COLORS.length] : 0xffffff);
+        ring.stigmaMesh.material.color.setHex(0xffffff);
       });
 
       syncModeUIButtons();
@@ -1133,6 +1383,7 @@
       positionGemsStatically(); updateSolvedStates();
     }
 
+    // Smoothly unwinds the last visual rotation made to the floral layers
     function undoMove() {
       if (isTransitioning || isDragging || isPaused || isReplaying) return;
       if (stateHistory.length <= 1 || actionHistory.length === 0) return;
@@ -1231,15 +1482,9 @@
         const cell = cells.find(c => c.id === cellId);
         cell.hostRingId = ringId; // Dynamically swap host ID to active flower center
         const rx = cell.x - ring.center.x, ry = cell.y - ring.center.y;
-        
-        // CRITICAL RE-MATH FIX: Instead of subtracting deltaAngle (which causes snapbacks),
-        // we capture the true base angle relative to the unrotated coordinate slots.
         return { mesh: cell.mesh, baseAngle: Math.atan2(ry, rx) };
       });
 
-      // ACTIVE_FLOWER_ON_TOP & REPLAY OVER-FLOW FIX:
-      // We force the active rotating flower to ALWAYS stay on top (renderOrder = 10, targetZ = 0.5) 
-      // even during replay / speed-recap. It will never submerge below other flower meshes or stems.
       const renderOrderBase = 10;
       const renderOrderPetal = 11;
       const targetZ = 0.5;
@@ -1259,9 +1504,11 @@
         onUpdate: () => {
           ring.group.rotation.z = animationState.angle;
           gemsData.forEach(gem => {
-            // Symmetrical radial rotation update starting exactly from center
             const currentAngle = gem.baseAngle + animationState.angle;
-            gem.mesh.position.set(ring.center.x, ring.center.y, ring.group.position.z + 0.04);
+            const offset = ring.petalOffset || 0;
+            const px = ring.center.x + offset * Math.cos(currentAngle);
+            const py = ring.center.y + offset * Math.sin(currentAngle);
+            gem.mesh.position.set(px, py, ring.group.position.z + 0.04);
             gem.mesh.rotation.z = currentAngle - Math.PI / 2;
           });
         },
@@ -1270,7 +1517,6 @@
           if (totalSteps !== 0) executeLogicalShift(ringId, totalSteps);
           ring.group.rotation.z = 0; // RESET GROUP TO 0 to prevent previous move accumulation
           
-          // Restore depth write render orders back to default 0 upon landing
           ring.group.renderOrder = 0;
           ring.group.children.forEach(child => child.renderOrder = 0);
           ring.cellIds.forEach(cellId => {
@@ -1285,7 +1531,6 @@
         }
       });
 
-      // Keep both tweens synced if paused during recap setting-toggle
       if (isReplaying) {
         activeSnapTween = {
           pause: () => { rotTween.pause(); gsap.killTweensOf(ring.group.position); },
@@ -1409,7 +1654,6 @@
       replayTotalTimeSeconds = elapsedSeconds;
       shouldDownloadRecap = shouldDownload;
 
-      // Disable standard UI buttons visually
       updateControlsReplayState();
 
       applyHistoryState(stateHistory[0]);
@@ -1436,7 +1680,7 @@
       const action = actionHistory[replayStepIdx]; 
       sound.playSnap();
       animateRingSnapping(action.ringId, 0, action.direction, () => {
-        if (isReplayPaused) return; // Prevent callback scheduling next step if we paused mid-rotation
+        if (isReplayPaused) return; 
         replayStepIdx++; 
         document.getElementById('stat-moves').innerText = replayStepIdx;
         const curSecs = Math.floor((replayStepIdx / actionHistory.length) * replayTotalTimeSeconds);
@@ -1593,6 +1837,19 @@
         if (top > maxY) maxY = top;
       });
 
+      cells.forEach(c => {
+        const boundaryOffset = 1.15; // approximate petal extension
+        const left = c.x - boundaryOffset;
+        const right = c.x + boundaryOffset;
+        const bottom = c.y - boundaryOffset;
+        const top = c.y + boundaryOffset;
+
+        if (left < minX) minX = left;
+        if (right > maxX) maxX = right;
+        if (bottom < minY) minY = bottom;
+        if (top > maxY) maxY = top;
+      });
+
       const width = maxX - minX, height = maxY - minY;
       const center = new THREE.Vector3((minX + maxX) / 2, (minY + maxY) / 2, 0);
 
@@ -1601,7 +1858,7 @@
       const visibleHeight = 2 * Math.tan(vFOV / 2) * 7.5, visibleWidth = visibleHeight * camera.aspect;
 
       const scaleX = visibleWidth / width, scaleY = visibleHeight / height;
-      const bestScale = Math.min(scaleX, scaleY) * 0.72; // Optimized to scale defensively to prevent any layout Cuts
+      const bestScale = Math.min(scaleX, scaleY) * 0.72; // Scaling defensively to prevent any layout cuts
 
       boardGroup.scale.set(bestScale, bestScale, bestScale);
       boardGroup.position.multiplyScalar(bestScale);
@@ -1631,8 +1888,23 @@
         let nearest = null, minDist = Infinity;
 
         rings.forEach(ring => {
-          const dist = Math.sqrt((localX - ring.center.x)**2 + (localY - ring.center.y)**2);
-          if (dist < ring.radius * 1.5 && dist < minDist) { minDist = dist; nearest = ring; }
+          const actualDist = Math.sqrt((localX - ring.center.x)**2 + (localY - ring.center.y)**2);
+          const maxDragRadius = ring.interactionRadius || 2.4;
+          
+          if (actualDist < maxDragRadius) {
+            let comparisonDist = actualDist;
+            
+            // ASYMMETRIC_TILE_TUNING: 80% of shared petal drag region belongs to squares (slots == 4)
+            const isTileLayout = (currentLayoutId === "tile" || currentLayoutId === "bitile" || currentLayoutId === "monotile");
+            if (isTileLayout && ring.slots === 4) {
+              comparisonDist = actualDist / 4.0; // Scaled to pull drag boundary heavily to squares
+            }
+            
+            if (comparisonDist < minDist) {
+              minDist = comparisonDist;
+              nearest = ring;
+            }
+          }
         });
 
         if (nearest) {
@@ -1640,20 +1912,16 @@
           dragStartAngle = Math.atan2(localY - nearest.center.y, localX - nearest.center.x);
           dragCurrentAngle = dragStartAngle; activeRingStartRotationZ = nearest.group.rotation.z;
 
-          // ACTIVE_FLOWER_ON_TOP: Set high priority renderOrder on active ring group and its components
           activeRing.group.renderOrder = 10;
           activeRing.group.children.forEach(child => child.renderOrder = 10);
 
           dragGems = nearest.cellIds.map(cellId => {
             const cell = cells.find(c => c.id === cellId);
-            cell.hostRingId = nearest.id; // Dynamically update the host to the active flower center
-            
-            // ACTIVE_FLOWER_ON_TOP: Petals render slightly higher than stigma to clear sorting visual layers
+            cell.hostRingId = nearest.id; // Dynamically swap host ID to active flower center
             if (cell.mesh) cell.mesh.renderOrder = 11;
             return { mesh: cell.mesh, originalAngle: Math.atan2(cell.y - nearest.center.y, cell.x - nearest.center.x), originalRotationZ: cell.mesh.rotation.z };
           });
 
-          // ACTIVE_FLOWER_ON_TOP: Smoothly lift active flower group forward on Z-axis using GSAP
           gsap.killTweensOf(activeRing.group.position);
           gsap.to(activeRing.group.position, {
             z: 0.5,
@@ -1694,11 +1962,14 @@
       while (delta > Math.PI) delta -= 2 * Math.PI;
 
       activeRing.group.rotation.z = activeRingStartRotationZ + delta;
+      
+      const offset = activeRing.petalOffset || 0;
       dragGems.forEach(gem => {
         if (gem.mesh) {
           const angle = gem.originalAngle + delta;
-          // ACTIVE_FLOWER_ON_TOP: Tracks dynamic Z-offset so petals stay perfectly flat on the elevated plane
-          gem.mesh.position.set(activeRing.center.x, activeRing.center.y, activeRing.group.position.z + 0.04);
+          const px = activeRing.center.x + offset * Math.cos(angle);
+          const py = activeRing.center.y + offset * Math.sin(angle);
+          gem.mesh.position.set(px, py, activeRing.group.position.z + 0.04);
           gem.mesh.rotation.z = angle - Math.PI / 2;
         }
       });
@@ -1759,13 +2030,11 @@
       btnConfig.addEventListener('click', () => {
         if (isPaused) return;
         if (isReplaying) {
-          // Pause the active recap progression
           isReplayPaused = true;
           if (activeSnapTween) activeSnapTween.pause();
           if (recapTimeoutId) { clearTimeout(recapTimeoutId); recapTimeoutId = null; }
           showToast("Recap Paused ⏸");
           
-          // Open settings and backup selected configuration targets
           preModalLayoutId = currentLayoutId;
           preModalGameMode = currentGameMode;
           document.querySelectorAll('.btn-layout').forEach(b => {
@@ -1793,7 +2062,6 @@
 
       closeConfig.addEventListener('click', () => {
         modalConfig.classList.add('hidden');
-        // Restore pre-modal selection if player discards changes
         currentLayoutId = preModalLayoutId;
         currentGameMode = preModalGameMode;
         if (isReplaying && isReplayPaused) {
@@ -1805,7 +2073,6 @@
         modalConfig.classList.add('hidden');
         if (isReplaying) {
           if (currentLayoutId !== preModalLayoutId || currentGameMode !== preModalGameMode) {
-            // Replay exited because modes or layouts changed
             isReplaying = false;
             isReplayPaused = false;
             if (recapTimeoutId) { clearTimeout(recapTimeoutId); recapTimeoutId = null; }
@@ -1857,16 +2124,22 @@
       window.addEventListener('resize', resizeCameraToFit);
     }
 
-    if (document.readyState === "complete" || document.readyState === "interactive") {
+    // --- LIFE CYCLE SAFE BOOTSTRAPPER ---
+    function startBotanicalSolitaire() {
+      // Robust polling safety check to guarantee GSAP and Three.js are fully loaded before execution
+      if (typeof gsap === "undefined" || typeof THREE === "undefined") {
+        setTimeout(startBotanicalSolitaire, 50);
+        return;
+      }
       initEngine();
       initGame();
       setupEvents();
+    }
+
+    if (document.readyState === "complete" || document.readyState === "interactive") {
+      setTimeout(startBotanicalSolitaire, 1);
     } else {
-      window.onload = function () {
-        initEngine();
-        initGame();
-        setupEvents();
-      };
+      window.onload = startBotanicalSolitaire;
     }
   </script>
 </body>
