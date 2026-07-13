@@ -175,6 +175,7 @@
           <button data-layout="supertriangle" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all">Triangle (10F)</button>
           <button data-layout="tricycle12" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all col-span-1">Snowflake (12F)</button>
           <button data-layout="triring" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all col-span-1">Tri-ring (13F)</button>
+          <button data-layout="houses" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all col-span-1">Houses (13F)</button>
           <button data-layout="tile" class="btn-layout py-2.5 text-[10px] sm:text-xs botanical-panel rounded-xl font-bold text-emerald-400 hover:bg-emerald-950/10 hover:border-emerald-500/20 transition-all col-span-1">Tritile (13F)</button>
         </div>
       </div>
@@ -323,11 +324,12 @@
       supertriangle: { id: "supertriangle", name: "Triangle (10 Flowers)", colorsCount: 10, slotsPerRing: 6 },
       tricycle12:  { id: "tricycle12", name: "Snowflake (12 Flowers)", colorsCount: 12, slotsPerRing: 3 },
       triring:     { id: "triring",    name: "Tri-ring (13 Flowers)", colorsCount: 13, slotsPerRing: 3 },
+      houses:      { id: "houses",     name: "Houses (13 Flowers)",   colorsCount: 8, slotsPerRing: null, petalScale: Math.sqrt(3) / 3 },
       tile:        { id: "tile",       name: "Tritile (13 Flowers)",  colorsCount: 13, slotsPerRing: null }
     };
 
-    // Progression difficulty order rearranged strictly by progressive flower count (Monotile & Bitile placed between 4F and 6F ones)
-    const LAYOUT_ORDER = ["triquetra", "quadrant", "rhombus", "monotile", "bitile", "tricycle", "triangle6", "lotus", "square9", "supertriangle", "tricycle12", "triring", "tile"];
+    // Sorted strictly by progressive difficulty based on total flower counts. (Houses is moved to Level 13, directly between Tri-ring and Tritile)
+    const LAYOUT_ORDER = ["triquetra", "quadrant", "rhombus", "monotile", "bitile", "tricycle", "triangle6", "lotus", "square9", "supertriangle", "tricycle12", "triring", "houses", "tile"];
     
     // Level numbering lookup
     const LEVEL_NAMES = {
@@ -343,7 +345,8 @@
       supertriangle: "Level 10: Super Triangle",
       tricycle12: "Level 11: Snowflake (12F)",
       triring: "Level 12: Tri-ring (13F)",
-      tile: "Level 13: Tritile (13F)"
+      houses: "Level 13: Houses (13F)",
+      tile: "Level 14: Tritile (13F)"
     };
 
     const GEM_COLORS = [
@@ -370,11 +373,9 @@
     ];
 
     // Rich, dark, organic colors representing matching darker nerve stripes on each petal
-    // Color 10 (Broken White) dark nerves updated to a charcoal earthy-dark "#2a1e1a" for high contrast
-    // Color 6 (Turquoise) dark nerves restored to original "#005b66" for soft organic harmony
     const GEM_CANVAS_COLORS_DARK = [
       "#7f0026", "#005924", "#0a1c8c", "#8c5800", "#4a0e80",
-      "#8c2300", "#005b66", "#021a07", "#38000f", "#002e2e",
+      "#8c2300", "#003c47", "#021a07", "#38000f", "#002e2e",
       "#2a1e1a", "#2c0573", "#802c1a"
     ];
 
@@ -449,7 +450,10 @@
         // Draw the central straight structural nerve
         ctx.strokeStyle = darkColor;
         // Adjusted central nerve weights to keep white and turquoise cohesive and single-petaled
-        ctx.lineWidth = (cacheKey === 10) ? 8.5 : 6;
+        let mainLineWidth = 6;
+        if (cacheKey === 10) mainLineWidth = 8.5;
+        if (cacheKey === 6) mainLineWidth = 7.5; // Sweet spot central line width
+        ctx.lineWidth = mainLineWidth;
         ctx.lineCap = "round";
         ctx.beginPath();
         ctx.moveTo(cx, 0);
@@ -478,9 +482,9 @@
             strokeWidth = Math.max(2.8, 5.8 - absK * 0.8);
             currentAlpha = 0.95;
           } else if (cacheKey === 6) {
-            // Symmetrical original nerve style for color index 6 (Turquoise)
-            strokeWidth = Math.max(1.8, 4.8 - absK * 0.8);
-            currentAlpha = 0.85;
+            // Sweet spot side curves for color index 6 (Turquoise)
+            strokeWidth = Math.max(2.2, 5.2 - absK * 0.8);
+            currentAlpha = 0.90;
           }
           ctx.lineWidth = strokeWidth;
           ctx.globalAlpha = currentAlpha;
@@ -943,6 +947,84 @@
           { id: 3, center: { x: -R, y: dy }, radius: R, offset: 0 }, { id: 4, center: { x: -2 * R, y: 0 }, radius: R, offset: 0 }, { id: 5, center: { x: -R, y: -dy }, radius: R, offset: 0 },
           { id: 6, center: { x: R, y: -dy }, radius: R, offset: 0 }
         ];
+      } else if (currentLayoutId === "houses") {
+        // LEVEL 13: HOUSES LAYOUT (13 Flowers: 5 Squares, 8 Triangles sharing edges dynamically)
+        const u = 2.3; // Unit side length
+        const sqrt3 = Math.sqrt(3);
+        let idCounter = 0;
+
+        // 1. Central Square (Flower 0)
+        computedRings.push({
+          id: idCounter++,
+          center: { x: 0, y: 0 },
+          radius: u * 0.5, // exact midpoint distance
+          offset: 0,
+          slots: 4,
+          petalOffset: u * (0.5 - Math.sqrt(3) / 6), // Sits beautifully on stigma edge and touches triangles!
+          stigmaRadius: 0.72,
+          interactionRadius: 2.4
+        });
+
+        // 2. Cardinal First Triangles (Flowers 1-4: North, East, South, West)
+        const firstTriCenters = [
+          { x: 0, y: u/2 + u*sqrt3/6, offset: Math.PI/6 }, // North
+          { x: u/2 + u*sqrt3/6, y: 0, offset: Math.PI/3 }, // East
+          { x: 0, y: -u/2 - u*sqrt3/6, offset: Math.PI/2 }, // South (Facing straight Up, bottom-left, and bottom-right)
+          { x: -u/2 - u*sqrt3/6, y: 0, offset: 0 } // West
+        ];
+        firstTriCenters.forEach(tc => {
+          computedRings.push({
+            id: idCounter++,
+            center: { x: tc.x, y: tc.y },
+            radius: u * sqrt3 / 6, // precise circumradius of the equilateral triangle
+            offset: tc.offset,
+            slots: 3,
+            petalOffset: 0,
+            stigmaRadius: 0.35,
+            interactionRadius: 2.4
+          });
+        });
+
+        // 3. Diagonal Second Triangles (Flowers 5-8: NE, NW, SW, SE)
+        const secondTriCenters = [
+          { x: u/2 + u*sqrt3/3, y: u/2, offset: 0 }, // NE (between East and North)
+          { x: -u/2, y: u/2 + u*sqrt3/3, offset: Math.PI/2 }, // NW (between North and West)
+          { x: -u/2 - u*sqrt3/3, y: -u/2, offset: Math.PI }, // SW (between West and South)
+          { x: u/2, y: -u/2 - u*sqrt3/3, offset: 3*Math.PI/2 } // SE (between South and East)
+        ];
+        secondTriCenters.forEach(tc => {
+          computedRings.push({
+            id: idCounter++,
+            center: { x: tc.x, y: tc.y },
+            radius: u * sqrt3 / 6, // precise equilateral triangle circumradius
+            offset: tc.offset,
+            slots: 3,
+            petalOffset: 0,
+            stigmaRadius: 0.35,
+            interactionRadius: 2.4
+          });
+        });
+
+        // 4. Outer Squares (Flowers 9-12: NE, NW, SW, SE)
+        const outerSqCenters = [
+          { x: u/4 + u*sqrt3/4, y: 3*u/4 + u*sqrt3/4, offset: Math.PI/6 }, // NE Square
+          { x: -3*u/4 - u*sqrt3/4, y: u/4 + u*sqrt3/4, offset: 2*Math.PI/3 }, // NW Square
+          { x: -u/4 - u*sqrt3/4, y: -3*u/4 - u*sqrt3/4, offset: 7*Math.PI/6 }, // SW Square
+          { x: 3*u/4 + u*sqrt3/4, y: -u/4 - u*sqrt3/4, offset: 5*Math.PI/3 } // SE Square
+        ];
+        outerSqCenters.forEach(sc => {
+          computedRings.push({
+            id: idCounter++,
+            center: { x: sc.x, y: sc.y },
+            radius: u * 0.5, // precise midpoint distance
+            offset: sc.offset,
+            slots: 4,
+            petalOffset: u * (0.5 - Math.sqrt(3) / 6),
+            stigmaRadius: 0.72,
+            interactionRadius: 2.4
+          });
+        });
+
       } else if (currentLayoutId === "square9") {
         computedRings = [
           { id: 0, center: { x: -2*R, y: 2*R }, radius: R, offset: 0 }, { id: 1, center: { x: 0, y: 2*R }, radius: R, offset: 0 }, { id: 2, center: { x: 2*R, y: 2*R }, radius: R, offset: 0 },
@@ -1000,7 +1082,7 @@
           { id: 12, center: { x: 2 * h, y: -2 * R }, radius: R, offset: Math.PI / 2 } // Out 9
         ];
       } else if (currentLayoutId === "tile") {
-        // TRITILE LAYOUT (13 Flowers: 9 Octagons arranged in a 3x3 grid, 4 Squares in the diagonal gaps)
+        // TRITILE LAYOUT (14: 9 Octagons arranged in a 3x3 grid, 4 Squares in the diagonal gaps)
         const u = 2.3;
         const H = u * (1 + Math.sqrt(2));
         
@@ -1068,9 +1150,7 @@
         }
 
         if (rc.slotPoints) {
-          rc.slotPoints.forEach((sp, k) => {
-            rawCandidates.push({ ringId: rc.id, slotIdx: k, x: sp.x, y: sp.y });
-          });
+          rawCandidates.push(...rc.slotPoints.map((sp, k) => ({ ringId: rc.id, slotIdx: k, x: sp.x, y: sp.y })));
         } else {
           const S = rc.slots;
           for (let k = 0; k < S; k++) {
@@ -1349,6 +1429,7 @@
         isFriendMode = false; player1Results = null;
       }
 
+      // COLOR_MULTIPLY_FIX: Reset materials strictly to 0xffffff to preserve original, clean petal canvas tones!
       rings.forEach(ring => {
         ring.stigmaMesh.material.color.setHex(0xffffff);
       });
@@ -1871,11 +1952,13 @@
       if (isTransitioning) return;
       sound.init(); if (isReplaying) { exitSpeedRecap(shouldDownloadRecap); return; }
       if (isPaused) return;
-      if (e.cancelable) e.preventDefault();
+      
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
       const rect = renderer.domElement.getBoundingClientRect();
-      ndcCoord.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      ndcCoord.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      ndcCoord.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      ndcCoord.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.setFromCamera(ndcCoord, camera);
       const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
@@ -1888,22 +1971,19 @@
         let nearest = null, minDist = Infinity;
 
         rings.forEach(ring => {
-          const actualDist = Math.sqrt((localX - ring.center.x)**2 + (localY - ring.center.y)**2);
+          const dist = Math.sqrt((localX - ring.center.x)**2 + (localY - ring.center.y)**2);
           const maxDragRadius = ring.interactionRadius || 2.4;
-          
-          if (actualDist < maxDragRadius) {
-            let comparisonDist = actualDist;
+          if (dist < maxDragRadius) {
+            let comparisonDist = dist;
             
             // ASYMMETRIC_TILE_TUNING: 80% of shared petal drag region belongs to squares (slots == 4)
+            // Excluded "houses" layout, as squares and triangles are of equal unit sizes.
             const isTileLayout = (currentLayoutId === "tile" || currentLayoutId === "bitile" || currentLayoutId === "monotile");
             if (isTileLayout && ring.slots === 4) {
-              comparisonDist = actualDist / 4.0; // Scaled to pull drag boundary heavily to squares
+              comparisonDist = dist / 4.0; // Scaled to pull drag boundary heavily to squares
             }
             
-            if (comparisonDist < minDist) {
-              minDist = comparisonDist;
-              nearest = ring;
-            }
+            if (comparisonDist < minDist) { minDist = comparisonDist; nearest = ring; }
           }
         });
 
@@ -1912,16 +1992,20 @@
           dragStartAngle = Math.atan2(localY - nearest.center.y, localX - nearest.center.x);
           dragCurrentAngle = dragStartAngle; activeRingStartRotationZ = nearest.group.rotation.z;
 
+          // ACTIVE_FLOWER_ON_TOP: Set high priority renderOrder on active ring group and its components
           activeRing.group.renderOrder = 10;
           activeRing.group.children.forEach(child => child.renderOrder = 10);
 
           dragGems = nearest.cellIds.map(cellId => {
             const cell = cells.find(c => c.id === cellId);
-            cell.hostRingId = nearest.id; // Dynamically swap host ID to active flower center
+            cell.hostRingId = nearest.id; // Dynamically update the host to the active flower center
+            
+            // ACTIVE_FLOWER_ON_TOP: Petals render slightly higher than stigma to clear sorting visual layers
             if (cell.mesh) cell.mesh.renderOrder = 11;
             return { mesh: cell.mesh, originalAngle: Math.atan2(cell.y - nearest.center.y, cell.x - nearest.center.x), originalRotationZ: cell.mesh.rotation.z };
           });
 
+          // ACTIVE_FLOWER_ON_TOP: Smoothly lift active flower group forward on Z-axis using GSAP
           gsap.killTweensOf(activeRing.group.position);
           gsap.to(activeRing.group.position, {
             z: 0.5,
@@ -1943,11 +2027,13 @@
 
     function onPointerMove(e) {
       if (!isDragging || isPaused || isReplaying) return;
-      if (e.cancelable) e.preventDefault();
+      
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
       const rect = renderer.domElement.getBoundingClientRect();
-      ndcCoord.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      ndcCoord.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      ndcCoord.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      ndcCoord.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.setFromCamera(ndcCoord, camera);
       const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), touchPoint = new THREE.Vector3();
@@ -1967,6 +2053,7 @@
       dragGems.forEach(gem => {
         if (gem.mesh) {
           const angle = gem.originalAngle + delta;
+          // ACTIVE_FLOWER_ON_TOP: Tracks dynamic Z-offset so petals stay flat on the elevated plane
           const px = activeRing.center.x + offset * Math.cos(angle);
           const py = activeRing.center.y + offset * Math.sin(angle);
           gem.mesh.position.set(px, py, activeRing.group.position.z + 0.04);
@@ -2030,11 +2117,13 @@
       btnConfig.addEventListener('click', () => {
         if (isPaused) return;
         if (isReplaying) {
+          // Pause the active recap progression
           isReplayPaused = true;
           if (activeSnapTween) activeSnapTween.pause();
           if (recapTimeoutId) { clearTimeout(recapTimeoutId); recapTimeoutId = null; }
           showToast("Recap Paused ⏸");
           
+          // Open settings and backup selected configuration targets
           preModalLayoutId = currentLayoutId;
           preModalGameMode = currentGameMode;
           document.querySelectorAll('.btn-layout').forEach(b => {
@@ -2062,6 +2151,7 @@
 
       closeConfig.addEventListener('click', () => {
         modalConfig.classList.add('hidden');
+        // Restore pre-modal selection if player discards changes
         currentLayoutId = preModalLayoutId;
         currentGameMode = preModalGameMode;
         if (isReplaying && isReplayPaused) {
@@ -2073,6 +2163,7 @@
         modalConfig.classList.add('hidden');
         if (isReplaying) {
           if (currentLayoutId !== preModalLayoutId || currentGameMode !== preModalGameMode) {
+            // Replay exited because modes or layouts changed
             isReplaying = false;
             isReplayPaused = false;
             if (recapTimeoutId) { clearTimeout(recapTimeoutId); recapTimeoutId = null; }
@@ -2117,10 +2208,19 @@
       });
 
       const container = document.getElementById('canvas-container');
+      
+      // Desktop pointer listeners
       container.addEventListener('pointerdown', onPointerDown, { passive: false });
       container.addEventListener('pointermove', onPointerMove, { passive: false });
       window.addEventListener('pointerup', onPointerUp, { passive: false });
       window.addEventListener('pointercancel', onPointerUp, { passive: false });
+
+      // Touch listeners for fully responsive cross-device support
+      container.addEventListener('touchstart', onPointerDown, { passive: false });
+      container.addEventListener('touchmove', onPointerMove, { passive: false });
+      window.addEventListener('touchend', onPointerUp, { passive: false });
+      window.addEventListener('touchcancel', onPointerUp, { passive: false });
+
       window.addEventListener('resize', resizeCameraToFit);
     }
 
