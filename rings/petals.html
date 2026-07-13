@@ -1939,7 +1939,7 @@
       const visibleHeight = 2 * Math.tan(vFOV / 2) * 7.5, visibleWidth = visibleHeight * camera.aspect;
 
       const scaleX = visibleWidth / width, scaleY = visibleHeight / height;
-      const bestScale = Math.min(scaleX, scaleY) * 0.72; // Scaling defensively to prevent any layout cuts
+      const bestScale = Math.min(scaleX, scaleY) * 0.90; // Optimized scale multiplier to increase board size
 
       boardGroup.scale.set(bestScale, bestScale, bestScale);
       boardGroup.position.multiplyScalar(bestScale);
