@@ -1,0 +1,2061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pattern Blocks Desk</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 overflow-hidden w-screen h-screen flex flex-col">
+
+    <!-- Rectangular Selection Marquee -->
+    <div id="selection-marquee" class="absolute border-2 border-indigo-500 bg-indigo-500/20 pointer-events-none hidden rounded-sm z-30"></div>
+
+    <!-- Header Panel -->
+    <header class="absolute top-4 left-4 right-4 z-10 flex justify-between items-center pointer-events-none">
+        <!-- Compact Header Brand Card -->
+        <div class="glass-panel px-4 py-2.5 rounded-2xl shadow-lg flex items-center gap-3 pointer-events-auto">
+            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-lg shadow-md shadow-indigo-200">
+                <i class="fa-solid fa-shapes"></i>
+            </div>
+            <div class="flex flex-col leading-none">
+                <span class="text-xs font-bold text-slate-900 tracking-tight uppercase">Pattern</span>
+                <span class="text-xs font-bold text-slate-900 tracking-tight uppercase">Blocks</span>
+            </div>
+        </div>
+
+        <!-- History & Settings Controls -->
+        <div class="flex gap-2 pointer-events-auto">
+            <button id="btn-undo" class="glass-panel w-12 h-12 rounded-2xl flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-white active:scale-95 transition shadow-lg text-lg opacity-50 cursor-not-allowed" title="Undo (Ctrl+Z)" disabled>
+                <i class="fa-solid fa-reply"></i>
+            </button>
+            <button id="btn-redo" class="glass-panel w-12 h-12 rounded-2xl flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-white active:scale-95 transition shadow-lg text-lg opacity-50 cursor-not-allowed" title="Redo (Ctrl+Y)" disabled>
+                <i class="fa-solid fa-share"></i>
+            </button>
+            <button id="btn-settings" class="glass-panel w-12 h-12 rounded-2xl flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-white active:scale-95 transition shadow-lg text-lg" title="Settings">
+                <i class="fa-solid fa-sliders"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Side Configurations Panel -->
+    <div id="drawer-settings" class="absolute top-20 right-4 bottom-24 w-80 z-20 glass-panel rounded-3xl shadow-2xl p-6 flex flex-col gap-6 transition-all duration-300 transform translate-x-[340px] pointer-events-auto">
+        <div class="flex justify-between items-center border-b pb-4 border-slate-100">
+            <h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-palette mr-2"></i>Desk Settings</h3>
+            <button id="btn-close-settings" class="text-slate-400 hover:text-slate-600 transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+
+        <!-- Palette Selector -->
+        <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Color Palette</label>
+            <div class="grid grid-cols-2 gap-2" id="palette-container"></div>
+        </div>
+
+        <!-- Board Management -->
+        <div class="flex flex-col gap-3">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Board Actions</label>
+            <div class="grid grid-cols-2 gap-2">
+                <button id="btn-save" class="bg-indigo-50 hover:bg-indigo-100 active:scale-95 text-indigo-700 text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-file-export"></i> Save Board
+                </button>
+                <button id="btn-load-trigger" class="bg-indigo-50 hover:bg-indigo-100 active:scale-95 text-indigo-700 text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-file-import"></i> Load Board
+                </button>
+                <input type="file" id="file-loader" class="hidden" accept=".json">
+            </div>
+            <button id="btn-clear" class="bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition w-full">
+                <i class="fa-solid fa-trash-can"></i> Clear All Pieces
+            </button>
+        </div>
+
+        <div class="mt-auto border-t pt-4 border-slate-100 text-center text-xs text-slate-400 font-medium">
+            <p>Pan: Right-Click Drag / Two-Fingers.<br>Zoom: Mouse Wheel / Pinch Touch.</p>
+        </div>
+    </div>
+
+    <!-- Three.js Canvas Container -->
+    <div id="canvas-container" class="w-full h-full flex-grow relative" style="touch-action: none;"></div>
+
+    <!-- Unified Combined Bottom Dock -->
+    <div class="absolute bottom-4 left-4 right-4 z-10 pointer-events-none flex justify-center">
+        <div class="glass-panel p-3 rounded-2xl shadow-xl flex flex-wrap md:flex-nowrap items-center gap-4 pointer-events-auto max-w-full">
+            
+            <!-- Minimal Context Customizer Panel (Shows only when pieces are selected) -->
+            <div id="selection-panel" class="flex items-center gap-3 pr-4 border-r border-slate-200/60 transition-all duration-300 hidden">
+                <button id="btn-rotate-ccw" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 text-slate-600 flex items-center justify-center transition" title="Rotate CCW (-15°)">
+                    <i class="fa-solid fa-arrow-rotate-left"></i>
+                </button>
+                <button id="btn-rotate-cw" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 text-slate-600 flex items-center justify-center transition" title="Rotate CW (+15°)">
+                    <i class="fa-solid fa-arrow-rotate-right"></i>
+                </button>
+                
+                <!-- Custom Picker & Fast Memory Swatches -->
+                <div class="flex items-center gap-2 border-l border-r border-slate-100 px-3">
+                    <div class="relative w-8 h-8 rounded-lg overflow-hidden border border-slate-200 cursor-pointer">
+                        <input type="color" id="piece-color-picker" class="absolute -top-1 -left-1 w-12 h-12 cursor-pointer border-0 p-0" title="Custom Color">
+                    </div>
+                    <div id="quick-swatches" class="flex items-center gap-1"></div>
+                </div>
+
+                <button id="btn-delete-piece" class="w-10 h-10 rounded-xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-600 flex items-center justify-center transition" title="Delete Piece (Backspace)">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
+
+            <!-- Shape Spawner Row -->
+            <div class="flex items-center gap-2 overflow-x-auto">
+                <button data-sides="3" class="btn-spawn group flex flex-col items-center justify-center w-16 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition">
+                    <svg class="w-7 h-7 drop-shadow" viewBox="0 0 100 100">
+                        <polygon points="50,15 85,75 15,75" fill="#FFD166" stroke="#cfa645" stroke-width="4" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="text-[9px] font-bold text-slate-500 mt-1">Triangle</span>
+                </button>
+                <button data-sides="4" class="btn-spawn group flex flex-col items-center justify-center w-16 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition">
+                    <svg class="w-7 h-7 drop-shadow" viewBox="0 0 100 100">
+                        <rect x="20" y="20" width="60" height="60" rx="5" fill="#EF476F" stroke="#c03254" stroke-width="4"/>
+                    </svg>
+                    <span class="text-[9px] font-bold text-slate-500 mt-1">Square</span>
+                </button>
+                <button data-sides="6" class="btn-spawn group flex flex-col items-center justify-center w-16 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition">
+                    <svg class="w-7 h-7 drop-shadow" viewBox="0 0 100 100">
+                        <polygon points="50,10 85,30 85,70 50,90 15,70 15,30" fill="#F77F00" stroke="#c36200" stroke-width="4" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="text-[9px] font-bold text-slate-500 mt-1">Hexagon</span>
+                </button>
+                <button data-sides="8" class="btn-spawn group flex flex-col items-center justify-center w-16 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition">
+                    <svg class="w-7 h-7 drop-shadow" viewBox="0 0 100 100">
+                        <polygon points="50,10 78,22 90,50 78,78 50,90 22,78 10,50 22,22" fill="#118AB2" stroke="#0b6381" stroke-width="4" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="text-[9px] font-bold text-slate-500 mt-1">Octagon</span>
+                </button>
+                <button data-sides="12" class="btn-spawn group flex flex-col items-center justify-center w-16 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition">
+                    <svg class="w-7 h-7 drop-shadow" viewBox="0 0 100 100">
+                        <polygon points="50,10 70,15 85,30 90,50 85,70 70,85 50,90 30,85 15,70 10,50 15,30 30,15" fill="#06D6A0" stroke="#049972" stroke-width="4" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="text-[9px] font-bold text-slate-500 mt-1">Dodecagon</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        if (navigator.audioSession) {
+            try {
+                navigator.audioSession.type = "playback";
+            } catch (e) {
+                console.warn("audioSession configuration failed:", e);
+            }
+        }
+
+        // --- Low Latency Web Audio Synthesizer ---
+        class SoundSynth {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (this.ctx) return;
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContextClass();
+            }
+            playSnap() {
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(750, now + 0.04);
+                osc.frequency.exponentialRampToValueAtTime(90, now + 0.12);
+                
+                gain.gain.setValueAtTime(0.35, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.13);
+            }
+            playSelect() {
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(540, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+                
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.13);
+            }
+            playError() {
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc1 = this.ctx.createOscillator();
+                const osc2 = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc1.type = 'sawtooth';
+                osc1.frequency.setValueAtTime(105, now);
+                osc2.type = 'sawtooth';
+                osc2.frequency.setValueAtTime(107, now);
+                
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + 0.26);
+                osc2.stop(now + 0.26);
+            }
+            playRotate() {
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(320, now);
+                osc.frequency.exponentialRampToValueAtTime(480, now + 0.05);
+                
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.07);
+            }
+        }
+        const sfx = new SoundSynth();
+
+        // --- Color Palettes Config ---
+        const PALETTES = {
+            classic: {
+                name: "Classic Desk",
+                3: "#FFD166",
+                4: "#EF476F",
+                6: "#F77F00",
+                8: "#118AB2",
+                12: "#06D6A0"
+            },
+            pastel: {
+                name: "Candy Pastel",
+                3: "#FFE5B4",
+                4: "#FFB7B2",
+                6: "#FFDAC1",
+                8: "#B5E2FA",
+                12: "#E2F0CB"
+            },
+            neon: {
+                name: "Hyper Glow",
+                3: "#FFE600",
+                4: "#FF007F",
+                6: "#FF7F00",
+                8: "#00F0FF",
+                12: "#00FF66"
+            },
+            forest: {
+                name: "Deep Woods",
+                3: "#E9C46A",
+                4: "#E76F51",
+                6: "#F4A261",
+                8: "#2A9D8F",
+                12: "#8AB17D"
+            }
+        };
+        let activePaletteKey = "classic";
+
+        // --- Geometry Utility Equations ---
+        function calculateCircumradius(numSides) {
+            return 1 / (2 * Math.sin(Math.PI / numSides));
+        }
+        function calculateApothem(numSides) {
+            return 1 / (2 * Math.tan(Math.PI / numSides));
+        }
+
+        // Generates clean block with exact centroid pivot (NO centroid-distorting general center shifts)
+        function createTactilePolygonGeometry(numSides) {
+            const radius = calculateCircumradius(numSides);
+            const shape = new THREE.Shape();
+            
+            for (let i = 0; i < numSides; i++) {
+                const angle = (2 * Math.PI * i) / numSides;
+                const x = radius * Math.cos(angle);
+                const y = radius * Math.sin(angle);
+                if (i === 0) shape.moveTo(x, y);
+                else shape.lineTo(x, y);
+            }
+            shape.closePath();
+
+            const extrudeSettings = {
+                depth: 0.22,
+                bevelEnabled: true,
+                bevelSegments: 4,
+                steps: 1,
+                bevelSize: 0.015,
+                bevelThickness: 0.015
+            };
+
+            const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            // Translate ONLY in Z axis to center the extrusion vertically while keeping 2D X-Y Centroid perfect
+            geom.translate(0, 0, -extrudeSettings.depth / 2);
+            return geom;
+        }
+
+        // Separating Axis Theorem (SAT) Object for Physics
+        const SAT = {
+            getAxes(vertices) {
+                const axes = [];
+                for (let i = 0; i < vertices.length; i++) {
+                    const p1 = vertices[i];
+                    const p2 = vertices[(i + 1) % vertices.length];
+                    const edge = new THREE.Vector2().subVectors(p2, p1);
+                    const normal = new THREE.Vector2(-edge.y, edge.x).normalize();
+                    axes.push(normal);
+                }
+                return axes;
+            },
+            project(vertices, axis) {
+                let min = vertices[0].dot(axis);
+                let max = min;
+                for (let i = 1; i < vertices.length; i++) {
+                    const proj = vertices[i].dot(axis);
+                    if (proj < min) min = proj;
+                    if (proj > max) max = proj;
+                }
+                return { min, max };
+            },
+            intervalsOverlap(p1, p2) {
+                return !(p1.max <= p2.min + 0.01 || p2.max <= p1.min + 0.01);
+            },
+            checkOverlap(polyA, polyB) {
+                const vertA = polyA.getVertices();
+                const vertB = polyB.getVertices();
+                const axes = [...this.getAxes(vertA), ...this.getAxes(vertB)];
+
+                for (const axis of axes) {
+                    const projA = this.project(vertA, axis);
+                    const projB = this.project(vertB, axis);
+                    if (!this.intervalsOverlap(projA, projB)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        };
+
+        // --- Class Model: Pattern Polygon Block ---
+        let nextPieceId = 1;
+        class PatternPolygon {
+            constructor(numSides, center = new THREE.Vector2(0, 0), rotation = 0, colorHex = null) {
+                this.pieceId = "piece_" + (nextPieceId++);
+                this.numSides = parseInt(numSides);
+                this.center = center.clone();
+                this.rotation = rotation;
+                this.color = colorHex || PALETTES[activePaletteKey][this.numSides];
+
+                this.radius = calculateCircumradius(this.numSides);
+                this.apothem = calculateApothem(this.numSides);
+
+                this.neighbors = new Array(this.numSides).fill(null);
+
+                this.geometry = createTactilePolygonGeometry(this.numSides);
+                
+                // Pure matte, saturated coloring (Zero metalness/low gloss to replicate flat menus)
+                this.material = new THREE.MeshStandardMaterial({
+                    color: this.color,
+                    roughness: 0.9,
+                    metalness: 0.0,
+                    flatShading: false
+                });
+                
+                this.mesh = new THREE.Mesh(this.geometry, this.material);
+                this.mesh.castShadow = true;
+                this.mesh.receiveShadow = true;
+                this.mesh.userData = { parentPolygon: this };
+
+                this.localVertices = [];
+                for (let i = 0; i < this.numSides; i++) {
+                    const angle = (2 * Math.PI * i) / this.numSides;
+                    this.localVertices.push(new THREE.Vector2(
+                        this.radius * Math.cos(angle),
+                        this.radius * Math.sin(angle)
+                    ));
+                }
+
+                this.updateMeshTransform();
+            }
+
+            updateMeshTransform(zHeight = 0) {
+                this.mesh.position.set(this.center.x, this.center.y, zHeight);
+                this.mesh.rotation.set(0, 0, this.rotation);
+            }
+
+            getVertices() {
+                const cos = Math.cos(this.rotation);
+                const sin = Math.sin(this.rotation);
+                return this.localVertices.map(v => {
+                    return new THREE.Vector2(
+                        this.center.x + (v.x * cos - v.y * sin),
+                        this.center.y + (v.x * sin + v.y * cos)
+                    );
+                });
+            }
+
+            setTranslation(x, y) {
+                this.center.set(x, y);
+                this.updateMeshTransform();
+                if (this.rotationRing) this.rotationRing.position.set(x, y, 0.02);
+            }
+
+            setRotation(angle) {
+                this.rotation = angle;
+                this.updateMeshTransform();
+                if (this.rotationRing) this.rotationRing.rotation.set(0, 0, angle);
+            }
+
+            setColor(hex) {
+                this.color = hex;
+                this.material.color.set(hex);
+            }
+
+            disconnect() {
+                for (let i = 0; i < this.numSides; i++) {
+                    if (this.neighbors[i]) {
+                        const other = this.neighbors[i];
+                        const otherIndex = other.neighbors.indexOf(this);
+                        if (otherIndex !== -1) {
+                            other.neighbors[otherIndex] = null;
+                        }
+                        this.neighbors[i] = null;
+                    }
+                }
+            }
+
+            getEdgeMidpointWorld(edgeIndex) {
+                const vertices = this.getVertices();
+                const v1 = vertices[edgeIndex];
+                const v2 = vertices[(edgeIndex + 1) % this.numSides];
+                return new THREE.Vector2().addVectors(v1, v2).multiplyScalar(0.5);
+            }
+
+            getEdgeNormalWorld(edgeIndex) {
+                const angle = this.rotation + (2 * edgeIndex + 1) * Math.PI / this.numSides;
+                return new THREE.Vector2(Math.cos(angle), Math.sin(angle)).normalize();
+            }
+
+            destroy(scene) {
+                this.disconnect();
+                scene.remove(this.mesh);
+                this.geometry.dispose();
+                this.material.dispose();
+                if (this.rotationRing) {
+                    scene.remove(this.rotationRing);
+                }
+            }
+        }
+
+        // --- Primary Game Engine Architecture ---
+        class BoardGame {
+            constructor() {
+                this.polygons = [];
+                this.joinFrames = [];
+                this.particles = [];
+                
+                // Selection Cluster arrays
+                this.selectedPolygons = [];
+                this.draggedPolygon = null;
+                this.draggedClusterOrigins = [];
+                this.draggedRotator = false;
+                this.dragOffset = new THREE.Vector2();
+
+                // Clipboard memory
+                this.clipboard = [];
+
+                // Color Memory (Saves custom colors independently per shape type)
+                this.shapeColorsMemory = {};
+                Object.keys(PALETTES[activePaletteKey]).forEach(sides => {
+                    if (sides !== "name") {
+                        this.shapeColorsMemory[sides] = PALETTES[activePaletteKey][sides];
+                    }
+                });
+                this.recentColors = [];
+
+                // Undo/Redo Timeline Stacks
+                this.undoStack = [];
+                this.redoStack = [];
+                this.isKeyTranslating = false;
+
+                this.joinAnimation = null;
+
+                this.container = document.getElementById("canvas-container");
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0xf1f5f9);
+
+                this.setupRendererAndCamera();
+                this.setupLights();
+                this.setupDeskGrid();
+                this.setupRaycasting();
+                this.setupEventListeners();
+                this.setupUIHandlers();
+
+                this.particleGeometry = new THREE.BoxGeometry(0.08, 0.08, 0.08);
+
+                this.spawnShape(6, new THREE.Vector2(0, 1.5));
+
+                this.clock = new THREE.Clock();
+                this.animate();
+            }
+
+            // Getter to retain backwards compatibility for single selected actions
+            get selectedPolygon() {
+                return this.selectedPolygons[0] || null;
+            }
+
+            setupRendererAndCamera() {
+                const width = this.container.clientWidth;
+                const height = this.container.clientHeight;
+
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setSize(width, height);
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.container.appendChild(this.renderer.domElement);
+
+                // --- Orthonormal Overhead Flat View ---
+                const aspect = width / height;
+                this.viewSize = 13;
+                this.camera = new THREE.OrthographicCamera(
+                    -this.viewSize * aspect / 2,
+                    this.viewSize * aspect / 2,
+                    this.viewSize / 2,
+                    -this.viewSize / 2,
+                    0.1,
+                    1000
+                );
+                // Offset camera position down slightly so the coordinates are pushed UP on screen, clearing menus
+                this.camera.position.set(0, -1.8, 20);
+                this.camera.lookAt(0, -1.8, 0);
+            }
+
+            setupLights() {
+                // Pure high illumination ambient fill to match menus exactly
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
+                this.scene.add(ambientLight);
+
+                // Soft directed overlay for subtle plastic highlights & depth along the bottom edges
+                const dirLight = new THREE.DirectionalLight(0xffffff, 0.15);
+                dirLight.position.set(4, -6, 12);
+                dirLight.castShadow = true;
+                dirLight.shadow.mapSize.width = 1024;
+                dirLight.shadow.mapSize.height = 1024;
+                dirLight.shadow.bias = -0.001;
+                this.scene.add(dirLight);
+            }
+
+            setupDeskGrid() {
+                const grid = new THREE.GridHelper(30, 30, 0xcbd5e1, 0xe2e8f0);
+                grid.rotation.x = Math.PI / 2;
+                grid.position.z = -0.02;
+                this.scene.add(grid);
+
+                const borderGeom = new THREE.RingGeometry(18, 18.2, 64);
+                const borderMat = new THREE.MeshBasicMaterial({ color: 0xe2e8f0, side: THREE.DoubleSide });
+                const deskBorder = new THREE.Mesh(borderGeom, borderMat);
+                deskBorder.position.z = -0.01;
+                this.scene.add(deskBorder);
+            }
+
+            setupRaycasting() {
+                this.raycaster = new THREE.Raycaster();
+                this.pointer = new THREE.Vector2();
+                this.planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+            }
+
+            getIntersectionPoint(clientX, clientY) {
+                const rect = this.renderer.domElement.getBoundingClientRect();
+                this.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+                this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+                this.raycaster.setFromCamera(this.pointer, this.camera);
+                const intersectionVec = new THREE.Vector3();
+                this.raycaster.ray.intersectPlane(this.planeZ, intersectionVec);
+                return new THREE.Vector2(intersectionVec.x, intersectionVec.y);
+            }
+
+            getBestSnapTarget(draggedPoly) {
+                if (!draggedPoly) return null;
+                const tolerance = 0.65;
+                let optimalTarget = null;
+                let minMidpointDistance = Infinity;
+
+                for (const target of this.polygons) {
+                    if (this.selectedPolygons.includes(target)) continue;
+
+                    for (let targetEdge = 0; targetEdge < target.numSides; targetEdge++) {
+                        const targetMid = target.getEdgeMidpointWorld(targetEdge);
+
+                        for (let dragEdge = 0; dragEdge < draggedPoly.numSides; dragEdge++) {
+                            const dragMid = draggedPoly.getEdgeMidpointWorld(dragEdge);
+                            const distance = dragMid.distanceTo(targetMid);
+
+                            if (distance < tolerance && distance < minMidpointDistance) {
+                                const targetNorm = target.getEdgeNormalWorld(targetEdge);
+                                const idealCenter = new THREE.Vector2().addVectors(
+                                    target.center,
+                                    new THREE.Vector2().addVectors(
+                                        targetNorm.clone().multiplyScalar(target.apothem),
+                                        targetNorm.clone().multiplyScalar(draggedPoly.apothem)
+                                    )
+                                );
+
+                                const idealRotation = target.rotation + (2 * targetEdge + 1) * Math.PI / target.numSides + Math.PI - (2 * dragEdge + 1) * Math.PI / draggedPoly.numSides;
+
+                                // Verify validity of placing the entire dragged cluster at this snapped relative offset
+                                const deltaX = idealCenter.x - draggedPoly.center.x;
+                                const deltaY = idealCenter.y - draggedPoly.center.y;
+                                const deltaRot = idealRotation - draggedPoly.rotation;
+
+                                // Cache and try transformation on the cluster
+                                let isClusterLegit = true;
+                                const caches = this.selectedPolygons.map(p => ({
+                                    poly: p,
+                                    center: p.center.clone(),
+                                    rotation: p.rotation
+                                }));
+
+                                this.selectedPolygons.forEach(p => {
+                                    if (p === draggedPoly) {
+                                        p.center.copy(idealCenter);
+                                        p.rotation = idealRotation;
+                                    } else {
+                                        p.center.x += deltaX;
+                                        p.center.y += deltaY;
+                                        const rel = new THREE.Vector2().subVectors(p.center, draggedPoly.center);
+                                        rel.rotateAround(new THREE.Vector2(0, 0), deltaRot);
+                                        p.center.addVectors(draggedPoly.center, rel);
+                                        p.rotation += deltaRot;
+                                    }
+                                    p.updateMeshTransform();
+                                });
+
+                                // Check each piece against non-selected pieces
+                                for (const p of this.selectedPolygons) {
+                                    if (!this.isLocationValid(p, this.selectedPolygons)) {
+                                        isClusterLegit = false;
+                                        break;
+                                    }
+                                }
+
+                                // Restore caches
+                                caches.forEach(c => {
+                                    c.poly.center.copy(c.center);
+                                    c.poly.rotation = c.rotation;
+                                    c.poly.updateMeshTransform();
+                                });
+
+                                if (isClusterLegit) {
+                                    minMidpointDistance = distance;
+                                    optimalTarget = {
+                                        targetPolygon: target,
+                                        targetEdgeIndex: targetEdge,
+                                        draggedEdgeIndex: dragEdge,
+                                        idealCenter,
+                                        idealRotation
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
+                return optimalTarget;
+            }
+
+            isLocationValid(poly, ignoreList = []) {
+                if (poly.center.length() > 17.5) return false;
+
+                for (const p of this.polygons) {
+                    if (p === poly || ignoreList.includes(p)) continue;
+                    if (SAT.checkOverlap(poly, p)) return false;
+                }
+                return true;
+            }
+
+            finalizeSnap(draggedPoly, snap) {
+                const deltaX = snap.idealCenter.x - draggedPoly.center.x;
+                const deltaY = snap.idealCenter.y - draggedPoly.center.y;
+                const deltaRot = snap.idealRotation - draggedPoly.rotation;
+
+                this.selectedPolygons.forEach(p => {
+                    if (p === draggedPoly) {
+                        p.center.copy(snap.idealCenter);
+                        p.rotation = snap.idealRotation;
+                    } else {
+                        p.center.x += deltaX;
+                        p.center.y += deltaY;
+                        const rel = new THREE.Vector2().subVectors(p.center, draggedPoly.center);
+                        rel.rotateAround(new THREE.Vector2(0, 0), deltaRot);
+                        p.center.addVectors(draggedPoly.center, rel);
+                        p.rotation += deltaRot;
+                    }
+                    p.updateMeshTransform();
+                });
+
+                draggedPoly.neighbors[snap.draggedEdgeIndex] = snap.targetPolygon;
+                snap.targetPolygon.neighbors[snap.targetEdgeIndex] = draggedPoly;
+
+                this.triggerSnapJuice(draggedPoly, snap);
+            }
+
+            triggerSnapJuice(poly, snap) {
+                sfx.playSnap();
+                const snapPoint = poly.getEdgeMidpointWorld(snap.draggedEdgeIndex);
+                this.spawnSparkleBurst(snapPoint, poly.color);
+
+                this.selectedPolygons.forEach(p => {
+                    p.mesh.scale.set(1.12, 1.12, 1.12);
+                    let spring = { val: 1.12, velocity: 0 };
+                    const snapSpringLoop = () => {
+                        const k = 140;
+                        const d = 12;
+                        const dt = 0.016;
+                        
+                        const acc = -k * (spring.val - 1) - d * spring.velocity;
+                        spring.velocity += acc * dt;
+                        spring.val += spring.velocity * dt;
+
+                        p.mesh.scale.set(spring.val, spring.val, spring.val);
+
+                        if (Math.abs(spring.val - 1) > 0.005 || Math.abs(spring.velocity) > 0.05) {
+                            requestAnimationFrame(snapSpringLoop);
+                        } else {
+                            p.mesh.scale.set(1, 1, 1);
+                        }
+                    };
+                    snapSpringLoop();
+                });
+            }
+
+            spawnSparkleBurst(coord, colorHex) {
+                const color = new THREE.Color(colorHex);
+                const count = 15;
+                for (let i = 0; i < count; i++) {
+                    const material = new THREE.MeshBasicMaterial({
+                        color: color,
+                        transparent: true,
+                        opacity: 1
+                    });
+                    const particle = new THREE.Mesh(this.particleGeometry, material);
+                    
+                    particle.position.set(coord.x, coord.y, 0.15 + Math.random() * 0.1);
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 1.5 + Math.random() * 2.5;
+                    const velocity = new THREE.Vector3(
+                        Math.cos(angle) * speed,
+                        Math.sin(angle) * speed,
+                        2 + Math.random() * 4
+                    );
+
+                    this.scene.add(particle);
+                    this.particles.push({
+                        mesh: particle,
+                        velocity: velocity,
+                        life: 1.0,
+                        decay: 1.5 + Math.random() * 1.5
+                    });
+                }
+            }
+
+            createRotationRing(poly) {
+                if (poly.rotationRing) {
+                    this.scene.remove(poly.rotationRing);
+                }
+
+                // Render rotation controller only when a single piece is selected
+                if (this.selectedPolygons.length !== 1) return;
+
+                const ringGroup = new THREE.Group();
+                ringGroup.position.set(poly.center.x, poly.center.y, 0.02);
+
+                const ringRadius = poly.radius + 0.45;
+                const ringGeom = new THREE.RingGeometry(ringRadius, ringRadius + 0.04, 32);
+                const ringMat = new THREE.MeshBasicMaterial({ color: 0x6366f1, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+                const mainRing = new THREE.Mesh(ringGeom, ringMat);
+                ringGroup.add(mainRing);
+
+                const knobGeom = new THREE.SphereGeometry(0.12, 16, 16);
+                const knobMat = new THREE.MeshBasicMaterial({ color: 0x4f46e5 });
+                const knob = new THREE.Mesh(knobGeom, knobMat);
+                knob.position.set(0, ringRadius, 0.02);
+                knob.userData = { isRotatorKnob: true, parentPolygon: poly };
+                ringGroup.add(knob);
+
+                poly.rotationRing = ringGroup;
+                this.scene.add(ringGroup);
+            }
+
+            removeRotationRing(poly) {
+                if (poly && poly.rotationRing) {
+                    this.scene.remove(poly.rotationRing);
+                    poly.rotationRing = null;
+                }
+            }
+
+            spawnShape(sides, position = new THREE.Vector2(0, 1.5), customColor = null) {
+                this.pushState();
+
+                // Uses independent memory per shape type
+                const colorToUse = customColor || this.shapeColorsMemory[sides] || PALETTES[activePaletteKey][sides];
+                const poly = new PatternPolygon(sides, position, 0, colorToUse);
+                
+                // Archimedean Spiral Search algorithm for non-overlapping open coordinates
+                let found = false;
+                let r = 0;
+                let angle = 0;
+                const stepRadius = 0.4;
+                const stepAngle = Math.PI / 8;
+                const originalPos = position.clone();
+                let iterations = 0;
+
+                while (!found && r < 18 && iterations < 350) {
+                    poly.center.set(originalPos.x + r * Math.cos(angle), originalPos.y + r * Math.sin(angle));
+                    if (this.isLocationValid(poly)) {
+                        found = true;
+                    } else {
+                        angle += stepAngle;
+                        r += stepRadius * (stepAngle / (2 * Math.PI));
+                        iterations++;
+                    }
+                }
+
+                poly.updateMeshTransform();
+                this.scene.add(poly.mesh);
+                this.polygons.push(poly);
+                this.selectPiece(poly);
+                sfx.playSelect();
+                return poly;
+            }
+
+            // --- Multiple Selection Engine ---
+            selectPiece(poly, addToSelection = false) {
+                if (addToSelection) {
+                    if (this.selectedPolygons.includes(poly)) {
+                        // Toggle off
+                        poly.material.emissive.setHex(0x000000);
+                        this.removeRotationRing(poly);
+                        this.selectedPolygons = this.selectedPolygons.filter(p => p !== poly);
+                    } else {
+                        // Add on
+                        poly.material.emissive.setHex(0x111111);
+                        this.selectedPolygons.push(poly);
+                    }
+                } else {
+                    // Standard single click replaces current selection
+                    this.deselectAll();
+                    this.selectedPolygons = [poly];
+                    poly.material.emissive.setHex(0x111111);
+                }
+
+                this.clearJoinFrames();
+
+                // Build context UI
+                if (this.selectedPolygons.length > 0) {
+                    if (this.selectedPolygons.length === 1 && this.selectedPolygon) {
+                        this.createRotationRing(this.selectedPolygon);
+                        document.getElementById("piece-color-picker").value = this.selectedPolygon.color;
+                    }
+                    
+                    this.updateColorSwatches();
+                    const panel = document.getElementById("selection-panel");
+                    panel.classList.remove("hidden");
+                } else {
+                    const panel = document.getElementById("selection-panel");
+                    panel.classList.add("hidden");
+                }
+            }
+
+            deselectAll() {
+                this.selectedPolygons.forEach(p => {
+                    p.material.emissive.setHex(0x000000);
+                    this.removeRotationRing(p);
+                });
+                this.selectedPolygons = [];
+                this.clearJoinFrames();
+                const panel = document.getElementById("selection-panel");
+                panel.classList.add("hidden");
+            }
+
+            // --- Timeline History Engine (Undo/Redo) ---
+            getBoardStateSnapshot() {
+                return this.polygons.map(p => ({
+                    numSides: p.numSides,
+                    center: { x: p.center.x, y: p.center.y },
+                    rotation: p.rotation,
+                    color: p.color
+                }));
+            }
+
+            restoreBoardState(snapshot) {
+                this.deselectAll();
+                const polys = [...this.polygons];
+                polys.forEach(p => p.destroy(this.scene));
+                this.polygons = [];
+
+                snapshot.forEach(item => {
+                    const poly = new PatternPolygon(
+                        item.numSides,
+                        new THREE.Vector2(item.center.x, item.center.y),
+                        item.rotation,
+                        item.color
+                    );
+                    poly.updateMeshTransform();
+                    this.scene.add(poly.mesh);
+                    this.polygons.push(poly);
+                });
+
+                this.autoConnectAdjacentNeighbors();
+            }
+
+            pushState() {
+                const snapshot = this.getBoardStateSnapshot();
+                this.undoStack.push(JSON.stringify(snapshot));
+                if (this.undoStack.length > 50) this.undoStack.shift();
+                this.redoStack = []; // Clear redo stack on new actions
+                this.updateUndoRedoButtonStates();
+            }
+
+            undo() {
+                if (this.undoStack.length === 0) return;
+                const currentState = JSON.stringify(this.getBoardStateSnapshot());
+                this.redoStack.push(currentState);
+
+                const prev = JSON.parse(this.undoStack.pop());
+                this.restoreBoardState(prev);
+                sfx.playRotate();
+                this.updateUndoRedoButtonStates();
+            }
+
+            redo() {
+                if (this.redoStack.length === 0) return;
+                const currentState = JSON.stringify(this.getBoardStateSnapshot());
+                this.undoStack.push(currentState);
+
+                const next = JSON.parse(this.redoStack.pop());
+                this.restoreBoardState(next);
+                sfx.playRotate();
+                this.updateUndoRedoButtonStates();
+            }
+
+            updateUndoRedoButtonStates() {
+                const btnUndo = document.getElementById("btn-undo");
+                const btnRedo = document.getElementById("btn-redo");
+                
+                if (this.undoStack.length > 0) {
+                    btnUndo.disabled = false;
+                    btnUndo.classList.remove("opacity-50", "cursor-not-allowed");
+                } else {
+                    btnUndo.disabled = true;
+                    btnUndo.classList.add("opacity-50", "cursor-not-allowed");
+                }
+
+                if (this.redoStack.length > 0) {
+                    btnRedo.disabled = false;
+                    btnRedo.classList.remove("opacity-50", "cursor-not-allowed");
+                } else {
+                    btnRedo.disabled = true;
+                    btnRedo.classList.add("opacity-50", "cursor-not-allowed");
+                }
+            }
+
+            // --- Copy & Paste Engine ---
+            copySelectedPieces() {
+                if (this.selectedPolygons.length === 0) return;
+                this.clipboard = this.selectedPolygons.map(p => ({
+                    numSides: p.numSides,
+                    rotation: p.rotation,
+                    color: p.color,
+                    center: { x: p.center.x, y: p.center.y }
+                }));
+                sfx.playSelect();
+            }
+
+            pasteCopiedPieces() {
+                if (this.clipboard.length === 0) return;
+                this.pushState();
+
+                const offset = new THREE.Vector2(1.0, 1.0);
+                const pastedPolys = [];
+                this.deselectAll();
+
+                this.clipboard.forEach(item => {
+                    const poly = new PatternPolygon(
+                        item.numSides,
+                        new THREE.Vector2(item.center.x + offset.x, item.center.y + offset.y),
+                        item.rotation,
+                        item.color
+                    );
+                    poly.updateMeshTransform();
+                    this.scene.add(poly.mesh);
+                    this.polygons.push(poly);
+                    pastedPolys.push(poly);
+                });
+
+                this.selectedPolygons = pastedPolys;
+                this.selectedPolygons.forEach(p => p.material.emissive.setHex(0x111111));
+                
+                this.autoConnectAdjacentNeighbors();
+                this.updateColorSwatches();
+                
+                const panel = document.getElementById("selection-panel");
+                panel.classList.remove("hidden");
+                sfx.playSnap();
+            }
+
+            // --- Overhauled Golden Framing Join Engine ---
+            getLegalJoinConfigurations(PieceA, PieceB) {
+                const configs = [];
+                // Check combinations of all free edges of B against all edges of A
+                for (let edgeB = 0; edgeB < PieceB.numSides; edgeB++) {
+                    if (PieceB.neighbors[edgeB] !== null) continue;
+
+                    for (let edgeA = 0; edgeA < PieceA.numSides; edgeA++) {
+                        const norm = PieceB.getEdgeNormalWorld(edgeB);
+                        const idealCenter = new THREE.Vector2().addVectors(
+                            PieceB.center,
+                            new THREE.Vector2().addVectors(
+                                norm.clone().multiplyScalar(PieceB.apothem),
+                                norm.clone().multiplyScalar(PieceA.apothem)
+                            )
+                        );
+                        const idealRot = PieceB.rotation + (2 * edgeB + 1) * Math.PI / PieceB.numSides + Math.PI - (2 * edgeA + 1) * Math.PI / PieceA.numSides;
+
+                        const cachedCenter = PieceA.center.clone();
+                        const cachedRot = PieceA.rotation;
+
+                        PieceA.center.copy(idealCenter);
+                        PieceA.rotation = idealRot;
+
+                        // Check if placement is physically correct without static overlaps
+                        const valid = this.isLocationValid(PieceA, [PieceA]);
+
+                        PieceA.center.copy(cachedCenter);
+                        PieceA.rotation = cachedRot;
+
+                        if (valid) {
+                            configs.push({
+                                edgeB,
+                                edgeA,
+                                idealCenter,
+                                idealRot
+                            });
+                        }
+                    }
+                }
+                return configs;
+            }
+
+            spawnGoldenFraming(PieceA, PieceB, configs) {
+                this.clearJoinFrames();
+
+                // Group configurations by target edgeB
+                const uniqueEdges = [...new Set(configs.map(c => c.edgeB))];
+
+                uniqueEdges.forEach(edgeB => {
+                    const mid = PieceB.getEdgeMidpointWorld(edgeB);
+                    const norm = PieceB.getEdgeNormalWorld(edgeB);
+
+                    // Build a thin parallel slot box along the polygon boundary face
+                    const frameGeom = new THREE.BoxGeometry(0.96, 0.08, 0.24);
+                    const frameMat = new THREE.MeshBasicMaterial({
+                        color: 0xdfb010,
+                        transparent: true,
+                        opacity: 0.82
+                    });
+                    const frame = new THREE.Mesh(frameGeom, frameMat);
+                    frame.position.set(mid.x, mid.y, 0.12);
+                    frame.rotation.set(0, 0, Math.atan2(norm.y, norm.x) + Math.PI / 2);
+
+                    // Match config
+                    const matchedConfigs = configs.filter(c => c.edgeB === edgeB);
+                    frame.userData = { isJoinFrame: true, configs: matchedConfigs, sourcePoly: PieceA };
+
+                    this.scene.add(frame);
+                    this.joinFrames.push(frame);
+                });
+            }
+
+            clearJoinFrames() {
+                this.joinFrames.forEach(f => {
+                    this.scene.remove(f);
+                    f.geometry.dispose();
+                    f.material.dispose();
+                });
+                this.joinFrames = [];
+            }
+
+            // --- Smart Color Swatches Drawer ---
+            updateColorSwatches() {
+                const container = document.getElementById("quick-swatches");
+                container.innerHTML = "";
+
+                const paletteColors = PALETTES[activePaletteKey];
+                const presetSides = [3, 4, 6, 8, 12];
+                const uniquePresetColors = [...new Set(presetSides.map(s => paletteColors[s]))];
+
+                const combinedColors = [...new Set([...uniquePresetColors, ...this.recentColors])].slice(0, 8);
+
+                combinedColors.forEach(color => {
+                    const swatch = document.createElement("button");
+                    swatch.className = "w-6 h-6 rounded-lg border border-slate-200/80 shadow-sm transition active:scale-90 hover:scale-110";
+                    swatch.style.backgroundColor = color;
+                    swatch.title = `Apply color: ${color}`;
+                    swatch.addEventListener("click", () => {
+                        this.pushState();
+                        this.selectedPolygons.forEach(p => {
+                            p.setColor(color);
+                            this.shapeColorsMemory[p.numSides] = color; // Remember per shape side
+                        });
+                        this.lastSelectedColor = color;
+                        sfx.playSelect();
+                    });
+                    container.appendChild(swatch);
+                });
+            }
+
+            // --- Interaction Mechanics Setup ---
+            setupEventListeners() {
+                const el = this.renderer.domElement;
+                el.addEventListener('contextmenu', e => e.preventDefault());
+
+                this.activePointers = new Map();
+                this.isPanning = false;
+                this.panStartCamera = new THREE.Vector3();
+                this.panStartPointer = new THREE.Vector2();
+                this.lastPinchDist = 0;
+                this.startZoom = 1;
+                this.isSelectingBox = false;
+
+                const onPointerDown = (e) => {
+                    this.activePointers.set(e.pointerId, e);
+
+                    const intersection = this.getIntersectionPoint(e.clientX, e.clientY);
+
+                    if (this.activePointers.size >= 2) {
+                        this.initMultiTouchState();
+                        return;
+                    }
+
+                    if (e.pointerType === 'mouse' && e.button === 2) {
+                        this.isPanning = true;
+                        this.panStartCamera.copy(this.camera.position);
+                        this.panStartPointer.set(e.clientX, e.clientY);
+                        return;
+                    }
+
+                    if (e.button === 0 || e.pointerType === 'touch') {
+                        this.raycaster.setFromCamera(this.pointer, this.camera);
+
+                        // 1. Raycast Check: Clicked Golden Framing Join Targets
+                        const hitsJoinFrames = this.raycaster.intersectObjects(this.joinFrames);
+                        if (hitsJoinFrames.length > 0) {
+                            const hitFrame = hitsJoinFrames[0].object;
+                            const configs = hitFrame.userData.configs;
+                            const sourcePoly = hitFrame.userData.sourcePoly;
+
+                            this.pushState();
+                            this.deselectAll();
+
+                            this.joinAnimation = {
+                                polygon: sourcePoly,
+                                startCenter: sourcePoly.center.clone(),
+                                startRot: sourcePoly.rotation,
+                                endCenter: configs[0].idealCenter,
+                                endRot: configs[0].idealRot,
+                                edgeB: configs[0].edgeB,
+                                edgeA: configs[0].edgeA,
+                                time: 0,
+                                duration: 0.55
+                            };
+                            sfx.playSelect();
+                            return;
+                        }
+
+                        // 2. Raycast Check: Clicked Rotation Knob
+                        if (this.selectedPolygons.length === 1 && this.selectedPolygon.rotationRing) {
+                            const rotKnobHits = this.raycaster.intersectObjects(this.selectedPolygon.rotationRing.children, true);
+                            const knobMatch = rotKnobHits.find(h => h.object.userData.isRotatorKnob);
+                            if (knobMatch) {
+                                this.pushState();
+                                this.draggedRotator = true;
+                                sfx.playSelect();
+                                return;
+                            }
+                        }
+
+                        // 3. Raycast Check: Standard Polygons
+                        const meshes = this.polygons.map(p => p.mesh);
+                        const hits = this.raycaster.intersectObjects(meshes);
+
+                        if (hits.length > 0) {
+                            const clickedMesh = hits[0].object;
+                            const parentPoly = clickedMesh.userData.parentPolygon;
+
+                            // Handle alternative click-to-join trigger flow
+                            if (this.selectedPolygons.length === 1 && this.selectedPolygon !== parentPoly && !e.shiftKey) {
+                                const configs = this.getLegalJoinConfigurations(this.selectedPolygon, parentPoly);
+                                if (configs.length === 1) {
+                                    this.pushState();
+                                    const sourcePoly = this.selectedPolygon;
+                                    this.deselectAll();
+
+                                    this.joinAnimation = {
+                                        polygon: sourcePoly,
+                                        startCenter: sourcePoly.center.clone(),
+                                        startRot: sourcePoly.rotation,
+                                        endCenter: configs[0].idealCenter,
+                                        endRot: configs[0].idealRot,
+                                        edgeB: configs[0].edgeB,
+                                        edgeA: configs[0].edgeA,
+                                        time: 0,
+                                        duration: 0.55
+                                    };
+                                    sfx.playSelect();
+                                    return;
+                                } else if (configs.length > 1) {
+                                    this.spawnGoldenFraming(this.selectedPolygon, parentPoly, configs);
+                                    sfx.playSelect();
+                                    return;
+                                }
+                            }
+
+                            // If not entering join mode, manage selection
+                            this.draggedPolygon = parentPoly;
+                            const alreadySelected = this.selectedPolygons.includes(parentPoly);
+
+                            if (e.shiftKey) {
+                                this.selectPiece(parentPoly, true);
+                            } else if (!alreadySelected) {
+                                this.selectPiece(parentPoly, false);
+                            }
+
+                            this.draggedClusterOrigins = this.selectedPolygons.map(p => ({
+                                polygon: p,
+                                startCenter: p.center.clone(),
+                                startRotation: p.rotation
+                            }));
+
+                            this.dragOffset.subVectors(parentPoly.center, intersection);
+                            
+                            this.selectedPolygons.forEach(p => {
+                                p.disconnect();
+                                this.removeRotationRing(p);
+                            });
+                        } else {
+                            // 4. Raycast empty canvas space: Initialize Rectangular Selection Box
+                            this.isSelectingBox = true;
+                            this.selectionStart = { x: e.clientX, y: e.clientY };
+                            this.deselectAll();
+
+                            const marquee = document.getElementById("selection-marquee");
+                            marquee.style.left = `${e.clientX}px`;
+                            marquee.style.top = `${e.clientY}px`;
+                            marquee.style.width = `0px`;
+                            marquee.style.height = `0px`;
+                            marquee.classList.remove("hidden");
+                        }
+                    }
+                };
+
+                const onPointerMove = (e) => {
+                    if (!this.activePointers.has(e.pointerId)) return;
+                    this.activePointers.set(e.pointerId, e);
+
+                    if (this.activePointers.size >= 2) {
+                        this.handleMultiTouchMove();
+                        return;
+                    }
+
+                    if (this.isPanning) {
+                        const dx = e.clientX - this.panStartPointer.x;
+                        const dy = e.clientY - this.panStartPointer.y;
+                        
+                        const rect = el.getBoundingClientRect();
+                        const wWorld = (this.camera.right - this.camera.left) / this.camera.zoom;
+                        const hWorld = (this.camera.top - this.camera.bottom) / this.camera.zoom;
+
+                        this.camera.position.x = this.panStartCamera.x - (dx / rect.width) * wWorld;
+                        this.camera.position.y = this.panStartCamera.y + (dy / rect.height) * hWorld;
+                        return;
+                    }
+
+                    if (this.isSelectingBox) {
+                        const currentX = e.clientX;
+                        const currentY = e.clientY;
+
+                        const startX = this.selectionStart.x;
+                        const startY = this.selectionStart.y;
+
+                        const minX = Math.min(startX, currentX);
+                        const maxX = Math.max(startX, currentX);
+                        const minY = Math.min(startY, currentY);
+                        const maxY = Math.max(startY, currentY);
+
+                        const marquee = document.getElementById("selection-marquee");
+                        marquee.style.left = `${minX}px`;
+                        marquee.style.top = `${minY}px`;
+                        marquee.style.width = `${maxX - minX}px`;
+                        marquee.style.height = `${maxY - minY}px`;
+
+                        // Real-time highlight selection candidates inside bounds
+                        const rect = el.getBoundingClientRect();
+                        this.polygons.forEach(p => {
+                            const tempV3 = new THREE.Vector3(p.center.x, p.center.y, 0);
+                            tempV3.project(this.camera);
+
+                            const screenX = (tempV3.x * 0.5 + 0.5) * rect.width + rect.left;
+                            const screenY = (tempV3.y * -0.5 + 0.5) * rect.height + rect.top;
+
+                            if (screenX >= minX && screenX <= maxX && screenY >= minY && screenY <= maxY) {
+                                p.material.emissive.setHex(0x111111);
+                            } else {
+                                p.material.emissive.setHex(0x000000);
+                            }
+                        });
+                        return;
+                    }
+
+                    if (this.draggedPolygon) {
+                        const intersection = this.getIntersectionPoint(e.clientX, e.clientY);
+                        
+                        // Lift cluster elements visually
+                        this.selectedPolygons.forEach(p => p.updateMeshTransform(0.12));
+
+                        // Base cluster movement vector mapped on primary dragged piece
+                        const desiredPos = new THREE.Vector2().addVectors(intersection, this.dragOffset);
+                        const deltaX = desiredPos.x - this.draggedPolygon.center.x;
+                        const deltaY = desiredPos.y - this.draggedPolygon.center.y;
+
+                        this.selectedPolygons.forEach(p => {
+                            p.setTranslation(p.center.x + deltaX, p.center.y + deltaY);
+                        });
+
+                        // Magnetic snapped alignment checks on primary piece
+                        const snap = this.getBestSnapTarget(this.draggedPolygon);
+                        if (snap) {
+                            const snapDeltaX = snap.idealCenter.x - this.draggedPolygon.center.x;
+                            const snapDeltaY = snap.idealCenter.y - this.draggedPolygon.center.y;
+                            const snapDeltaRot = snap.idealRotation - this.draggedPolygon.rotation;
+
+                            this.selectedPolygons.forEach(p => {
+                                if (p === this.draggedPolygon) {
+                                    p.center.copy(snap.idealCenter);
+                                    p.rotation = snap.idealRotation;
+                                } else {
+                                    p.center.x += snapDeltaX;
+                                    p.center.y += snapDeltaY;
+                                    const rel = new THREE.Vector2().subVectors(p.center, this.draggedPolygon.center);
+                                    rel.rotateAround(new THREE.Vector2(0, 0), snapDeltaRot);
+                                    p.center.addVectors(this.draggedPolygon.center, rel);
+                                    p.rotation += snapDeltaRot;
+                                }
+                                p.updateMeshTransform(0.15); // snap elevation
+                            });
+                        } else {
+                            // Restore cluster original angles when dragged out of snap boundaries
+                            const clusterPivotIndex = this.selectedPolygons.indexOf(this.draggedPolygon);
+                            if (clusterPivotIndex !== -1 && this.draggedClusterOrigins[clusterPivotIndex]) {
+                                const origPivotRotation = this.draggedClusterOrigins[clusterPivotIndex].startRotation;
+                                const currentPivotRotation = this.draggedPolygon.rotation;
+                                const rotationDiff = origPivotRotation - currentPivotRotation;
+
+                                if (Math.abs(rotationDiff) > 0.005) {
+                                    this.selectedPolygons.forEach((p, idx) => {
+                                        if (this.draggedClusterOrigins[idx]) {
+                                            p.rotation = this.draggedClusterOrigins[idx].startRotation;
+                                            p.updateMeshTransform(0.12);
+                                        }
+                                    });
+                                    this.selectedPolygons.forEach((p, idx) => {
+                                        if (p !== this.draggedPolygon && this.draggedClusterOrigins[idx] && this.draggedClusterOrigins[clusterPivotIndex]) {
+                                            const origRel = new THREE.Vector2().subVectors(
+                                                this.draggedClusterOrigins[idx].startCenter,
+                                                this.draggedClusterOrigins[clusterPivotIndex].startCenter
+                                            );
+                                            p.setTranslation(this.draggedPolygon.center.x + origRel.x, this.draggedPolygon.center.y + origRel.y);
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                        return;
+                    }
+
+                    if (this.draggedRotator && this.selectedPolygon) {
+                        const intersection = this.getIntersectionPoint(e.clientX, e.clientY);
+                        const angle = Math.atan2(intersection.y - this.selectedPolygon.center.y, intersection.x - this.selectedPolygon.center.x) - Math.PI / 2;
+                        const snapStep = Math.PI / 12; // Snap every 15 degrees
+                        const snappedAngle = Math.round(angle / snapStep) * snapStep;
+                        
+                        if (Math.abs(this.selectedPolygon.rotation - snappedAngle) > 0.01) {
+                            this.selectedPolygon.setRotation(snappedAngle);
+                            sfx.playRotate();
+                        }
+                    }
+                };
+
+                const onPointerUp = (e) => {
+                    this.activePointers.delete(e.pointerId);
+
+                    if (this.isPanning) {
+                        this.isPanning = false;
+                    }
+
+                    if (this.isSelectingBox) {
+                        this.isSelectingBox = false;
+                        const marquee = document.getElementById("selection-marquee");
+                        marquee.classList.add("hidden");
+
+                        const startX = this.selectionStart.x;
+                        const startY = this.selectionStart.y;
+                        const currentX = e.clientX;
+                        const currentY = e.clientY;
+
+                        const minX = Math.min(startX, currentX);
+                        const maxX = Math.max(startX, currentX);
+                        const minY = Math.min(startY, currentY);
+                        const maxY = Math.max(startY, currentY);
+
+                        // Select all polygons inside bounding box
+                        const rect = el.getBoundingClientRect();
+                        const boxedPolys = [];
+
+                        this.polygons.forEach(p => {
+                            const tempV3 = new THREE.Vector3(p.center.x, p.center.y, 0);
+                            tempV3.project(this.camera);
+
+                            const screenX = (tempV3.x * 0.5 + 0.5) * rect.width + rect.left;
+                            const screenY = (tempV3.y * -0.5 + 0.5) * rect.height + rect.top;
+
+                            if (screenX >= minX && screenX <= maxX && screenY >= minY && screenY <= maxY) {
+                                boxedPolys.push(p);
+                                p.material.emissive.setHex(0x111111);
+                            } else {
+                                p.material.emissive.setHex(0x000000);
+                            }
+                        });
+
+                        if (boxedPolys.length > 0) {
+                            this.selectedPolygons = boxedPolys;
+                            if (this.selectedPolygons.length === 1 && this.selectedPolygon) {
+                                this.createRotationRing(this.selectedPolygon);
+                                document.getElementById("piece-color-picker").value = this.selectedPolygon.color;
+                            }
+                            this.updateColorSwatches();
+                            const panel = document.getElementById("selection-panel");
+                            panel.classList.remove("hidden");
+                            sfx.playSelect();
+                        } else {
+                            this.deselectAll();
+                        }
+                        return;
+                    }
+
+                    if (this.draggedPolygon) {
+                        const snap = this.getBestSnapTarget(this.draggedPolygon);
+                        let moveSuccessful = false;
+
+                        if (snap) {
+                            this.finalizeSnap(this.draggedPolygon, snap);
+                            moveSuccessful = true;
+                        } else {
+                            let isAllValid = true;
+                            for (const p of this.selectedPolygons) {
+                                if (!this.isLocationValid(p, this.selectedPolygons)) {
+                                    isAllValid = false;
+                                    break;
+                                }
+                            }
+
+                            if (isAllValid) {
+                                // Commit state if actual movement displacement occurred
+                                const firstOrigin = this.draggedClusterOrigins.find(o => o.polygon === this.draggedPolygon);
+                                if (firstOrigin && firstOrigin.startCenter.distanceTo(firstOrigin.polygon.center) > 0.05) {
+                                    this.pushState();
+                                }
+
+                                this.selectedPolygons.forEach(p => p.updateMeshTransform(0));
+                                sfx.playSnap();
+                                moveSuccessful = true;
+                            } else {
+                                sfx.playError();
+                                this.animateClusterBackToOrigin(this.draggedClusterOrigins);
+                            }
+                        }
+
+                        if (moveSuccessful) {
+                            this.selectedPolygons.forEach(p => this.recreateInteractiveVisuals(p));
+                            this.autoConnectAdjacentNeighbors();
+                        }
+                        this.draggedPolygon = null;
+                    }
+
+                    if (this.draggedRotator) {
+                        this.draggedRotator = false;
+                        if (this.selectedPolygon) {
+                            this.recreateInteractiveVisuals(this.selectedPolygon);
+                        }
+                    }
+
+                    if (this.activePointers.size < 2) {
+                        this.lastPinchDist = 0;
+                    }
+                };
+
+                const onWheel = (e) => {
+                    e.preventDefault();
+                    const zoomFactor = 1.15;
+                    if (e.deltaY < 0) {
+                        this.camera.zoom *= zoomFactor;
+                    } else {
+                        this.camera.zoom /= zoomFactor;
+                    }
+                    this.camera.zoom = Math.max(0.4, Math.min(this.camera.zoom, 6.0));
+                    this.camera.updateProjectionMatrix();
+                };
+
+                // PC Desktop + Tablet unified pointer bindings
+                el.addEventListener('pointerdown', onPointerDown);
+                window.addEventListener('pointermove', onPointerMove);
+                window.addEventListener('pointerup', onPointerUp);
+                window.addEventListener('pointercancel', onPointerUp);
+                el.addEventListener('wheel', onWheel, { passive: false });
+
+                // Keyboard Shortcuts Event Listeners
+                window.addEventListener('keydown', (e) => {
+                    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+                    const modifier = isMac ? e.metaKey : e.ctrlKey;
+
+                    if (modifier && e.key.toLowerCase() === 'z') {
+                        e.preventDefault();
+                        if (e.shiftKey) {
+                            this.redo();
+                        } else {
+                            this.undo();
+                        }
+                    } else if (modifier && e.key.toLowerCase() === 'y') {
+                        e.preventDefault();
+                        this.redo();
+                    } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                        if (this.selectedPolygons.length > 0) {
+                            this.pushState();
+                            const polysToDelete = [...this.selectedPolygons];
+                            polysToDelete.forEach(p => this.deletePiece(p));
+                            this.deselectAll();
+                            sfx.playError();
+                        }
+                    } else if (modifier && e.key.toLowerCase() === 'c') {
+                        e.preventDefault();
+                        this.copySelectedPieces();
+                    } else if (modifier && e.key.toLowerCase() === 'v') {
+                        e.preventDefault();
+                        this.pasteCopiedPieces();
+                    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                        // Arrow keys translate selected elements on board
+                        if (this.selectedPolygons.length > 0) {
+                            e.preventDefault();
+                            
+                            let dx = 0;
+                            let dy = 0;
+                            const step = 0.15; // Smooth incremental movement step
+                            if (e.key === 'ArrowUp') dy = step;
+                            else if (e.key === 'ArrowDown') dy = -step;
+                            else if (e.key === 'ArrowLeft') dx = -step;
+                            else if (e.key === 'ArrowRight') dx = step;
+
+                            if (!this.isKeyTranslating) {
+                                this.pushState();
+                                this.isKeyTranslating = true;
+                            }
+
+                            // Translate cluster
+                            this.selectedPolygons.forEach(p => {
+                                p.center.x += dx;
+                                p.center.y += dy;
+                            });
+
+                            // Confirm translation legitimacy
+                            let valid = true;
+                            this.selectedPolygons.forEach(p => {
+                                if (!this.isLocationValid(p, this.selectedPolygons)) {
+                                    valid = false;
+                                }
+                            });
+
+                            if (valid) {
+                                this.selectedPolygons.forEach(p => {
+                                    p.updateMeshTransform();
+                                    p.disconnect();
+                                });
+                                
+                                // Live magnetic snapping for Arrow keys
+                                const snap = this.getBestSnapTarget(this.selectedPolygons[0]);
+                                if (snap) {
+                                    this.finalizeSnap(this.selectedPolygons[0], snap);
+                                } else {
+                                    this.selectedPolygons.forEach(p => p.updateMeshTransform(0));
+                                }
+
+                                this.autoConnectAdjacentNeighbors();
+                                this.selectedPolygons.forEach(p => this.recreateInteractiveVisuals(p));
+                            } else {
+                                // Undo movement on collision
+                                this.selectedPolygons.forEach(p => {
+                                    p.center.x -= dx;
+                                    p.center.y -= dy;
+                                });
+                                sfx.playError();
+                            }
+                        }
+                    }
+                });
+
+                window.addEventListener('keyup', (e) => {
+                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                        this.isKeyTranslating = false;
+                    }
+                });
+
+                // Window dynamic resize listener
+                window.addEventListener('resize', () => {
+                    const w = this.container.clientWidth;
+                    const h = this.container.clientHeight;
+                    const aspect = w / h;
+                    
+                    this.camera.left = -this.viewSize * aspect / 2;
+                    this.camera.right = this.viewSize * aspect / 2;
+                    this.camera.top = this.viewSize / 2;
+                    this.camera.bottom = -this.viewSize / 2;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(w, h);
+                });
+            }
+
+            initMultiTouchState() {
+                const pointers = Array.from(this.activePointers.values());
+                const p1 = pointers[0];
+                const p2 = pointers[1];
+
+                const dx = p1.clientX - p2.clientX;
+                const dy = p1.clientY - p2.clientY;
+                this.lastPinchDist = Math.sqrt(dx * dx + dy * dy);
+                this.startZoom = this.camera.zoom;
+
+                this.panStartCamera.copy(this.camera.position);
+                this.panStartPointer.set((p1.clientX + p2.clientX) / 2, (p1.clientY + p2.clientY) / 2);
+            }
+
+            handleMultiTouchMove() {
+                const pointers = Array.from(this.activePointers.values());
+                const p1 = pointers[0];
+                const p2 = pointers[1];
+
+                // 1. Zoom Multi-touch Calculation
+                const dx = p1.clientX - p2.clientX;
+                const dy = p1.clientY - p2.clientY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (this.lastPinchDist > 0) {
+                    const factor = dist / this.lastPinchDist;
+                    this.camera.zoom = Math.max(0.4, Math.min(this.startZoom * factor, 6.0));
+                    this.camera.updateProjectionMatrix();
+                }
+
+                // 2. Pan Multi-touch Midpoint Calculation
+                const midX = (p1.clientX + p2.clientX) / 2;
+                const midY = (p1.clientY + p2.clientY) / 2;
+
+                const panDx = midX - this.panStartPointer.x;
+                const panDy = midY - this.panStartPointer.y;
+
+                const rect = this.renderer.domElement.getBoundingClientRect();
+                const wWorld = (this.camera.right - this.camera.left) / this.camera.zoom;
+                const hWorld = (this.camera.top - this.camera.bottom) / this.camera.zoom;
+
+                this.camera.position.x = this.panStartCamera.x - (panDx / rect.width) * wWorld;
+                this.camera.position.y = this.panStartCamera.y + (panDy / rect.height) * hWorld;
+            }
+
+            animateClusterBackToOrigin(clusterOrigins) {
+                const duration = 0.35;
+                const progress = { t: 0 };
+                
+                clusterOrigins.forEach(origin => {
+                    origin.endCenter = origin.polygon.center.clone();
+                    origin.endRotation = origin.polygon.rotation;
+                });
+
+                const step = () => {
+                    progress.t += 0.045;
+                    const ease = 1 - Math.pow(1 - progress.t, 3); // Cubic Ease Out
+
+                    clusterOrigins.forEach(origin => {
+                        const lerpPos = new THREE.Vector2().lerpVectors(origin.endCenter, origin.startCenter, ease);
+                        const lerpRot = THREE.MathUtils.lerp(origin.endRotation, origin.startRotation, ease);
+
+                        origin.polygon.setTranslation(lerpPos.x, lerpPos.y);
+                        origin.polygon.setRotation(lerpRot);
+                    });
+
+                    if (progress.t < 1) {
+                        requestAnimationFrame(step);
+                    } else {
+                        clusterOrigins.forEach(origin => {
+                            origin.polygon.setTranslation(origin.startCenter.x, origin.startCenter.y);
+                            origin.polygon.setRotation(origin.startRotation);
+                            this.recreateInteractiveVisuals(origin.polygon);
+                        });
+                        this.autoConnectAdjacentNeighbors();
+                    }
+                };
+                step();
+            }
+
+            recreateInteractiveVisuals(poly) {
+                if (this.selectedPolygons.includes(poly)) {
+                    this.createRotationRing(poly);
+                }
+            }
+
+            // --- Setup UI Handlers ---
+            setupUIHandlers() {
+                const drawer = document.getElementById("drawer-settings");
+                document.getElementById("btn-settings").addEventListener("click", () => {
+                    drawer.classList.toggle("translate-x-[340px]");
+                    drawer.classList.toggle("translate-x-0");
+                });
+                document.getElementById("btn-close-settings").addEventListener("click", () => {
+                    drawer.classList.add("translate-x-[340px]");
+                    drawer.classList.remove("translate-x-0");
+                });
+
+                document.getElementById("btn-clear").addEventListener("click", () => {
+                    this.pushState();
+                    this.clearBoard();
+                    drawer.classList.add("translate-x-[340px]");
+                });
+
+                // Shape Spawners
+                document.querySelectorAll(".btn-spawn").forEach(btn => {
+                    btn.addEventListener("click", () => {
+                        const sides = parseInt(btn.dataset.sides);
+                        const pos = new THREE.Vector2(0, 1.5);
+                        this.spawnShape(sides, pos);
+                    });
+                });
+
+                // History (Undo/Redo) Button Event Listeners
+                document.getElementById("btn-undo").addEventListener("click", () => this.undo());
+                document.getElementById("btn-redo").addEventListener("click", () => this.redo());
+
+                // Quick CCW / CW Rotators
+                document.getElementById("btn-rotate-ccw").addEventListener("click", () => {
+                    if (this.selectedPolygons.length > 0) {
+                        this.pushState();
+                        this.selectedPolygons.forEach(p => {
+                            p.setRotation(p.rotation + Math.PI / 12);
+                            this.recreateInteractiveVisuals(p);
+                        });
+                        sfx.playRotate();
+                    }
+                });
+                document.getElementById("btn-rotate-cw").addEventListener("click", () => {
+                    if (this.selectedPolygons.length > 0) {
+                        this.pushState();
+                        this.selectedPolygons.forEach(p => {
+                            p.setRotation(p.rotation - Math.PI / 12);
+                            this.recreateInteractiveVisuals(p);
+                        });
+                        sfx.playRotate();
+                    }
+                });
+
+                // Custom Color Selector Input
+                const colorPicker = document.getElementById("piece-color-picker");
+                colorPicker.addEventListener("input", (e) => {
+                    const color = e.target.value;
+                    if (this.selectedPolygons.length > 0) {
+                        this.selectedPolygons.forEach(p => {
+                            p.setColor(color);
+                            this.shapeColorsMemory[p.numSides] = color; // Remember per shape side
+                        });
+                    }
+                    this.lastSelectedColor = color;
+                });
+                colorPicker.addEventListener("change", (e) => {
+                    const color = e.target.value;
+                    this.pushState();
+                    
+                    if (!this.recentColors.includes(color)) {
+                        this.recentColors.unshift(color);
+                        if (this.recentColors.length > 5) this.recentColors.pop();
+                    }
+                    this.updateColorSwatches();
+                    sfx.playSelect();
+                });
+
+                // Custom Single/Cluster Delete
+                document.getElementById("btn-delete-piece").addEventListener("click", () => {
+                    if (this.selectedPolygons.length > 0) {
+                        this.pushState();
+                        const polysToDelete = [...this.selectedPolygons];
+                        polysToDelete.forEach(p => this.deletePiece(p));
+                        this.deselectAll();
+                        sfx.playError();
+                    }
+                });
+
+                // Draw Custom Settings Palettes row
+                const paletteContainer = document.getElementById("palette-container");
+                Object.keys(PALETTES).forEach(key => {
+                    const p = PALETTES[key];
+                    const opt = document.createElement("button");
+                    opt.className = `p-3 rounded-xl border flex flex-col gap-1 items-start transition text-left active:scale-95 ${key === activePaletteKey ? 'border-indigo-500 bg-indigo-50/50' : 'border-slate-200 bg-white hover:bg-slate-50'}`;
+                    opt.innerHTML = `
+                        <span class="text-xs font-bold text-slate-800">${p.name}</span>
+                        <div class="flex gap-1 mt-1">
+                            <span class="w-3 h-3 rounded-full" style="background:${p[3]}"></span>
+                            <span class="w-3 h-3 rounded-full" style="background:${p[4]}"></span>
+                            <span class="w-3 h-3 rounded-full" style="background:${p[6]}"></span>
+                            <span class="w-3 h-3 rounded-full" style="background:${p[8]}"></span>
+                            <span class="w-3 h-3 rounded-full" style="background:${p[12]}"></span>
+                        </div>
+                    `;
+                    opt.addEventListener("click", () => {
+                        this.changeActivePalette(key);
+                        document.querySelectorAll("#palette-container button").forEach(b => b.className = "p-3 rounded-xl border flex flex-col gap-1 items-start transition text-left active:scale-95 border-slate-200 bg-white hover:bg-slate-50");
+                        opt.className = "p-3 rounded-xl border flex flex-col gap-1 items-start transition text-left active:scale-95 border-indigo-500 bg-indigo-50/50";
+                    });
+                    paletteContainer.appendChild(opt);
+                });
+
+                // Save & Import
+                document.getElementById("btn-save").addEventListener("click", () => this.saveBoardConfiguration());
+                const fileLoader = document.getElementById("file-loader");
+                document.getElementById("btn-load-trigger").addEventListener("click", () => fileLoader.click());
+                fileLoader.addEventListener("change", (e) => this.loadBoardConfiguration(e));
+            }
+
+            changeActivePalette(paletteKey) {
+                this.pushState();
+                activePaletteKey = paletteKey;
+                const paletteColors = PALETTES[activePaletteKey];
+                
+                document.querySelectorAll(".btn-spawn").forEach(btn => {
+                    const sides = btn.dataset.sides;
+                    const path = btn.querySelector("svg *[fill]");
+                    if (path) path.setAttribute("fill", paletteColors[sides]);
+                });
+
+                this.polygons.forEach(p => {
+                    p.setColor(paletteColors[p.numSides]);
+                    this.shapeColorsMemory[p.numSides] = paletteColors[p.numSides]; // Update memory default
+                });
+
+                this.updateColorSwatches();
+                sfx.playSelect();
+            }
+
+            clearBoard() {
+                this.deselectAll();
+                const polys = [...this.polygons];
+                polys.forEach(p => this.deletePiece(p));
+                sfx.playSnap();
+            }
+
+            deletePiece(poly) {
+                poly.destroy(this.scene);
+                this.polygons = this.polygons.filter(p => p !== poly);
+            }
+
+            saveBoardConfiguration() {
+                const config = this.getBoardStateSnapshot();
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2));
+                const dlAnchor = document.createElement('a');
+                dlAnchor.setAttribute("href", dataStr);
+                dlAnchor.setAttribute("download", "pattern_blocks_board.json");
+                document.body.appendChild(dlAnchor);
+                dlAnchor.click();
+                dlAnchor.remove();
+            }
+
+            loadBoardConfiguration(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const config = JSON.parse(e.target.result);
+                        this.pushState();
+                        this.clearBoard();
+
+                        config.forEach(item => {
+                            const poly = new PatternPolygon(
+                                item.numSides,
+                                new THREE.Vector2(item.center.x, item.center.y),
+                                item.rotation,
+                                item.color
+                            );
+                            poly.updateMeshTransform();
+                            this.scene.add(poly.mesh);
+                            this.polygons.push(poly);
+                        });
+
+                        this.autoConnectAdjacentNeighbors();
+                        sfx.playSnap();
+                    } catch (err) {
+                        sfx.playError();
+                    }
+                };
+                reader.readAsText(file);
+                event.target.value = "";
+            }
+
+            autoConnectAdjacentNeighbors() {
+                this.polygons.forEach(p => p.neighbors.fill(null));
+
+                for (let i = 0; i < this.polygons.length; i++) {
+                    const polyA = this.polygons[i];
+                    for (let j = i + 1; j < this.polygons.length; j++) {
+                        const polyB = this.polygons[j];
+
+                        for (let edgeA = 0; edgeA < polyA.numSides; edgeA++) {
+                            const midA = polyA.getEdgeMidpointWorld(edgeA);
+                            for (let edgeB = 0; edgeB < polyB.numSides; edgeB++) {
+                                const midB = polyB.getEdgeMidpointWorld(edgeB);
+
+                                if (midA.distanceTo(midB) < 0.05) {
+                                    polyA.neighbors[edgeA] = polyB;
+                                    polyB.neighbors[edgeB] = polyA;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // --- Framerate Rendering updates ---
+            animate() {
+                requestAnimationFrame(() => this.animate());
+
+                const dt = Math.min(this.clock.getDelta(), 0.1);
+
+                if (this.joinAnimation) {
+                    const anim = this.joinAnimation;
+                    anim.time += dt;
+                    const rawProgress = anim.time / anim.duration;
+                    
+                    if (rawProgress >= 1.0) {
+                        anim.polygon.center.copy(anim.endCenter);
+                        anim.polygon.rotation = anim.endRot;
+                        anim.polygon.updateMeshTransform(0);
+
+                        this.autoConnectAdjacentNeighbors();
+
+                        this.triggerSnapJuice(anim.polygon, {
+                            targetPolygon: anim.polygon.neighbors[anim.edgeA],
+                            targetEdgeIndex: anim.edgeB,
+                            draggedEdgeIndex: anim.edgeA
+                        });
+
+                        this.selectPiece(anim.polygon);
+                        this.joinAnimation = null;
+                    } else {
+                        const ease = Math.sin((rawProgress * Math.PI) / 2);
+                        const lerpPos = new THREE.Vector2().lerpVectors(anim.startCenter, anim.endCenter, ease);
+
+                        const arcHeight = Math.sin(rawProgress * Math.PI) * 0.75;
+
+                        let diff = anim.endRot - anim.startRot;
+                        while (diff < -Math.PI) diff += Math.PI * 2;
+                        while (diff > Math.PI) diff -= Math.PI * 2;
+                        const lerpRot = anim.startRot + diff * ease;
+
+                        anim.polygon.center.copy(lerpPos);
+                        anim.polygon.rotation = lerpRot;
+                        anim.polygon.updateMeshTransform(arcHeight);
+                    }
+                }
+
+                // Update particle trails
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const p = this.particles[i];
+                    p.mesh.position.addScaledVector(p.velocity, dt);
+                    p.velocity.z -= 9.8 * dt;
+
+                    p.life -= p.decay * dt;
+                    p.mesh.material.opacity = Math.max(0, p.life);
+                    p.mesh.scale.set(p.life, p.life, p.life);
+
+                    if (p.mesh.position.z <= 0.04) {
+                        p.mesh.position.z = 0.04;
+                        p.velocity.z *= -0.4;
+                    }
+
+                    if (p.life <= 0) {
+                        this.scene.remove(p.mesh);
+                        p.mesh.geometry.dispose();
+                        p.mesh.material.dispose();
+                        this.particles.splice(i, 1);
+                    }
+                }
+
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            window.gameInstance = new BoardGame();
+        });
+    </script>
+</body>
+</html>
