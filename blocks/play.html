@@ -124,13 +124,13 @@
 
     <!-- Left Vertical Customizer Panel -->
     <div id="selection-panel" class="absolute left-4 top-1/2 -translate-y-1/2 z-10 glass-panel p-3 rounded-2xl shadow-xl flex flex-col items-center gap-3 transition-all duration-300 transform -translate-x-32 opacity-0 pointer-events-none">
-        <!-- Rotation CCW -->
+        <!-- Rotation CCW (rotated 90deg clockwise so arrow head curves and points down) -->
         <button id="btn-rotate-ccw" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 text-slate-600 flex items-center justify-center transition shadow-sm" title="Rotate CCW (-15°)">
-            <i class="fa-solid fa-arrow-rotate-left"></i>
+            <i class="fa-solid fa-arrow-rotate-left inline-block rotate-90"></i>
         </button>
-        <!-- Rotation CW -->
-        <button id="btn-rotate-cw" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 text-slate-600 flex items-center justify-center transition shadow-sm" title="Rotate CW (+15°)">
-            <i class="fa-solid fa-arrow-rotate-right"></i>
+        <!-- Duplicate Selection -->
+        <button id="btn-duplicate" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 text-slate-600 flex items-center justify-center transition shadow-sm" title="Duplicate Selection (Ctrl+D)">
+            <i class="fa-solid fa-clone"></i>
         </button>
         
         <div class="w-8 h-[1px] bg-slate-200/80 my-1"></div>
@@ -144,6 +144,11 @@
         <div id="quick-swatches" class="flex flex-col gap-1.5 items-center"></div>
 
         <div class="w-8 h-[1px] bg-slate-200/80 my-1"></div>
+
+        <!-- Toggle Borders Option -->
+        <button id="btn-toggle-borders" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 text-slate-600 flex items-center justify-center transition shadow-sm" title="Toggle Outer Borders">
+            <i class="fa-solid fa-border-all text-sm"></i>
+        </button>
 
         <!-- Delete Shape -->
         <button id="btn-delete-piece" class="w-10 h-10 rounded-xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-600 flex items-center justify-center transition shadow-sm" title="Delete Piece (Backspace)">
@@ -213,6 +218,14 @@
         class SoundSynth {
             constructor() {
                 this.ctx = null;
+                // Avoid sound issues in iPad, set audio session type
+                if (navigator.audioSession) {
+                    try {
+                        navigator.audioSession.type = "playback";
+                    } catch (e) {
+                        console.warn("Could not set audio session type:", e);
+                    }
+                }
             }
             init() {
                 if (this.ctx) return;
@@ -313,7 +326,7 @@
             return 1 / (2 * Math.tan(Math.PI / numSides));
         }
 
-        // Generates clean standard mathematical regular polygon (Allows absolute compatibility with old rotation layouts)
+        // Generates clean standard mathematical regular polygon
         function createTactilePolygonGeometry(numSides) {
             const radius = calculateCircumradius(numSides);
             const shape = new THREE.Shape();
@@ -383,6 +396,7 @@
             }
         };
 
+        // --- STREAMING_CHUNK: Defining Polygon block structures... ---
         // --- Class Model: Pattern Polygon Block ---
         let nextPieceId = 1;
         class PatternPolygon {
@@ -392,6 +406,7 @@
                 this.center = center.clone();
                 this.rotation = rotation;
                 this.color = colorHex || PALETTES[activePaletteKey][this.numSides];
+                this.showBorders = true; // Default to showing borders in a dark accent
 
                 this.radius = calculateCircumradius(this.numSides);
                 this.apothem = calculateApothem(this.numSides);
@@ -412,7 +427,7 @@
                 this.mesh.receiveShadow = true;
                 this.mesh.userData = { parentPolygon: this };
 
-                // Define vertices standard positions (No built-in rotation offsets, preserving file compatibility)
+                // Define vertices standard positions
                 this.localVertices = [];
                 for (let i = 0; i < this.numSides; i++) {
                     const angle = (2 * Math.PI * i) / this.numSides;
@@ -422,7 +437,29 @@
                     ));
                 }
 
+                this.borderLine = null;
+                this.updateBorder();
                 this.updateMeshTransform();
+            }
+
+            updateBorder() {
+                // Reclaim old borders if any
+                if (this.borderLine) {
+                    this.mesh.remove(this.borderLine);
+                    this.borderLine.geometry.dispose();
+                    this.borderLine.material.dispose();
+                    this.borderLine = null;
+                }
+
+                // Append line segments highlighting the outline edges beautifully
+                if (this.showBorders) {
+                    const edgesGeom = new THREE.EdgesGeometry(this.geometry);
+                    const darkColor = new THREE.Color(this.color).clone().multiplyScalar(0.4); // Darkened Accent Color
+                    const lineMat = new THREE.LineBasicMaterial({ color: darkColor, linewidth: 2 });
+                    this.borderLine = new THREE.LineSegments(edgesGeom, lineMat);
+                    this.borderLine.position.z = 0.001; // Tiny Z offset to prevent z-fighting
+                    this.mesh.add(this.borderLine);
+                }
             }
 
             updateMeshTransform(zHeight = 0) {
@@ -456,6 +493,7 @@
             setColor(hex) {
                 this.color = hex;
                 this.material.color.set(hex);
+                this.updateBorder();
             }
 
             disconnect() {
@@ -485,6 +523,11 @@
 
             destroy(scene) {
                 this.disconnect();
+                if (this.borderLine) {
+                    this.mesh.remove(this.borderLine);
+                    this.borderLine.geometry.dispose();
+                    this.borderLine.material.dispose();
+                }
                 scene.remove(this.mesh);
                 this.geometry.dispose();
                 this.material.dispose();
@@ -500,6 +543,7 @@
                 this.polygons = [];
                 this.joinFrames = [];
                 this.particles = [];
+                this.pasteCount = 0;
                 
                 // Selection Cluster arrays
                 this.selectedPolygons = [];
@@ -541,6 +585,7 @@
                 this.particleGeometry = new THREE.BoxGeometry(0.08, 0.08, 0.08);
 
                 this.spawnShape(6, new THREE.Vector2(0, 1.5));
+                this.updateSpawnerButtonColors();
 
                 this.clock = new THREE.Clock();
                 this.animate();
@@ -564,7 +609,7 @@
 
                 // --- Orthonormal Overhead Flat View ---
                 const aspect = width / height;
-                this.viewSize = 13;
+                this.viewSize = 16;
                 this.camera = new THREE.OrthographicCamera(
                     -this.viewSize * aspect / 2,
                     this.viewSize * aspect / 2,
@@ -579,11 +624,9 @@
             }
 
             setupLights() {
-                // Pure high illumination ambient fill to match menus exactly
                 const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
                 this.scene.add(ambientLight);
 
-                // Soft directed overlay for subtle plastic highlights & depth along the bottom edges
                 const dirLight = new THREE.DirectionalLight(0xffffff, 0.15);
                 dirLight.position.set(4, -6, 12);
                 dirLight.castShadow = true;
@@ -594,7 +637,7 @@
             }
 
             setupDeskGrid() {
-                const grid = new THREE.GridHelper(30, 30, 0xcbd5e1, 0xe2e8f0);
+                const grid = new THREE.GridHelper(36, 36, 0xcbd5e1, 0xe2e8f0);
                 grid.rotation.x = Math.PI / 2;
                 grid.position.z = -0.02;
                 this.scene.add(grid);
@@ -842,18 +885,14 @@
                 }
             }
 
-            // --- STREAMING_CHUNK: Spawning mechanics... ---
             spawnShape(sides, position = new THREE.Vector2(0, 1.5), customColor = null) {
                 this.pushState();
 
-                // Uses independent memory per shape type
                 const colorToUse = customColor || this.shapeColorsMemory[sides] || PALETTES[activePaletteKey][sides];
                 
-                // Dynamic Flat-bottom horizontal alignment spawn rotation offset
                 const defaultSpawnRotation = -Math.PI / 2 - Math.PI / sides;
                 const poly = new PatternPolygon(sides, position, defaultSpawnRotation, colorToUse);
                 
-                // Archimedean Spiral Search algorithm for non-overlapping open coordinates
                 let found = false;
                 let r = 0;
                 let angle = 0;
@@ -881,21 +920,17 @@
                 return poly;
             }
 
-            // --- Multiple Selection Engine ---
             selectPiece(poly, addToSelection = false) {
                 if (addToSelection) {
                     if (this.selectedPolygons.includes(poly)) {
-                        // Toggle off
                         poly.material.emissive.setHex(0x000000);
                         this.removeRotationRing(poly);
                         this.selectedPolygons = this.selectedPolygons.filter(p => p !== poly);
                     } else {
-                        // Add on
                         poly.material.emissive.setHex(0x111111);
                         this.selectedPolygons.push(poly);
                     }
                 } else {
-                    // Standard single click replaces current selection
                     this.deselectAll();
                     this.selectedPolygons = [poly];
                     poly.material.emissive.setHex(0x111111);
@@ -903,7 +938,6 @@
 
                 this.clearJoinFrames();
 
-                // Build context UI
                 if (this.selectedPolygons.length > 0) {
                     if (this.selectedPolygons.length === 1 && this.selectedPolygon) {
                         this.createRotationRing(this.selectedPolygon);
@@ -911,6 +945,18 @@
                     }
                     
                     this.updateColorSwatches();
+                    
+                    // Sync borders toggle button active visual state
+                    const btnBorders = document.getElementById("btn-toggle-borders");
+                    const allHaveBorders = this.selectedPolygons.every(p => p.showBorders);
+                    if (allHaveBorders) {
+                        btnBorders.classList.add("bg-indigo-50", "text-indigo-600", "border-indigo-200");
+                        btnBorders.classList.remove("bg-slate-100", "text-slate-600");
+                    } else {
+                        btnBorders.classList.remove("bg-indigo-50", "text-indigo-600", "border-indigo-200");
+                        btnBorders.classList.add("bg-slate-100", "text-slate-600");
+                    }
+
                     const panel = document.getElementById("selection-panel");
                     panel.classList.remove("opacity-0", "pointer-events-none", "-translate-x-32");
                     panel.classList.add("opacity-100", "pointer-events-auto", "translate-x-0");
@@ -933,13 +979,13 @@
                 panel.classList.remove("opacity-100", "pointer-events-auto", "translate-x-0");
             }
 
-            // --- Timeline History Engine (Undo/Redo) ---
             getBoardStateSnapshot() {
                 return this.polygons.map(p => ({
                     numSides: p.numSides,
                     center: { x: p.center.x, y: p.center.y },
                     rotation: p.rotation,
-                    color: p.color
+                    color: p.color,
+                    showBorders: p.showBorders
                 }));
             }
 
@@ -956,19 +1002,25 @@
                         item.rotation,
                         item.color
                     );
+                    poly.showBorders = item.showBorders !== undefined ? item.showBorders : true;
+                    poly.updateBorder();
                     poly.updateMeshTransform();
                     this.scene.add(poly.mesh);
                     this.polygons.push(poly);
+                    
+                    // Keep the customized palette memory and UI icons synchronized
+                    this.shapeColorsMemory[item.numSides] = item.color;
                 });
 
                 this.autoConnectAdjacentNeighbors();
+                this.updateSpawnerButtonColors();
             }
 
             pushState() {
                 const snapshot = this.getBoardStateSnapshot();
                 this.undoStack.push(JSON.stringify(snapshot));
                 if (this.undoStack.length > 50) this.undoStack.shift();
-                this.redoStack = []; // Clear redo stack on new actions
+                this.redoStack = []; 
                 this.updateUndoRedoButtonStates();
             }
 
@@ -1015,23 +1067,89 @@
                 }
             }
 
-            // --- Copy & Paste Engine ---
             copySelectedPieces() {
                 if (this.selectedPolygons.length === 0) return;
                 this.clipboard = this.selectedPolygons.map(p => ({
                     numSides: p.numSides,
                     rotation: p.rotation,
                     color: p.color,
+                    showBorders: p.showBorders,
                     center: { x: p.center.x, y: p.center.y }
                 }));
+                this.pasteCount = 0; 
                 sfx.playSelect();
+            }
+
+            findClusterLegalOffset(items) {
+                let foundOffset = false;
+                let r = 0;
+                let angle = 0;
+                
+                const stepRadius = 0.8; 
+                const stepAngle = Math.PI / 6; 
+                let iterations = 0;
+                const baseOffset = new THREE.Vector2(1.2, 1.2); 
+                const chosenOffset = new THREE.Vector2(0, 0);
+
+                while (!foundOffset && r < 30 && iterations < 400) {
+                    const dx = baseOffset.x + r * Math.cos(angle);
+                    const dy = baseOffset.y + r * Math.sin(angle);
+                    
+                    let allValid = true;
+                    
+                    const tempPolys = items.map(item => {
+                        const tempPoly = new PatternPolygon(
+                            item.numSides,
+                            new THREE.Vector2(item.center.x + dx, item.center.y + dy),
+                            item.rotation,
+                            item.color
+                        );
+                        tempPoly.showBorders = item.showBorders !== undefined ? item.showBorders : true;
+                        tempPoly.updateBorder();
+                        return tempPoly;
+                    });
+
+                    for (const tempPoly of tempPolys) {
+                        if (tempPoly.center.length() > 17.5) {
+                            allValid = false;
+                            break;
+                        }
+                        for (const existing of this.polygons) {
+                            if (SAT.checkOverlap(tempPoly, existing)) {
+                                allValid = false;
+                                break;
+                            }
+                        }
+                        if (!allValid) break;
+                    }
+
+                    tempPolys.forEach(p => {
+                        p.destroy(this.scene);
+                    });
+
+                    if (allValid) {
+                        chosenOffset.set(dx, dy);
+                        foundOffset = true;
+                    } else {
+                        angle += stepAngle;
+                        r += stepRadius * 0.15; 
+                        iterations++;
+                    }
+                }
+
+                if (!foundOffset) {
+                    this.pasteCount++;
+                    const staggerStep = 0.8 * ((this.pasteCount % 5) + 1);
+                    chosenOffset.set(baseOffset.x + staggerStep, baseOffset.y + staggerStep);
+                }
+                return chosenOffset;
             }
 
             pasteCopiedPieces() {
                 if (this.clipboard.length === 0) return;
                 this.pushState();
 
-                const offset = new THREE.Vector2(1.0, 1.0);
+                const offset = this.findClusterLegalOffset(this.clipboard);
                 const pastedPolys = [];
                 this.deselectAll();
 
@@ -1042,6 +1160,8 @@
                         item.rotation,
                         item.color
                     );
+                    poly.showBorders = item.showBorders !== undefined ? item.showBorders : true;
+                    poly.updateBorder();
                     poly.updateMeshTransform();
                     this.scene.add(poly.mesh);
                     this.polygons.push(poly);
@@ -1060,17 +1180,14 @@
                 sfx.playSnap();
             }
 
-            // --- STREAMING_CHUNK: Solidary Selection Cluster Rotation and Join Logic ---
             rotateSelectedCluster(delta) {
                 if (this.selectedPolygons.length === 0) return;
                 this.pushState();
 
-                // Calculate center of mass (average position of selected block centroids)
                 const cog = new THREE.Vector2(0, 0);
                 this.selectedPolygons.forEach(p => cog.add(p.center));
                 cog.divideScalar(this.selectedPolygons.length);
 
-                // Rotate centers around the COG pivot and add delta orientation offset
                 this.selectedPolygons.forEach(p => {
                     p.center.sub(cog);
                     p.center.rotateAround(new THREE.Vector2(0, 0), delta);
@@ -1078,7 +1195,6 @@
                     p.setRotation(p.rotation + delta);
                 });
 
-                // Verify resulting positions remain physically valid and collision-free
                 let valid = true;
                 for (const p of this.selectedPolygons) {
                     if (!this.isLocationValid(p, this.selectedPolygons)) {
@@ -1096,7 +1212,6 @@
                     this.selectedPolygons.forEach(p => this.recreateInteractiveVisuals(p));
                     sfx.playRotate();
                 } else {
-                    // Collision fallback: Play buzzer and revert cluster
                     sfx.playError();
                     this.selectedPolygons.forEach(p => {
                         p.center.sub(cog);
@@ -1110,7 +1225,6 @@
                 }
             }
 
-            // --- Golden Framing Join Engine ---
             getLegalJoinConfigurations(PieceA, PieceB) {
                 const configs = [];
                 for (let edgeB = 0; edgeB < PieceB.numSides; edgeB++) {
@@ -1187,7 +1301,6 @@
                 this.joinFrames = [];
             }
 
-            // --- Smart Color Swatches Drawer ---
             updateColorSwatches() {
                 const container = document.getElementById("quick-swatches");
                 container.innerHTML = "";
@@ -1207,8 +1320,9 @@
                         this.pushState();
                         this.selectedPolygons.forEach(p => {
                             p.setColor(color);
-                            this.shapeColorsMemory[p.numSides] = color; // Remember per shape side
+                            this.shapeColorsMemory[p.numSides] = color; 
                         });
+                        this.updateSpawnerButtonColors(); 
                         this.lastSelectedColor = color;
                         sfx.playSelect();
                     });
@@ -1216,16 +1330,59 @@
                 });
             }
 
-            // --- STREAMING_CHUNK: Exporters for JSON, PNG, and SVG ---
-            // --- Artwork PNG Image Downloader (Focused Bounding Frame with Tight 5% Margin) ---
+            updateSpawnerButtonColors() {
+                document.querySelectorAll(".btn-spawn").forEach(btn => {
+                    const sides = parseInt(btn.dataset.sides);
+                    const colorHex = this.shapeColorsMemory[sides] || PALETTES[activePaletteKey][sides];
+                    
+                    const colorObj = new THREE.Color(colorHex);
+                    const strokeHex = "#" + colorObj.multiplyScalar(0.75).getHexString();
+
+                    const shapeEl = btn.querySelector("polygon, rect");
+                    if (shapeEl) {
+                        shapeEl.setAttribute("fill", colorHex);
+                        shapeEl.setAttribute("stroke", strokeHex);
+                    }
+                });
+            }
+
+            duplicateSelection() {
+                if (this.selectedPolygons.length === 0) return;
+                this.pushState();
+
+                const duplicates = [];
+                const originalSelection = [...this.selectedPolygons];
+
+                const offset = this.findClusterLegalOffset(originalSelection);
+
+                originalSelection.forEach(p => {
+                    const poly = new PatternPolygon(
+                        p.numSides, 
+                        new THREE.Vector2(p.center.x + offset.x, p.center.y + offset.y), 
+                        p.rotation, 
+                        p.color
+                    );
+                    poly.showBorders = p.showBorders;
+                    poly.updateBorder();
+                    poly.updateMeshTransform();
+                    this.scene.add(poly.mesh);
+                    this.polygons.push(poly);
+                    duplicates.push(poly);
+                });
+
+                this.autoConnectAdjacentNeighbors();
+
+                this.deselectAll();
+                duplicates.forEach(p => this.selectPiece(p, true));
+                sfx.playSnap();
+            }
+
             downloadRenderedImage() {
                 if (this.polygons.length === 0) return;
 
-                // 1. Temporarily clear selections and snapping indicators for clean capture
                 const cachedSelection = [...this.selectedPolygons];
                 this.deselectAll();
 
-                // 2. Compute 2D physical bounding limits of all pieces on the desk
                 let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
                 this.polygons.forEach(p => {
                     const verts = p.getVertices();
@@ -1242,12 +1399,10 @@
                 const centerX = (minX + maxX) / 2;
                 const centerY = (minY + maxY) / 2;
 
-                // 3. Add a tight, robust padding margin (~5% of largest dimension, minimum 0.5 units)
                 const margin = Math.max(0.5, Math.max(boundsW, boundsH) * 0.05);
                 const rectW = boundsW + margin * 2;
                 const rectH = boundsH + margin * 2;
 
-                // 4. Cache current viewport variables to restore later
                 const origLeft = this.camera.left;
                 const origRight = this.camera.right;
                 const origTop = this.camera.top;
@@ -1255,7 +1410,6 @@
                 const origPosition = this.camera.position.clone();
                 const origZoom = this.camera.zoom;
 
-                // 5. Adjust camera bounding boundaries to fit artwork rectangle precisely, keeping aspect ratio intact
                 const canvasAspect = this.container.clientWidth / this.container.clientHeight;
                 let fitW = rectW;
                 let fitH = rectH;
@@ -1273,11 +1427,9 @@
                 this.camera.position.set(centerX, centerY, 20);
                 this.camera.updateProjectionMatrix();
 
-                // 6. Force render update and grab output image
                 this.renderer.render(this.scene, this.camera);
                 const dataURL = this.renderer.domElement.toDataURL("image/png");
 
-                // 7. Restore original view configurations
                 this.camera.left = origLeft;
                 this.camera.right = origRight;
                 this.camera.top = origTop;
@@ -1286,10 +1438,8 @@
                 this.camera.position.copy(origPosition);
                 this.camera.updateProjectionMatrix();
 
-                // 8. Reinstate selection indicators
                 cachedSelection.forEach(p => this.selectPiece(p, true));
 
-                // 9. Download trigger
                 const dlAnchor = document.createElement('a');
                 dlAnchor.setAttribute("href", dataURL);
                 dlAnchor.setAttribute("download", "pattern_blocks_artwork.png");
@@ -1299,11 +1449,9 @@
                 sfx.playSelect();
             }
 
-            // --- Artwork Vector SVG Exporter ---
             downloadRenderedSVG() {
                 if (this.polygons.length === 0) return;
 
-                // Compute bounding layout region
                 let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
                 this.polygons.forEach(p => {
                     const verts = p.getVertices();
@@ -1324,10 +1472,8 @@
                 const viewW = boundsW + margin * 2;
                 const viewH = boundsH + margin * 2;
 
-                // Create SVG Document String
                 let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewX} ${viewY} ${viewW} ${viewH}" width="800" height="800" style="background-color:#f1f5f9;">`;
                 
-                // Add soft Grid pattern
                 svg += `
                 <defs>
                     <pattern id="gridPattern" width="1" height="1" patternUnits="userSpaceOnUse">
@@ -1338,12 +1484,14 @@
                 <rect x="${viewX}" y="${viewY}" width="${viewW}" height="${viewH}" fill="url(#gridPattern)" opacity="0.4"/>
                 `;
 
-                // Render vector block polygons
                 this.polygons.forEach(p => {
                     const verts = p.getVertices();
                     const pointsStr = verts.map(v => `${v.x},${-v.y}`).join(' ');
                     
-                    const strokeColor = new THREE.Color(p.color).multiplyScalar(0.72).getStyle();
+                    const strokeColor = p.showBorders 
+                        ? new THREE.Color(p.color).multiplyScalar(0.4).getStyle() 
+                        : new THREE.Color(p.color).multiplyScalar(0.72).getStyle();
+                    
                     svg += `<polygon points="${pointsStr}" fill="${p.color}" stroke="${strokeColor}" stroke-width="0.04" stroke-linejoin="round" />`;
                 });
 
@@ -1360,7 +1508,6 @@
                 sfx.playSelect();
             }
 
-            // --- STREAMING_CHUNK: Setup Event Listeners for Pointers and Keys ---
             setupEventListeners() {
                 const el = this.renderer.domElement;
                 el.addEventListener('contextmenu', e => e.preventDefault());
@@ -1393,7 +1540,6 @@
                     if (e.button === 0 || e.pointerType === 'touch') {
                         this.raycaster.setFromCamera(this.pointer, this.camera);
 
-                        // 1. Raycast Check: Clicked Rotation Knob
                         if (this.selectedPolygons.length === 1 && this.selectedPolygon.rotationRing) {
                             const rotKnobHits = this.raycaster.intersectObjects(this.selectedPolygon.rotationRing.children, true);
                             const knobMatch = rotKnobHits.find(h => h.object.userData.isRotatorKnob);
@@ -1405,7 +1551,6 @@
                             }
                         }
 
-                        // 2. Raycast Check: Standard Polygons
                         const meshes = this.polygons.map(p => p.mesh);
                         const hits = this.raycaster.intersectObjects(meshes);
 
@@ -1413,14 +1558,12 @@
                             const clickedMesh = hits[0].object;
                             const parentPoly = clickedMesh.userData.parentPolygon;
 
-                            // DIRECT INTERACTION: Clicking on another piece instantly selects and prepares dragging
                             this.draggedPolygon = parentPoly;
                             const alreadySelected = this.selectedPolygons.includes(parentPoly);
 
                             if (e.shiftKey) {
                                 this.selectPiece(parentPoly, true);
                             } else if (!alreadySelected) {
-                                // Instantly select this piece exclusively, dropping golden join logic completely
                                 this.selectPiece(parentPoly, false);
                             }
 
@@ -1437,7 +1580,6 @@
                                 this.removeRotationRing(p);
                             });
                         } else {
-                            // 3. Raycast empty canvas space: Initialize Rectangular Selection Box
                             this.isSelectingBox = true;
                             this.selectionStart = { x: e.clientX, y: e.clientY };
                             this.deselectAll();
@@ -1703,14 +1845,12 @@
                     this.camera.updateProjectionMatrix();
                 };
 
-                // PC Desktop + Tablet unified pointer bindings
                 el.addEventListener('pointerdown', onPointerDown);
                 window.addEventListener('pointermove', onPointerMove);
                 window.addEventListener('pointerup', onPointerUp);
                 window.addEventListener('pointercancel', onPointerUp);
                 el.addEventListener('wheel', onWheel, { passive: false });
 
-                // Keyboard Shortcuts Event Listeners
                 window.addEventListener('keydown', (e) => {
                     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
                     const modifier = isMac ? e.metaKey : e.ctrlKey;
@@ -1739,6 +1879,9 @@
                     } else if (modifier && e.key.toLowerCase() === 'v') {
                         e.preventDefault();
                         this.pasteCopiedPieces();
+                    } else if (modifier && e.key.toLowerCase() === 'd') {
+                        e.preventDefault();
+                        this.duplicateSelection();
                     } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
                         if (this.selectedPolygons.length > 0) {
                             e.preventDefault();
@@ -1800,7 +1943,6 @@
                     }
                 });
 
-                // Window dynamic resize listener
                 window.addEventListener('resize', () => {
                     const w = this.container.clientWidth;
                     const h = this.container.clientHeight;
@@ -1834,7 +1976,6 @@
                 const p1 = pointers[0];
                 const p2 = pointers[1];
 
-                // 1. Zoom Multi-touch Calculation
                 const dx = p1.clientX - p2.clientX;
                 const dy = p1.clientY - p2.clientY;
                 const dist = Math.sqrt(dx * dx + dy * dy);
@@ -1845,7 +1986,6 @@
                     this.camera.updateProjectionMatrix();
                 }
 
-                // 2. Pan Multi-touch Midpoint Calculation
                 const midX = (p1.clientX + p2.clientX) / 2;
                 const midY = (p1.clientY + p2.clientY) / 2;
 
@@ -1901,7 +2041,6 @@
                 }
             }
 
-            // --- STREAMING_CHUNK: Setup UI Handlers ---
             setupUIHandlers() {
                 const drawer = document.getElementById("drawer-settings");
                 document.getElementById("btn-settings").addEventListener("click", () => {
@@ -1919,7 +2058,6 @@
                     drawer.classList.add("translate-x-[340px]");
                 });
 
-                // Shape Spawner triggers
                 document.querySelectorAll(".btn-spawn").forEach(btn => {
                     btn.addEventListener("click", () => {
                         const sides = parseInt(btn.dataset.sides);
@@ -1928,7 +2066,6 @@
                     });
                 });
 
-                // Export Modal Actions
                 const exportModal = document.getElementById("modal-export");
                 const exportCard = document.getElementById("export-card");
 
@@ -1959,7 +2096,6 @@
                     if (e.target === exportModal) closeExportModal();
                 });
 
-                // Modal File Save Callbacks
                 document.getElementById("btn-dl-json").addEventListener("click", () => {
                     this.saveBoardConfiguration();
                     closeExportModal();
@@ -1975,27 +2111,52 @@
                     closeExportModal();
                 });
 
-                // History (Undo/Redo) Button Event Listeners
                 document.getElementById("btn-undo").addEventListener("click", () => this.undo());
                 document.getElementById("btn-redo").addEventListener("click", () => this.redo());
 
-                // Quick CCW / CW Rotators (Soliary Cluster Rotation)
                 document.getElementById("btn-rotate-ccw").addEventListener("click", () => {
                     this.rotateSelectedCluster(Math.PI / 12);
                 });
-                document.getElementById("btn-rotate-cw").addEventListener("click", () => {
-                    this.rotateSelectedCluster(-Math.PI / 12);
+
+                document.getElementById("btn-toggle-borders").addEventListener("click", () => {
+                    if (this.selectedPolygons.length === 0) return;
+                    this.pushState();
+
+                    // Determine target toggle state: if any selected piece doesn't have borders, turn all of them ON; otherwise OFF
+                    const allHaveBorders = this.selectedPolygons.every(p => p.showBorders);
+                    const targetState = !allHaveBorders;
+
+                    this.selectedPolygons.forEach(p => {
+                        p.showBorders = targetState;
+                        p.updateBorder();
+                    });
+
+                    // Sync styling of the toggle button directly
+                    const btnBorders = document.getElementById("btn-toggle-borders");
+                    if (targetState) {
+                        btnBorders.classList.add("bg-indigo-50", "text-indigo-600", "border-indigo-200");
+                        btnBorders.classList.remove("bg-slate-100", "text-slate-600");
+                    } else {
+                        btnBorders.classList.remove("bg-indigo-50", "text-indigo-600", "border-indigo-200");
+                        btnBorders.classList.add("bg-slate-100", "text-slate-600");
+                    }
+
+                    sfx.playSelect();
                 });
 
-                // Custom Color Selector Input
+                document.getElementById("btn-duplicate").addEventListener("click", () => {
+                    this.duplicateSelection();
+                });
+
                 const colorPicker = document.getElementById("piece-color-picker");
                 colorPicker.addEventListener("input", (e) => {
                     const color = e.target.value;
                     if (this.selectedPolygons.length > 0) {
                         this.selectedPolygons.forEach(p => {
                             p.setColor(color);
-                            this.shapeColorsMemory[p.numSides] = color; // Remember per shape side
+                            this.shapeColorsMemory[p.numSides] = color; 
                         });
+                        this.updateSpawnerButtonColors(); 
                     }
                     this.lastSelectedColor = color;
                 });
@@ -2011,7 +2172,6 @@
                     sfx.playSelect();
                 });
 
-                // Custom Single/Cluster Delete
                 document.getElementById("btn-delete-piece").addEventListener("click", () => {
                     if (this.selectedPolygons.length > 0) {
                         this.pushState();
@@ -2022,7 +2182,6 @@
                     }
                 });
 
-                // File Loader Setup
                 const fileLoader = document.getElementById("file-loader");
                 document.getElementById("btn-load-trigger").addEventListener("click", () => {
                     drawer.classList.add("translate-x-[340px]");
@@ -2072,12 +2231,17 @@
                                 item.rotation,
                                 item.color
                             );
+                            poly.showBorders = item.showBorders !== undefined ? item.showBorders : true;
+                            poly.updateBorder();
                             poly.updateMeshTransform();
                             this.scene.add(poly.mesh);
                             this.polygons.push(poly);
+                            
+                            this.shapeColorsMemory[item.numSides] = item.color;
                         });
 
                         this.autoConnectAdjacentNeighbors();
+                        this.updateSpawnerButtonColors();
                         sfx.playSnap();
                     } catch (err) {
                         sfx.playError();
@@ -2110,7 +2274,6 @@
                 }
             }
 
-            // --- Framerate Rendering updates ---
             animate() {
                 requestAnimationFrame(() => this.animate());
 
