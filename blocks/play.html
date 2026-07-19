@@ -1563,56 +1563,101 @@
 
                 if (host.endsWith("github.io")) {
                     const statusEl = document.getElementById("templates-status");
-                    statusEl.classList.remove("hidden");
+                    if (statusEl) statusEl.classList.remove("hidden");
 
                     try {
                         const pathSegments = path.split('/').filter(p => p.length > 0);
                         const username = host.split('.')[0];
-                        const repo = pathSegments[0];
+                        
+                        // We will attempt to find templates using multiple common GitHub Pages configurations:
+                        const targets = [];
 
-                        if (username && repo) {
-                            const apiURL = `https://api.github.com/repos/${username}/${repo}/contents/templates`;
-                            const response = await fetch(apiURL);
-                            if (response.ok) {
-                                const files = await response.json();
+                        if (pathSegments.length > 0) {
+                            // Scenario A: Project Page
+                            // Repo: pathSegments[0] (e.g. "blocks")
+                            // Subpath inside repo: any segments between repo root and the HTML file + "/templates"
+                            const repoA = pathSegments[0];
+                            const subPathSegmentsA = pathSegments.slice(1, -1).concat('templates');
+                            const pathA = subPathSegmentsA.filter(s => s).join('/');
+                            targets.push({
+                                repo: repoA,
+                                path: pathA,
+                                desc: "Project Page Route"
+                            });
+
+                            // Scenario B: User Page (hosted on `<username>.github.io` repository)
+                            // Repo: `<username>.github.io`
+                            // Subpath inside repo: all segments up to the HTML file + "/templates"
+                            const repoB = `${username}.github.io`;
+                            const subPathSegmentsB = pathSegments.slice(0, -1).concat('templates');
+                            const pathB = subPathSegmentsB.filter(s => s).join('/');
+                            targets.push({
+                                repo: repoB,
+                                path: pathB,
+                                desc: "User Page Route"
+                            });
+                        }
+
+                        let templatesToLoad = [];
+                        
+                        // Try each target route sequentially until one succeeds
+                        for (const target of targets) {
+                            try {
+                                const apiURL = `https://api.github.com/repos/${username}/${target.repo}/contents/${target.path}`;
+                                console.log(`Scanning templates via GitHub API (${target.desc}): ${apiURL}`);
                                 
-                                const jsonFiles = files.filter(f => f.name.toLowerCase().endsWith('.json'));
-                                const otherFiles = files.filter(f => !f.name.toLowerCase().endsWith('.json'));
+                                const response = await fetch(apiURL);
+                                if (response.ok) {
+                                    const files = await response.json();
+                                    if (Array.isArray(files)) {
+                                        const jsonFiles = files.filter(f => f.name.toLowerCase().endsWith('.json'));
+                                        const otherFiles = files.filter(f => !f.name.toLowerCase().endsWith('.json'));
 
-                                console.log(`GitHub Scanning: found ${jsonFiles.length} blueprints and ${otherFiles.length} companion assets.`);
+                                        console.log(`Success! Found ${jsonFiles.length} blueprints in ${target.repo}/${target.path}`);
 
-                                const templatesToLoad = [];
-                                jsonFiles.forEach(jf => {
-                                    const baseName = jf.name.slice(0, -5);
-                                    
-                                    const pngMatch = otherFiles.find(f => f.name === `${baseName}.png`);
-                                    const svgMatch = otherFiles.find(f => f.name === `${baseName}.svg`);
+                                        jsonFiles.forEach(jf => {
+                                            const baseName = jf.name.slice(0, -5);
+                                            const pngMatch = otherFiles.find(f => f.name === `${baseName}.png`);
+                                            const svgMatch = otherFiles.find(f => f.name === `${baseName}.svg`);
 
-                                    let imageSrc = null;
-                                    if (pngMatch) imageSrc = pngMatch.download_url || `templates/${baseName}.png`;
-                                    else if (svgMatch) imageSrc = svgMatch.download_url || `templates/${baseName}.svg`;
+                                            // Direct local relative path targeting: relative to play.html
+                                            const localRelativeFile = `templates/${jf.name}`;
+                                            let imageSrc = null;
+                                            if (pngMatch) imageSrc = `templates/${pngMatch.name}`;
+                                            else if (svgMatch) imageSrc = `templates/${svgMatch.name}`;
 
-                                    templatesToLoad.push({
-                                        id: baseName,
-                                        title: baseName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-                                        desc: `Remote pattern blueprint`,
-                                        file: jf.download_url || `templates/${jf.name}`,
-                                        image: imageSrc,
-                                        isLocal: false,
-                                        svgPreview: null
-                                    });
-                                });
-
-                                if (templatesToLoad.length > 0) {
-                                    this.loadedTemplates = templatesToLoad;
-                                    this.renderTemplatesGrid();
+                                            templatesToLoad.push({
+                                                id: baseName,
+                                                title: baseName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+                                                desc: `Remote pattern blueprint`,
+                                                file: localRelativeFile,
+                                                image: imageSrc,
+                                                isLocal: false,
+                                                svgPreview: null
+                                            });
+                                        });
+                                        
+                                        if (templatesToLoad.length > 0) {
+                                            // Found working directory! Stop trying other routes.
+                                            break;
+                                        }
+                                    }
                                 }
+                            } catch (err) {
+                                console.warn(`GitHub API scanning failed for target ${target.repo}/${target.path}:`, err);
                             }
+                        }
+
+                        if (templatesToLoad.length > 0) {
+                            this.loadedTemplates = templatesToLoad;
+                            this.renderTemplatesGrid();
+                        } else {
+                            console.warn("All GitHub API routes exhausted or returned empty folders.");
                         }
                     } catch (e) {
                         console.warn("Unable to scan remote directory via GitHub API: ", e);
                     } finally {
-                        statusEl.classList.add("hidden");
+                        if (statusEl) statusEl.classList.add("hidden");
                     }
                 }
             }
