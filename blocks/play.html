@@ -102,6 +102,14 @@
                 </button>
             </div>
 
+            <!-- Search Bar Input Container -->
+            <div class="mb-4 shrink-0 relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                </div>
+                <input type="text" id="template-search" placeholder="Search patterns by name..." class="w-full pl-9 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition bg-white/50">
+            </div>
+
             <!-- Loader / Empty Status Container -->
             <div id="templates-status" class="hidden py-8 flex flex-col items-center justify-center text-center gap-2 shrink-0">
                 <div class="w-8 h-8 border-4 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin"></div>
@@ -134,7 +142,7 @@
             </div>
         </div>
 
-        <!-- History & Settings Controls (Templates removed from here as requested) -->
+        <!-- History & Settings Controls -->
         <div class="flex gap-2 pointer-events-auto">
             <button id="btn-undo" class="glass-panel w-12 h-12 rounded-2xl flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-white active:scale-95 transition shadow-lg text-lg opacity-50 cursor-not-allowed" title="Undo (Ctrl+Z)" disabled>
                 <i class="fa-solid fa-reply"></i>
@@ -159,7 +167,6 @@
         <div class="flex flex-col gap-3">
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Board Actions</label>
             <div class="grid grid-cols-2 gap-2">
-                <!-- Keep templates button inside Desk Settings drawer as requested -->
                 <button id="btn-drawer-templates" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition w-full col-span-2 shadow-md shadow-indigo-100">
                     <i class="fa-solid fa-folder-open"></i> Browse Templates
                 </button>
@@ -1633,7 +1640,12 @@
                     reader.onload = (e) => {
                         try {
                             const parsedData = JSON.parse(e.target.result);
-                            const imgFile = mediaFiles.find(m => m.name.startsWith(baseName));
+                            // Switch from prefix-based matching (startsWith) to an exact filename match (ignoring extension)
+                            const imgFile = mediaFiles.find(m => {
+                                const lastDot = m.name.lastIndexOf('.');
+                                const nameWithoutExt = lastDot !== -1 ? m.name.substring(0, lastDot) : m.name;
+                                return nameWithoutExt.toLowerCase() === baseName.toLowerCase();
+                            });
                             let imageUrl = null;
                             if (imgFile) {
                                 imageUrl = URL.createObjectURL(imgFile);
@@ -1671,6 +1683,7 @@
                 });
             }
 
+            // --- STREAMING_CHUNK: Rendering and Filtering Templates in Grid ---
             renderTemplatesGrid() {
                 const grid = document.getElementById("templates-grid");
                 grid.innerHTML = "";
@@ -1686,14 +1699,32 @@
                     return;
                 }
 
-                this.loadedTemplates.forEach(template => {
+                // Filter templates based on Search bar value
+                const searchInput = document.getElementById("template-search");
+                const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
+
+                const filteredTemplates = this.loadedTemplates.filter(template => 
+                    template.title.toLowerCase().includes(query)
+                );
+
+                if (filteredTemplates.length === 0) {
+                    grid.innerHTML = `
+                        <div class="col-span-full py-12 flex flex-col items-center justify-center text-center gap-2">
+                            <i class="fa-solid fa-magnifying-glass text-slate-300 text-3xl"></i>
+                            <span class="text-xs font-bold text-slate-400">No matching templates found</span>
+                            <span class="text-[10px] text-slate-400">Try searching for a different keyword.</span>
+                        </div>
+                    `;
+                    return;
+                }
+
+                filteredTemplates.forEach(template => {
                     const card = document.createElement("button");
-                    card.className = "flex flex-col text-left bg-white border border-slate-200 hover:border-indigo-500 rounded-2xl overflow-hidden transition hover:shadow-md active:scale-[0.98] group relative min-h-[160px]";
+                    card.className = "flex flex-col text-left bg-white border border-slate-200 hover:border-indigo-500 rounded-2xl overflow-hidden transition hover:shadow-md active:scale-[0.98] group relative min-h-[140px]";
                     
                     const containerId = `lazy-container-${template.id}`;
                     let previewHTML = "";
 
-                    // Changed object-cover to object-contain so that full images fit without cropping!
                     if (template.image) {
                         previewHTML = `<img class="absolute inset-0 w-full h-full object-contain p-2" src="${template.image}" alt="${template.title}">`;
                     } else {
@@ -1704,16 +1735,16 @@
                         `;
                     }
 
+                    // Removed the long "mapped local blueprint / remote pattern blueprint" text paragraph
+                    // and the repetitive "Load Pattern" blue buttons to create an elegant card look!
                     card.innerHTML = `
                         <div class="w-full aspect-[4/3] bg-slate-50 flex items-center justify-center border-b border-slate-100 overflow-hidden relative">
                             ${previewHTML}
                         </div>
-                        <div class="p-3 flex flex-col justify-between flex-grow">
-                            <div>
-                                <h4 class="font-bold text-xs text-slate-900 group-hover:text-indigo-600 transition leading-tight">${template.title}</h4>
-                                <p class="text-[10px] text-slate-500 mt-1 leading-snug line-clamp-2">${template.desc}</p>
-                            </div>
-                            <span class="text-[10px] font-bold text-indigo-500 mt-2 inline-flex items-center gap-1">Load Pattern <i class="fa-solid fa-arrow-right text-[8px] transition-transform group-hover:translate-x-0.5"></i></span>
+                        <div class="p-3 flex flex-col justify-center flex-grow bg-white">
+                            <h4 class="font-bold text-xs text-slate-900 group-hover:text-indigo-600 transition leading-tight text-center truncate w-full" title="${template.title}">
+                                ${template.title}
+                            </h4>
                         </div>
                     `;
 
@@ -2273,6 +2304,11 @@
                     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
                     const modifier = isMac ? e.metaKey : e.ctrlKey;
 
+                    // Skip keyboard game actions if user is focusing inside search bar or typing something
+                    if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+                        return; 
+                    }
+
                     if (modifier && e.key.toLowerCase() === 'z') {
                         e.preventDefault();
                         if (e.shiftKey) {
@@ -2459,7 +2495,7 @@
                 }
             }
 
-            // --- STREAMING_CHUNK: Setup UI Handlers ---
+            // --- STREAMING_CHUNK: Setup UI and Search Event Handlers ---
             setupUIHandlers() {
                 const drawer = document.getElementById("drawer-settings");
                 document.getElementById("btn-settings").addEventListener("click", () => {
@@ -2532,13 +2568,18 @@
 
                 const templatesModal = document.getElementById("modal-templates");
                 const templatesCard = document.getElementById("templates-card");
+                const searchInput = document.getElementById("template-search");
 
                 const openTemplatesModal = () => {
+                    if (searchInput) {
+                        searchInput.value = ""; // Clear search when opening
+                    }
                     this.renderTemplatesGrid();
                     templatesModal.classList.remove("hidden");
                     setTimeout(() => {
                         templatesModal.classList.remove("opacity-0");
                         templatesCard.classList.remove("scale-95");
+                        if (searchInput) searchInput.focus();
                     }, 50);
                     sfx.playSelect();
                 };
@@ -2559,6 +2600,13 @@
                 templatesModal.addEventListener("click", (e) => {
                     if (e.target === templatesModal) closeTemplatesModal();
                 });
+
+                // Attach search filtering key/input event listener
+                if (searchInput) {
+                    searchInput.addEventListener("input", () => {
+                        this.renderTemplatesGrid();
+                    });
+                }
 
                 const folderInput = document.getElementById("folder-loader");
                 document.getElementById("btn-import-folder").addEventListener("click", () => {
@@ -2645,6 +2693,12 @@
                     fileLoader.click();
                 });
                 fileLoader.addEventListener("change", (e) => this.loadBoardConfiguration(e));
+            }
+
+            duplicateSelection() {
+                if (this.selectedPolygons.length === 0) return;
+                this.copySelectedPieces();
+                this.pasteCopiedPieces();
             }
 
             loadBoardConfiguration(event) {
