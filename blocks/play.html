@@ -25,6 +25,22 @@
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.4);
         }
+        /* Custom scrollbar for templates gallery */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 overflow-hidden w-screen h-screen flex flex-col">
@@ -65,6 +81,46 @@
         </div>
     </div>
 
+    <!-- Templates Modal Backdrop Overlay -->
+    <div id="modal-templates" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300 pointer-events-auto">
+        <div class="glass-panel p-6 rounded-3xl shadow-2xl max-w-2xl w-full mx-4 border border-white/60 transform scale-95 transition-transform duration-300 flex flex-col max-h-[85vh]" id="templates-card">
+            <div class="flex justify-between items-center border-b pb-3 mb-4 shrink-0">
+                <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-folder-open text-indigo-600"></i>
+                    <span>Templates Desk</span>
+                </h3>
+                <button id="btn-close-templates" class="text-slate-400 hover:text-slate-600 transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 shrink-0">
+                <p class="text-xs text-slate-500 max-w-md">Loads patterns directly from your templates folder. If testing locally on your computer, import the folder below to bypass browser security blocks.</p>
+                
+                <!-- Hidden inputs for folder uploading -->
+                <input type="file" id="folder-loader" class="hidden" webkitdirectory directory multiple>
+                <button id="btn-import-folder" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold py-2 px-3.5 rounded-xl flex items-center gap-1.5 transition active:scale-95 whitespace-nowrap self-stretch sm:self-auto justify-center">
+                    <i class="fa-solid fa-folder-plus"></i> Select Folder
+                </button>
+            </div>
+
+            <!-- Loader / Empty Status Container -->
+            <div id="templates-status" class="hidden py-8 flex flex-col items-center justify-center text-center gap-2 shrink-0">
+                <div class="w-8 h-8 border-4 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin"></div>
+                <span class="text-xs font-medium text-slate-500">Searching templates folder...</span>
+            </div>
+            
+            <!-- Templates Grid Container -->
+            <div id="templates-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto custom-scroll pr-1 py-1 flex-grow">
+                <!-- Template cards dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Info Notification -->
+    <div id="notification-toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white text-xs font-bold py-3 px-6 rounded-2xl shadow-xl pointer-events-none opacity-0 transition-opacity duration-300 flex items-center gap-2">
+        <i id="notification-icon" class="fa-solid fa-circle-info text-indigo-400"></i>
+        <span id="notification-msg">Pattern loaded successfully</span>
+    </div>
+
     <!-- Header Panel -->
     <header class="absolute top-4 left-4 right-4 z-10 flex justify-between items-center pointer-events-none">
         <!-- Compact Header Brand Card -->
@@ -78,7 +134,7 @@
             </div>
         </div>
 
-        <!-- History & Settings Controls -->
+        <!-- History & Settings Controls (Templates removed from here as requested) -->
         <div class="flex gap-2 pointer-events-auto">
             <button id="btn-undo" class="glass-panel w-12 h-12 rounded-2xl flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-white active:scale-95 transition shadow-lg text-lg opacity-50 cursor-not-allowed" title="Undo (Ctrl+Z)" disabled>
                 <i class="fa-solid fa-reply"></i>
@@ -103,6 +159,10 @@
         <div class="flex flex-col gap-3">
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Board Actions</label>
             <div class="grid grid-cols-2 gap-2">
+                <!-- Keep templates button inside Desk Settings drawer as requested -->
+                <button id="btn-drawer-templates" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition w-full col-span-2 shadow-md shadow-indigo-100">
+                    <i class="fa-solid fa-folder-open"></i> Browse Templates
+                </button>
                 <button id="btn-save-trigger" class="bg-indigo-50 hover:bg-indigo-100 active:scale-95 text-indigo-700 text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition w-full col-span-2">
                     <i class="fa-solid fa-file-export"></i> Save / Export Board
                 </button>
@@ -124,7 +184,7 @@
 
     <!-- Left Vertical Customizer Panel -->
     <div id="selection-panel" class="absolute left-4 top-1/2 -translate-y-1/2 z-10 glass-panel p-3 rounded-2xl shadow-xl flex flex-col items-center gap-3 transition-all duration-300 transform -translate-x-32 opacity-0 pointer-events-none">
-        <!-- Rotation CCW (rotated 90deg clockwise so arrow head curves and points down) -->
+        <!-- Rotation CCW -->
         <button id="btn-rotate-ccw" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 text-slate-600 flex items-center justify-center transition shadow-sm" title="Rotate CCW (-15°)">
             <i class="fa-solid fa-arrow-rotate-left inline-block rotate-90"></i>
         </button>
@@ -165,43 +225,51 @@
             
             <!-- Shape Spawner Row -->
             <div class="flex items-center gap-2 overflow-x-auto">
-                <button data-sides="3" class="btn-spawn group flex flex-col items-center justify-center w-16 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition">
-                    <svg class="w-7 h-7 drop-shadow" viewBox="0 0 100 100">
-                        <polygon points="50,15 85,75 15,75" fill="#FFD166" stroke="#cfa645" stroke-width="4" stroke-linejoin="round"/>
-                    </svg>
-                    <span class="text-[9px] font-bold text-slate-500 mt-1">Triangle</span>
-                </button>
-                <button data-sides="4" class="btn-spawn group flex flex-col items-center justify-center w-16 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition">
-                    <svg class="w-7 h-7 drop-shadow" viewBox="0 0 100 100">
-                        <rect x="20" y="20" width="60" height="60" rx="5" fill="#EF476F" stroke="#c03254" stroke-width="4"/>
-                    </svg>
-                    <span class="text-[9px] font-bold text-slate-500 mt-1">Square</span>
-                </button>
-                <button data-sides="6" class="btn-spawn group flex flex-col items-center justify-center w-16 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition">
-                    <svg class="w-7 h-7 drop-shadow" viewBox="0 0 100 100">
-                        <polygon points="50,10 85,30 85,70 50,90 15,70 15,30" fill="#F77F00" stroke="#c36200" stroke-width="4" stroke-linejoin="round"/>
-                    </svg>
-                    <span class="text-[9px] font-bold text-slate-500 mt-1">Hexagon</span>
-                </button>
-                <button data-sides="8" class="btn-spawn group flex flex-col items-center justify-center w-16 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition">
-                    <svg class="w-7 h-7 drop-shadow" viewBox="0 0 100 100">
-                        <polygon points="50,10 78,22 90,50 78,78 50,90 22,78 10,50 22,22" fill="#118AB2" stroke="#0b6381" stroke-width="4" stroke-linejoin="round"/>
-                    </svg>
-                    <span class="text-[9px] font-bold text-slate-500 mt-1">Octagon</span>
-                </button>
-                <button data-sides="12" class="btn-spawn group flex flex-col items-center justify-center w-16 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition">
-                    <svg class="w-7 h-7 drop-shadow" viewBox="0 0 100 100">
-                        <polygon points="50,10 70,15 85,30 90,50 85,70 70,85 50,90 30,85 15,70 10,50 15,30 30,15" fill="#2B9C7E" stroke="#1d6b56" stroke-width="4" stroke-linejoin="round"/>
-                    </svg>
-                    <span class="text-[9px] font-bold text-slate-500 mt-1">Dodecagon</span>
-                </button>
+                <div id="standard-spawners" class="flex items-center gap-2">
+                    <button data-sides="3" class="btn-spawn group flex flex-col items-center justify-center w-16 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition">
+                        <svg class="w-7 h-7 drop-shadow" viewBox="0 0 100 100">
+                            <polygon points="50,15 85,75 15,75" fill="#FFD166" stroke="#cfa645" stroke-width="4" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="text-[9px] font-bold text-slate-500 mt-1">Triangle</span>
+                    </button>
+                    <button data-sides="4" class="btn-spawn group flex flex-col items-center justify-center w-16 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition">
+                        <svg class="w-7 h-7 drop-shadow" viewBox="0 0 100 100">
+                            <rect x="20" y="20" width="60" height="60" rx="5" fill="#EF476F" stroke="#c03254" stroke-width="4"/>
+                        </svg>
+                        <span class="text-[9px] font-bold text-slate-500 mt-1">Square</span>
+                    </button>
+                    <button data-sides="6" class="btn-spawn group flex flex-col items-center justify-center w-16 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition">
+                        <svg class="w-7 h-7 drop-shadow" viewBox="0 0 100 100">
+                            <polygon points="50,10 85,30 85,70 50,90 15,70 15,30" fill="#F77F00" stroke="#c36200" stroke-width="4" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="text-[9px] font-bold text-slate-500 mt-1">Hexagon</span>
+                    </button>
+                    <button data-sides="8" class="btn-spawn group flex flex-col items-center justify-center w-16 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition">
+                        <svg class="w-7 h-7 drop-shadow" viewBox="0 0 100 100">
+                            <polygon points="50,10 78,22 90,50 78,78 50,90 22,78 10,50 22,22" fill="#118AB2" stroke="#0b6381" stroke-width="4" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="text-[9px] font-bold text-slate-500 mt-1">Octagon</span>
+                    </button>
+                    <button data-sides="12" class="btn-spawn group flex flex-col items-center justify-center w-16 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition">
+                        <svg class="w-7 h-7 drop-shadow" viewBox="0 0 100 100">
+                            <polygon points="50,10 70,15 85,30 90,50 85,70 70,85 50,90 30,85 15,70 10,50 15,30 30,15" fill="#2B9C7E" stroke="#1d6b56" stroke-width="4" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="text-[9px] font-bold text-slate-500 mt-1">Dodecagon</span>
+                    </button>
+                </div>
+
+                <!-- Dynamic Group Memorization Divider -->
+                <div id="custom-divider" class="w-[1px] h-10 bg-slate-200 mx-1 hidden"></div>
+
+                <!-- Custom Spawners container -->
+                <div id="custom-spawners" class="flex items-center gap-2"></div>
             </div>
 
         </div>
     </div>
 
     <script>
-        // --- Hardcoded Default Palette Config (Classic Desk, green muted to RGB: 43, 156, 126) ---
+        // --- STREAMING_CHUNK: Configuring hardcoded default palette ---
         const PALETTES = {
             classic: {
                 name: "Classic Desk",
@@ -209,7 +277,7 @@
                 4: "#EF476F",
                 6: "#F77F00",
                 8: "#118AB2",
-                12: "#2B9C7E" // Muted green (rgb: 43, 156, 126)
+                12: "#2B9C7E"
             }
         };
         let activePaletteKey = "classic";
@@ -218,7 +286,6 @@
         class SoundSynth {
             constructor() {
                 this.ctx = null;
-                // Avoid sound issues in iPad, set audio session type
                 if (navigator.audioSession) {
                     try {
                         navigator.audioSession.type = "playback";
@@ -396,7 +463,6 @@
             }
         };
 
-        // --- STREAMING_CHUNK: Defining Polygon block structures... ---
         // --- Class Model: Pattern Polygon Block ---
         let nextPieceId = 1;
         class PatternPolygon {
@@ -406,7 +472,7 @@
                 this.center = center.clone();
                 this.rotation = rotation;
                 this.color = colorHex || PALETTES[activePaletteKey][this.numSides];
-                this.showBorders = true; // Default to showing borders in a dark accent
+                this.showBorders = true;
 
                 this.radius = calculateCircumradius(this.numSides);
                 this.apothem = calculateApothem(this.numSides);
@@ -427,10 +493,9 @@
                 this.mesh.receiveShadow = true;
                 this.mesh.userData = { parentPolygon: this };
 
-                // Define vertices standard positions
                 this.localVertices = [];
                 for (let i = 0; i < this.numSides; i++) {
-                    const angle = (2 * Math.PI * i) / this.numSides;
+                    const angle = (2 * Math.PI * i) / numSides;
                     this.localVertices.push(new THREE.Vector2(
                         this.radius * Math.cos(angle),
                         this.radius * Math.sin(angle)
@@ -443,7 +508,6 @@
             }
 
             updateBorder() {
-                // Reclaim old borders if any
                 if (this.borderLine) {
                     this.mesh.remove(this.borderLine);
                     this.borderLine.geometry.dispose();
@@ -451,13 +515,12 @@
                     this.borderLine = null;
                 }
 
-                // Append line segments highlighting the outline edges beautifully
                 if (this.showBorders) {
                     const edgesGeom = new THREE.EdgesGeometry(this.geometry);
-                    const darkColor = new THREE.Color(this.color).clone().multiplyScalar(0.4); // Darkened Accent Color
+                    const darkColor = new THREE.Color(this.color).clone().multiplyScalar(0.4);
                     const lineMat = new THREE.LineBasicMaterial({ color: darkColor, linewidth: 2 });
                     this.borderLine = new THREE.LineSegments(edgesGeom, lineMat);
-                    this.borderLine.position.z = 0.001; // Tiny Z offset to prevent z-fighting
+                    this.borderLine.position.z = 0.001;
                     this.mesh.add(this.borderLine);
                 }
             }
@@ -537,25 +600,22 @@
             }
         }
 
-        // --- STREAMING_CHUNK: Initializing Board Game architecture class and methods ---
+        // --- STREAMING_CHUNK: Board Game implementation & dynamic template engine ---
         class BoardGame {
             constructor() {
                 this.polygons = [];
                 this.joinFrames = [];
                 this.particles = [];
-                this.pasteCount = 0;
+                this.customBlueprints = [];
+                this.loadedTemplates = []; 
                 
-                // Selection Cluster arrays
                 this.selectedPolygons = [];
                 this.draggedPolygon = null;
                 this.draggedClusterOrigins = [];
                 this.draggedRotator = false;
                 this.dragOffset = new THREE.Vector2();
 
-                // Clipboard memory
                 this.clipboard = [];
-
-                // Color Memory (Saves custom colors independently per shape type)
                 this.shapeColorsMemory = {};
                 Object.keys(PALETTES[activePaletteKey]).forEach(sides => {
                     if (sides !== "name") {
@@ -564,7 +624,6 @@
                 });
                 this.recentColors = [];
 
-                // Undo/Redo Timeline Stacks
                 this.undoStack = [];
                 this.redoStack = [];
                 this.isKeyTranslating = false;
@@ -587,11 +646,16 @@
                 this.spawnShape(6, new THREE.Vector2(0, 1.5));
                 this.updateSpawnerButtonColors();
 
+                // Dynamic background auto-scan of GitHub Repository contents on boot
+                this.scanGitHubTemplates();
+
+                // Set up lightweight scroll observer for dynamically loading heavy pattern previews
+                this.setupLazyPreviewObserver();
+
                 this.clock = new THREE.Clock();
                 this.animate();
             }
 
-            // Getter to retain backwards compatibility for single selected actions
             get selectedPolygon() {
                 return this.selectedPolygons[0] || null;
             }
@@ -607,7 +671,6 @@
                 this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 this.container.appendChild(this.renderer.domElement);
 
-                // --- Orthonormal Overhead Flat View ---
                 const aspect = width / height;
                 this.viewSize = 16;
                 this.camera = new THREE.OrthographicCamera(
@@ -618,7 +681,6 @@
                     0.1,
                     1000
                 );
-                // Offset camera position down slightly so the coordinates are pushed UP on screen, clearing menus
                 this.camera.position.set(0, -1.8, 20);
                 this.camera.lookAt(0, -1.8, 0);
             }
@@ -694,12 +756,10 @@
 
                                 const idealRotation = target.rotation + (2 * targetEdge + 1) * Math.PI / target.numSides + Math.PI - (2 * dragEdge + 1) * Math.PI / draggedPoly.numSides;
 
-                                // Verify validity of placing the entire dragged cluster at this snapped relative offset
                                 const deltaX = idealCenter.x - draggedPoly.center.x;
                                 const deltaY = idealCenter.y - draggedPoly.center.y;
                                 const deltaRot = idealRotation - draggedPoly.rotation;
 
-                                // Cache and try transformation on the cluster
                                 let isClusterLegit = true;
                                 const caches = this.selectedPolygons.map(p => ({
                                     poly: p,
@@ -722,7 +782,6 @@
                                     p.updateMeshTransform();
                                 });
 
-                                // Check each piece against non-selected pieces
                                 for (const p of this.selectedPolygons) {
                                     if (!this.isLocationValid(p, this.selectedPolygons)) {
                                         isClusterLegit = false;
@@ -730,7 +789,6 @@
                                     }
                                 }
 
-                                // Restore caches
                                 caches.forEach(c => {
                                     c.poly.center.copy(c.center);
                                     c.poly.rotation = c.rotation;
@@ -855,7 +913,6 @@
                     this.scene.remove(poly.rotationRing);
                 }
 
-                // Render rotation controller only when a single piece is selected
                 if (this.selectedPolygons.length !== 1) return;
 
                 const ringGroup = new THREE.Group();
@@ -889,7 +946,6 @@
                 this.pushState();
 
                 const colorToUse = customColor || this.shapeColorsMemory[sides] || PALETTES[activePaletteKey][sides];
-                
                 const defaultSpawnRotation = -Math.PI / 2 - Math.PI / sides;
                 const poly = new PatternPolygon(sides, position, defaultSpawnRotation, colorToUse);
                 
@@ -946,7 +1002,6 @@
                     
                     this.updateColorSwatches();
                     
-                    // Sync borders toggle button active visual state
                     const btnBorders = document.getElementById("btn-toggle-borders");
                     const allHaveBorders = this.selectedPolygons.every(p => p.showBorders);
                     if (allHaveBorders) {
@@ -1008,7 +1063,6 @@
                     this.scene.add(poly.mesh);
                     this.polygons.push(poly);
                     
-                    // Keep the customized palette memory and UI icons synchronized
                     this.shapeColorsMemory[item.numSides] = item.color;
                 });
 
@@ -1076,7 +1130,6 @@
                     showBorders: p.showBorders,
                     center: { x: p.center.x, y: p.center.y }
                 }));
-                this.pasteCount = 0; 
                 sfx.playSelect();
             }
 
@@ -1138,9 +1191,10 @@
                 }
 
                 if (!foundOffset) {
-                    this.pasteCount++;
-                    const staggerStep = 0.8 * ((this.pasteCount % 5) + 1);
-                    chosenOffset.set(baseOffset.x + staggerStep, baseOffset.y + staggerStep);
+                    if (!this.pasteOffsetCounter) this.pasteOffsetCounter = 0;
+                    this.pasteOffsetCounter++;
+                    const shiftFactor = 0.8 * ((this.pasteOffsetCounter % 5) + 1);
+                    chosenOffset.set(baseOffset.x + shiftFactor, baseOffset.y + shiftFactor);
                 }
                 return chosenOffset;
             }
@@ -1346,37 +1400,402 @@
                 });
             }
 
-            duplicateSelection() {
-                if (this.selectedPolygons.length === 0) return;
-                this.pushState();
-
-                const duplicates = [];
-                const originalSelection = [...this.selectedPolygons];
-
-                const offset = this.findClusterLegalOffset(originalSelection);
-
-                originalSelection.forEach(p => {
-                    const poly = new PatternPolygon(
-                        p.numSides, 
-                        new THREE.Vector2(p.center.x + offset.x, p.center.y + offset.y), 
-                        p.rotation, 
-                        p.color
-                    );
-                    poly.showBorders = p.showBorders;
-                    poly.updateBorder();
-                    poly.updateMeshTransform();
-                    this.scene.add(poly.mesh);
-                    this.polygons.push(poly);
-                    duplicates.push(poly);
+            // --- STREAMING_CHUNK: Intersection Observer for Lazy Rendering ---
+            setupLazyPreviewObserver() {
+                this.lazyObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const container = entry.target;
+                            const templateId = container.dataset.templateId;
+                            
+                            const template = this.loadedTemplates.find(t => t.id === templateId);
+                            if (template) {
+                                if (template.localData) {
+                                    container.innerHTML = this.generateBlueprintSVG(template.localData);
+                                } else if (template.svgPreview) {
+                                    container.innerHTML = template.svgPreview;
+                                } else {
+                                    this.loadRemotePreviewSVG(template, container);
+                                }
+                            }
+                            this.lazyObserver.unobserve(container);
+                        }
+                    });
+                }, {
+                    root: document.getElementById("templates-grid"),
+                    rootMargin: "100px 0px"
                 });
+            }
 
-                this.autoConnectAdjacentNeighbors();
+            // --- STREAMING_CHUNK: Vector SVG Blueprint Builder with Aspect Ratio and margins ---
+            generateBlueprintSVG(pieces) {
+                if (!Array.isArray(pieces) || pieces.length === 0) {
+                    return `<div class="text-slate-300 text-[10px] uppercase font-bold">Empty Desk</div>`;
+                }
+                
+                try {
+                    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                    
+                    pieces.forEach(p => {
+                        const numSides = parseInt(p.numSides) || 3;
+                        const radius = calculateCircumradius(numSides);
+                        
+                        const cx = p.center ? p.center.x : (p.localCenter ? p.localCenter.x : 0);
+                        const cy = p.center ? p.center.y : (p.localCenter ? p.localCenter.y : 0);
+                        
+                        const left = cx - radius;
+                        const right = cx + radius;
+                        const bottom = cy - radius;
+                        const top = cy + radius;
+                        
+                        if (left < minX) minX = left;
+                        if (right > maxX) maxX = right;
+                        if (bottom < minY) minY = bottom;
+                        if (top > maxY) maxY = top;
+                    });
+                    
+                    const w = maxX - minX;
+                    const h = maxY - minY;
+                    const cx = (minX + maxX) / 2;
+                    const cy = (minY + maxY) / 2;
+                    
+                    const paddingMultiplier = 1.45;
+                    const paddedW = Math.max(w * paddingMultiplier, 1.5);
+                    const paddedH = Math.max(h * paddingMultiplier, 1.5);
+                    
+                    let viewBoxW, viewBoxH;
+                    if (paddedW / paddedH > 4 / 3) {
+                        viewBoxW = paddedW;
+                        viewBoxH = paddedW * (3 / 4);
+                    } else {
+                        viewBoxH = paddedH;
+                        viewBoxW = paddedH * (4 / 3);
+                    }
+                    
+                    const vx = cx - viewBoxW / 2;
+                    const vy = -cy - viewBoxH / 2;
+                    
+                    const renderedPieces = pieces.map(p => {
+                        const numSides = parseInt(p.numSides) || 3;
+                        const radius = calculateCircumradius(numSides);
+                        const rotation = p.rotation || 0;
+                        const cx = p.center ? p.center.x : (p.localCenter ? p.localCenter.x : 0);
+                        const cy = p.center ? p.center.y : (p.localCenter ? p.localCenter.y : 0);
+                        
+                        const localVerts = [];
+                        const cos = Math.cos(rotation);
+                        const sin = Math.sin(rotation);
+                        
+                        for (let i = 0; i < numSides; i++) {
+                            const angle = (2 * Math.PI * i) / numSides;
+                            const vx = radius * Math.cos(angle);
+                            const vy = radius * Math.sin(angle);
+                            
+                            const rx = cx + (vx * cos - vy * sin);
+                            const ry = cy + (vx * sin + vy * cos);
+                            localVerts.push({ x: rx, y: ry });
+                        }
+                        
+                        return {
+                            color: p.color || "#cccccc",
+                            verts: localVerts,
+                            showBorders: p.showBorders !== undefined ? p.showBorders : true
+                        };
+                    });
+                    
+                    let svgContent = `<svg class="absolute inset-0 w-full h-full p-2.5 object-contain" viewBox="${vx} ${vy} ${viewBoxW} ${viewBoxH}" xmlns="http://www.w3.org/2000/svg">`;
+                    
+                    svgContent += `
+                        <defs>
+                            <pattern id="previewGrid" width="0.5" height="0.5" patternUnits="userSpaceOnUse">
+                                <path d="M 0.5 0 L 0 0 0 0.5" fill="none" stroke="#e2e8f0" stroke-width="0.015" />
+                            </pattern>
+                        </defs>
+                        <rect x="${vx}" y="${vy}" width="${viewBoxW}" height="${viewBoxH}" fill="#f8fafc" />
+                        <rect x="${vx}" y="${vy}" width="${viewBoxW}" height="${viewBoxH}" fill="url(#previewGrid)" opacity="0.5" />
+                    `;
 
+                    renderedPieces.forEach(rp => {
+                        const pts = rp.verts.map(v => `${v.x},${-v.y}`).join(' ');
+                        const strokeColor = rp.showBorders 
+                            ? new THREE.Color(rp.color).multiplyScalar(0.4).getStyle() 
+                            : new THREE.Color(rp.color).multiplyScalar(0.72).getStyle();
+                        
+                        const strokeWidth = viewBoxW * 0.012;
+                        svgContent += `<polygon points="${pts}" fill="${rp.color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linejoin="round" />`;
+                    });
+                    svgContent += `</svg>`;
+                    return svgContent;
+                } catch (e) {
+                    console.warn("Could not compile SVG miniature view:", e);
+                    return `<div class="text-rose-400 text-[10px] uppercase font-bold">Preview Error</div>`;
+                }
+            }
+
+            async loadRemotePreviewSVG(template, targetContainer) {
+                if (template.isFetchingPreview) return;
+                template.isFetchingPreview = true;
+                try {
+                    const response = await fetch(template.file);
+                    if (response.ok) {
+                        const data = await response.json();
+                        template.svgPreview = this.generateBlueprintSVG(data);
+                        if (targetContainer) {
+                            targetContainer.innerHTML = template.svgPreview;
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Failed to generate preview dynamically for " + template.title, e);
+                }
+            }
+
+            // --- STREAMING_CHUNK: Scanning Local & Remote Repository Directories ---
+            async scanGitHubTemplates() {
+                const host = window.location.hostname;
+                const path = window.location.pathname;
+
+                if (host.endsWith("github.io")) {
+                    const statusEl = document.getElementById("templates-status");
+                    statusEl.classList.remove("hidden");
+
+                    try {
+                        const pathSegments = path.split('/').filter(p => p.length > 0);
+                        const username = host.split('.')[0];
+                        const repo = pathSegments[0];
+
+                        if (username && repo) {
+                            const apiURL = `https://api.github.com/repos/${username}/${repo}/contents/templates`;
+                            const response = await fetch(apiURL);
+                            if (response.ok) {
+                                const files = await response.json();
+                                
+                                const jsonFiles = files.filter(f => f.name.toLowerCase().endsWith('.json'));
+                                const otherFiles = files.filter(f => !f.name.toLowerCase().endsWith('.json'));
+
+                                console.log(`GitHub Scanning: found ${jsonFiles.length} blueprints and ${otherFiles.length} companion assets.`);
+
+                                const templatesToLoad = [];
+                                jsonFiles.forEach(jf => {
+                                    const baseName = jf.name.slice(0, -5);
+                                    
+                                    const pngMatch = otherFiles.find(f => f.name === `${baseName}.png`);
+                                    const svgMatch = otherFiles.find(f => f.name === `${baseName}.svg`);
+
+                                    let imageSrc = null;
+                                    if (pngMatch) imageSrc = pngMatch.download_url || `templates/${baseName}.png`;
+                                    else if (svgMatch) imageSrc = svgMatch.download_url || `templates/${baseName}.svg`;
+
+                                    templatesToLoad.push({
+                                        id: baseName,
+                                        title: baseName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+                                        desc: `Remote pattern blueprint`,
+                                        file: jf.download_url || `templates/${jf.name}`,
+                                        image: imageSrc,
+                                        isLocal: false,
+                                        svgPreview: null
+                                    });
+                                });
+
+                                if (templatesToLoad.length > 0) {
+                                    this.loadedTemplates = templatesToLoad;
+                                    this.renderTemplatesGrid();
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Unable to scan remote directory via GitHub API: ", e);
+                    } finally {
+                        statusEl.classList.add("hidden");
+                    }
+                }
+            }
+
+            // --- STREAMING_CHUNK: Local Directory Reader and Parsers ---
+            loadLocalFolder(filesList) {
+                const files = Array.from(filesList);
+                const jsonFiles = files.filter(f => f.name.toLowerCase().endsWith('.json'));
+                const mediaFiles = files.filter(f => f.name.toLowerCase().endsWith('.png') || f.name.toLowerCase().endsWith('.svg'));
+
+                console.log(`Local Scanning: found ${jsonFiles.length} blueprints and ${mediaFiles.length} image files.`);
+
+                if (jsonFiles.length === 0) {
+                    this.showToast("No .json blueprints found in folder", "fa-solid fa-triangle-exclamation text-amber-400");
+                    return;
+                }
+
+                const localTemplates = [];
+                let loadedCount = 0;
+
+                jsonFiles.forEach(jf => {
+                    const baseName = jf.name.slice(0, -5);
+                    const reader = new FileReader();
+
+                    reader.onload = (e) => {
+                        try {
+                            const parsedData = JSON.parse(e.target.result);
+                            const imgFile = mediaFiles.find(m => m.name.startsWith(baseName));
+                            let imageUrl = null;
+                            if (imgFile) {
+                                imageUrl = URL.createObjectURL(imgFile);
+                            }
+
+                            localTemplates.push({
+                                id: baseName,
+                                title: baseName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+                                desc: `Mapped local blueprint`,
+                                localData: parsedData,
+                                image: imageUrl,
+                                isLocal: true
+                            });
+                        } catch (err) {
+                            console.error(`Error parsing local JSON: ${jf.name}`, err);
+                        } finally {
+                            loadedCount++;
+                            if (loadedCount === jsonFiles.length) {
+                                this.loadedTemplates = localTemplates;
+                                this.renderTemplatesGrid();
+                                this.showToast(`Found and compiled ${localTemplates.length} templates!`, "fa-solid fa-circle-check text-emerald-400");
+                            }
+                        }
+                    };
+
+                    reader.onerror = () => {
+                        loadedCount++;
+                        if (loadedCount === jsonFiles.length) {
+                            this.loadedTemplates = localTemplates;
+                            this.renderTemplatesGrid();
+                        }
+                    };
+
+                    reader.readAsText(jf);
+                });
+            }
+
+            renderTemplatesGrid() {
+                const grid = document.getElementById("templates-grid");
+                grid.innerHTML = "";
+
+                if (this.loadedTemplates.length === 0) {
+                    grid.innerHTML = `
+                        <div class="col-span-full py-12 flex flex-col items-center justify-center text-center gap-2">
+                            <i class="fa-solid fa-folder-open text-slate-300 text-4xl"></i>
+                            <span class="text-xs font-bold text-slate-400">Folder is empty</span>
+                            <span class="text-[10px] text-slate-400">Put some saved .json board states inside.</span>
+                        </div>
+                    `;
+                    return;
+                }
+
+                this.loadedTemplates.forEach(template => {
+                    const card = document.createElement("button");
+                    card.className = "flex flex-col text-left bg-white border border-slate-200 hover:border-indigo-500 rounded-2xl overflow-hidden transition hover:shadow-md active:scale-[0.98] group relative min-h-[160px]";
+                    
+                    const containerId = `lazy-container-${template.id}`;
+                    let previewHTML = "";
+
+                    // Changed object-cover to object-contain so that full images fit without cropping!
+                    if (template.image) {
+                        previewHTML = `<img class="absolute inset-0 w-full h-full object-contain p-2" src="${template.image}" alt="${template.title}">`;
+                    } else {
+                        previewHTML = `
+                            <div id="${containerId}" data-template-id="${template.id}" class="lazy-preview-container absolute inset-0 flex items-center justify-center text-indigo-400">
+                                <div class="w-5 h-5 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+                            </div>
+                        `;
+                    }
+
+                    card.innerHTML = `
+                        <div class="w-full aspect-[4/3] bg-slate-50 flex items-center justify-center border-b border-slate-100 overflow-hidden relative">
+                            ${previewHTML}
+                        </div>
+                        <div class="p-3 flex flex-col justify-between flex-grow">
+                            <div>
+                                <h4 class="font-bold text-xs text-slate-900 group-hover:text-indigo-600 transition leading-tight">${template.title}</h4>
+                                <p class="text-[10px] text-slate-500 mt-1 leading-snug line-clamp-2">${template.desc}</p>
+                            </div>
+                            <span class="text-[10px] font-bold text-indigo-500 mt-2 inline-flex items-center gap-1">Load Pattern <i class="fa-solid fa-arrow-right text-[8px] transition-transform group-hover:translate-x-0.5"></i></span>
+                        </div>
+                    `;
+
+                    card.addEventListener("click", () => {
+                        this.loadTemplate(template);
+                        document.getElementById("btn-close-templates").click(); 
+                    });
+
+                    grid.appendChild(card);
+
+                    const lazyContainer = card.querySelector(".lazy-preview-container");
+                    if (lazyContainer) {
+                        this.lazyObserver.observe(lazyContainer);
+                    }
+                });
+            }
+
+            async loadTemplate(template) {
+                this.pushState();
+                this.clearBoard();
+
+                if (template.isLocal && template.localData) {
+                    this.restoreBoardState(template.localData);
+                    this.showToast(`Loaded: ${template.title}`, "fa-solid fa-circle-check text-emerald-400");
+                    sfx.playSnap();
+                } else if (template.file) {
+                    try {
+                        const response = await fetch(template.file);
+                        if (!response.ok) throw new Error("File protocol or network block");
+                        const data = await response.json();
+                        this.restoreBoardState(data);
+                        this.showToast(`Loaded: ${template.title}`, "fa-solid fa-circle-check text-emerald-400");
+                        sfx.playSnap();
+                    } catch (e) {
+                        this.showToast("Could not retrieve file data", "fa-solid fa-circle-xmark text-rose-400");
+                        sfx.playError();
+                    }
+                }
+            }
+
+            showToast(message, iconClass = "fa-solid fa-circle-info text-indigo-400") {
+                const toast = document.getElementById("notification-toast");
+                const icon = document.getElementById("notification-icon");
+                const msg = document.getElementById("notification-msg");
+
+                icon.className = iconClass;
+                msg.textContent = message;
+
+                toast.classList.remove("opacity-0", "pointer-events-none");
+                toast.classList.add("opacity-100");
+
+                if (this.toastTimeout) clearTimeout(this.toastTimeout);
+                this.toastTimeout = setTimeout(() => {
+                    toast.classList.add("opacity-0", "pointer-events-none");
+                    toast.classList.remove("opacity-100");
+                }, 3000);
+            }
+
+            clearBoard() {
                 this.deselectAll();
-                duplicates.forEach(p => this.selectPiece(p, true));
+                const polys = [...this.polygons];
+                polys.forEach(p => this.deletePiece(p));
                 sfx.playSnap();
             }
 
+            deletePiece(poly) {
+                poly.destroy(this.scene);
+                this.polygons = this.polygons.filter(p => p !== poly);
+            }
+
+            saveBoardConfiguration() {
+                const config = this.getBoardStateSnapshot();
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2));
+                const dlAnchor = document.createElement('a');
+                dlAnchor.setAttribute("href", dataStr);
+                dlAnchor.setAttribute("download", "pattern_blocks_board.json");
+                document.body.appendChild(dlAnchor);
+                dlAnchor.click();
+                dlAnchor.remove();
+            }
+
+            // --- STREAMING_CHUNK: Setting up visual render scaling and captures ---
             downloadRenderedImage() {
                 if (this.polygons.length === 0) return;
 
@@ -1473,7 +1892,6 @@
                 const viewH = boundsH + margin * 2;
 
                 let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewX} ${viewY} ${viewW} ${viewH}" width="800" height="800" style="background-color:#f1f5f9;">`;
-                
                 svg += `
                 <defs>
                     <pattern id="gridPattern" width="1" height="1" patternUnits="userSpaceOnUse">
@@ -1487,7 +1905,6 @@
                 this.polygons.forEach(p => {
                     const verts = p.getVertices();
                     const pointsStr = verts.map(v => `${v.x},${-v.y}`).join(' ');
-                    
                     const strokeColor = p.showBorders 
                         ? new THREE.Color(p.color).multiplyScalar(0.4).getStyle() 
                         : new THREE.Color(p.color).multiplyScalar(0.72).getStyle();
@@ -1508,6 +1925,7 @@
                 sfx.playSelect();
             }
 
+            // --- STREAMING_CHUNK: Setup Event Listeners for Pointers and Keys ---
             setupEventListeners() {
                 const el = this.renderer.domElement;
                 el.addEventListener('contextmenu', e => e.preventDefault());
@@ -2041,6 +2459,7 @@
                 }
             }
 
+            // --- STREAMING_CHUNK: Setup UI Handlers ---
             setupUIHandlers() {
                 const drawer = document.getElementById("drawer-settings");
                 document.getElementById("btn-settings").addEventListener("click", () => {
@@ -2111,6 +2530,46 @@
                     closeExportModal();
                 });
 
+                const templatesModal = document.getElementById("modal-templates");
+                const templatesCard = document.getElementById("templates-card");
+
+                const openTemplatesModal = () => {
+                    this.renderTemplatesGrid();
+                    templatesModal.classList.remove("hidden");
+                    setTimeout(() => {
+                        templatesModal.classList.remove("opacity-0");
+                        templatesCard.classList.remove("scale-95");
+                    }, 50);
+                    sfx.playSelect();
+                };
+
+                const closeTemplatesModal = () => {
+                    templatesModal.classList.add("opacity-0");
+                    templatesCard.classList.add("scale-95");
+                    setTimeout(() => {
+                        templatesModal.classList.add("hidden");
+                    }, 300);
+                };
+
+                document.getElementById("btn-drawer-templates").addEventListener("click", () => {
+                    drawer.classList.add("translate-x-[340px]");
+                    openTemplatesModal();
+                });
+                document.getElementById("btn-close-templates").addEventListener("click", closeTemplatesModal);
+                templatesModal.addEventListener("click", (e) => {
+                    if (e.target === templatesModal) closeTemplatesModal();
+                });
+
+                const folderInput = document.getElementById("folder-loader");
+                document.getElementById("btn-import-folder").addEventListener("click", () => {
+                    folderInput.click();
+                });
+                folderInput.addEventListener("change", (e) => {
+                    if (e.target.files.length > 0) {
+                        this.loadLocalFolder(e.target.files);
+                    }
+                });
+
                 document.getElementById("btn-undo").addEventListener("click", () => this.undo());
                 document.getElementById("btn-redo").addEventListener("click", () => this.redo());
 
@@ -2122,7 +2581,6 @@
                     if (this.selectedPolygons.length === 0) return;
                     this.pushState();
 
-                    // Determine target toggle state: if any selected piece doesn't have borders, turn all of them ON; otherwise OFF
                     const allHaveBorders = this.selectedPolygons.every(p => p.showBorders);
                     const targetState = !allHaveBorders;
 
@@ -2131,7 +2589,6 @@
                         p.updateBorder();
                     });
 
-                    // Sync styling of the toggle button directly
                     const btnBorders = document.getElementById("btn-toggle-borders");
                     if (targetState) {
                         btnBorders.classList.add("bg-indigo-50", "text-indigo-600", "border-indigo-200");
@@ -2188,29 +2645,6 @@
                     fileLoader.click();
                 });
                 fileLoader.addEventListener("change", (e) => this.loadBoardConfiguration(e));
-            }
-
-            clearBoard() {
-                this.deselectAll();
-                const polys = [...this.polygons];
-                polys.forEach(p => this.deletePiece(p));
-                sfx.playSnap();
-            }
-
-            deletePiece(poly) {
-                poly.destroy(this.scene);
-                this.polygons = this.polygons.filter(p => p !== poly);
-            }
-
-            saveBoardConfiguration() {
-                const config = this.getBoardStateSnapshot();
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2));
-                const dlAnchor = document.createElement('a');
-                dlAnchor.setAttribute("href", dataStr);
-                dlAnchor.setAttribute("download", "pattern_blocks_board.json");
-                document.body.appendChild(dlAnchor);
-                dlAnchor.click();
-                dlAnchor.remove();
             }
 
             loadBoardConfiguration(event) {
@@ -2316,7 +2750,6 @@
                     }
                 }
 
-                // Update particle trails
                 for (let i = this.particles.length - 1; i >= 0; i--) {
                     const p = this.particles[i];
                     p.mesh.position.addScaledVector(p.velocity, dt);
