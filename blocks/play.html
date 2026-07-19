@@ -91,16 +91,6 @@
                 </h3>
                 <button id="btn-close-templates" class="text-slate-400 hover:text-slate-600 transition"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 shrink-0">
-                <p class="text-xs text-slate-500 max-w-md">Loads patterns directly from your templates folder. If testing locally on your computer, import the folder below to bypass browser security blocks.</p>
-                
-                <!-- Hidden inputs for folder uploading -->
-                <input type="file" id="folder-loader" class="hidden" webkitdirectory directory multiple>
-                <button id="btn-import-folder" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold py-2 px-3.5 rounded-xl flex items-center gap-1.5 transition active:scale-95 whitespace-nowrap self-stretch sm:self-auto justify-center">
-                    <i class="fa-solid fa-folder-plus"></i> Select Folder
-                </button>
-            </div>
 
             <!-- Search Bar Input Container -->
             <div class="mb-4 shrink-0 relative">
@@ -108,6 +98,25 @@
                     <i class="fa-solid fa-magnifying-glass text-xs"></i>
                 </div>
                 <input type="text" id="template-search" placeholder="Search patterns by name..." class="w-full pl-9 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition bg-white/50">
+            </div>
+
+            <!-- Tabs Segment Controller -->
+            <div class="flex bg-slate-100 p-1 rounded-2xl gap-1 mb-4 shrink-0">
+                <button id="tab-templates-default" class="flex-1 py-2 text-xs font-bold rounded-xl transition bg-white text-indigo-600 shadow-sm flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-shapes text-[10px]"></i> Default Patterns <span id="badge-default-count" class="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full ml-1 min-w-[20px] text-center">0</span>
+                </button>
+                <button id="tab-templates-local" class="flex-1 py-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-folder text-[10px]"></i> Local Folder <span id="badge-local-count" class="bg-slate-200 text-slate-600 text-[10px] px-2 py-0.5 rounded-full ml-1 min-w-[20px] text-center">0</span>
+                </button>
+            </div>
+
+            <!-- Hidden inputs and action bar for folder uploading (Only shown inside Local Folder Tab) -->
+            <div id="local-importer-bar" class="hidden flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 shrink-0 bg-slate-50 border border-slate-100 p-3 rounded-2xl">
+                <p class="text-[11px] text-slate-500 max-w-sm">Loads patterns directly from your local templates folder to bypass sandbox blocks.</p>
+                <input type="file" id="folder-loader" class="hidden" webkitdirectory directory multiple>
+                <button id="btn-import-folder" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold py-2 px-3.5 rounded-xl flex items-center gap-1.5 transition active:scale-95 whitespace-nowrap self-stretch sm:self-auto justify-center">
+                    <i class="fa-solid fa-folder-plus"></i> Select Folder
+                </button>
             </div>
 
             <!-- Loader / Empty Status Container -->
@@ -614,7 +623,11 @@
                 this.joinFrames = [];
                 this.particles = [];
                 this.customBlueprints = [];
-                this.loadedTemplates = []; 
+
+                // Separate storage properties to keep folders & repository scans isolated
+                this.defaultTemplates = []; 
+                this.localTemplates = [];
+                this.activeTemplatesTab = 'default'; // 'default' or 'local'
                 
                 this.selectedPolygons = [];
                 this.draggedPolygon = null;
@@ -1415,7 +1428,8 @@
                             const container = entry.target;
                             const templateId = container.dataset.templateId;
                             
-                            const template = this.loadedTemplates.find(t => t.id === templateId);
+                            // Scan both sets to ensure blueprint configuration properties exist
+                            const template = [...this.defaultTemplates, ...this.localTemplates].find(t => t.id === templateId);
                             if (template) {
                                 if (template.localData) {
                                     container.innerHTML = this.generateBlueprintSVG(template.localData);
@@ -1569,13 +1583,9 @@
                         const pathSegments = path.split('/').filter(p => p.length > 0);
                         const username = host.split('.')[0];
                         
-                        // We will attempt to find templates using multiple common GitHub Pages configurations:
                         const targets = [];
 
                         if (pathSegments.length > 0) {
-                            // Scenario A: Project Page
-                            // Repo: pathSegments[0] (e.g. "blocks")
-                            // Subpath inside repo: any segments between repo root and the HTML file + "/templates"
                             const repoA = pathSegments[0];
                             const subPathSegmentsA = pathSegments.slice(1, -1).concat('templates');
                             const pathA = subPathSegmentsA.filter(s => s).join('/');
@@ -1585,9 +1595,6 @@
                                 desc: "Project Page Route"
                             });
 
-                            // Scenario B: User Page (hosted on `<username>.github.io` repository)
-                            // Repo: `<username>.github.io`
-                            // Subpath inside repo: all segments up to the HTML file + "/templates"
                             const repoB = `${username}.github.io`;
                             const subPathSegmentsB = pathSegments.slice(0, -1).concat('templates');
                             const pathB = subPathSegmentsB.filter(s => s).join('/');
@@ -1600,7 +1607,6 @@
 
                         let templatesToLoad = [];
                         
-                        // Try each target route sequentially until one succeeds
                         for (const target of targets) {
                             try {
                                 const apiURL = `https://api.github.com/repos/${username}/${target.repo}/contents/${target.path}`;
@@ -1620,7 +1626,6 @@
                                             const pngMatch = otherFiles.find(f => f.name === `${baseName}.png`);
                                             const svgMatch = otherFiles.find(f => f.name === `${baseName}.svg`);
 
-                                            // Direct local relative path targeting: relative to play.html
                                             const localRelativeFile = `templates/${jf.name}`;
                                             let imageSrc = null;
                                             if (pngMatch) imageSrc = `templates/${pngMatch.name}`;
@@ -1638,7 +1643,6 @@
                                         });
                                         
                                         if (templatesToLoad.length > 0) {
-                                            // Found working directory! Stop trying other routes.
                                             break;
                                         }
                                     }
@@ -1649,7 +1653,7 @@
                         }
 
                         if (templatesToLoad.length > 0) {
-                            this.loadedTemplates = templatesToLoad;
+                            this.defaultTemplates = templatesToLoad;
                             this.renderTemplatesGrid();
                         } else {
                             console.warn("All GitHub API routes exhausted or returned empty folders.");
@@ -1685,7 +1689,6 @@
                     reader.onload = (e) => {
                         try {
                             const parsedData = JSON.parse(e.target.result);
-                            // Switch from prefix-based matching (startsWith) to an exact filename match (ignoring extension)
                             const imgFile = mediaFiles.find(m => {
                                 const lastDot = m.name.lastIndexOf('.');
                                 const nameWithoutExt = lastDot !== -1 ? m.name.substring(0, lastDot) : m.name;
@@ -1709,9 +1712,13 @@
                         } finally {
                             loadedCount++;
                             if (loadedCount === jsonFiles.length) {
-                                this.loadedTemplates = localTemplates;
-                                this.renderTemplatesGrid();
-                                this.showToast(`Found and compiled ${localTemplates.length} templates!`, "fa-solid fa-circle-check text-emerald-400");
+                                this.localTemplates = localTemplates;
+                                
+                                // Auto transition view tab to local category dynamically
+                                const tabLocal = document.getElementById("tab-templates-local");
+                                if (tabLocal) tabLocal.click();
+
+                                this.showToast(`Loaded and compiled ${localTemplates.length} local templates!`, "fa-solid fa-circle-check text-emerald-400");
                             }
                         }
                     };
@@ -1719,7 +1726,7 @@
                     reader.onerror = () => {
                         loadedCount++;
                         if (loadedCount === jsonFiles.length) {
-                            this.loadedTemplates = localTemplates;
+                            this.localTemplates = localTemplates;
                             this.renderTemplatesGrid();
                         }
                     };
@@ -1733,22 +1740,37 @@
                 const grid = document.getElementById("templates-grid");
                 grid.innerHTML = "";
 
-                if (this.loadedTemplates.length === 0) {
-                    grid.innerHTML = `
-                        <div class="col-span-full py-12 flex flex-col items-center justify-center text-center gap-2">
-                            <i class="fa-solid fa-folder-open text-slate-300 text-4xl"></i>
-                            <span class="text-xs font-bold text-slate-400">Folder is empty</span>
-                            <span class="text-[10px] text-slate-400">Put some saved .json board states inside.</span>
-                        </div>
-                    `;
+                // Update tab selection counter badges inside templates modal
+                document.getElementById("badge-default-count").textContent = this.defaultTemplates.length;
+                document.getElementById("badge-local-count").textContent = this.localTemplates.length;
+
+                const activeList = this.activeTemplatesTab === 'default' ? this.defaultTemplates : this.localTemplates;
+
+                if (activeList.length === 0) {
+                    if (this.activeTemplatesTab === 'local') {
+                        grid.innerHTML = `
+                            <div class="col-span-full py-12 flex flex-col items-center justify-center text-center gap-2">
+                                <i class="fa-solid fa-folder-open text-slate-300 text-4xl"></i>
+                                <span class="text-xs font-bold text-slate-400">No local patterns loaded</span>
+                                <span class="text-[10px] text-slate-400 max-w-xs leading-normal">Click "Select Folder" above to link your local blueprints folder sandbox.</span>
+                            </div>
+                        `;
+                    } else {
+                        grid.innerHTML = `
+                            <div class="col-span-full py-12 flex flex-col items-center justify-center text-center gap-2">
+                                <i class="fa-solid fa-folder-open text-slate-300 text-4xl"></i>
+                                <span class="text-xs font-bold text-slate-400">Default gallery is empty</span>
+                                <span class="text-[10px] text-slate-400">Upload templates folder to repository root to display online presets.</span>
+                            </div>
+                        `;
+                    }
                     return;
                 }
 
-                // Filter templates based on Search bar value
                 const searchInput = document.getElementById("template-search");
                 const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
 
-                const filteredTemplates = this.loadedTemplates.filter(template => 
+                const filteredTemplates = activeList.filter(template => 
                     template.title.toLowerCase().includes(query)
                 );
 
@@ -1780,8 +1802,6 @@
                         `;
                     }
 
-                    // Removed the long "mapped local blueprint / remote pattern blueprint" text paragraph
-                    // and the repetitive "Load Pattern" blue buttons to create an elegant card look!
                     card.innerHTML = `
                         <div class="w-full aspect-[4/3] bg-slate-50 flex items-center justify-center border-b border-slate-100 overflow-hidden relative">
                             ${previewHTML}
@@ -2615,9 +2635,30 @@
                 const templatesCard = document.getElementById("templates-card");
                 const searchInput = document.getElementById("template-search");
 
+                // Config Tab Buttons behavior
+                const tabDefault = document.getElementById("tab-templates-default");
+                const tabLocal = document.getElementById("tab-templates-local");
+                const localImporterBar = document.getElementById("local-importer-bar");
+
+                tabDefault.addEventListener("click", () => {
+                    this.activeTemplatesTab = 'default';
+                    tabDefault.className = "flex-1 py-2 text-xs font-bold rounded-xl transition bg-white text-indigo-600 shadow-sm flex items-center justify-center gap-1.5";
+                    tabLocal.className = "flex-1 py-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 flex items-center justify-center gap-1.5";
+                    localImporterBar.classList.add("hidden");
+                    this.renderTemplatesGrid();
+                });
+
+                tabLocal.addEventListener("click", () => {
+                    this.activeTemplatesTab = 'local';
+                    tabLocal.className = "flex-1 py-2 text-xs font-bold rounded-xl transition bg-white text-indigo-600 shadow-sm flex items-center justify-center gap-1.5";
+                    tabDefault.className = "flex-1 py-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 flex items-center justify-center gap-1.5";
+                    localImporterBar.classList.remove("hidden");
+                    this.renderTemplatesGrid();
+                });
+
                 const openTemplatesModal = () => {
                     if (searchInput) {
-                        searchInput.value = ""; // Clear search when opening
+                        searchInput.value = ""; // Clear search query upon entry
                     }
                     this.renderTemplatesGrid();
                     templatesModal.classList.remove("hidden");
