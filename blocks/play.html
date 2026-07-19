@@ -285,7 +285,6 @@
     </div>
 
     <script>
-        // --- STREAMING_CHUNK: Configuring hardcoded default palette ---
         const PALETTES = {
             classic: {
                 name: "Classic Desk",
@@ -624,10 +623,9 @@
                 this.particles = [];
                 this.customBlueprints = [];
 
-                // Separate storage properties to keep folders & repository scans isolated
                 this.defaultTemplates = []; 
                 this.localTemplates = [];
-                this.activeTemplatesTab = 'default'; // 'default' or 'local'
+                this.activeTemplatesTab = 'default'; 
                 
                 this.selectedPolygons = [];
                 this.draggedPolygon = null;
@@ -666,10 +664,7 @@
                 this.spawnShape(6, new THREE.Vector2(0, 1.5));
                 this.updateSpawnerButtonColors();
 
-                // Dynamic background auto-scan of GitHub Repository contents on boot
                 this.scanGitHubTemplates();
-
-                // Set up lightweight scroll observer for dynamically loading heavy pattern previews
                 this.setupLazyPreviewObserver();
 
                 this.clock = new THREE.Clock();
@@ -1254,6 +1249,161 @@
                 sfx.playSnap();
             }
 
+            // --- STREAMING_CHUNK: Multi-select Duplicate Memorization Logic ---
+            areBlueprintsEqual(bp1, bp2) {
+                if (bp1.length !== bp2.length) return false;
+
+                const matchPiece = (p1, p2) => {
+                    if (p1.numSides !== p2.numSides) return false;
+                    if (p1.color !== p2.color) return false;
+                    if (p1.showBorders !== p2.showBorders) return false;
+                    
+                    let rotDiff = Math.abs(p1.rotation - p2.rotation) % (Math.PI * 2);
+                    if (rotDiff > Math.PI) rotDiff = Math.PI * 2 - rotDiff;
+                    if (rotDiff > 0.01) return false;
+                    
+                    const dist = Math.sqrt(Math.pow(p1.localCenter.x - p2.localCenter.x, 2) + Math.pow(p1.localCenter.y - p2.localCenter.y, 2));
+                    return dist < 0.05;
+                };
+
+                const matchedIndices = new Set();
+                for (let i = 0; i < bp1.length; i++) {
+                    const p1 = bp1[i];
+                    let foundMatch = false;
+                    for (let j = 0; j < bp2.length; j++) {
+                        if (matchedIndices.has(j)) continue;
+                        const p2 = bp2[j];
+                        if (matchPiece(p1, p2)) {
+                            matchedIndices.add(j);
+                            foundMatch = true;
+                            break;
+                        }
+                    }
+                    if (!foundMatch) return false;
+                }
+                return true;
+            }
+
+            memorizeCustomGroup(items) {
+                const cog = new THREE.Vector2(0, 0);
+                items.forEach(item => {
+                    cog.x += item.center.x;
+                    cog.y += item.center.y;
+                });
+                cog.divideScalar(items.length);
+
+                const blueprint = items.map(item => ({
+                    numSides: item.numSides,
+                    rotation: item.rotation,
+                    color: item.color,
+                    showBorders: item.showBorders !== undefined ? item.showBorders : true,
+                    localCenter: {
+                        x: item.center.x - cog.x,
+                        y: item.center.y - cog.y
+                    }
+                }));
+
+                // Check memory to avoid registering redundant spawners
+                for (const existingBp of this.customBlueprints) {
+                    if (this.areBlueprintsEqual(existingBp, blueprint)) {
+                        this.showToast("Group layout is already memorized!", "fa-solid fa-circle-exclamation text-amber-400");
+                        return;
+                    }
+                }
+
+                this.customBlueprints.push(blueprint);
+
+                const container = document.getElementById("custom-spawners");
+                const divider = document.getElementById("custom-divider");
+
+                if (container && divider) {
+                    divider.classList.remove("hidden");
+
+                    const svgHTML = this.generateBlueprintSVG(blueprint, true);
+
+                    const btn = document.createElement("div");
+                    btn.className = "group relative flex flex-col items-center justify-center w-18 h-14 rounded-xl hover:bg-slate-100 active:scale-95 transition border border-slate-200/60 bg-white shadow-sm shrink-0 cursor-pointer select-none";
+                    btn.setAttribute("role", "button");
+                    btn.innerHTML = `
+                        <div class="w-14 h-9 relative flex items-center justify-center pointer-events-none">
+                            ${svgHTML}
+                        </div>
+                        <span class="text-[9px] font-bold text-slate-500 truncate max-w-[62px] pointer-events-none leading-none mb-0.5">Custom</span>
+                        <span class="btn-delete-spawner absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold opacity-0 group-hover:opacity-100 transition shadow-sm z-10" title="Delete Preset">
+                            <i class="fa-solid fa-xmark pointer-events-none"></i>
+                        </span>
+                    `;
+
+                    btn.addEventListener("click", (e) => {
+                        if (e.target.closest(".btn-delete-spawner")) {
+                            e.stopPropagation();
+                            btn.remove();
+                            this.customBlueprints = this.customBlueprints.filter(bp => bp !== blueprint);
+                            if (container.children.length === 0) {
+                                divider.classList.add("hidden");
+                            }
+                            return;
+                        }
+                        this.spawnCustomGroup(blueprint);
+                    });
+
+                    container.appendChild(btn);
+                    this.showToast("Group memorized in bottom menu!", "fa-solid fa-wand-magic-sparkles text-indigo-400");
+                }
+            }
+
+            spawnCustomGroup(blueprint) {
+                this.pushState();
+
+                const baseCenter = new THREE.Vector2(0, 1.5);
+
+                const pseudoItems = blueprint.map(bp => ({
+                    numSides: bp.numSides,
+                    rotation: bp.rotation,
+                    color: bp.color,
+                    showBorders: bp.showBorders,
+                    center: {
+                        x: baseCenter.x + bp.localCenter.x,
+                        y: baseCenter.y + bp.localCenter.y
+                    }
+                }));
+
+                const offset = this.findClusterLegalOffset(pseudoItems);
+                const spawnedPolys = [];
+                this.deselectAll();
+
+                blueprint.forEach(bp => {
+                    const finalPos = new THREE.Vector2(
+                        baseCenter.x + bp.localCenter.x + offset.x,
+                        baseCenter.y + bp.localCenter.y + offset.y
+                    );
+
+                    const poly = new PatternPolygon(bp.numSides, finalPos, bp.rotation, bp.color);
+                    poly.showBorders = bp.showBorders;
+                    poly.updateBorder();
+                    poly.updateMeshTransform();
+
+                    this.scene.add(poly.mesh);
+                    this.polygons.push(poly);
+                    spawnedPolys.push(poly);
+                });
+
+                this.selectedPolygons = spawnedPolys;
+                this.selectedPolygons.forEach(p => p.material.emissive.setHex(0x111111));
+
+                this.autoConnectAdjacentNeighbors();
+                this.updateColorSwatches();
+
+                const panel = document.getElementById("selection-panel");
+                panel.classList.remove("opacity-0", "pointer-events-none", "-translate-x-32");
+                panel.classList.add("opacity-100", "pointer-events-auto", "translate-x-0");
+
+                sfx.playSnap();
+
+                const centerWorld = new THREE.Vector2(baseCenter.x + offset.x, baseCenter.y + offset.y);
+                this.spawnSparkleBurst(centerWorld, spawnedPolys[0].color);
+            }
+
             rotateSelectedCluster(delta) {
                 if (this.selectedPolygons.length === 0) return;
                 this.pushState();
@@ -1428,11 +1578,10 @@
                             const container = entry.target;
                             const templateId = container.dataset.templateId;
                             
-                            // Scan both sets to ensure blueprint configuration properties exist
                             const template = [...this.defaultTemplates, ...this.localTemplates].find(t => t.id === templateId);
                             if (template) {
                                 if (template.localData) {
-                                    container.innerHTML = this.generateBlueprintSVG(template.localData);
+                                    container.innerHTML = this.generateBlueprintSVG(template.localData, false);
                                 } else if (template.svgPreview) {
                                     container.innerHTML = template.svgPreview;
                                 } else {
@@ -1448,8 +1597,8 @@
                 });
             }
 
-            // --- STREAMING_CHUNK: Vector SVG Blueprint Builder with Aspect Ratio and margins ---
-            generateBlueprintSVG(pieces) {
+            // --- STREAMING_CHUNK: High Fidelity SVG Blueprint Render engine ---
+            generateBlueprintSVG(pieces, isMiniature = false) {
                 if (!Array.isArray(pieces) || pieces.length === 0) {
                     return `<div class="text-slate-300 text-[10px] uppercase font-bold">Empty Desk</div>`;
                 }
@@ -1480,9 +1629,10 @@
                     const cx = (minX + maxX) / 2;
                     const cy = (minY + maxY) / 2;
                     
-                    const paddingMultiplier = 1.45;
-                    const paddedW = Math.max(w * paddingMultiplier, 1.5);
-                    const paddedH = Math.max(h * paddingMultiplier, 1.5);
+                    // Reduce scaling padding margins for miniature buttons so the graphic fills up the button completely
+                    const paddingMultiplier = isMiniature ? 1.15 : 1.45;
+                    const paddedW = Math.max(w * paddingMultiplier, 1.2);
+                    const paddedH = Math.max(h * paddingMultiplier, 1.2);
                     
                     let viewBoxW, viewBoxH;
                     if (paddedW / paddedH > 4 / 3) {
@@ -1524,7 +1674,8 @@
                         };
                     });
                     
-                    let svgContent = `<svg class="absolute inset-0 w-full h-full p-2.5 object-contain" viewBox="${vx} ${vy} ${viewBoxW} ${viewBoxH}" xmlns="http://www.w3.org/2000/svg">`;
+                    const paddingClass = isMiniature ? "p-0.5" : "p-2.5";
+                    let svgContent = `<svg class="absolute inset-0 w-full h-full ${paddingClass} object-contain" viewBox="${vx} ${vy} ${viewBoxW} ${viewBoxH}" xmlns="http://www.w3.org/2000/svg">`;
                     
                     svgContent += `
                         <defs>
@@ -1560,7 +1711,7 @@
                     const response = await fetch(template.file);
                     if (response.ok) {
                         const data = await response.json();
-                        template.svgPreview = this.generateBlueprintSVG(data);
+                        template.svgPreview = this.generateBlueprintSVG(data, false);
                         if (targetContainer) {
                             targetContainer.innerHTML = template.svgPreview;
                         }
@@ -1689,6 +1840,7 @@
                     reader.onload = (e) => {
                         try {
                             const parsedData = JSON.parse(e.target.result);
+                            // Exact filename match (ignoring extension and case)
                             const imgFile = mediaFiles.find(m => {
                                 const lastDot = m.name.lastIndexOf('.');
                                 const nameWithoutExt = lastDot !== -1 ? m.name.substring(0, lastDot) : m.name;
@@ -1714,7 +1866,6 @@
                             if (loadedCount === jsonFiles.length) {
                                 this.localTemplates = localTemplates;
                                 
-                                // Auto transition view tab to local category dynamically
                                 const tabLocal = document.getElementById("tab-templates-local");
                                 if (tabLocal) tabLocal.click();
 
@@ -1740,9 +1891,10 @@
                 const grid = document.getElementById("templates-grid");
                 grid.innerHTML = "";
 
-                // Update tab selection counter badges inside templates modal
-                document.getElementById("badge-default-count").textContent = this.defaultTemplates.length;
-                document.getElementById("badge-local-count").textContent = this.localTemplates.length;
+                const defaultBadge = document.getElementById("badge-default-count");
+                const localBadge = document.getElementById("badge-local-count");
+                if (defaultBadge) defaultBadge.textContent = this.defaultTemplates.length;
+                if (localBadge) localBadge.textContent = this.localTemplates.length;
 
                 const activeList = this.activeTemplatesTab === 'default' ? this.defaultTemplates : this.localTemplates;
 
@@ -2369,7 +2521,7 @@
                     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
                     const modifier = isMac ? e.metaKey : e.ctrlKey;
 
-                    // Skip keyboard game actions if user is focusing inside search bar or typing something
+                    // Do not execute key translations or canvas logic if focused on search inputs
                     if (document.activeElement && document.activeElement.tagName === 'INPUT') {
                         return; 
                     }
@@ -2560,7 +2712,7 @@
                 }
             }
 
-            // --- STREAMING_CHUNK: Setup UI and Search Event Handlers ---
+            // --- STREAMING_CHUNK: Setup UI Handlers ---
             setupUIHandlers() {
                 const drawer = document.getElementById("drawer-settings");
                 document.getElementById("btn-settings").addEventListener("click", () => {
@@ -2635,7 +2787,6 @@
                 const templatesCard = document.getElementById("templates-card");
                 const searchInput = document.getElementById("template-search");
 
-                // Config Tab Buttons behavior
                 const tabDefault = document.getElementById("tab-templates-default");
                 const tabLocal = document.getElementById("tab-templates-local");
                 const localImporterBar = document.getElementById("local-importer-bar");
@@ -2657,9 +2808,7 @@
                 });
 
                 const openTemplatesModal = () => {
-                    if (searchInput) {
-                        searchInput.value = ""; // Clear search query upon entry
-                    }
+                    if (searchInput) searchInput.value = "";
                     this.renderTemplatesGrid();
                     templatesModal.classList.remove("hidden");
                     setTimeout(() => {
@@ -2687,7 +2836,6 @@
                     if (e.target === templatesModal) closeTemplatesModal();
                 });
 
-                // Attach search filtering key/input event listener
                 if (searchInput) {
                     searchInput.addEventListener("input", () => {
                         this.renderTemplatesGrid();
@@ -2783,8 +2931,50 @@
 
             duplicateSelection() {
                 if (this.selectedPolygons.length === 0) return;
-                this.copySelectedPieces();
-                this.pasteCopiedPieces();
+                
+                // Only duplicate selection coordinates locally, memorizing structures strictly during standard duplicate triggers
+                if (this.selectedPolygons.length > 1) {
+                    this.memorizeCustomGroup(this.selectedPolygons);
+                }
+
+                // Spawning sequence continues as normal
+                this.clipboard = this.selectedPolygons.map(p => ({
+                    numSides: p.numSides,
+                    rotation: p.rotation,
+                    color: p.color,
+                    showBorders: p.showBorders,
+                    center: { x: p.center.x, y: p.center.y }
+                }));
+
+                const offset = this.findClusterLegalOffset(this.clipboard);
+                const pastedPolys = [];
+                this.deselectAll();
+
+                this.clipboard.forEach(item => {
+                    const poly = new PatternPolygon(
+                        item.numSides,
+                        new THREE.Vector2(item.center.x + offset.x, item.center.y + offset.y),
+                        item.rotation,
+                        item.color
+                    );
+                    poly.showBorders = item.showBorders !== undefined ? item.showBorders : true;
+                    poly.updateBorder();
+                    poly.updateMeshTransform();
+                    this.scene.add(poly.mesh);
+                    this.polygons.push(poly);
+                    pastedPolys.push(poly);
+                });
+
+                this.selectedPolygons = pastedPolys;
+                this.selectedPolygons.forEach(p => p.material.emissive.setHex(0x111111));
+                
+                this.autoConnectAdjacentNeighbors();
+                this.updateColorSwatches();
+                
+                const panel = document.getElementById("selection-panel");
+                panel.classList.remove("opacity-0", "pointer-events-none", "-translate-x-32");
+                panel.classList.add("opacity-100", "pointer-events-auto", "translate-x-0");
+                sfx.playSnap();
             }
 
             loadBoardConfiguration(event) {
