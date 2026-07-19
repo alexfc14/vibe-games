@@ -112,7 +112,7 @@
 
             <!-- Hidden inputs and action bar for folder uploading (Only shown inside Local Folder Tab) -->
             <div id="local-importer-bar" class="hidden flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 shrink-0 bg-slate-50 border border-slate-100 p-3 rounded-2xl">
-                <p class="text-[11px] text-slate-500 max-w-sm">Loads patterns directly from your local templates folder to bypass sandbox blocks.</p>
+                <p class="text-[11px] text-slate-500 max-w-sm">Loads patterns directly from your templates folder to bypass sandbox blocks.</p>
                 <input type="file" id="folder-loader" class="hidden" webkitdirectory directory multiple>
                 <button id="btn-import-folder" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold py-2 px-3.5 rounded-xl flex items-center gap-1.5 transition active:scale-95 whitespace-nowrap self-stretch sm:self-auto justify-center">
                     <i class="fa-solid fa-folder-plus"></i> Select Folder
@@ -224,6 +224,11 @@
         <!-- Toggle Borders Option -->
         <button id="btn-toggle-borders" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 text-slate-600 flex items-center justify-center transition shadow-sm" title="Toggle Outer Borders">
             <i class="fa-solid fa-border-all text-sm"></i>
+        </button>
+
+        <!-- Concentric Layer Gradient Button (shows when length > 1) -->
+        <button id="btn-layer-gradient" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 text-slate-600 flex items-center justify-center transition shadow-sm hidden" title="Concentric Layer Gradient">
+            <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
         </button>
 
         <!-- Delete Shape -->
@@ -400,7 +405,7 @@
         }
         const sfx = new SoundSynth();
 
-        // --- STREAMING_CHUNK: Defining Polygon Geometries and Maths ---
+        // --- STREAMING_CHUNK: Computing geometric formulas... ---
         function calculateCircumradius(numSides) {
             return 1 / (2 * Math.sin(Math.PI / numSides));
         }
@@ -408,7 +413,6 @@
             return 1 / (2 * Math.tan(Math.PI / numSides));
         }
 
-        // Generates clean standard mathematical regular polygon
         function createTactilePolygonGeometry(numSides) {
             const radius = calculateCircumradius(numSides);
             const shape = new THREE.Shape();
@@ -478,7 +482,7 @@
             }
         };
 
-        // --- Class Model: Pattern Polygon Block ---
+        // --- STREAMING_CHUNK: Class Model: Pattern Polygon Block ---
         let nextPieceId = 1;
         class PatternPolygon {
             constructor(numSides, center = new THREE.Vector2(0, 0), rotation = 0, colorHex = null) {
@@ -615,7 +619,7 @@
             }
         }
 
-        // --- STREAMING_CHUNK: Board Game implementation & dynamic template engine ---
+        // --- STREAMING_CHUNK: Board Game implementation & dynamic templates ---
         class BoardGame {
             constructor() {
                 this.polygons = [];
@@ -991,6 +995,47 @@
                 return poly;
             }
 
+            // --- STREAMING_CHUNK: Dynamic Left Side Panel HUD Synchronization ---
+            updateSelectionPanelUI() {
+                const panel = document.getElementById("selection-panel");
+                const btnGradient = document.getElementById("btn-layer-gradient");
+                const btnBorders = document.getElementById("btn-toggle-borders");
+
+                if (this.selectedPolygons.length > 0) {
+                    if (this.selectedPolygons.length === 1 && this.selectedPolygon) {
+                        this.createRotationRing(this.selectedPolygon);
+                        const picker = document.getElementById("piece-color-picker");
+                        if (picker) picker.value = this.selectedPolygon.color;
+                    } else {
+                        this.selectedPolygons.forEach(p => this.removeRotationRing(p));
+                    }
+
+                    this.updateColorSwatches();
+
+                    const allHaveBorders = this.selectedPolygons.every(p => p.showBorders);
+                    if (allHaveBorders) {
+                        btnBorders.classList.add("bg-indigo-50", "text-indigo-600", "border-indigo-200");
+                        btnBorders.classList.remove("bg-slate-100", "text-slate-600");
+                    } else {
+                        btnBorders.classList.remove("bg-indigo-50", "text-indigo-600", "border-indigo-200");
+                        btnBorders.classList.add("bg-slate-100", "text-slate-600");
+                    }
+
+                    if (this.selectedPolygons.length > 1) {
+                        btnGradient.classList.remove("hidden");
+                    } else {
+                        btnGradient.classList.add("hidden");
+                    }
+
+                    panel.classList.remove("opacity-0", "pointer-events-none", "-translate-x-32");
+                    panel.classList.add("opacity-100", "pointer-events-auto", "translate-x-0");
+                } else {
+                    panel.classList.add("opacity-0", "pointer-events-none", "-translate-x-32");
+                    panel.classList.remove("opacity-100", "pointer-events-auto", "translate-x-0");
+                    btnGradient.classList.add("hidden");
+                }
+            }
+
             selectPiece(poly, addToSelection = false) {
                 if (addToSelection) {
                     if (this.selectedPolygons.includes(poly)) {
@@ -1008,33 +1053,7 @@
                 }
 
                 this.clearJoinFrames();
-
-                if (this.selectedPolygons.length > 0) {
-                    if (this.selectedPolygons.length === 1 && this.selectedPolygon) {
-                        this.createRotationRing(this.selectedPolygon);
-                        document.getElementById("piece-color-picker").value = this.selectedPolygon.color;
-                    }
-                    
-                    this.updateColorSwatches();
-                    
-                    const btnBorders = document.getElementById("btn-toggle-borders");
-                    const allHaveBorders = this.selectedPolygons.every(p => p.showBorders);
-                    if (allHaveBorders) {
-                        btnBorders.classList.add("bg-indigo-50", "text-indigo-600", "border-indigo-200");
-                        btnBorders.classList.remove("bg-slate-100", "text-slate-600");
-                    } else {
-                        btnBorders.classList.remove("bg-indigo-50", "text-indigo-600", "border-indigo-200");
-                        btnBorders.classList.add("bg-slate-100", "text-slate-600");
-                    }
-
-                    const panel = document.getElementById("selection-panel");
-                    panel.classList.remove("opacity-0", "pointer-events-none", "-translate-x-32");
-                    panel.classList.add("opacity-100", "pointer-events-auto", "translate-x-0");
-                } else {
-                    const panel = document.getElementById("selection-panel");
-                    panel.classList.add("opacity-0", "pointer-events-none", "-translate-x-32");
-                    panel.classList.remove("opacity-100", "pointer-events-auto", "translate-x-0");
-                }
+                this.updateSelectionPanelUI();
             }
 
             deselectAll() {
@@ -1044,9 +1063,7 @@
                 });
                 this.selectedPolygons = [];
                 this.clearJoinFrames();
-                const panel = document.getElementById("selection-panel");
-                panel.classList.add("opacity-0", "pointer-events-none", "-translate-x-32");
-                panel.classList.remove("opacity-100", "pointer-events-auto", "translate-x-0");
+                this.updateSelectionPanelUI();
             }
 
             getBoardStateSnapshot() {
@@ -1241,15 +1258,10 @@
                 this.selectedPolygons.forEach(p => p.material.emissive.setHex(0x111111));
                 
                 this.autoConnectAdjacentNeighbors();
-                this.updateColorSwatches();
-                
-                const panel = document.getElementById("selection-panel");
-                panel.classList.remove("opacity-0", "pointer-events-none", "-translate-x-32");
-                panel.classList.add("opacity-100", "pointer-events-auto", "translate-x-0");
+                this.updateSelectionPanelUI();
                 sfx.playSnap();
             }
 
-            // --- STREAMING_CHUNK: Multi-select Duplicate Memorization Logic ---
             areBlueprintsEqual(bp1, bp2) {
                 if (bp1.length !== bp2.length) return false;
 
@@ -1303,7 +1315,6 @@
                     }
                 }));
 
-                // Check memory to avoid registering redundant spawners
                 for (const existingBp of this.customBlueprints) {
                     if (this.areBlueprintsEqual(existingBp, blueprint)) {
                         this.showToast("Group layout is already memorized!", "fa-solid fa-circle-exclamation text-amber-400");
@@ -1392,11 +1403,7 @@
                 this.selectedPolygons.forEach(p => p.material.emissive.setHex(0x111111));
 
                 this.autoConnectAdjacentNeighbors();
-                this.updateColorSwatches();
-
-                const panel = document.getElementById("selection-panel");
-                panel.classList.remove("opacity-0", "pointer-events-none", "-translate-x-32");
-                panel.classList.add("opacity-100", "pointer-events-auto", "translate-x-0");
+                this.updateSelectionPanelUI();
 
                 sfx.playSnap();
 
@@ -1554,6 +1561,130 @@
                 });
             }
 
+            // --- STREAMING_CHUNK: Applying smooth and subtle concentric HSL gradient... ---
+            applyLayerGradient() {
+                if (this.selectedPolygons.length === 0) return;
+                this.pushState();
+
+                // 1. Direct Shape Sampling: Query the exact flat base color from the first selected shape
+                const baseShape = this.selectedPolygons[0];
+                const baseColor = new THREE.Color(baseShape.color);
+                const hsl = {};
+                baseColor.getHSL(hsl);
+
+                const selectedSet = new Set(this.selectedPolygons);
+                const boundaryPieces = [];
+                const depths = new Map();
+
+                // Identify baseline outermost blocks touching outer space
+                selectedSet.forEach(p => {
+                    let isBoundary = false;
+                    for (let i = 0; i < p.numSides; i++) {
+                        const n = p.neighbors[i];
+                        if (!n || !selectedSet.has(n)) {
+                            isBoundary = true;
+                            break;
+                        }
+                    }
+                    if (isBoundary) {
+                        boundaryPieces.push(p);
+                        depths.set(p, 1); // Outermost boundary layer starts at depth 1
+                    }
+                });
+
+                if (boundaryPieces.length === 0 && selectedSet.size > 0) {
+                    // COG Fallback for fully closed/co-centric patterns
+                    const cog = new THREE.Vector2(0, 0);
+                    selectedSet.forEach(p => cog.add(p.center));
+                    cog.divideScalar(selectedSet.size);
+
+                    const distances = Array.from(selectedSet).map(p => ({
+                        poly: p,
+                        dist: p.center.distanceTo(cog)
+                    }));
+                    distances.sort((a, b) => b.dist - a.dist);
+
+                    if (distances.length > 1) {
+                        const maxDist = distances[0].dist;
+                        const minDist = distances[distances.length - 1].dist;
+                        const distRange = maxDist - minDist;
+
+                        distances.forEach(item => {
+                            const t = distRange > 0.01 ? (maxDist - item.dist) / distRange : 0;
+                            
+                            // Map to a highly refined, extremely subtle lightness spectrum
+                            const baseLightness = hsl.l;
+                            const maxMult = 1.18;
+                            const minMult = 0.96; // Max 4% reduction for an extremely soft, airy concentric look
+                            const multiplier = maxMult - t * (maxMult - minMult);
+
+                            const targetLightness = Math.max(0.15, Math.min(0.96, baseLightness * multiplier));
+                            const targetColor = new THREE.Color().setHSL(hsl.h, hsl.s, targetLightness);
+                            item.poly.setColor("#" + targetColor.getHexString());
+                        });
+                    }
+                } else {
+                    // Pass 1: Run Breadth-First Search (BFS) to map baseline layers
+                    const queue = [...boundaryPieces];
+                    let maxBaseline = 1;
+
+                    while (queue.length > 0) {
+                        const current = queue.shift();
+                        const currentDepth = depths.get(current);
+
+                        for (let i = 0; i < current.numSides; i++) {
+                            const neighbor = current.neighbors[i];
+                            if (neighbor && selectedSet.has(neighbor) && !depths.has(neighbor)) {
+                                const nextDepth = currentDepth + 1;
+                                depths.set(neighbor, nextDepth);
+                                maxBaseline = Math.max(maxBaseline, nextDepth);
+                                queue.push(neighbor);
+                            }
+                        }
+                    }
+
+                    // Pass 2: Smooth Interior Scores via weighted adjacency (Shared edges)
+                    const smoothedScores = new Map();
+                    let maxSmoothed = 0;
+                    let minSmoothed = Infinity;
+
+                    selectedSet.forEach(p => {
+                        let scoreSum = 0;
+                        for (let i = 0; i < p.numSides; i++) {
+                            const n = p.neighbors[i];
+                            if (n && selectedSet.has(n)) {
+                                scoreSum += depths.get(n) || 0;
+                            } else {
+                                scoreSum += 0; // Exposed outer boundary edge has score 0
+                            }
+                        }
+                        const avgScore = scoreSum / p.numSides;
+                        smoothedScores.set(p, avgScore);
+                        maxSmoothed = Math.max(maxSmoothed, avgScore);
+                        minSmoothed = Math.min(minSmoothed, avgScore);
+                    });
+
+                    // Pass 3: Apply refined relative HSL values with subtle, non-abrupt jumps
+                    selectedSet.forEach(p => {
+                        const score = smoothedScores.get(p);
+                        const t = (maxSmoothed - minSmoothed) > 0.01 ? (score - minSmoothed) / (maxSmoothed - minSmoothed) : 0;
+
+                        // Precise, subtle lightness scaling bounds (keeping gaps between layers beautifully narrow)
+                        const baseLightness = hsl.l;
+                        const maxMult = 1.18;  // Elegant bright highlight on pointy outer tips
+                        const minMult = 0.96;  // Delicate, soft shadow at the core
+                        const multiplier = maxMult - t * (maxMult - minMult);
+
+                        const targetLightness = Math.max(0.15, Math.min(0.96, baseLightness * multiplier));
+                        const targetColor = new THREE.Color().setHSL(hsl.h, hsl.s, targetLightness);
+                        p.setColor("#" + targetColor.getHexString());
+                    });
+                }
+
+                sfx.playSelect();
+                this.showToast("Concentric interior gradient applied smoothly!", "fa-solid fa-wand-magic-sparkles text-indigo-400");
+            }
+
             updateSpawnerButtonColors() {
                 document.querySelectorAll(".btn-spawn").forEach(btn => {
                     const sides = parseInt(btn.dataset.sides);
@@ -1570,7 +1701,6 @@
                 });
             }
 
-            // --- STREAMING_CHUNK: Intersection Observer for Lazy Rendering ---
             setupLazyPreviewObserver() {
                 this.lazyObserver = new IntersectionObserver((entries) => {
                     entries.forEach(entry => {
@@ -1597,7 +1727,7 @@
                 });
             }
 
-            // --- STREAMING_CHUNK: High Fidelity SVG Blueprint Render engine ---
+            // --- STREAMING_CHUNK: Compiling Dynamic Vector Blueprint SVGs... ---
             generateBlueprintSVG(pieces, isMiniature = false) {
                 if (!Array.isArray(pieces) || pieces.length === 0) {
                     return `<div class="text-slate-300 text-[10px] uppercase font-bold">Empty Desk</div>`;
@@ -1629,7 +1759,6 @@
                     const cx = (minX + maxX) / 2;
                     const cy = (minY + maxY) / 2;
                     
-                    // Reduce scaling padding margins for miniature buttons so the graphic fills up the button completely
                     const paddingMultiplier = isMiniature ? 1.15 : 1.45;
                     const paddedW = Math.max(w * paddingMultiplier, 1.2);
                     const paddedH = Math.max(h * paddingMultiplier, 1.2);
@@ -1721,7 +1850,6 @@
                 }
             }
 
-            // --- STREAMING_CHUNK: Scanning Local & Remote Repository Directories ---
             async scanGitHubTemplates() {
                 const host = window.location.hostname;
                 const path = window.location.pathname;
@@ -1817,7 +1945,7 @@
                 }
             }
 
-            // --- STREAMING_CHUNK: Local Directory Reader and Parsers ---
+            // --- STREAMING_CHUNK: Directory loaders and template renders ---
             loadLocalFolder(filesList) {
                 const files = Array.from(filesList);
                 const jsonFiles = files.filter(f => f.name.toLowerCase().endsWith('.json'));
@@ -1840,7 +1968,6 @@
                     reader.onload = (e) => {
                         try {
                             const parsedData = JSON.parse(e.target.result);
-                            // Exact filename match (ignoring extension and case)
                             const imgFile = mediaFiles.find(m => {
                                 const lastDot = m.name.lastIndexOf('.');
                                 const nameWithoutExt = lastDot !== -1 ? m.name.substring(0, lastDot) : m.name;
@@ -1886,7 +2013,6 @@
                 });
             }
 
-            // --- STREAMING_CHUNK: Rendering and Filtering Templates in Grid ---
             renderTemplatesGrid() {
                 const grid = document.getElementById("templates-grid");
                 grid.innerHTML = "";
@@ -2002,6 +2128,7 @@
                 }
             }
 
+            // --- STREAMING_CHUNK: Setting up workspace toast notifications... ---
             showToast(message, iconClass = "fa-solid fa-circle-info text-indigo-400") {
                 const toast = document.getElementById("notification-toast");
                 const icon = document.getElementById("notification-icon");
@@ -2043,7 +2170,6 @@
                 dlAnchor.remove();
             }
 
-            // --- STREAMING_CHUNK: Setting up visual render scaling and captures ---
             downloadRenderedImage() {
                 if (this.polygons.length === 0) return;
 
@@ -2173,7 +2299,7 @@
                 sfx.playSelect();
             }
 
-            // --- STREAMING_CHUNK: Setup Event Listeners for Pointers and Keys ---
+            // --- STREAMING_CHUNK: Setup Event Listeners ---
             setupEventListeners() {
                 const el = this.renderer.domElement;
                 el.addEventListener('contextmenu', e => e.preventDefault());
@@ -2434,14 +2560,7 @@
 
                         if (boxedPolys.length > 0) {
                             this.selectedPolygons = boxedPolys;
-                            if (this.selectedPolygons.length === 1 && this.selectedPolygon) {
-                                this.createRotationRing(this.selectedPolygon);
-                                document.getElementById("piece-color-picker").value = this.selectedPolygon.color;
-                            }
-                            this.updateColorSwatches();
-                            const panel = document.getElementById("selection-panel");
-                            panel.classList.remove("opacity-0", "pointer-events-none", "-translate-x-32");
-                            panel.classList.add("opacity-100", "pointer-events-auto", "translate-x-0");
+                            this.updateSelectionPanelUI();
                             sfx.playSelect();
                         } else {
                             this.deselectAll();
@@ -2521,7 +2640,7 @@
                     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
                     const modifier = isMac ? e.metaKey : e.ctrlKey;
 
-                    // Do not execute key translations or canvas logic if focused on search inputs
+                    // Exclude workspace keyboard bindings while typing inside input fields
                     if (document.activeElement && document.activeElement.tagName === 'INPUT') {
                         return; 
                     }
@@ -2887,6 +3006,13 @@
                     this.duplicateSelection();
                 });
 
+                const btnLayerGradient = document.getElementById("btn-layer-gradient");
+                if (btnLayerGradient) {
+                    btnLayerGradient.addEventListener("click", () => {
+                        this.applyLayerGradient();
+                    });
+                }
+
                 const colorPicker = document.getElementById("piece-color-picker");
                 colorPicker.addEventListener("input", (e) => {
                     const color = e.target.value;
@@ -2932,12 +3058,10 @@
             duplicateSelection() {
                 if (this.selectedPolygons.length === 0) return;
                 
-                // Only duplicate selection coordinates locally, memorizing structures strictly during standard duplicate triggers
                 if (this.selectedPolygons.length > 1) {
                     this.memorizeCustomGroup(this.selectedPolygons);
                 }
 
-                // Spawning sequence continues as normal
                 this.clipboard = this.selectedPolygons.map(p => ({
                     numSides: p.numSides,
                     rotation: p.rotation,
@@ -2969,11 +3093,7 @@
                 this.selectedPolygons.forEach(p => p.material.emissive.setHex(0x111111));
                 
                 this.autoConnectAdjacentNeighbors();
-                this.updateColorSwatches();
-                
-                const panel = document.getElementById("selection-panel");
-                panel.classList.remove("opacity-0", "pointer-events-none", "-translate-x-32");
-                panel.classList.add("opacity-100", "pointer-events-auto", "translate-x-0");
+                this.updateSelectionPanelUI();
                 sfx.playSnap();
             }
 
