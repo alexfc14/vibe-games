@@ -1,0 +1,5782 @@
+[
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.3789309580267437,
+      "y": 0.7712982052642987
+    },
+    "rotation": -16.231562043546916,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -0.7242304196466169,
+      "y": -1.6720774677090282
+    },
+    "rotation": -29.321531433504568,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -6.033631496405135,
+      "y": -1.6720774677107575
+    },
+    "rotation": 9.424777960769811,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.667606092623429,
+      "y": 5.158049551212323
+    },
+    "rotation": 15.707963267949422,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.37893095802693,
+      "y": 1.348648474453892
+    },
+    "rotation": -10.995574287563864,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.061943659919313,
+      "y": 1.742986041751089
+    },
+    "rotation": -2.8797932657902243,
+    "color": "#ed7900",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.0619436599188194,
+      "y": 0.3769606379666439
+    },
+    "rotation": -1.8325957145936271,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.6959182561343846,
+      "y": 0.37696063796712354
+    },
+    "rotation": 6.5449846949791555,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.695918256134868,
+      "y": 1.742986041751574
+    },
+    "rotation": -12.828170002157895,
+    "color": "#ed7900",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.090255823433803,
+      "y": 5.15804955121257
+    },
+    "rotation": 10.471975511966415,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.0902558234325204,
+      "y": 2.4259987436436523
+    },
+    "rotation": -12.566370614358753,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.667606092622141,
+      "y": 2.425998743643442
+    },
+    "rotation": 1.0471975511970097,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.744956361810708,
+      "y": -0.5947271985206419
+    },
+    "rotation": 4.712388980385109,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.744956361811656,
+      "y": 2.1373236090482584
+    },
+    "rotation": -9.948376736367273,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.244956361811536,
+      "y": 1.8486484744532397
+    },
+    "rotation": -8.901179185170676,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.06194365992055,
+      "y": 4.475036849319921
+    },
+    "rotation": 11.257373675363871,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.061943659919793,
+      "y": 3.1090114455355256
+    },
+    "rotation": -0.26179938779873674,
+    "color": "#f87f00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -5.244956361810317,
+      "y": -1.672077467710427
+    },
+    "rotation": 5.497787143782554,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.5129055542417111,
+      "y": -0.8834023331143066
+    },
+    "rotation": 14.137166941154513,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.744956361810907,
+      "y": -0.0173769293310031
+    },
+    "rotation": 1.5707963267953116,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.244956361810598,
+      "y": -0.8834023331156131
+    },
+    "rotation": 5.759586531581697,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.6959182561353314,
+      "y": 3.1090114455360194
+    },
+    "rotation": -13.875367553354502,
+    "color": "#f87f00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.7449563618118695,
+      "y": 2.7146738782378863
+    },
+    "rotation": 1.5707963267953116,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.3789309580277047,
+      "y": 3.5033490128331795
+    },
+    "rotation": 0.5235987755987155,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.0129055542429652,
+      "y": 2.7146738782388384
+    },
+    "rotation": -13.089969389957052,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.01290555424277,
+      "y": 2.1373236090492336
+    },
+    "rotation": -9.948376736367258,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -1.5129055542414305,
+      "y": -1.6720774677091277
+    },
+    "rotation": -33.77212102609011,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.512905554242649,
+      "y": 1.8486484744546208
+    },
+    "rotation": -4.712388980384267,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.0129055542420096,
+      "y": -0.017376929330044533
+    },
+    "rotation": 9.948376736368113,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.6959182561361077,
+      "y": 4.47503684932052
+    },
+    "rotation": 4.450589592585961,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.378930958028163,
+      "y": 4.080699282022814
+    },
+    "rotation": 3.665191429188513,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.0129055542420646,
+      "y": -0.5947271985196534
+    },
+    "rotation": 10.99557428756471,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.4562812272157615,
+      "y": -1.6720774677101446
+    },
+    "rotation": 2.0943951023936154,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.3015806888365065,
+      "y": -1.6720774677093844
+    },
+    "rotation": -34.55751918948756,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.378930958024511,
+      "y": -4.692803409873522
+    },
+    "rotation": -16.231562043546933,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -0.7242304196444285,
+      "y": -7.13617908284689
+    },
+    "rotation": -29.321531433504585,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -6.033631496402947,
+      "y": -7.136179082848527
+    },
+    "rotation": 9.424777960769793,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.66760609262112,
+      "y": -0.30605206392550066
+    },
+    "rotation": 15.707963267949404,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.3789309580246885,
+      "y": -4.115453140683928
+    },
+    "rotation": -10.995574287563882,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.061943659917064,
+      "y": -3.721115573386723
+    },
+    "rotation": -2.879793265790242,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.0619436599165955,
+      "y": -5.087140977171164
+    },
+    "rotation": -1.832595714593645,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.6959182561321606,
+      "y": -5.0871409771707095
+    },
+    "rotation": 6.544984694979138,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.695918256132619,
+      "y": -3.7211155733862613
+    },
+    "rotation": -12.828170002157913,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.0902558234315043,
+      "y": -0.3060520639252613
+    },
+    "rotation": 10.471975511966397,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.0902558234302715,
+      "y": -3.0381028714941745
+    },
+    "rotation": -12.566370614358771,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.6676060926198906,
+      "y": -3.038102871494377
+    },
+    "rotation": 1.047197551196992,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.744956361808509,
+      "y": -6.058828813658434
+    },
+    "rotation": 4.712388980385091,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.744956361809411,
+      "y": -3.3267780060895427
+    },
+    "rotation": -9.94837673636729,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.244956361809294,
+      "y": -3.61545314068455
+    },
+    "rotation": -8.901179185170694,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.061943659918265,
+      "y": -0.9890647658178926
+    },
+    "rotation": 11.257373675363853,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.06194365991753,
+      "y": -2.3550901696022852
+    },
+    "rotation": -0.2617993877987545,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -5.244956361808139,
+      "y": -7.136179082848211
+    },
+    "rotation": 5.497787143782536,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.5129055542395191,
+      "y": -6.347503948252158
+    },
+    "rotation": 14.137166941154495,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.744956361808697,
+      "y": -5.481478544468799
+    },
+    "rotation": 1.5707963267952938,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.244956361808406,
+      "y": -6.347503948253396
+    },
+    "rotation": 5.75958653158168,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.6959182561330683,
+      "y": -2.35509016960182
+    },
+    "rotation": -13.87536755335452,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.7449563618096136,
+      "y": -2.749427736899914
+    },
+    "rotation": 1.5707963267952938,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.3789309580254345,
+      "y": -1.9607526023046469
+    },
+    "rotation": 0.5235987755986977,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.0129055542407093,
+      "y": -2.7494277368990097
+    },
+    "rotation": -13.08996938995707,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.0129055542405245,
+      "y": -3.3267780060886136
+    },
+    "rotation": -9.948376736367276,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -1.5129055542392509,
+      "y": -7.136179082846975
+    },
+    "rotation": -33.77212102609013,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.5129055542404073,
+      "y": -3.6154531406832335
+    },
+    "rotation": -4.712388980384285,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.0129055542398033,
+      "y": -5.481478544467888
+    },
+    "rotation": 9.948376736368095,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.6959182561338197,
+      "y": -0.9890647658173184
+    },
+    "rotation": 4.450589592585943,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.378930958025882,
+      "y": -1.3834023331150136
+    },
+    "rotation": 3.665191429188495,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.0129055542398673,
+      "y": -6.058828813657494
+    },
+    "rotation": 10.995574287564692,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.456281227213584,
+      "y": -7.136179082847945
+    },
+    "rotation": 2.0943951023935976,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.3015806888343286,
+      "y": -7.13617908284722
+    },
+    "rotation": -34.55751918948758,
+    "color": "#EF476F",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.3531198495434935,
+      "y": -1.3834023331133025
+    },
+    "rotation": 5.759586531581874,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.301580688837171,
+      "y": 1.059973339859523
+    },
+    "rotation": -7.330382858375757,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 3.0078203879213437,
+      "y": 1.0599733398625273
+    },
+    "rotation": 31.4159265358986,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.6417949841412847,
+      "y": -5.770153679061118
+    },
+    "rotation": 37.699111843078235,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.3531198495438719,
+      "y": -1.9607526023027608
+    },
+    "rotation": 10.995574287564928,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 1.0361325514363464,
+      "y": -2.355090169599793
+    },
+    "rotation": 19.11135530933857,
+    "color": "#1084aa",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 1.0361325514355249,
+      "y": -0.989064765815348
+    },
+    "rotation": 20.158552860535167,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -0.3298928523489093,
+      "y": -0.9890647658161549
+    },
+    "rotation": 28.536133270107946,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -0.3298928523480993,
+      "y": -2.3550901696006052
+    },
+    "rotation": 9.162978572970893,
+    "color": "#1084aa",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.0644447149516576,
+      "y": -5.770153679061502
+    },
+    "rotation": 32.4631240870952,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.0644447149497187,
+      "y": -3.03810287149259
+    },
+    "rotation": 9.424777960770037,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.6417949841393404,
+      "y": -3.03810287149224
+    },
+    "rotation": 23.038346126325806,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.7191452533271752,
+      "y": -0.01737692932789514
+    },
+    "rotation": 26.703537555513897,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.7191452533287828,
+      "y": -2.7494277368967963
+    },
+    "rotation": 12.042771838761517,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.219145253328592,
+      "y": -2.4607526023016586
+    },
+    "rotation": 13.089969389958114,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 1.036132551438241,
+      "y": -5.087140977168622
+    },
+    "rotation": 33.24852225049266,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 1.0361325514371529,
+      "y": -3.721115573384229
+    },
+    "rotation": 21.729349187330058,
+    "color": "#118ab3",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 2.2191452533265243,
+      "y": 1.0599733398620081
+    },
+    "rotation": 27.488935718911343,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.512905554241887,
+      "y": 0.2712982052649915
+    },
+    "rotation": 36.128315516283315,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.7191452533275136,
+      "y": -0.594727198517536
+    },
+    "rotation": 23.561944901924107,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.2191452533269977,
+      "y": 0.2712982052671937
+    },
+    "rotation": 27.750735106710486,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -0.32989285234730614,
+      "y": -3.72111557338505
+    },
+    "rotation": 8.11578102177429,
+    "color": "#118ab3",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.7191452533291354,
+      "y": -3.326778006086425
+    },
+    "rotation": 23.561944901924107,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.3531198495451624,
+      "y": -4.115453140682043
+    },
+    "rotation": 22.51474735072751,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.012905554239766,
+      "y": -3.3267780060880328
+    },
+    "rotation": 8.901179185171738,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.0129055542401,
+      "y": -2.749427736898429
+    },
+    "rotation": 12.042771838761531,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -1.512905554242356,
+      "y": 1.05997333985981
+    },
+    "rotation": -11.7809724509613,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.51290555424029,
+      "y": -2.4607526023039377
+    },
+    "rotation": 17.27875959474453,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.012905554241379,
+      "y": -0.5947271985191525
+    },
+    "rotation": 31.9395253114969,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -0.32989285234620125,
+      "y": -5.087140977169546
+    },
+    "rotation": 26.441738167714753,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.35311984954576014,
+      "y": -4.692803409871677
+    },
+    "rotation": 25.6563400043173,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.0129055542414624,
+      "y": -0.017376929329543156
+    },
+    "rotation": 32.9867228626935,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.4304701187319693,
+      "y": 1.0599733398615356
+    },
+    "rotation": 24.08554367752241,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -0.7242304196472795,
+      "y": 1.0599733398602562
+    },
+    "rotation": -12.566370614358746,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.3531198495400705,
+      "y": 4.080699282024789
+    },
+    "rotation": 5.759586531581853,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.301580688840594,
+      "y": 6.524074954997531
+    },
+    "rotation": -7.330382858375778,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 3.007820387917918,
+      "y": 6.524074955000427
+    },
+    "rotation": 31.415926535898578,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.6417949841377169,
+      "y": -0.30605206392317075
+    },
+    "rotation": 37.699111843078214,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.353119849540384,
+      "y": 3.5033490128351974
+    },
+    "rotation": 10.995574287564905,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 1.0361325514328532,
+      "y": 3.1090114455381475
+    },
+    "rotation": 19.11135530933855,
+    "color": "#ee3b66",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 1.03613255143206,
+      "y": 4.4750368493225965
+    },
+    "rotation": 20.158552860535146,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -0.32989285235237586,
+      "y": 4.475036849321817
+    },
+    "rotation": 28.536133270107925,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -0.3298928523515934,
+      "y": 3.1090114455373623
+    },
+    "rotation": 9.162978572970873,
+    "color": "#ee3b66",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.06444471494804715,
+      "y": -0.3060520639236759
+    },
+    "rotation": 32.46312408709518,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.06444471494616866,
+      "y": 2.4259987436452413
+    },
+    "rotation": 9.424777960770015,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.6417949841357868,
+      "y": 2.425998743645577
+    },
+    "rotation": 23.038346126325784,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.71914525332369,
+      "y": 5.4467246858099
+    },
+    "rotation": 26.703537555513876,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.719145253325238,
+      "y": 2.7146738782409985
+    },
+    "rotation": 12.042771838761496,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.2191452533250517,
+      "y": 3.003349012836125
+    },
+    "rotation": 13.089969389958092,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 1.0361325514346438,
+      "y": 0.3769606379691841
+    },
+    "rotation": 33.24852225049264,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 1.036132551433585,
+      "y": 1.7429860417535807
+    },
+    "rotation": 21.729349187330037,
+    "color": "#ef4970",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 2.2191452533230605,
+      "y": 6.524074954999791
+    },
+    "rotation": 27.48893571891132,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.512905554245365,
+      "y": 5.735399820402857
+    },
+    "rotation": 36.128315516283294,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.7191452533240115,
+      "y": 4.869374416620258
+    },
+    "rotation": 23.561944901924086,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.2191452533235134,
+      "y": 5.73539982040498
+    },
+    "rotation": 27.750735106710465,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -0.32989285235087484,
+      "y": 1.7429860417527885
+    },
+    "rotation": 8.115781021774266,
+    "color": "#ef4970",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.7191452533255764,
+      "y": 2.1373236090513688
+    },
+    "rotation": 23.561944901924086,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.3531198495415866,
+      "y": 1.3486484744557776
+    },
+    "rotation": 22.51474735072749,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.0129055542433258,
+      "y": 2.1373236090498198
+    },
+    "rotation": 8.901179185171717,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.0129055542436491,
+      "y": 2.714673878239421
+    },
+    "rotation": 12.04277183876151,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -1.5129055542458216,
+      "y": 6.5240749549976735
+    },
+    "rotation": -11.780972450961322,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.512905554243832,
+      "y": 3.003349012833927
+    },
+    "rotation": 17.278759594744507,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.0129055542448784,
+      "y": 4.869374416618704
+    },
+    "rotation": 31.93952531149688,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -0.32989285234979837,
+      "y": 0.3769606379682866
+    },
+    "rotation": 26.44173816771473,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.353119849542171,
+      "y": 0.7712982052661443
+    },
+    "rotation": 25.656340004317283,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.0129055542449494,
+      "y": 5.446724685808312
+    },
+    "rotation": 32.986722862693476,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.4304701187285045,
+      "y": 6.524074954999336
+    },
+    "rotation": 24.085543677522388,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -0.724230419650747,
+      "y": 6.524074954998103
+    },
+    "rotation": -12.566370614358767,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.35311984954581077,
+      "y": -6.847503948250927
+    },
+    "rotation": 18.32595714594103,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.30158068883486,
+      "y": -4.404128275278189
+    },
+    "rotation": 5.235987755983398,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 3.007820387923651,
+      "y": -4.404128275275279
+    },
+    "rotation": 43.98229715025775,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.6417949841434705,
+      "y": -11.234255294198888
+    },
+    "rotation": 50.265482457437386,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.3531198495461261,
+      "y": -7.424854217440518
+    },
+    "rotation": 23.56194490192408,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 1.0361325514385953,
+      "y": -7.819191784737563
+    },
+    "rotation": 31.677725923697725,
+    "color": "#ed7900",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 1.0361325514377995,
+      "y": -6.453166380953115
+    },
+    "rotation": 32.724923474894325,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -0.32989285234663646,
+      "y": -6.4531663809539
+    },
+    "rotation": 41.1025038844671,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -0.3298928523458513,
+      "y": -7.819191784738352
+    },
+    "rotation": 21.72934918733005,
+    "color": "#ed7900",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.06444471495380077,
+      "y": -11.234255294199397
+    },
+    "rotation": 45.029494701454354,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.06444471495191428,
+      "y": -8.502204486630472
+    },
+    "rotation": 21.99114857512919,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.6417949841415325,
+      "y": -8.50220448663013
+    },
+    "rotation": 35.604716740684964,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.719145253329425,
+      "y": -5.481478544465813
+    },
+    "rotation": 39.26990816987305,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.7191452533309828,
+      "y": -8.213529352034712
+    },
+    "rotation": 24.609142453120672,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.2191452533307947,
+      "y": -7.924854217439582
+    },
+    "rotation": 25.65634000431727,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 1.0361325514403947,
+      "y": -10.551242592306533
+    },
+    "rotation": 45.814892864851814,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 1.0361325514393325,
+      "y": -9.185217188522131
+    },
+    "rotation": 34.295719801689216,
+    "color": "#f87f00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 2.2191452533287928,
+      "y": -4.404128275275915
+    },
+    "rotation": 40.055306333270494,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.512905554239631,
+      "y": -5.192803409872865
+    },
+    "rotation": 48.69468613064247,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.719145253329749,
+      "y": -6.058828813655453
+    },
+    "rotation": 36.128315516283266,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.2191452533292484,
+      "y": -5.192803409870728
+    },
+    "rotation": 40.31710572106964,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -0.32989285234512744,
+      "y": -9.185217188522927
+    },
+    "rotation": 20.68215163613344,
+    "color": "#f87f00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.719145253331322,
+      "y": -8.790879621224342
+    },
+    "rotation": 36.128315516283266,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.3531198495473349,
+      "y": -9.579554755819938
+    },
+    "rotation": 35.08111796508666,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.0129055542375793,
+      "y": -8.790879621225901
+    },
+    "rotation": 21.467549799530893,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.0129055542379044,
+      "y": -8.2135293520363
+    },
+    "rotation": 24.609142453120686,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -1.5129055542400875,
+      "y": -4.404128275278045
+    },
+    "rotation": 0.7853981633978533,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.5129055542380874,
+      "y": -7.9248542174417915
+    },
+    "rotation": 29.845130209103683,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.0129055542391407,
+      "y": -6.058828813657015
+    },
+    "rotation": 44.50589592585605,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -0.32989285234404564,
+      "y": -10.551242592307432
+    },
+    "rotation": 39.008108782073904,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 0.35311984954792197,
+      "y": -10.156905025009571
+    },
+    "rotation": 38.22271061867646,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.0129055542392136,
+      "y": -5.481478544467406
+    },
+    "rotation": 45.553093477052656,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.4304701187342386,
+      "y": -4.4041282752763715
+    },
+    "rotation": 36.65191429188157,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -0.7242304196450129,
+      "y": -4.404128275277611
+    },
+    "rotation": 4.085620730620576e-13,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.085170657113531,
+      "y": -4.692803409869472
+    },
+    "rotation": 8.901179185171628,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.739871195494157,
+      "y": -7.136179082842257
+    },
+    "rotation": -4.188790204786002,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.4304701187356472,
+      "y": -7.136179082845081
+    },
+    "rotation": 34.557519189488374,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 3.7964955225159507,
+      "y": -0.3060520639215141
+    },
+    "rotation": 40.84070449666801,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.085170657113228,
+      "y": -4.115453140679887
+    },
+    "rotation": 14.13716694115468,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.4021579552207744,
+      "y": -3.7211155733828294
+    },
+    "rotation": 22.252947962928346,
+    "color": "#ee3b66",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.4021579552215435,
+      "y": -5.087140977167276
+    },
+    "rotation": 23.300145514124942,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.7681833590059775,
+      "y": -5.0871409771665155
+    },
+    "rotation": 31.67772592369772,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.768183359005215,
+      "y": -3.721115573382064
+    },
+    "rotation": 12.304571226560649,
+    "color": "#ee3b66",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.373845791705621,
+      "y": -0.3060520639210176
+    },
+    "rotation": 35.60471674068498,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.37384579170746,
+      "y": -3.0381028714899343
+    },
+    "rotation": 12.56637061435979,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 3.7964955225178443,
+      "y": -3.0381028714902647
+    },
+    "rotation": 26.17993877991558,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.719145253329896,
+      "y": -6.058828813654569
+    },
+    "rotation": 29.845130209103672,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.719145253328386,
+      "y": -3.326778006085672
+    },
+    "rotation": 15.184364492351271,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.219145253328568,
+      "y": -3.615453140680791
+    },
+    "rotation": 16.231562043547868,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.4021579552190193,
+      "y": -0.9890647658138643
+    },
+    "rotation": 36.39011490408244,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.4021579552200523,
+      "y": -2.355090169598261
+    },
+    "rotation": 24.870941840919834,
+    "color": "#ef4970",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 2.219145253330508,
+      "y": -7.136179082844456
+    },
+    "rotation": 30.630528372501118,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.951196060898949,
+      "y": -6.3475039482475735
+    },
+    "rotation": 39.26990816987309,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.7191452533295815,
+      "y": -5.48147854446493
+    },
+    "rotation": 26.703537555513883,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.2191452533300673,
+      "y": -6.347503948249643
+    },
+    "rotation": 30.89232776030026,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.768183359004517,
+      "y": -2.355090169597488
+    },
+    "rotation": 11.257373675364041,
+    "color": "#ef4970",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.7191452533280565,
+      "y": -2.749427736896038
+    },
+    "rotation": 26.703537555513883,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.0851706571120605,
+      "y": -1.9607526023004644
+    },
+    "rotation": 25.656340004317286,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.451196060896962,
+      "y": -2.7494277368945297
+    },
+    "rotation": 12.042771838761492,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.451196060897274,
+      "y": -3.3267780060841337
+    },
+    "rotation": 15.184364492351285,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 5.951196060899392,
+      "y": -7.136179082842392
+    },
+    "rotation": -8.639379797371546,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.9511960608974555,
+      "y": -3.615453140678647
+    },
+    "rotation": 20.420352248334304,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.451196060898473,
+      "y": -5.481478544463413
+    },
+    "rotation": 35.081117965086676,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.76818335900346,
+      "y": -0.9890647658129859
+    },
+    "rotation": 29.583330821304525,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.08517065711148,
+      "y": -1.3834023331108312
+    },
+    "rotation": 28.79793265790708,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.4511960608985355,
+      "y": -6.0588288136530215
+    },
+    "rotation": 36.12831551628327,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 3.0078203879250696,
+      "y": -7.136179082844019
+    },
+    "rotation": 27.227136331112185,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.1625209263043175,
+      "y": -7.136179082842811
+    },
+    "rotation": -9.424777960768992,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.0851706571111706,
+      "y": 0.7712982052682258
+    },
+    "rotation": -3.665191429187523,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.7398711954918475,
+      "y": -1.6720774677045016
+    },
+    "rotation": -16.755160819145154,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.4304701187333824,
+      "y": -1.672077467707307
+    },
+    "rotation": 24.08554367752241,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 3.796495522513487,
+      "y": 5.158049551216187
+    },
+    "rotation": 28.27433388230886,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.085170657110851,
+      "y": 1.3486484744578195
+    },
+    "rotation": 1.570796326795529,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.4021579552183825,
+      "y": 1.7429860417548642
+    },
+    "rotation": 9.686577348569195,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.402157955219182,
+      "y": 0.37696063797041734
+    },
+    "rotation": 10.733774899765791,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.768183359003615,
+      "y": 0.3769606379712038
+    },
+    "rotation": 19.11135530933857,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.768183359002826,
+      "y": 1.7429860417556613
+    },
+    "rotation": -0.26179938779850254,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.373845791703156,
+      "y": 5.158049551216696
+    },
+    "rotation": 23.038346126325827,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.37384579170506,
+      "y": 2.4259987436477743
+    },
+    "rotation": 6.394884621840902e-13,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 3.796495522515441,
+      "y": 2.425998743647437
+    },
+    "rotation": 13.61356816555643,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.719145253327558,
+      "y": -0.5947271985168929
+    },
+    "rotation": 17.27875959474452,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.7191452533259888,
+      "y": 2.1373236090520082
+    },
+    "rotation": 2.61799387799212,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.219145253326179,
+      "y": 1.8486484744568799
+    },
+    "rotation": 3.6651914291887167,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.4021579552165715,
+      "y": 4.4750368493238275
+    },
+    "rotation": 23.823744289723287,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.402157955217633,
+      "y": 3.1090114455394264
+    },
+    "rotation": 12.304571226560682,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 2.219145253328195,
+      "y": -1.6720774677067896
+    },
+    "rotation": 18.064157758141967,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.951196060896619,
+      "y": -0.8834023331098244
+    },
+    "rotation": 26.70353755551394,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.7191452533272304,
+      "y": -0.01737692932724899
+    },
+    "rotation": 14.137166941154732,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.219145253327735,
+      "y": -0.883402333111976
+    },
+    "rotation": 18.32595714594111,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.768183359002094,
+      "y": 3.1090114455402347
+    },
+    "rotation": -1.3089969389951097,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.719145253325647,
+      "y": 2.7146738782416397
+    },
+    "rotation": 14.137166941154732,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.0851706571096305,
+      "y": 3.503349012837242
+    },
+    "rotation": 13.089969389958135,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.451196060894553,
+      "y": 2.7146738782432083
+    },
+    "rotation": -0.5235987755976588,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.451196060894876,
+      "y": 2.137323609053606
+    },
+    "rotation": 2.6179938779921343,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 5.951196060897077,
+      "y": -1.6720774677046428
+    },
+    "rotation": -21.205750411730698,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.951196060895061,
+      "y": 1.8486484744591012
+    },
+    "rotation": 7.8539816339751525,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.451196060896123,
+      "y": -0.01737692932567514
+    },
+    "rotation": 22.514747350727525,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.768183359001009,
+      "y": 4.4750368493247334
+    },
+    "rotation": 17.016960206945374,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.0851706571090425,
+      "y": 4.080699282026875
+    },
+    "rotation": 16.231562043547928,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.451196060896198,
+      "y": -0.594727198515284
+    },
+    "rotation": 23.56194490192412,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 3.0078203879227505,
+      "y": -1.6720774677063304
+    },
+    "rotation": 14.660765716753033,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.1625209263019975,
+      "y": -1.6720774677050771
+    },
+    "rotation": -21.991148575128143,
+    "color": "#F77F00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.085170657107756,
+      "y": 6.235399820406122
+    },
+    "rotation": -3.6651914291875443,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.739871195488384,
+      "y": 3.7920241474333376
+    },
+    "rotation": -16.755160819145175,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.4304701187299034,
+      "y": 3.792024147430627
+    },
+    "rotation": 24.085543677522388,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 3.7964955225101544,
+      "y": 10.622151166354065
+    },
+    "rotation": 28.274333882308838,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.085170657107437,
+      "y": 6.8127500895956965
+    },
+    "rotation": 1.5707963267955076,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.4021579552149763,
+      "y": 7.207087656892754
+    },
+    "rotation": 9.686577348569173,
+    "color": "#1084aa",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.4021579552157464,
+      "y": 5.841062253108311
+    },
+    "rotation": 10.73377489976577,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.768183359000179,
+      "y": 5.84106225310907
+    },
+    "rotation": 19.11135530933855,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.768183358999419,
+      "y": 7.207087656893521
+    },
+    "rotation": -0.26179938779852385,
+    "color": "#1084aa",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.373845791699825,
+      "y": 10.62215116635456
+    },
+    "rotation": 23.038346126325806,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.373845791701671,
+      "y": 7.890100358785644
+    },
+    "rotation": 6.181721801112872e-13,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 3.7964955225120516,
+      "y": 7.890100358785317
+    },
+    "rotation": 13.613568165556408,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.7191452533241023,
+      "y": 4.869374416621015
+    },
+    "rotation": 17.2787595947445,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.7191452533225924,
+      "y": 7.601425224189911
+    },
+    "rotation": 2.617993877992099,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.2191452533227753,
+      "y": 7.312750089594792
+    },
+    "rotation": 3.6651914291886953,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.402157955213224,
+      "y": 9.939138464461717
+    },
+    "rotation": 23.823744289723265,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.402157955214257,
+      "y": 8.573113060677315
+    },
+    "rotation": 12.304571226560661,
+    "color": "#118ab3",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 2.219145253324716,
+      "y": 3.792024147431128
+    },
+    "rotation": 18.064157758141945,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.9511960608931584,
+      "y": 4.580699282028015
+    },
+    "rotation": 26.70353755551392,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.719145253323787,
+      "y": 5.446724685810659
+    },
+    "rotation": 14.13716694115471,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.219145253324272,
+      "y": 4.580699282025942
+    },
+    "rotation": 18.32595714594109,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.7681833589987175,
+      "y": 8.573113060678097
+    },
+    "rotation": -1.308996938995131,
+    "color": "#118ab3",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.719145253322261,
+      "y": 8.178775493379543
+    },
+    "rotation": 14.13716694115471,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.085170657106264,
+      "y": 8.967450627975115
+    },
+    "rotation": 13.089969389958114,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.451196060891165,
+      "y": 8.17877549338105
+    },
+    "rotation": -0.5235987755976801,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.451196060891482,
+      "y": 7.601425224191449
+    },
+    "rotation": 2.617993877992113,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 5.951196060893599,
+      "y": 3.7920241474331955
+    },
+    "rotation": -21.20575041173072,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.951196060891656,
+      "y": 7.312750089596935
+    },
+    "rotation": 7.853981633975131,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.451196060892679,
+      "y": 5.446724685812174
+    },
+    "rotation": 22.514747350727504,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.768183358997662,
+      "y": 9.93913846446259
+    },
+    "rotation": 17.016960206945352,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.085170657105685,
+      "y": 9.544800897164745
+    },
+    "rotation": 16.231562043547907,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.4511960608927446,
+      "y": 4.869374416622565
+    },
+    "rotation": 23.5619449019241,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 3.0078203879192715,
+      "y": 3.79202414743157
+    },
+    "rotation": 14.660765716753012,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.162520926298521,
+      "y": 3.792024147432778
+    },
+    "rotation": -21.991148575128165,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.378930958030673,
+      "y": 6.235399820401571
+    },
+    "rotation": 27.750735106710643,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -0.7242304196494396,
+      "y": 3.7920241474293284
+    },
+    "rotation": 14.660765716753012,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -6.033631496407914,
+      "y": 3.7920241474252854
+    },
+    "rotation": 55.50147021342058,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.667606092629396,
+      "y": 10.62215116634933
+    },
+    "rotation": 59.690260418207025,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.3789309580311437,
+      "y": 6.812750089591028
+    },
+    "rotation": 32.986722862693696,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.061943659923708,
+      "y": 7.207087656887915
+    },
+    "rotation": 41.10250388446736,
+    "color": "#1084aa",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.061943659922592,
+      "y": 5.841062253103471
+    },
+    "rotation": 42.14970143566396,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.695918256138154,
+      "y": 5.841062253104577
+    },
+    "rotation": 50.527281845236736,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.6959182561392625,
+      "y": 7.207087656889031
+    },
+    "rotation": 31.15412714809966,
+    "color": "#1084aa",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.0902558234397253,
+      "y": 10.622151166349973
+    },
+    "rotation": 54.45427266222399,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.090255823437185,
+      "y": 7.8901003587810505
+    },
+    "rotation": 31.415926535898805,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.667606092626806,
+      "y": 7.890100358780578
+    },
+    "rotation": 45.029494701454595,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.7449563618139905,
+      "y": 4.869374416616
+    },
+    "rotation": 48.69468613064269,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.744956361816197,
+      "y": 7.6014252241848945
+    },
+    "rotation": 34.033920413890286,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.244956361815937,
+      "y": 7.312750089589652
+    },
+    "rotation": 35.08111796508688,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.061943659926156,
+      "y": 9.939138464456878
+    },
+    "rotation": 55.23967082562145,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.061943659924777,
+      "y": 8.573113060672476
+    },
+    "rotation": 43.72049776245885,
+    "color": "#118ab3",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -5.244956361813102,
+      "y": 3.792024147425987
+    },
+    "rotation": 49.48008429404013,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.5129055542448535,
+      "y": 4.580699282023823
+    },
+    "rotation": 58.119464091412105,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.744956361814452,
+      "y": 5.446724685805646
+    },
+    "rotation": 45.5530934770529,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.244956361813745,
+      "y": 4.5806992820208015
+    },
+    "rotation": 49.741883681839276,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.6959182561403123,
+      "y": 8.573113060673602
+    },
+    "rotation": 30.106929596903058,
+    "color": "#118ab3",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.744956361816673,
+      "y": 8.178775493374527
+    },
+    "rotation": 45.5530934770529,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.378930958032867,
+      "y": 8.96745062797045
+    },
+    "rotation": 44.5058959258563,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.0129055542477596,
+      "y": 8.178775493376733
+    },
+    "rotation": 30.89232776030051,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.0129055542472996,
+      "y": 7.601425224187133
+    },
+    "rotation": 34.0339204138903,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -1.5129055542442105,
+      "y": 3.7920241474290033
+    },
+    "rotation": 10.210176124167468,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.512905554247049,
+      "y": 7.312750089592742
+    },
+    "rotation": 39.26990816987332,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.0129055542455516,
+      "y": 5.446724685807857
+    },
+    "rotation": 53.93067388662569,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.6959182561417157,
+      "y": 9.939138464458104
+    },
+    "rotation": 48.43288674284354,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.37893095803359,
+      "y": 9.54480089716008
+    },
+    "rotation": 47.6474885794461,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.012905554245342,
+      "y": 4.869374416618247
+    },
+    "rotation": 54.977871437822294,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.456281227218547,
+      "y": 3.79202414742663
+    },
+    "rotation": 46.0766922526512,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.301580688839292,
+      "y": 3.792024147428385
+    },
+    "rotation": 9.424777960770022,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.817221464678296,
+      "y": 4.080699282029172
+    },
+    "rotation": -13.08996938995693,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.162520926297695,
+      "y": 6.524074955001976
+    },
+    "rotation": -26.17993877991457,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 10.471922003056157,
+      "y": 6.52407495500463
+    },
+    "rotation": 14.660765716753055,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 8.105896599275848,
+      "y": -0.30605206391880047
+    },
+    "rotation": 18.849555921539505,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.8172214646786085,
+      "y": 3.503349012839578
+    },
+    "rotation": -7.853981633973886,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 8.500234166571055,
+      "y": 3.1090114455425137
+    },
+    "rotation": 0.2617993877997975,
+    "color": "#ee3b66",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 8.50023416657029,
+      "y": 4.475036849326961
+    },
+    "rotation": 1.3089969389964011,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 7.134208762785873,
+      "y": 4.4750368493262185
+    },
+    "rotation": 9.686577348569216,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 7.134208762786619,
+      "y": 3.1090114455417535
+    },
+    "rotation": -9.686577348567916,
+    "color": "#ee3b66",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.528546330086188,
+      "y": -0.30605206391929163
+    },
+    "rotation": 13.613568165556472,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.528546330084362,
+      "y": 2.4259987436496324
+    },
+    "rotation": -9.424777960768774,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 8.105896599273972,
+      "y": 2.4259987436499513
+    },
+    "rotation": 4.1887902047870575,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.183246868461946,
+      "y": 5.4467246858142575
+    },
+    "rotation": 7.853981633975167,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.183246868463435,
+      "y": 2.714673878245347
+    },
+    "rotation": -6.806784082777295,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.68324686846325,
+      "y": 3.003349012840463
+    },
+    "rotation": -5.7595865315807,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 8.500234166572785,
+      "y": 0.3769606379735473
+    },
+    "rotation": 14.398966328953932,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 8.500234166571762,
+      "y": 1.742986041757951
+    },
+    "rotation": 2.879793265791303,
+    "color": "#ef4970",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 9.683246868461342,
+      "y": 6.5240749550041395
+    },
+    "rotation": 8.639379797372612,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.951196060892901,
+      "y": 5.735399820407282
+    },
+    "rotation": 17.278759594744585,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.183246868462259,
+      "y": 4.869374416624612
+    },
+    "rotation": 4.712388980385363,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.683246868461776,
+      "y": 5.735399820409325
+    },
+    "rotation": 8.901179185171756,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 7.134208762787308,
+      "y": 1.7429860417571819
+    },
+    "rotation": -10.733774899764521,
+    "color": "#ef4970",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.183246868463765,
+      "y": 2.137323609055721
+    },
+    "rotation": 4.712388980385363,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.817221464679756,
+      "y": 1.3486484744601581
+    },
+    "rotation": 3.6651914291887593,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.45119606089486,
+      "y": 2.1373236090542305
+    },
+    "rotation": -9.94837673636707,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.451196060894555,
+      "y": 2.714673878243828
+    },
+    "rotation": -6.8067840827772805,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 5.951196060892459,
+      "y": 6.524074955002097
+    },
+    "rotation": -30.63052837250008,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.951196060894368,
+      "y": 3.003349012838341
+    },
+    "rotation": -1.570796326794257,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.451196060893361,
+      "y": 4.869374416623104
+    },
+    "rotation": 13.08996938995817,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 7.134208762788342,
+      "y": 0.376960637972668
+    },
+    "rotation": 7.592182246176019,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.817221464680317,
+      "y": 0.7712982052705071
+    },
+    "rotation": 6.806784082778574,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.451196060893299,
+      "y": 5.446724685812714
+    },
+    "rotation": 14.137166941154767,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 8.894571733866773,
+      "y": 6.524074955003685
+    },
+    "rotation": 5.235987755983668,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.7398711954875345,
+      "y": 6.524074955002502
+    },
+    "rotation": -31.415926535897523,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.817221464681806,
+      "y": -1.3834023331085126
+    },
+    "rotation": 30.892327760300464,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.162520926300569,
+      "y": 1.0599733398636846
+    },
+    "rotation": 17.802358370342823,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 10.471922003059031,
+      "y": 1.059973339867879
+    },
+    "rotation": 58.64306286701045,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 8.105896599280701,
+      "y": -5.770153679056238
+    },
+    "rotation": 62.8318530717969,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.81722146468236,
+      "y": -1.9607526022979451
+    },
+    "rotation": 36.12831551628351,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 8.500234166574913,
+      "y": -2.3550901695948117
+    },
+    "rotation": 44.24409653805719,
+    "color": "#1084aa",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 8.500234166573755,
+      "y": -0.9890647658103644
+    },
+    "rotation": 45.291294089253796,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 7.134208762789342,
+      "y": -0.9890647658115026
+    },
+    "rotation": 53.66887449882661,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 7.134208762790484,
+      "y": -2.3550901695959654
+    },
+    "rotation": 34.29571980168948,
+    "color": "#1084aa",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.528546330091043,
+      "y": -5.770153679056896
+    },
+    "rotation": 57.59586531581387,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.5285463300884246,
+      "y": -3.038102871487975
+    },
+    "rotation": 34.55751918948862,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 8.105896599278033,
+      "y": -3.0381028714874883
+    },
+    "rotation": 48.17108735504445,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.183246868465133,
+      "y": -0.01737692932287116
+    },
+    "rotation": 51.83627878423256,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.183246868467407,
+      "y": -2.7494277368917763
+    },
+    "rotation": 37.1755130674801,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.683246868467144,
+      "y": -2.460752602296517
+    },
+    "rotation": 38.22271061867669,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 8.500234166577435,
+      "y": -5.087140977163776
+    },
+    "rotation": 58.38126347921133,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 8.500234166576018,
+      "y": -3.7211155733793726
+    },
+    "rotation": 46.8620904160487,
+    "color": "#118ab3",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 9.683246868464217,
+      "y": 1.0599733398671582
+    },
+    "rotation": 52.62167694763001,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.951196060896001,
+      "y": 0.271298205269217
+    },
+    "rotation": 61.26105674500198,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.183246868465613,
+      "y": -0.5947271985125155
+    },
+    "rotation": 48.69468613064276,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.683246868464877,
+      "y": 0.2712982052723407
+    },
+    "rotation": 52.88347633542915,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 7.134208762791568,
+      "y": -3.721115573380538
+    },
+    "rotation": 33.248522250492876,
+    "color": "#118ab3",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.183246868467908,
+      "y": -3.326778006081405
+    },
+    "rotation": 48.69468613064276,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.817221464684133,
+      "y": -4.115453140677361
+    },
+    "rotation": 47.647488579446154,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.451196060899006,
+      "y": -3.326778006083686
+    },
+    "rotation": 34.03392041389033,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.451196060898532,
+      "y": -2.749427736894089
+    },
+    "rotation": 37.17551306748011,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 5.951196060895333,
+      "y": 1.0599733398640367
+    },
+    "rotation": 13.351768777757314,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.95119606089826,
+      "y": -2.4607526022997215
+    },
+    "rotation": 42.411500823463136,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.451196060896715,
+      "y": -0.5947271985148146
+    },
+    "rotation": 57.072266540215566,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 7.134208762792998,
+      "y": -5.087140977165048
+    },
+    "rotation": 51.57447939643342,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.817221464684858,
+      "y": -4.692803409867012
+    },
+    "rotation": 50.78908123303597,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.451196060896487,
+      "y": -0.017376929325204182
+    },
+    "rotation": 58.11946409141216,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 8.894571733869647,
+      "y": 1.0599733398664752
+    },
+    "rotation": 49.21828490624107,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.739871195490412,
+      "y": 1.0599733398646682
+    },
+    "rotation": 12.566370614359872,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.817221464684062,
+      "y": -6.84750394824622
+    },
+    "rotation": 43.458698374659605,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.162520926302948,
+      "y": -4.4041282752740445
+    },
+    "rotation": 30.368728984701974,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 10.471922003061415,
+      "y": -4.404128275270003
+    },
+    "rotation": 71.20943348136959,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 8.105896599282882,
+      "y": -11.234255294194053
+    },
+    "rotation": 75.39822368615604,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.817221464684648,
+      "y": -7.424854217435747
+    },
+    "rotation": 48.69468613064265,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 8.5002341665772,
+      "y": -7.819191784732632
+    },
+    "rotation": 56.81046715241634,
+    "color": "#ed7900",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 8.500234166576078,
+      "y": -6.453166380948184
+    },
+    "rotation": 57.85766470361294,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 7.13420876279166,
+      "y": -6.453166380949285
+    },
+    "rotation": 66.23524511318575,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 7.1342087627927615,
+      "y": -7.819191784733754
+    },
+    "rotation": 46.86209041604862,
+    "color": "#ed7900",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.528546330093221,
+      "y": -11.234255294194696
+    },
+    "rotation": 70.16223593017301,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.528546330090682,
+      "y": -8.502204486625768
+    },
+    "rotation": 47.12388980384777,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 8.105896599280292,
+      "y": -8.502204486625295
+    },
+    "rotation": 60.73745796940359,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.183246868467485,
+      "y": -5.481478544460715
+    },
+    "rotation": 64.4026493985917,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.183246868469688,
+      "y": -8.213529352029624
+    },
+    "rotation": 49.74188368183924,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.683246868469425,
+      "y": -7.924854217434377
+    },
+    "rotation": 50.78908123303584,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 8.500234166579641,
+      "y": -10.551242592301602
+    },
+    "rotation": 70.94763409357047,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 8.500234166578267,
+      "y": -9.185217188517196
+    },
+    "rotation": 59.428461030407846,
+    "color": "#f87f00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 9.6832468684666,
+      "y": -4.404128275270701
+    },
+    "rotation": 65.18804756198915,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.951196060898358,
+      "y": -5.192803409868534
+    },
+    "rotation": 73.82742735936112,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.18324686846795,
+      "y": -6.058828813650357
+    },
+    "rotation": 61.2610567450019,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.68324686846724,
+      "y": -5.192803409865518
+    },
+    "rotation": 65.4498469497883,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 7.134208762793806,
+      "y": -9.185217188518322
+    },
+    "rotation": 45.81489286485202,
+    "color": "#f87f00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 9.183246868470167,
+      "y": -8.79087962121925
+    },
+    "rotation": 61.2610567450019,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.817221464686357,
+      "y": -9.579554755815167
+    },
+    "rotation": 60.2138591938053,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.451196060901257,
+      "y": -8.790879621221453
+    },
+    "rotation": 46.60029102824947,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.4511960609008,
+      "y": -8.213529352031856
+    },
+    "rotation": 49.741883681839255,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 5.951196060897711,
+      "y": -4.404128275273714
+    },
+    "rotation": 25.91813939211646,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.951196060900537,
+      "y": -7.924854217437468
+    },
+    "rotation": 54.97787143782228,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.451196060899045,
+      "y": -6.058828813652579
+    },
+    "rotation": 69.63863715457471,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 7.134208762795197,
+      "y": -10.551242592302842
+    },
+    "rotation": 64.14085001079256,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 7.817221464687071,
+      "y": -10.156905025004821
+    },
+    "rotation": 63.355451847395116,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.451196060898834,
+      "y": -5.481478544462969
+    },
+    "rotation": 70.6858347057713,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 8.894571733872034,
+      "y": -4.404128275271362
+    },
+    "rotation": 61.78465552060021,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.739871195492789,
+      "y": -4.404128275273107
+    },
+    "rotation": 25.132741228719016,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.110981765592985,
+      "y": -6.847503948253922
+    },
+    "rotation": -25.65634000431639,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -9.765682303972888,
+      "y": -4.404128275280356
+    },
+    "rotation": -38.74630939427403,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.456281227214276,
+      "y": -4.404128275279102
+    },
+    "rotation": 2.0943951023935963,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -6.822306630996536,
+      "y": -11.23425529420187
+    },
+    "rotation": 6.283185307180046,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.11098176559269,
+      "y": -7.424854217443406
+    },
+    "rotation": -20.420352248333344,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -6.427969063700356,
+      "y": -7.8191917847406645
+    },
+    "rotation": -12.304571226559661,
+    "color": "#ed7900",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -6.427969063700729,
+      "y": -6.453166380956213
+    },
+    "rotation": -11.257373675363057,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -7.793994467485149,
+      "y": -6.4531663809565645
+    },
+    "rotation": -2.8797932657902425,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -7.793994467484794,
+      "y": -7.819191784741034
+    },
+    "rotation": -22.252947962927372,
+    "color": "#ed7900",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.399656900186196,
+      "y": -11.234255294202196
+    },
+    "rotation": 1.047197551197014,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.399656900187244,
+      "y": -8.502204486633268
+    },
+    "rotation": -21.991148575128232,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -6.822306630997634,
+      "y": -8.502204486633111
+    },
+    "rotation": -8.377580409572401,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.744956361808796,
+      "y": -5.481478544469112
+    },
+    "rotation": -4.712388980384292,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.744956361808086,
+      "y": -8.213529352038027
+    },
+    "rotation": -19.373154697136755,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.244956361808189,
+      "y": -7.924854217443053
+    },
+    "rotation": -18.32595714594016,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -6.427969063699404,
+      "y": -10.551242592309634
+    },
+    "rotation": 1.8325957145944738,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -6.427969063700036,
+      "y": -9.185217188525229
+    },
+    "rotation": -9.686577348568155,
+    "color": "#f87f00",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -5.244956361809091,
+      "y": -4.404128275279368
+    },
+    "rotation": -3.926990816986846,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.977007169377767,
+      "y": -5.192803409875164
+    },
+    "rotation": 4.712388980385127,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.744956361808647,
+      "y": -6.058828813658757
+    },
+    "rotation": -7.8539816339740955,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.244956361808885,
+      "y": -5.192803409874187
+    },
+    "rotation": -3.6651914291877024,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -7.793994467484495,
+      "y": -9.185217188525606
+    },
+    "rotation": -23.30014551412398,
+    "color": "#f87f00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.7449563618079225,
+      "y": -8.790879621227656
+    },
+    "rotation": -7.8539816339740955,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.1109817655921574,
+      "y": -9.579554755822823
+    },
+    "rotation": -8.9011791851707,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.477007169376833,
+      "y": -8.790879621228363
+    },
+    "rotation": -22.51474735072653,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.477007169376975,
+      "y": -8.213529352038766
+    },
+    "rotation": -19.37315469713674,
+    "color": "#ff8505",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -8.97700716937798,
+      "y": -4.404128275280345
+    },
+    "rotation": -43.19689898685954,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.977007169377078,
+      "y": -7.924854217444108
+    },
+    "rotation": -14.137166941153716,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.47700716937755,
+      "y": -6.058828813659486
+    },
+    "rotation": 0.5235987755987122,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -7.793994467483849,
+      "y": -10.551242592310121
+    },
+    "rotation": -4.974188368183439,
+    "color": "#ff8b11",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.110981765591763,
+      "y": -10.156905025012481
+    },
+    "rotation": -5.759586531580885,
+    "color": "#f47d00",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.477007169377448,
+      "y": -5.481478544469874
+    },
+    "rotation": 1.5707963267953087,
+    "color": "#ff8d14",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -6.0336314964036575,
+      "y": -4.404128275279599
+    },
+    "rotation": -7.33038285837579,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.188332034782903,
+      "y": -4.404128275280166
+    },
+    "rotation": -43.98229715025698,
+    "color": "#ff9424",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.110981765594385,
+      "y": -1.3834023331160399
+    },
+    "rotation": -44.505895925855285,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -9.765682303973986,
+      "y": 1.0599733398578595
+    },
+    "rotation": -57.59586531581287,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.456281227215516,
+      "y": 1.059973339858324
+    },
+    "rotation": -16.755160819145264,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -6.822306630998387,
+      "y": -5.770153679064138
+    },
+    "rotation": -12.566370614358807,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.110981765594069,
+      "y": -1.9607526023056359
+    },
+    "rotation": -39.26990816987223,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -6.427969063701777,
+      "y": -2.355090169602982
+    },
+    "rotation": -31.154127148098546,
+    "color": "#1084aa",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -6.427969063701983,
+      "y": -0.9890647658185356
+    },
+    "rotation": -30.106929596901946,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -7.793994467486403,
+      "y": -0.9890647658187159
+    },
+    "rotation": -21.729349187329134,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -7.793994467486215,
+      "y": -2.3550901696031787
+    },
+    "rotation": -41.102503884466266,
+    "color": "#1084aa",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.399656900188051,
+      "y": -5.770153679064387
+    },
+    "rotation": -17.802358370341853,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.399656900188747,
+      "y": -3.038102871495465
+    },
+    "rotation": -40.84070449666712,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -6.822306630999137,
+      "y": -3.038102871495381
+    },
+    "rotation": -27.227136331111293,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.744956361809923,
+      "y": -0.01737692933152335
+    },
+    "rotation": -23.561944901923184,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.74495636180956,
+      "y": -2.749427736900425
+    },
+    "rotation": -38.22271061867564,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.244956361809628,
+      "y": -2.4607526023055186
+    },
+    "rotation": -37.175513067479045,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -6.427969063701173,
+      "y": -5.087140977171948
+    },
+    "rotation": -17.016960206944386,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -6.427969063701628,
+      "y": -3.7211155733875456
+    },
+    "rotation": -28.536133270107044,
+    "color": "#118ab3",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -5.244956361810086,
+      "y": 1.0599733398581552
+    },
+    "rotation": -22.776546738525738,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.977007169378854,
+      "y": 0.27129820526283055
+    },
+    "rotation": -14.137166941153723,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.744956361809852,
+      "y": -0.594727198521162
+    },
+    "rotation": -26.703537555512987,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.244956361809976,
+      "y": 0.27129820526334303
+    },
+    "rotation": -22.514747350726594,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -7.793994467486087,
+      "y": -3.7211155733877503
+    },
+    "rotation": -42.14970143566287,
+    "color": "#118ab3",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.744956361809468,
+      "y": -3.3267780060900547
+    },
+    "rotation": -26.703537555512987,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.110981765593802,
+      "y": -4.115453140685054
+    },
+    "rotation": -27.75073510670959,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.477007169378378,
+      "y": -3.3267780060904233
+    },
+    "rotation": -41.36430327226542,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.477007169378442,
+      "y": -2.749427736900819
+    },
+    "rotation": -38.22271061867563,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -8.977007169378975,
+      "y": 1.0599733398576499
+    },
+    "rotation": -62.04645490839839,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.977007169378513,
+      "y": -2.460752602306105
+    },
+    "rotation": -32.9867228626926,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.477007169378751,
+      "y": -0.5947271985215545
+    },
+    "rotation": -18.32595714594016,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -7.793994467485614,
+      "y": -5.087140977172269
+    },
+    "rotation": -23.82374428972233,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.110981765593479,
+      "y": -4.692803409874698
+    },
+    "rotation": -24.609142453119777,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.477007169378577,
+      "y": -0.017376929331943458
+    },
+    "rotation": -17.278759594743555,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -6.033631496404652,
+      "y": 1.0599733398580238
+    },
+    "rotation": -26.179938779914682,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.188332034783897,
+      "y": 1.059973339857728
+    },
+    "rotation": -62.831853071795834,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.110981765594666,
+      "y": 4.080699282021432
+    },
+    "rotation": -63.35545184739417,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -9.76568230397395,
+      "y": 6.524074954995677
+    },
+    "rotation": -76.44542123735178,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.456281227215481,
+      "y": 6.524074954995457
+    },
+    "rotation": -35.604716740684154,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -6.822306630999552,
+      "y": -0.30605206392641093
+    },
+    "rotation": -31.415926535897693,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.110981765594737,
+      "y": 3.503349012832126
+    },
+    "rotation": -58.11946409141112,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -6.427969063702502,
+      "y": 3.109011445534695
+    },
+    "rotation": -50.00368306963742,
+    "color": "#ee3b66",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -6.427969063702523,
+      "y": 4.475036849319145
+    },
+    "rotation": -48.956485518440815,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -7.793994467486947,
+      "y": 4.47503684931914
+    },
+    "rotation": -40.57890510886801,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -7.7939944674869395,
+      "y": 3.109011445534677
+    },
+    "rotation": -59.95205980600515,
+    "color": "#ee3b66",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.39965690018918,
+      "y": -0.30605206392657597
+    },
+    "rotation": -36.65191429188074,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.399656900189521,
+      "y": 2.4259987436423462
+    },
+    "rotation": -59.690260418206016,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -6.822306630999915,
+      "y": 2.4259987436423556
+    },
+    "rotation": -46.07669225265016,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.744956361810303,
+      "y": 5.446724685806076
+    },
+    "rotation": -42.411500823462056,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.744956361810296,
+      "y": 2.7146738782371647
+    },
+    "rotation": -57.07226654021452,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.244956361810328,
+      "y": 3.0033490128320093
+    },
+    "rotation": -56.02506898901792,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -6.427969063702214,
+      "y": 0.37696063796573576
+    },
+    "rotation": -35.866516128483276,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -6.427969063702491,
+      "y": 1.742986041750143
+    },
+    "rotation": -47.385689191645916,
+    "color": "#ef4970",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -5.244956361810324,
+      "y": 6.524074954995693
+    },
+    "rotation": -41.62610266006461,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.977007169379199,
+      "y": 5.735399820400855
+    },
+    "rotation": -32.986722862692616,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.744956361810306,
+      "y": 4.869374416616432
+    },
+    "rotation": -45.55309347705186,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.2449563618103205,
+      "y": 5.735399820400878
+    },
+    "rotation": -41.36430327226547,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -7.793994467486954,
+      "y": 1.7429860417501155
+    },
+    "rotation": -60.99925735720176,
+    "color": "#ef4970",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.744956361810278,
+      "y": 2.1373236090475385
+    },
+    "rotation": -45.55309347705186,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.110981765594715,
+      "y": 1.3486484744527192
+    },
+    "rotation": -46.60029102824846,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.477007169379188,
+      "y": 2.137323609047532
+    },
+    "rotation": -60.21385919380431,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.477007169379178,
+      "y": 2.714673878237129
+    },
+    "rotation": -57.07226654021451,
+    "color": "#f0567b",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -8.977007169379213,
+      "y": 6.524074954995673
+    },
+    "rotation": -80.8960108299373,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.977007169379213,
+      "y": 3.0033490128319125
+    },
+    "rotation": -51.836278784231475,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.47700716937921,
+      "y": 4.8693744166164
+    },
+    "rotation": -37.175513067479045,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -7.793994467486655,
+      "y": 0.3769606379655932
+    },
+    "rotation": -42.6733002112612,
+    "color": "#f16385",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -7.11098176559447,
+      "y": 0.771298205263073
+    },
+    "rotation": -43.458698374658645,
+    "color": "#ee446d",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.477007169378954,
+      "y": 5.446724685806017
+    },
+    "rotation": -36.12831551628244,
+    "color": "#f16889",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -6.033631496404887,
+      "y": 6.5240749549956645
+    },
+    "rotation": -45.02949470145355,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -8.188332034784136,
+      "y": 6.524074954995654
+    },
+    "rotation": -81.68140899333474,
+    "color": "#f37a97",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.085170657116668,
+      "y": -10.156905025007422
+    },
+    "rotation": 8.901179185171557,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 6.73987119549712,
+      "y": -12.600280697980391
+    },
+    "rotation": -4.188790204786059,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 1.430470118738656,
+      "y": -12.600280697982722
+    },
+    "rotation": 36.65191429188155,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 3.7964955225193813,
+      "y": -5.770153679059431
+    },
+    "rotation": 40.84070449666801,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.085170657116393,
+      "y": -9.579554755817828
+    },
+    "rotation": 14.137166941154602,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.402157955223966,
+      "y": -9.185217188520724
+    },
+    "rotation": 22.25294796292829,
+    "color": "#1084aa",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.402157955224648,
+      "y": -10.551242592305172
+    },
+    "rotation": 23.300145514124893,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.768183359009069,
+      "y": -10.551242592304511
+    },
+    "rotation": 31.677725923697704,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.768183359008403,
+      "y": -9.185217188520049
+    },
+    "rotation": 12.304571226560572,
+    "color": "#1084aa",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.373845791709009,
+      "y": -5.770153679058987
+    },
+    "rotation": 35.604716740684964,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.373845791710664,
+      "y": -8.50220448662791
+    },
+    "rotation": 12.566370614359714,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 3.796495522521054,
+      "y": -8.502204486628195
+    },
+    "rotation": 26.179938779915545,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.7191452533328953,
+      "y": -11.522930428792431
+    },
+    "rotation": 29.845130209103655,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.7191452533315754,
+      "y": -8.790879621223525
+    },
+    "rotation": 15.184364492351193,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.2191452533317424,
+      "y": -9.07955475581861
+    },
+    "rotation": 16.23156204354779,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.4021579552223686,
+      "y": -6.453166380951768
+    },
+    "rotation": 36.39011490408243,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 3.402157955223303,
+      "y": -7.81919178473617
+    },
+    "rotation": 24.87094184091979,
+    "color": "#118ab3",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 2.2191452533334335,
+      "y": -12.600280697982285
+    },
+    "rotation": 30.6305283725011,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.951196060901924,
+      "y": -11.811605563385655
+    },
+    "rotation": 39.26990816987309,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.71914525333262,
+      "y": -10.945580159602788
+    },
+    "rotation": 26.70353755551385,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.219145253333048,
+      "y": -11.811605563387474
+    },
+    "rotation": 30.892327760300244,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.768183359007764,
+      "y": -7.819191784735488
+    },
+    "rotation": 11.257373675363967,
+    "color": "#118ab3",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 2.7191452533312788,
+      "y": -8.213529352033898
+    },
+    "rotation": 26.70353755551385,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.085170657115338,
+      "y": -7.4248542174384236
+    },
+    "rotation": 25.656340004317247,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.451196060900186,
+      "y": -8.213529352032577
+    },
+    "rotation": 12.042771838761418,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.451196060900456,
+      "y": -8.790879621222174
+    },
+    "rotation": 15.184364492351207,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 5.951196060902319,
+      "y": -12.600280697980477
+    },
+    "rotation": -8.639379797371571,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.951196060900625,
+      "y": -9.07955475581672
+    },
+    "rotation": 20.420352248334233,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.451196060901516,
+      "y": -10.945580159601441
+    },
+    "rotation": 35.08111796508666,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": 4.76818335900681,
+      "y": -6.453166380950965
+    },
+    "rotation": 29.583330821304507,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 4.085170657114814,
+      "y": -6.847503948248775
+    },
+    "rotation": 28.79793265790706,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.451196060901541,
+      "y": -11.522930428791057
+    },
+    "rotation": 36.128315516283266,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 3.007820387927998,
+      "y": -12.60028069798188
+    },
+    "rotation": 27.227136331112156,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": 5.162520926307241,
+      "y": -12.600280697980828
+    },
+    "rotation": -9.424777960769013,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.378930958022783,
+      "y": -10.156905025011227
+    },
+    "rotation": -35.081117965085845,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -0.7242304196430567,
+      "y": -12.60028069798498
+    },
+    "rotation": -48.17108735504346,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -6.0336314964015205,
+      "y": -12.600280697985735
+    },
+    "rotation": -7.330382858375849,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.667606092618915,
+      "y": -5.770153679063226
+    },
+    "rotation": -3.1415926535893925,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.378930958023033,
+      "y": -9.579554755821707
+    },
+    "rotation": -29.8451302091028,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.061943659915344,
+      "y": -9.185217188524401
+    },
+    "rotation": -21.729349187329113,
+    "color": "#1084aa",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.061943659915067,
+      "y": -10.55124259230885
+    },
+    "rotation": -20.68215163613251,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.6959182561306454,
+      "y": -10.551242592308594
+    },
+    "rotation": -12.304571226559698,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.695918256130906,
+      "y": -9.185217188524131
+    },
+    "rotation": -31.67772592369683,
+    "color": "#1084aa",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.0902558234292874,
+      "y": -5.770153679062953
+    },
+    "rotation": -8.377580409572438,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.0902558234284427,
+      "y": -8.502204486631872
+    },
+    "rotation": -31.41592653589769,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.6676060926180525,
+      "y": -8.502204486631989
+    },
+    "rotation": -17.802358370341857,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.744956361807108,
+      "y": -11.522930428795906
+    },
+    "rotation": -14.137166941153748,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.744956361807617,
+      "y": -8.790879621226999
+    },
+    "rotation": -28.79793265790621,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.244956361807535,
+      "y": -9.079554755821935
+    },
+    "rotation": -27.750735106709612,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.06194365991613,
+      "y": -6.453166380955447
+    },
+    "rotation": -7.592182246174971,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -4.061943659915601,
+      "y": -7.819191784739848
+    },
+    "rotation": -19.11135530933761,
+    "color": "#118ab3",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -5.2449563618068895,
+      "y": -12.600280697985603
+    },
+    "rotation": -13.351768777756302,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.5129055542381655,
+      "y": -11.811605563390088
+    },
+    "rotation": -4.712388980384311,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.744956361807212,
+      "y": -10.945580159606262
+    },
+    "rotation": -17.27875959474355,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -5.2449563618070405,
+      "y": -11.811605563390799
+    },
+    "rotation": -13.089969389957158,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.6959182561311406,
+      "y": -7.819191784739571
+    },
+    "rotation": -32.72492347489344,
+    "color": "#118ab3",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.744956361807742,
+      "y": -8.213529352037373
+    },
+    "rotation": -17.27875959474355,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.378930958023449,
+      "y": -7.4248542174423005
+    },
+    "rotation": -18.325957145940155,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.012905554238835,
+      "y": -8.213529352036858
+    },
+    "rotation": -31.939525311495984,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.0129055542387366,
+      "y": -8.790879621226459
+    },
+    "rotation": -28.797932657906195,
+    "color": "#1191bb",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -1.512905554238003,
+      "y": -12.600280697984907
+    },
+    "rotation": -52.62167694762897,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -1.5129055542386531,
+      "y": -9.079554755821153
+    },
+    "rotation": -23.56194490192317,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.0129055542383156,
+      "y": -10.945580159605726
+    },
+    "rotation": -8.90117918517074,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 4,
+    "center": {
+      "x": -2.695918256131689,
+      "y": -6.45316638095505
+    },
+    "rotation": -14.398966328952895,
+    "color": "#1297c4",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -3.378930958023802,
+      "y": -6.8475039482526565
+    },
+    "rotation": -15.18436449235034,
+    "color": "#1088b0",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.012905554238462,
+      "y": -11.522930428795341
+    },
+    "rotation": -7.853981633974136,
+    "color": "#129ac6",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -4.456281227212325,
+      "y": -12.600280697985433
+    },
+    "rotation": -16.755160819145246,
+    "color": "#14a2d2",
+    "showBorders": true
+  },
+  {
+    "numSides": 3,
+    "center": {
+      "x": -2.3015806888330816,
+      "y": -12.60028069798502
+    },
+    "rotation": -53.407075111026415,
+    "color": "#14a2d2",
+    "showBorders": true
+  }
+]
