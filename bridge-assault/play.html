@@ -1,0 +1,2139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bridge Assault</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050814;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        .damage-float {
+            position: absolute;
+            font-weight: 900;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            animation: floatUpFade 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            z-index: 30;
+        }
+        @keyframes floatUpFade {
+            0% { opacity: 1; transform: translate(-50%, 0) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -40px) scale(0.8); }
+        }
+    </style>
+</head>
+<body class="text-white overflow-hidden bg-slate-950 select-none">
+
+    <div id="canvas-container"></div>
+    <div id="floating-text-container" class="absolute inset-0 pointer-events-none z-20 overflow-hidden"></div>
+
+    <!-- UI Overlay Layer -->
+    <div id="ui-layer" class="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-3 sm:p-5">
+        
+        <!-- Top Status Bar -->
+        <div class="flex items-start justify-between gap-2 w-full max-w-6xl mx-auto">
+            
+            <!-- Left: Barricade Health & Level Stepper Selector -->
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-2 sm:gap-3 bg-slate-900/85 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-slate-700/60 shadow-xl pointer-events-auto">
+                    <!-- Level Selector Quick-Controls -->
+                    <div class="flex items-center bg-slate-950/80 rounded-xl p-1 border border-slate-800">
+                        <button id="btn-lvl-prev" title="Previous Level" class="w-6 h-7 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-cyan-400 font-black text-xs flex items-center justify-center transition active:scale-95">◀</button>
+                        <button id="btn-lvl-jump" title="Select Any Level" class="px-2 h-7 flex items-center justify-center text-cyan-400 font-black text-sm tracking-wide hover:text-cyan-300">
+                            L<span id="ui-level">1</span>
+                        </button>
+                        <button id="btn-lvl-next" title="Next Level" class="w-6 h-7 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-cyan-400 font-black text-xs flex items-center justify-center transition active:scale-95">▶</button>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between text-xs font-semibold text-slate-400 gap-3">
+                            <span>BARRICADE</span>
+                            <span id="ui-hp-val" class="text-cyan-400 font-bold">120 / 120</span>
+                        </div>
+                        <div class="w-28 sm:w-40 h-2 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-700/50 mt-1">
+                            <div id="ui-hp-bar" class="h-full bg-gradient-to-r from-emerald-500 via-cyan-400 to-sky-400 rounded-full transition-all duration-200" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual Color Legend -->
+                <div class="hidden sm:flex items-center gap-3 bg-slate-950/70 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] font-medium tracking-wide">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span>
+                        <span class="text-rose-300">Swarm (Kill)</span>
+                    </div>
+                    <span class="text-slate-600">|</span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_#facc15]"></span>
+                        <span class="text-amber-300">Armored Crate (Carve Lane)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center: Wave Status & Killstreak Tracker -->
+            <div class="flex flex-col items-center bg-slate-900/85 backdrop-blur-md px-4 py-2 rounded-2xl border border-slate-700/60 shadow-xl pointer-events-auto">
+                <div class="text-[10px] tracking-widest uppercase font-black text-amber-400">Swarm Remaining</div>
+                <div class="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-1">
+                    <span id="ui-enemies-remaining">0</span>
+                    <span class="text-xs text-slate-500 font-normal">hostiles</span>
+                </div>
+                <div class="flex items-center gap-2 mt-0.5">
+                    <span class="text-[11px] text-slate-400 font-mono">SCORE: <strong id="ui-score" class="text-amber-300">0</strong></span>
+                    <span id="ui-combo-tag" class="hidden text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-rose-500/30 text-rose-300 border border-rose-400/40"></span>
+                </div>
+            </div>
+
+            <!-- Right: Action Buttons & Config Controls -->
+            <div class="flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
+                <button id="btn-config" title="Generator Config & Seed" class="w-10 h-10 rounded-xl bg-indigo-600/90 hover:bg-indigo-500 active:scale-95 transition border border-indigo-400/60 flex items-center justify-center shadow-lg text-white font-black">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                </button>
+
+                <button id="btn-undo" title="Emergency Repair / Revert Weapon" class="w-10 h-10 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 transition border border-slate-600/60 flex items-center justify-center shadow-lg text-slate-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a5 5 0 015 5v2m0 0l-4-4m4 4l4-4M3 10l4-4M3 10l4 4"/></svg>
+                </button>
+
+                <button id="btn-restart" title="Restart Level" class="w-10 h-10 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 transition border border-slate-600/60 flex items-center justify-center shadow-lg text-slate-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </button>
+
+                <button id="btn-audio" title="Toggle Sound / Music" class="w-10 h-10 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 transition border border-slate-600/60 flex items-center justify-center shadow-lg text-slate-200">
+                    <svg id="icon-sound-on" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z"/></svg>
+                    <svg id="icon-sound-off" class="w-4 h-4 hidden text-rose-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/><path stroke-linecap="round" stroke-linejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>
+                </button>
+
+                <button id="btn-settings" title="Settings" class="w-10 h-10 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 transition border border-slate-600/60 flex items-center justify-center shadow-lg text-slate-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </button>
+
+                <button id="btn-pause" title="Pause Game" class="w-10 h-10 rounded-xl bg-amber-500/90 hover:bg-amber-400 active:scale-95 transition border border-amber-300/60 flex items-center justify-center shadow-lg text-slate-950 font-black">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Left Side: Active Cumulative Weapons Stack -->
+        <div class="absolute left-3 top-28 flex flex-col gap-2 pointer-events-auto">
+            <div id="ui-weapons-stack" class="flex flex-col gap-2 bg-slate-900/85 backdrop-blur-md p-2.5 rounded-2xl border border-slate-700/60 shadow-xl max-w-[140px]">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+
+        <!-- Bottom Tip Bar -->
+        <div class="w-full max-w-xl mx-auto flex flex-col items-center gap-1 mb-1">
+            <div class="text-[11px] text-slate-400 font-medium tracking-wide bg-slate-950/60 px-3 py-1 rounded-full border border-slate-800 pointer-events-none">
+                Seed: <span id="ui-seed-display" class="text-cyan-400 font-mono font-bold">0</span> • Drill through the vanguard to crack armored crates
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Level Select Modal -->
+    <div id="modal-level-select" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-cyan-500/50 w-full max-w-xs rounded-3xl p-5 shadow-2xl flex flex-col">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+                <h3 class="font-black text-sm text-cyan-400">JUMP TO LEVEL</h3>
+                <button id="btn-close-lvl-modal" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 flex items-center justify-center font-bold text-xs">✕</button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-3">Jump directly to any level regardless of completion:</p>
+            <div class="flex items-center gap-2 mb-4">
+                <input id="input-jump-lvl" type="number" min="1" max="100" value="1" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-center text-lg font-black text-white focus:outline-none focus:border-cyan-400">
+            </div>
+            <div class="grid grid-cols-4 gap-1.5 mb-4">
+                <button class="btn-quick-lvl py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-slate-300" data-lvl="1">L1</button>
+                <button class="btn-quick-lvl py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-emerald-400" data-lvl="7">L7</button>
+                <button class="btn-quick-lvl py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-cyan-400" data-lvl="12">L12</button>
+                <button class="btn-quick-lvl py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-rose-400" data-lvl="13">L13</button>
+            </div>
+            <button id="btn-confirm-jump-lvl" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs transition shadow-lg shadow-cyan-500/20 active:scale-95">
+                LOAD SELECTED LEVEL
+            </button>
+        </div>
+    </div>
+
+    <!-- Generator Config Modal -->
+    <div id="modal-config" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-indigo-500/50 w-full max-w-md rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+                <div>
+                    <h3 class="font-black text-base tracking-wide text-indigo-400">LEVEL GENERATOR CONFIG</h3>
+                    <p class="text-[11px] text-slate-400">Deterministic generation formula (Default Seed: 0)</p>
+                </div>
+                <button id="btn-close-config" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 flex items-center justify-center font-bold">✕</button>
+            </div>
+
+            <div class="flex flex-col gap-3 text-xs font-semibold text-slate-300">
+                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                    <label class="block text-slate-400 text-[10px] uppercase tracking-wider mb-1">Random Seed (Fixed for repeatable feedback)</label>
+                    <input id="cfg-seed" type="number" step="1" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white font-mono font-bold focus:outline-none focus:border-indigo-400">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                        <label class="block text-slate-400 text-[10px] uppercase">Base Hostiles (L1)</label>
+                        <input id="cfg-base-enemies" type="number" step="1" min="10" max="150" value="48" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-white font-mono font-bold">
+                    </div>
+                    <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                        <label class="block text-slate-400 text-[10px] uppercase">+ Hostiles / Level</label>
+                        <input id="cfg-enemies-per-lvl" type="number" step="1" min="0" max="60" value="18" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-white font-mono font-bold">
+                    </div>
+                </div>
+
+                <div class="bg-indigo-950/30 p-3 rounded-xl border border-indigo-500/30">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-indigo-300 text-[11px] font-bold">Base Crate Interval</label>
+                        <span id="cfg-crate-val" class="text-amber-400 font-mono font-black">22</span>
+                    </div>
+                    <input id="cfg-enemies-per-crate" type="range" min="12" max="32" value="22" class="w-full accent-indigo-500 cursor-pointer">
+                    <p class="text-[10px] text-slate-400 mt-1">Crates are nested deep inside squads and reinforced with heavy armor plating.</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                        <label class="block text-slate-400 text-[10px] uppercase">Crawler Ratio</label>
+                        <input id="cfg-crawler-ratio" type="number" step="0.05" min="0.1" max="0.8" value="0.36" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-white font-mono font-bold">
+                    </div>
+                    <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                        <label class="block text-slate-400 text-[10px] uppercase">Brute Ratio</label>
+                        <input id="cfg-brute-ratio" type="number" step="0.05" min="0.05" max="0.5" value="0.22" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-white font-mono font-bold">
+                    </div>
+                </div>
+
+                <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+                    <span>Active Level <span id="cfg-calc-lvl">7</span> Expected Stats:</span>
+                    <span class="text-cyan-300 font-mono font-bold"><span id="cfg-calc-enemies">156</span> Hostiles • <span id="cfg-calc-crates">6</span> Crates</span>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-800 flex flex-col gap-2">
+                <button id="btn-apply-config" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-black text-xs transition shadow-lg shadow-indigo-600/30">
+                    APPLY CONFIG & REGENERATE LEVEL
+                </button>
+                <button id="btn-default-config" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition">
+                    Reset to Balanced Defaults
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div id="modal-victory" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-lg z-50 flex items-center justify-center p-4">
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-cyan-500/40 w-full max-w-md rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center">
+            <div class="w-14 h-14 rounded-2xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-2xl mb-3">
+                🏆
+            </div>
+            <h2 class="text-2xl font-black tracking-tight text-white">BRIDGE SECURED!</h2>
+            <p id="vic-subtitle" class="text-xs text-cyan-400 font-medium mt-0.5">All Hostile Waves Decimated</p>
+
+            <div class="w-full bg-slate-900/90 rounded-2xl p-3.5 border border-slate-800 my-4 grid grid-cols-2 gap-2 text-left text-xs font-medium">
+                <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                    <div class="text-slate-400 text-[10px]">HOSTILES SLAIN</div>
+                    <div id="vic-kills" class="text-lg font-black text-rose-400 mt-0.5">0</div>
+                </div>
+                <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                    <div class="text-slate-400 text-[10px]">ACCURACY</div>
+                    <div id="vic-acc" class="text-lg font-black text-cyan-300 mt-0.5">0%</div>
+                </div>
+                <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                    <div class="text-slate-400 text-[10px]">CRATES CRACKED</div>
+                    <div id="vic-crates" class="text-lg font-black text-amber-300 mt-0.5">0</div>
+                </div>
+                <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                    <div class="text-slate-400 text-[10px]">FINAL SCORE</div>
+                    <div id="vic-score" class="text-lg font-black text-emerald-400 mt-0.5">0</div>
+                </div>
+            </div>
+
+            <!-- Pass to a Friend Scoreboard -->
+            <div id="friend-duel-card" class="hidden w-full bg-amber-500/10 border border-amber-400/30 rounded-2xl p-3 mb-4 text-xs">
+                <div class="font-bold text-amber-300 uppercase tracking-wide text-[11px] mb-2">🤝 Head-to-Head Duel</div>
+                <div class="grid grid-cols-2 gap-2 text-center">
+                    <div class="bg-slate-950/60 p-2 rounded-lg border border-slate-800">
+                        <div class="text-slate-400 text-[10px]">PLAYER 1</div>
+                        <div id="p1-duel-score" class="text-base font-black text-cyan-400">0 PTS</div>
+                    </div>
+                    <div class="bg-slate-950/60 p-2 rounded-lg border border-slate-800">
+                        <div class="text-slate-400 text-[10px]">PLAYER 2 (FRIEND)</div>
+                        <div id="p2-duel-score" class="text-base font-black text-amber-400">0 PTS</div>
+                    </div>
+                </div>
+                <div id="duel-winner-banner" class="text-center font-bold text-emerald-300 text-xs mt-2"></div>
+            </div>
+
+            <div class="w-full flex flex-col gap-2">
+                <button id="btn-next-level" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black tracking-wide text-sm shadow-lg shadow-cyan-500/25 active:scale-[0.98] transition">
+                    NEXT LEVEL ➔
+                </button>
+                <div class="grid grid-cols-2 gap-2 w-full">
+                    <button id="btn-play-again" class="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-200 active:scale-95 transition">
+                        Play Again
+                    </button>
+                    <button id="btn-pass-friend" class="py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-xs font-bold text-amber-300 active:scale-95 transition">
+                        Pass to a Friend
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="modal-gameover" class="hidden absolute inset-0 bg-rose-950/80 backdrop-blur-lg z-50 flex items-center justify-center p-4">
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-rose-500/40 w-full max-w-sm rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center">
+            <div class="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-400/40 flex items-center justify-center text-2xl mb-3">
+                💀
+            </div>
+            <h2 class="text-2xl font-black tracking-tight text-white">BARRICADE OVERRUN</h2>
+            <p class="text-xs text-rose-400 font-medium mt-0.5">The horde breached the defense line.</p>
+
+            <div class="w-full bg-slate-900/90 rounded-2xl p-3 border border-slate-800 my-4 text-xs font-semibold">
+                <div class="flex justify-between text-slate-400 py-1">
+                    <span>Hostiles Slashed</span>
+                    <span id="fail-kills" class="text-white font-bold">0</span>
+                </div>
+                <div class="flex justify-between text-slate-400 py-1">
+                    <span>Level Score</span>
+                    <span id="fail-score" class="text-amber-300 font-bold">0</span>
+                </div>
+            </div>
+
+            <div class="w-full flex flex-col gap-2">
+                <button id="btn-retry" class="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black tracking-wide text-sm shadow-lg shadow-rose-600/30 active:scale-95 transition">
+                    TRY AGAIN
+                </button>
+                <button id="btn-fail-select-lvl" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 text-xs font-bold transition">
+                    Select Different Level
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tactical Settings Modal -->
+    <div id="modal-settings" class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-3xl p-5 shadow-2xl flex flex-col">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                <h3 class="font-black text-base tracking-wide text-white">TACTICAL SETTINGS</h3>
+                <button id="btn-close-settings" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 flex items-center justify-center">✕</button>
+            </div>
+
+            <div class="flex flex-col gap-4 text-xs font-semibold text-slate-300">
+                <div class="flex items-center justify-between">
+                    <span>Sound Effects</span>
+                    <input id="setting-sfx" type="checkbox" checked class="w-5 h-5 accent-cyan-500 rounded cursor-pointer">
+                </div>
+                <div class="flex items-center justify-between">
+                    <span>Synth Background Music</span>
+                    <input id="setting-music" type="checkbox" checked class="w-5 h-5 accent-cyan-500 rounded cursor-pointer">
+                </div>
+                <div class="flex items-center justify-between">
+                    <span>Combat Screen Shake</span>
+                    <input id="setting-shake" type="checkbox" checked class="w-5 h-5 accent-cyan-500 rounded cursor-pointer">
+                </div>
+                <div class="flex items-center justify-between">
+                    <span>Aiming Laser Guide</span>
+                    <input id="setting-laser" type="checkbox" checked class="w-5 h-5 accent-cyan-500 rounded cursor-pointer">
+                </div>
+            </div>
+
+            <div class="mt-6 pt-3 border-t border-slate-800 text-center">
+                <button id="btn-save-settings" class="w-full py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs transition">
+                    SAVE & CLOSE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pause Modal -->
+    <div id="modal-pause" class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-amber-500/40 w-full max-w-xs rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center">
+            <h3 class="text-xl font-black text-amber-400 tracking-wide mb-1">MISSION PAUSED</h3>
+            <p class="text-xs text-slate-400 mb-5">Defense systems on standby.</p>
+            <button id="btn-resume" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs tracking-wider uppercase shadow-lg shadow-amber-500/20 active:scale-95 transition mb-2">
+                RESUME COMBAT
+            </button>
+            <button id="btn-pause-change-lvl" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold text-xs active:scale-95 transition mb-2">
+                Change Level
+            </button>
+            <button id="btn-pause-restart" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs active:scale-95 transition">
+                Restart Mission
+            </button>
+        </div>
+    </div>
+
+    <script>
+    try {
+        if ('audioSession' in navigator) {
+            navigator.audioSession.type = "playback";
+        }
+    } catch (e) {}
+
+    const Storage = {
+        get: function(key, def) {
+            try {
+                const val = localStorage.getItem(key);
+                return val ? JSON.parse(val) : def;
+            } catch (e) {
+                const match = document.cookie.match(new RegExp('(^| )' + key + '=([^;]+)'));
+                if (match) return JSON.parse(decodeURIComponent(match[2]));
+                return def;
+            }
+        },
+        set: function(key, val) {
+            const str = JSON.stringify(val);
+            try { localStorage.setItem(key, str); } catch (e) {}
+            try { document.cookie = key + '=' + encodeURIComponent(str) + ';path=/;max-age=31536000'; } catch (e) {}
+        }
+    };
+
+    // Deterministic Mulberry32 PRNG
+    function createPRNG(seed) {
+        let s = (seed >>> 0) + 0x6D2B79F5;
+        return function() {
+            s = Math.imul(s ^ (s >>> 15), 1 | s);
+            s = (s + Math.imul(s ^ (s >>> 7), 61 | s)) ^ s;
+            return ((s ^ (s >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    // Armored crate requires 85 HP of direct fire to crack, ensuring you must focus-drill it
+    const LevelGenConfig = Storage.get('ba_gen_cfg', {
+        seed: 0,
+        baseEnemies: 48,
+        enemiesPerLvl: 18,
+        enemiesPerCrate: 22,
+        crawlerRatio: 0.36,
+        bruteRatio: 0.22,
+        crateHp: 85
+    });
+
+    let activePRNG = createPRNG(LevelGenConfig.seed);
+
+    class TacticalAudio {
+        constructor() {
+            this.ctx = null;
+            this.soundEnabled = true;
+            this.musicEnabled = true;
+            this.musicTimer = null;
+            this.noiseBuffer = null;
+            this.bassStep = 0;
+        }
+
+        init() {
+            if (this.ctx) return;
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            this.ctx = new AudioCtx();
+
+            const bufferSize = this.ctx.sampleRate;
+            this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const output = this.noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+
+            this.startMusic();
+        }
+
+        playShoot(type) {
+            if (!this.soundEnabled || !this.ctx) return;
+            const t = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            if (type === 'rifle') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(380, t);
+                osc.frequency.exponentialRampToValueAtTime(70, t + 0.08);
+                gain.gain.setValueAtTime(0.18, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+                osc.start(t);
+                osc.stop(t + 0.08);
+            } else if (type === 'shotgun') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(240, t);
+                osc.frequency.exponentialRampToValueAtTime(40, t + 0.14);
+                gain.gain.setValueAtTime(0.24, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+                osc.start(t);
+                osc.stop(t + 0.14);
+            } else if (type === 'plasma') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, t);
+                osc.frequency.exponentialRampToValueAtTime(220, t + 0.09);
+                gain.gain.setValueAtTime(0.2, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+                osc.start(t);
+                osc.stop(t + 0.09);
+            } else if (type === 'rocket') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(140, t);
+                osc.frequency.linearRampToValueAtTime(320, t + 0.16);
+                gain.gain.setValueAtTime(0.3, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+                osc.start(t);
+                osc.stop(t + 0.16);
+            }
+        }
+
+        playHit() {
+            if (!this.soundEnabled || !this.ctx) return;
+            const t = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(160, t);
+            osc.frequency.exponentialRampToValueAtTime(50, t + 0.05);
+            gain.gain.setValueAtTime(0.12, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.05);
+        }
+
+        playCrateArmorClink() {
+            if (!this.soundEnabled || !this.ctx) return;
+            const t = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(820, t);
+            osc.frequency.exponentialRampToValueAtTime(340, t + 0.06);
+            gain.gain.setValueAtTime(0.18, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.06);
+        }
+
+        playExplosion(isBig) {
+            if (!this.soundEnabled || !this.ctx || !this.noiseBuffer) return;
+            const t = this.ctx.currentTime;
+            const src = this.ctx.createBufferSource();
+            src.buffer = this.noiseBuffer;
+
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(isBig ? 450 : 700, t);
+            filter.frequency.exponentialRampToValueAtTime(25, t + (isBig ? 0.85 : 0.35));
+
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(isBig ? 0.55 : 0.25, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + (isBig ? 0.85 : 0.35));
+
+            src.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            src.start(t);
+            src.stop(t + (isBig ? 0.85 : 0.35));
+        }
+
+        playPickup() {
+            if (!this.soundEnabled || !this.ctx) return;
+            const t = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, t);
+            osc.frequency.setValueAtTime(659.25, t + 0.06);
+            osc.frequency.setValueAtTime(783.99, t + 0.12);
+            osc.frequency.setValueAtTime(1046.50, t + 0.18);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.3);
+        }
+
+        startMusic() {
+            if (this.musicTimer || !this.ctx) return;
+            const bassNotes = [55, 55, 65.41, 73.42, 55, 55, 82.41, 73.42];
+            this.musicTimer = setInterval(() => {
+                if (!this.musicEnabled || !this.ctx) return;
+                const t = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                const freq = bassNotes[this.bassStep % bassNotes.length];
+                this.bassStep++;
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(freq, t);
+                gain.gain.setValueAtTime(0.045, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(260, t);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(t);
+                osc.stop(t + 0.24);
+            }, 230);
+        }
+    }
+
+    const audio = new TacticalAudio();
+
+    const WEAPONS = {
+        rifle: {
+            name: "Twin Heavy Blaster",
+            symbol: "RIFLE",
+            color: "#38bdf8",
+            damage: 30,
+            fireRate: 0.13,
+            pellets: 1,
+            spread: 0.03,
+            speed: 60,
+            sound: 'rifle',
+            duration: Infinity
+        },
+        shotgun: {
+            name: "Breach Scattergun",
+            symbol: "SG-4",
+            color: "#fb923c",
+            damage: 28,
+            fireRate: 0.26,
+            pellets: 6,
+            spread: 0.22,
+            speed: 56,
+            sound: 'shotgun',
+            duration: 13
+        },
+        minigun: {
+            name: "Vulcan Rotary Cannon",
+            symbol: "GATLING",
+            color: "#facc15",
+            damage: 22,
+            fireRate: 0.052,
+            pellets: 1,
+            spread: 0.065,
+            speed: 72,
+            sound: 'rifle',
+            duration: 13
+        },
+        rocket: {
+            name: "Thermobaric RPG",
+            symbol: "RPG",
+            color: "#f43f5e",
+            damage: 280,
+            splashRadius: 4.2,
+            fireRate: 0.72,
+            pellets: 1,
+            spread: 0.015,
+            speed: 54,
+            sound: 'rocket',
+            duration: 11
+        },
+        plasma: {
+            name: "Overcharged Plasma Beam",
+            symbol: "PLASMA",
+            color: "#c084fc",
+            damage: 64,
+            fireRate: 0.13,
+            pellets: 2,
+            spread: 0.035,
+            speed: 68,
+            sound: 'plasma',
+            duration: 13
+        }
+    };
+
+    let lastSpawnedCrateWeapon = null;
+
+    const gameState = {
+        level: Storage.get('ba_level', 1),
+        score: 0,
+        playerHp: 120,
+        maxHp: 120,
+        activeWeapons: [{ key: 'rifle', timeLeft: Infinity }],
+        shotsFired: 0,
+        shotsHit: 0,
+        kills: 0,
+        cratesBroken: 0,
+        combo: 0,
+        comboTimer: 0,
+        isPaused: false,
+        isGameOver: false,
+        isVictory: false,
+        screenShake: Storage.get('ba_shake', true),
+        showLaser: Storage.get('ba_laser', true),
+        isFriendMode: false,
+        friendScores: { p1: null, p2: null }
+    };
+
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x060914);
+    scene.fog = new THREE.FogExp2(0x060914, 0.018);
+
+    const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 300);
+    camera.position.set(0, 22, 18);
+    camera.lookAt(0, 1.5, -14);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
+    container.appendChild(renderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0x8ba2c4, 0.85);
+    scene.add(ambientLight);
+
+    const sunLight = new THREE.DirectionalLight(0xffffff, 0.95);
+    sunLight.position.set(20, 45, 25);
+    scene.add(sunLight);
+
+    const BRIDGE_WIDTH = 15;
+    const BRIDGE_LENGTH = 65;
+    const BRIDGE_Z_START = 8;
+    const BRIDGE_Z_END = -54;
+
+    const roadMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+    const roadGeo = new THREE.BoxGeometry(BRIDGE_WIDTH, 1.5, BRIDGE_LENGTH);
+    const road = new THREE.Mesh(roadGeo, roadMat);
+    road.position.set(0, -0.75, (BRIDGE_Z_START + BRIDGE_Z_END) / 2);
+    scene.add(road);
+
+    const laneLineMat = new THREE.MeshBasicMaterial({ color: 0x0284c7 });
+    [-BRIDGE_WIDTH / 2 + 0.3, BRIDGE_WIDTH / 2 - 0.3].forEach(function(x) {
+        const edgeGeo = new THREE.BoxGeometry(0.35, 0.15, BRIDGE_LENGTH);
+        const edge = new THREE.Mesh(edgeGeo, laneLineMat);
+        edge.position.set(x, 0.08, (BRIDGE_Z_START + BRIDGE_Z_END) / 2);
+        scene.add(edge);
+    });
+
+    const railMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+    [-BRIDGE_WIDTH / 2, BRIDGE_WIDTH / 2].forEach(function(x) {
+        const railGeo = new THREE.BoxGeometry(0.6, 1.8, BRIDGE_LENGTH);
+        const rail = new THREE.Mesh(railGeo, railMat);
+        rail.position.set(x, 0.9, (BRIDGE_Z_START + BRIDGE_Z_END) / 2);
+        scene.add(rail);
+    });
+
+    const barricadeGroup = new THREE.Group();
+    const barBaseMat = new THREE.MeshLambertMaterial({ color: 0x0f172a });
+    const barPlateMat = new THREE.MeshLambertMaterial({ color: 0x0284c7 });
+    const barWarningMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+
+    const barBase = new THREE.Mesh(new THREE.BoxGeometry(BRIDGE_WIDTH - 0.8, 1.8, 1.4), barBaseMat);
+    barBase.position.set(0, 0.9, 0);
+    barricadeGroup.add(barBase);
+
+    const barPlate = new THREE.Mesh(new THREE.BoxGeometry(BRIDGE_WIDTH - 1.2, 0.5, 1.6), barPlateMat);
+    barPlate.position.set(0, 1.1, 0);
+    barricadeGroup.add(barPlate);
+
+    for (let i = -5; i <= 5; i += 2) {
+        const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.4, 1.65), barWarningMat);
+        stripe.position.set(i * 1.15, 1.1, 0);
+        barricadeGroup.add(stripe);
+    }
+    scene.add(barricadeGroup);
+
+    const playerGroup = new THREE.Group();
+
+    const torso = new THREE.Mesh(
+        new THREE.BoxGeometry(1.5, 1.6, 1.0),
+        new THREE.MeshLambertMaterial({ color: 0x1d4ed8 })
+    );
+    torso.position.y = 1.6;
+    playerGroup.add(torso);
+
+    const chestArmor = new THREE.Mesh(
+        new THREE.BoxGeometry(1.65, 0.7, 1.1),
+        new THREE.MeshLambertMaterial({ color: 0xf8fafc })
+    );
+    chestArmor.position.y = 1.7;
+    playerGroup.add(chestArmor);
+
+    const helmet = new THREE.Mesh(
+        new THREE.BoxGeometry(1.0, 0.9, 1.0),
+        new THREE.MeshLambertMaterial({ color: 0x0f172a })
+    );
+    helmet.position.y = 2.65;
+    playerGroup.add(helmet);
+
+    const visor = new THREE.Mesh(
+        new THREE.BoxGeometry(0.8, 0.3, 0.4),
+        new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+    );
+    visor.position.set(0, 2.65, -0.6);
+    playerGroup.add(visor);
+
+    const gunMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.5, 0.5, 2.6),
+        new THREE.MeshLambertMaterial({ color: 0x0f172a })
+    );
+    gunMesh.position.set(0, 1.35, -1.3);
+    playerGroup.add(gunMesh);
+
+    const laserMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.65 });
+    const laserGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 1.35, -2.6),
+        new THREE.Vector3(0, 1.35, -50.0)
+    ]);
+    const laserGuide = new THREE.Line(laserGeo, laserMat);
+    playerGroup.add(laserGuide);
+
+    const haloGeo = new THREE.RingGeometry(1.2, 1.6, 24);
+    const haloMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.65 });
+    const haloMesh = new THREE.Mesh(haloGeo, haloMat);
+    haloMesh.rotation.x = -Math.PI / 2;
+    haloMesh.position.y = 0.05;
+    playerGroup.add(haloMesh);
+
+    const flashMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0 });
+    const muzzleFlash = new THREE.Mesh(new THREE.SphereGeometry(0.4, 6, 6), flashMat);
+    muzzleFlash.position.set(0, 1.35, -2.6);
+    playerGroup.add(muzzleFlash);
+
+    const playerSpot = new THREE.PointLight(0x38bdf8, 1.6, 14);
+    playerSpot.position.set(0, 3.5, 0);
+    playerGroup.add(playerSpot);
+
+    playerGroup.position.set(0, 0, 3.2);
+    scene.add(playerGroup);
+
+    const bullets = [];
+    const supplyCrates = [];
+    const flyingLoots = [];
+    const enemies = [];
+    const floatingTexts = [];
+    const shockwaves = [];
+
+    const bulletSphereGeo = new THREE.SphereGeometry(0.32, 6, 6);
+    const bulletRocketGeo = new THREE.CylinderGeometry(0.32, 0.45, 1.6, 6);
+    bulletRocketGeo.rotateX(Math.PI / 2);
+
+    const bulletMaterials = {
+        rifle: new THREE.MeshBasicMaterial({ color: 0x38bdf8 }),
+        shotgun: new THREE.MeshBasicMaterial({ color: 0xfb923c }),
+        minigun: new THREE.MeshBasicMaterial({ color: 0xfacc15 }),
+        rocket: new THREE.MeshBasicMaterial({ color: 0xf43f5e }),
+        plasma: new THREE.MeshBasicMaterial({ color: 0xc084fc })
+    };
+
+    const PARTICLE_COUNT = 120;
+    const particlePool = [];
+    const pGeo = new THREE.BoxGeometry(0.28, 0.28, 0.28);
+    const pMatOrange = new THREE.MeshBasicMaterial({ color: 0xf97316 });
+    const pMatYellow = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+    const pMatCyan = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const p = new THREE.Mesh(pGeo, pMatOrange);
+        p.visible = false;
+        scene.add(p);
+        particlePool.push({
+            mesh: p,
+            active: false,
+            vel: new THREE.Vector3(),
+            life: 0,
+            maxLife: 0.5
+        });
+    }
+
+    function spawnExplosionParticles(pos, count, colorType) {
+        let spawned = 0;
+        const mat = colorType === 'yellow' ? pMatYellow : (colorType === 'cyan' ? pMatCyan : pMatOrange);
+        for (let i = 0; i < particlePool.length && spawned < count; i++) {
+            const p = particlePool[i];
+            if (!p.active) {
+                p.active = true;
+                p.mesh.material = mat;
+                p.mesh.position.copy(pos);
+                p.mesh.visible = true;
+                p.life = 0;
+                p.maxLife = 0.35 + Math.random() * 0.4;
+                p.vel.set(
+                    (Math.random() - 0.5) * 20,
+                    Math.random() * 11 + 3,
+                    (Math.random() - 0.5) * 20
+                );
+                spawned++;
+            }
+        }
+    }
+
+    function spawnVisualShockwave(pos, maxRadius) {
+        const ringGeo = new THREE.RingGeometry(0.3, 0.9, 28);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: 0xf43f5e,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.85
+        });
+        const mesh = new THREE.Mesh(ringGeo, ringMat);
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.position.set(pos.x, 0.2, pos.z);
+        scene.add(mesh);
+
+        shockwaves.push({
+            mesh: mesh,
+            currentScale: 1.0,
+            maxScale: maxRadius * 1.25,
+            life: 0.38,
+            maxLife: 0.38
+        });
+    }
+
+    const monsterMaterials = {
+        trooper: new THREE.MeshLambertMaterial({ color: 0xef4444 }),
+        crawler: new THREE.MeshLambertMaterial({ color: 0xec4899 }),
+        brute: new THREE.MeshLambertMaterial({ color: 0x991b1b }),
+        boss: new THREE.MeshLambertMaterial({ color: 0x7f1d1d }),
+        horns: new THREE.MeshLambertMaterial({ color: 0x1e293b }),
+        fangs: new THREE.MeshBasicMaterial({ color: 0xffffff }),
+        eyes: new THREE.MeshBasicMaterial({ color: 0xfef08a })
+    };
+
+    function createMonsterMesh(type) {
+        const group = new THREE.Group();
+        const limbParts = [];
+
+        if (type === 'crawler') {
+            const body = new THREE.Mesh(new THREE.SphereGeometry(0.75, 8, 8), monsterMaterials.crawler);
+            body.position.y = 0.6;
+            group.add(body);
+
+            const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.16, 6, 6), monsterMaterials.eyes);
+            eye1.position.set(0.25, 0.7, -0.65);
+            const eye2 = eye1.clone();
+            eye2.position.set(-0.25, 0.7, -0.65);
+            group.add(eye1, eye2);
+
+            for (let i = 0; i < 4; i++) {
+                const leg = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.6, 0.18), monsterMaterials.horns);
+                const xSign = (i % 2 === 0) ? 1 : -1;
+                const zOffset = (i < 2) ? -0.35 : 0.35;
+                leg.position.set(xSign * 0.8, 0.3, zOffset);
+                group.add(leg);
+                limbParts.push(leg);
+            }
+
+        } else if (type === 'brute') {
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.2, 1.4), monsterMaterials.brute);
+            torso.position.y = 1.6;
+            group.add(torso);
+
+            const head = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.1, 1.1), monsterMaterials.horns);
+            head.position.set(0, 2.9, -0.3);
+            group.add(head);
+
+            const eye = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.3), monsterMaterials.eyes);
+            eye.position.set(0, 2.9, -0.85);
+            group.add(eye);
+
+            const hornL = new THREE.Mesh(new THREE.ConeGeometry(0.28, 1.2, 6), monsterMaterials.horns);
+            hornL.rotation.z = Math.PI / 3;
+            hornL.position.set(0.9, 3.4, -0.3);
+            const hornR = hornL.clone();
+            hornR.rotation.z = -Math.PI / 3;
+            hornR.position.set(-0.9, 3.4, -0.3);
+            group.add(hornL, hornR);
+
+            const legL = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, 0.6), monsterMaterials.horns);
+            legL.position.set(0.6, 0.6, 0);
+            const legR = legL.clone();
+            legR.position.set(-0.6, 0.6, 0);
+            group.add(legL, legR);
+            limbParts.push(legL, legR);
+
+        } else if (type === 'boss') {
+            const body = new THREE.Mesh(new THREE.BoxGeometry(3.6, 3.8, 2.4), monsterMaterials.boss);
+            body.position.y = 2.6;
+            group.add(body);
+
+            const crown = new THREE.Mesh(new THREE.OctahedronGeometry(1.6, 0), monsterMaterials.horns);
+            crown.position.set(0, 4.8, 0);
+            group.add(crown);
+
+            const eye = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.4, 0.5), monsterMaterials.eyes);
+            eye.position.set(0, 4.5, -1.2);
+            group.add(eye);
+
+        } else {
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.4, 0.9), monsterMaterials.trooper);
+            body.position.y = 1.2;
+            group.add(body);
+
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.8, 0.8), monsterMaterials.horns);
+            head.position.set(0, 2.0, -0.1);
+            group.add(head);
+
+            const fangs = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 0.3), monsterMaterials.fangs);
+            fangs.position.set(0, 1.75, -0.48);
+            group.add(fangs);
+
+            const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 6), monsterMaterials.eyes);
+            eye1.position.set(0.24, 2.05, -0.5);
+            const eye2 = eye1.clone();
+            eye2.position.set(-0.24, 2.05, -0.5);
+            group.add(eye1, eye2);
+
+            const legL = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.7, 0.35), monsterMaterials.horns);
+            legL.position.set(0.35, 0.35, 0);
+            const legR = legL.clone();
+            legR.position.set(-0.35, 0.35, 0);
+            group.add(legL, legR);
+            limbParts.push(legL, legR);
+        }
+
+        return { group: group, limbParts: limbParts };
+    }
+
+    const crateGoldMat = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
+    const crateArmorMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+    const crateCoreMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+    const crateBeaconMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.65 });
+
+    function createSupplyCrate(x, z, preferredWeapon) {
+        const group = new THREE.Group();
+
+        // Armored heavy vault box
+        const crateBox = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.0, 2.4), crateGoldMat);
+        crateBox.position.y = 1.0;
+        group.add(crateBox);
+
+        // Heavy steel corner brackets
+        const corner = new THREE.Mesh(new THREE.BoxGeometry(2.65, 0.6, 2.65), crateArmorMat);
+        corner.position.y = 1.0;
+        group.add(corner);
+
+        // Heavy reinforced armor ribs
+        const rib = new THREE.Mesh(new THREE.BoxGeometry(2.65, 2.2, 0.5), crateArmorMat);
+        rib.position.y = 1.0;
+        group.add(rib);
+
+        const coreIcon = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 2.7), crateCoreMat);
+        coreIcon.position.y = 1.0;
+        group.add(coreIcon);
+
+        const badge = new THREE.Mesh(
+            new THREE.OctahedronGeometry(0.85, 0),
+            new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+        );
+        badge.position.y = 3.4;
+        group.add(badge);
+
+        const beacon = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.15, 0.7, 22, 8),
+            crateBeaconMat
+        );
+        beacon.position.y = 11.0;
+        group.add(beacon);
+
+        // Small overhead armor health bar
+        const hpBarBg = new THREE.Mesh(
+            new THREE.PlaneGeometry(2.2, 0.25),
+            new THREE.MeshBasicMaterial({ color: 0x0f172a, side: THREE.DoubleSide })
+        );
+        hpBarBg.position.set(0, 2.5, 0);
+        group.add(hpBarBg);
+
+        const hpBarFill = new THREE.Mesh(
+            new THREE.PlaneGeometry(2.1, 0.2),
+            new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide })
+        );
+        hpBarFill.position.set(0, 2.5, 0.01);
+        group.add(hpBarFill);
+
+        group.position.set(x, 0, z);
+
+        const weaponKeys = ['shotgun', 'minigun', 'plasma', 'minigun', 'plasma', 'shotgun', 'rocket'];
+        let weaponKey = preferredWeapon;
+        if (!weaponKey) {
+            weaponKey = weaponKeys[Math.floor(activePRNG() * weaponKeys.length)];
+            if (weaponKey === 'rocket' && lastSpawnedCrateWeapon === 'rocket') {
+                weaponKey = activePRNG() > 0.5 ? 'minigun' : 'plasma';
+            }
+        }
+        lastSpawnedCrateWeapon = weaponKey;
+
+        const maxHp = LevelGenConfig.crateHp || 85;
+
+        group.userData = {
+            hp: maxHp,
+            maxHp: maxHp,
+            weaponKey: weaponKey,
+            radius: 1.6, // Tighter target radius requiring deliberate line-of-sight aiming
+            depth: 2.4,
+            speed: 3.8,
+            isCrate: true,
+            badge: badge,
+            beacon: beacon,
+            hpBarFill: hpBarFill
+        };
+
+        scene.add(group);
+        supplyCrates.push(group);
+    }
+
+    function triggerMagneticLoot(startPos, weaponKey) {
+        const conf = WEAPONS[weaponKey];
+        const group = new THREE.Group();
+
+        const orb = new THREE.Mesh(
+            new THREE.SphereGeometry(0.65, 8, 8),
+            new THREE.MeshBasicMaterial({ color: new THREE.Color(conf.color) })
+        );
+        group.add(orb);
+
+        const ring = new THREE.Mesh(
+            new THREE.RingGeometry(0.7, 1.0, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+        );
+        group.add(ring);
+
+        group.position.copy(startPos);
+        group.position.y = 1.5;
+
+        scene.add(group);
+        flyingLoots.push({
+            group: group,
+            weaponKey: weaponKey,
+            orb: orb,
+            ring: ring,
+            speed: 38
+        });
+    }
+
+    let enemyQueue = [];
+    let spawnCooldown = 0;
+
+    function buildWave(level) {
+        enemyQueue = [];
+        lastSpawnedCrateWeapon = null;
+        
+        const levelSeed = (LevelGenConfig.seed + (level - 1) * 9973) >>> 0;
+        activePRNG = createPRNG(levelSeed);
+
+        const totalEnemies = LevelGenConfig.baseEnemies + (level - 1) * LevelGenConfig.enemiesPerLvl;
+        const baseInterval = Math.max(16, LevelGenConfig.enemiesPerCrate);
+
+        let added = 0;
+        let cratesAssignedInWave = 0;
+        let lastCrateEnemyCount = 0;
+
+        // Guaranteed opening crate for Level 7+ to eliminate early dry spells
+        let forceFirstCrate = (level >= 7);
+
+        while (added < totalEnemies) {
+            const remaining = totalEnemies - added;
+            const roll = activePRNG();
+
+            let embedCrate = false;
+            if (forceFirstCrate) {
+                embedCrate = true;
+                forceFirstCrate = false;
+                lastCrateEnemyCount = added;
+                cratesAssignedInWave++;
+            } else {
+                let dynamicInterval;
+                if (level >= 7) {
+                    dynamicInterval = (cratesAssignedInWave < 3) ? baseInterval : Math.round(baseInterval * 1.35);
+                } else {
+                    dynamicInterval = (cratesAssignedInWave < 2) ? baseInterval : Math.round(baseInterval * 2.2);
+                }
+
+                if (added - lastCrateEnemyCount >= dynamicInterval) {
+                    embedCrate = true;
+                    lastCrateEnemyCount = added;
+                    cratesAssignedInWave++;
+                }
+            }
+
+            if (remaining <= 3) {
+                enemyQueue.push({ type: 'boss', count: 1, formation: 'single', spawnCrateInside: true });
+                enemyQueue.push({ type: 'brute', count: 2, formation: 'flank', spawnCrateInside: false });
+                added += 3;
+            } else if (roll < LevelGenConfig.crawlerRatio && remaining >= 4) {
+                const packSize = Math.min(remaining, Math.floor(activePRNG() * 3) + 3);
+                enemyQueue.push({ type: 'crawler', count: packSize, formation: 'swarm', spawnCrateInside: embedCrate });
+                added += packSize;
+            } else if (roll < (LevelGenConfig.crawlerRatio + 0.35) && remaining >= 3) {
+                const lineSize = Math.min(remaining, Math.floor(activePRNG() * 2) + 2);
+                enemyQueue.push({ type: 'trooper', count: lineSize, formation: 'line', spawnCrateInside: embedCrate });
+                added += lineSize;
+            } else if (roll < (LevelGenConfig.crawlerRatio + 0.35 + LevelGenConfig.bruteRatio)) {
+                enemyQueue.push({ type: 'brute', count: 1, formation: 'single', spawnCrateInside: embedCrate });
+                added += 1;
+            } else {
+                enemyQueue.push({ type: 'trooper', count: 1, formation: 'single', spawnCrateInside: embedCrate });
+                added += 1;
+            }
+        }
+    }
+
+    function spawnMonsterEntity(type, xPos, zPos, spawnCrateInside) {
+        const monsterData = createMonsterMesh(type);
+        const enemy = monsterData.group;
+        const limbParts = monsterData.limbParts;
+
+        enemy.position.set(xPos, 0, zPos);
+
+        let hp = 45 + (gameState.level - 1) * 8;
+        let speed = 5.0 + Math.min(3.0, (gameState.level - 1) * 0.25);
+        let scoreVal = 100;
+        let scale = 1.0;
+
+        if (type === 'crawler') {
+            hp = 30 + (gameState.level - 1) * 6;
+            speed = Math.min(9.4, 7.2 + (gameState.level - 1) * 0.28);
+            scoreVal = 80;
+            scale = 0.9;
+        } else if (type === 'brute') {
+            hp = 150 + (gameState.level - 1) * 28;
+            speed = Math.min(5.0, 3.2 + (gameState.level - 1) * 0.16);
+            scoreVal = 280;
+            scale = 1.25;
+        } else if (type === 'boss') {
+            hp = 650 + gameState.level * 180;
+            speed = Math.min(3.6, 2.2 + (gameState.level - 1) * 0.12);
+            scoreVal = 1500;
+            scale = 1.5;
+        }
+
+        enemy.scale.set(scale, scale, scale);
+        enemy.userData = {
+            type: type,
+            hp: hp,
+            maxHp: hp,
+            speed: speed,
+            scoreVal: scoreVal,
+            damage: type === 'boss' ? 38 : (type === 'brute' ? 22 : 11),
+            radius: 1.0 * scale,
+            isDead: false,
+            limbParts: limbParts,
+            animPhase: activePRNG() * Math.PI * 2
+        };
+
+        scene.add(enemy);
+        enemies.push(enemy);
+
+        // Crates are shielded BEHIND the frontline monsters so you MUST drill a hole through the horde to crack them
+        if (spawnCrateInside) {
+            const crateX = Math.max(-4.8, Math.min(4.8, (xPos > 0 ? xPos - 1.8 : xPos + 1.8)));
+
+            let weaponCycle = ['shotgun', 'minigun', 'plasma', 'minigun', 'shotgun', 'plasma'];
+            if (gameState.level >= 7) {
+                weaponCycle = ['minigun', 'plasma', 'shotgun', 'minigun', 'plasma', 'rocket'];
+            }
+            let assignedWeapon = weaponCycle[Math.floor(activePRNG() * weaponCycle.length)];
+            if (assignedWeapon === 'rocket' && lastSpawnedCrateWeapon === 'rocket') {
+                assignedWeapon = activePRNG() > 0.5 ? 'minigun' : 'plasma';
+            }
+            lastSpawnedCrateWeapon = assignedWeapon;
+
+            // Place crate directly behind the vanguard (further along -Z), guarded by the squad
+            const crateZ = Math.min(-20, zPos - 3.5);
+            createSupplyCrate(crateX, crateZ, assignedWeapon);
+        }
+    }
+
+    function dispatchSquad(squad) {
+        const xSpan = (BRIDGE_WIDTH / 2) - 2.0;
+        const baseZ = BRIDGE_Z_END - (activePRNG() * 4);
+
+        if (squad.formation === 'swarm') {
+            for (let i = 0; i < squad.count; i++) {
+                const x = ((i / Math.max(1, squad.count - 1)) - 0.5) * 2 * (xSpan * 0.85);
+                const z = baseZ - (i * 2.2);
+                // Crates are protected behind the lead vanguard swarmers
+                spawnMonsterEntity(squad.type, x, z, squad.spawnCrateInside && i === squad.count - 1);
+            }
+        } else if (squad.formation === 'line') {
+            for (let i = 0; i < squad.count; i++) {
+                const x = ((i / Math.max(1, squad.count - 1)) - 0.5) * 2 * (xSpan * 0.75);
+                spawnMonsterEntity(squad.type, x, baseZ, squad.spawnCrateInside && i === Math.floor(squad.count / 2));
+            }
+        } else if (squad.formation === 'flank') {
+            spawnMonsterEntity(squad.type, -xSpan * 0.65, baseZ, squad.spawnCrateInside);
+            spawnMonsterEntity(squad.type, xSpan * 0.65, baseZ - 2.5, false);
+        } else {
+            const x = (activePRNG() - 0.5) * 2 * xSpan;
+            spawnMonsterEntity(squad.type, x, baseZ, squad.spawnCrateInside);
+        }
+    }
+
+    const lastShotTimes = {};
+
+    function attemptAutoFire(time) {
+        gameState.activeWeapons.forEach(function(wEntry) {
+            const wConf = WEAPONS[wEntry.key];
+            if (!wConf) return;
+
+            const lastShot = lastShotTimes[wEntry.key] || 0;
+            if (time - lastShot < wConf.fireRate) return;
+
+            lastShotTimes[wEntry.key] = time;
+            gameState.shotsFired++;
+            audio.playShoot(wConf.sound);
+
+            muzzleFlash.material.opacity = 1.0;
+            setTimeout(function() { muzzleFlash.material.opacity = 0; }, 35);
+
+            const origin = new THREE.Vector3(0, 1.35, -2.6);
+            origin.applyMatrix4(playerGroup.matrixWorld);
+
+            const straightDir = new THREE.Vector3(0, 0, -1);
+            const isRPG = wConf.symbol === 'RPG';
+            const bGeo = isRPG ? bulletRocketGeo : bulletSphereGeo;
+            const bMat = bulletMaterials[wEntry.key];
+
+            for (let i = 0; i < wConf.pellets; i++) {
+                const dir = straightDir.clone();
+                dir.x += (Math.random() - 0.5) * wConf.spread;
+                dir.y = 0;
+                dir.normalize();
+
+                const bMesh = new THREE.Mesh(bGeo, bMat);
+                bMesh.position.copy(origin);
+                bMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), dir);
+
+                bullets.push({
+                    mesh: bMesh,
+                    dir: dir,
+                    speed: wConf.speed,
+                    damage: wConf.damage,
+                    splashRadius: wConf.splashRadius || 0,
+                    life: 1.25,
+                    weaponKey: wEntry.key,
+                    prevZ: origin.z
+                });
+                scene.add(bMesh);
+            }
+        });
+
+        if (gameState.screenShake && gameState.activeWeapons.length > 0) {
+            camera.position.z += 0.04;
+        }
+    }
+
+    function updateCombat(dt) {
+        spawnCooldown -= dt;
+        if (spawnCooldown <= 0 && enemyQueue.length > 0 && enemies.length < 24) {
+            const nextSquad = enemyQueue.shift();
+            dispatchSquad(nextSquad);
+            spawnCooldown = 0.35 + Math.random() * 0.45;
+        }
+
+        // Weapon timer decrement
+        for (let i = gameState.activeWeapons.length - 1; i >= 0; i--) {
+            const wEntry = gameState.activeWeapons[i];
+            if (wEntry.key !== 'rifle') {
+                wEntry.timeLeft -= dt;
+                if (wEntry.timeLeft <= 0) {
+                    gameState.activeWeapons.splice(i, 1);
+                }
+            }
+        }
+        if (gameState.activeWeapons.length === 0) {
+            gameState.activeWeapons.push({ key: 'rifle', timeLeft: Infinity });
+        }
+
+        // Bullets update & collision
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            const b = bullets[i];
+            const prevZ = b.prevZ !== undefined ? b.prevZ : b.mesh.position.z;
+            b.mesh.position.addScaledVector(b.dir, b.speed * dt);
+            const currZ = b.mesh.position.z;
+            b.prevZ = currZ;
+            b.life -= dt;
+
+            // Stop horizon spawn-killing
+            if (currZ < -46) {
+                scene.remove(b.mesh);
+                bullets.splice(i, 1);
+                continue;
+            }
+
+            let bulletRemoved = false;
+
+            // Frontline enemies physically shield crates: check monster collision first so player must drill through horde
+            for (let k = enemies.length - 1; k >= 0; k--) {
+                const e = enemies[k];
+                if (!e || !e.userData || e.userData.isDead) continue;
+
+                const ez = e.position.z;
+                const ex = e.position.x;
+                const r = e.userData.radius + 0.4;
+                const minZ = Math.min(prevZ, currZ) - 0.3;
+                const maxZ = Math.max(prevZ, currZ) + 0.3;
+
+                const inZRange = (maxZ >= ez - r) && (minZ <= ez + r);
+                const inXRange = Math.abs(b.mesh.position.x - ex) <= r;
+
+                if (inZRange && inXRange) {
+                    gameState.shotsHit++;
+                    e.userData.hp -= b.damage;
+                    audio.playHit();
+                    showFloatingDamage('-' + Math.round(b.damage), e.position, e.userData.type === 'boss' ? '#ec4899' : '#f43f5e');
+
+                    if (b.splashRadius > 0) {
+                        audio.playExplosion(true);
+                        spawnExplosionParticles(b.mesh.position, 30, 'orange');
+                        spawnVisualShockwave(b.mesh.position, b.splashRadius);
+                        triggerAreaSplash(b.mesh.position, b.splashRadius, b.damage);
+                    }
+
+                    if (e.userData.hp <= 0 && !e.userData.isDead) {
+                        handleEnemyDefeat(e);
+                    }
+
+                    scene.remove(b.mesh);
+                    bullets.splice(i, 1);
+                    bulletRemoved = true;
+                    break;
+                }
+            }
+            if (bulletRemoved) continue;
+
+            // Check collision against armored supply crates
+            for (let cIdx = supplyCrates.length - 1; cIdx >= 0; cIdx--) {
+                const crate = supplyCrates[cIdx];
+                if (!crate || !crate.userData) continue;
+                const cz = crate.position.z;
+                const cx = crate.position.x;
+                const halfDepth = (crate.userData.depth || 2.4) * 0.5;
+                const minZ = Math.min(prevZ, currZ) - 0.3;
+                const maxZ = Math.max(prevZ, currZ) + 0.3;
+
+                const inZRange = (maxZ >= cz - halfDepth) && (minZ <= cz + halfDepth);
+                const inXRange = Math.abs(b.mesh.position.x - cx) <= (crate.userData.radius + 0.35);
+
+                if (inZRange && inXRange) {
+                    crate.userData.hp -= b.damage;
+                    audio.playCrateArmorClink();
+
+                    const hpPct = Math.max(0, crate.userData.hp / crate.userData.maxHp);
+                    if (crate.userData.hpBarFill) {
+                        crate.userData.hpBarFill.scale.x = hpPct;
+                    }
+
+                    showFloatingDamage('ARMOR -' + Math.round(b.damage), crate.position, '#facc15');
+                    crate.scale.set(1.18, 0.88, 1.18);
+                    spawnExplosionParticles(crate.position, 6, 'yellow');
+
+                    if (b.splashRadius > 0) {
+                        audio.playExplosion(true);
+                        spawnExplosionParticles(b.mesh.position, 28, 'orange');
+                        spawnVisualShockwave(b.mesh.position, b.splashRadius);
+                        triggerAreaSplash(b.mesh.position, b.splashRadius, b.damage);
+                    }
+
+                    // Only cracked if direct concentrated fire broke through its full armored HP
+                    if (crate.userData.hp <= 0) {
+                        gameState.cratesBroken++;
+                        audio.playExplosion(false);
+                        spawnExplosionParticles(crate.position, 24, 'yellow');
+                        
+                        triggerMagneticLoot(crate.position, crate.userData.weaponKey);
+                        showFloatingDamage("VAULT CRACKED!", crate.position, "#38bdf8");
+
+                        scene.remove(crate);
+                        supplyCrates.splice(cIdx, 1);
+                    }
+
+                    scene.remove(b.mesh);
+                    bullets.splice(i, 1);
+                    bulletRemoved = true;
+                    break;
+                }
+            }
+            if (bulletRemoved) continue;
+
+            if (b.life <= 0) {
+                scene.remove(b.mesh);
+                bullets.splice(i, 1);
+            }
+        }
+
+        // Advance supply crates along bridge
+        for (let cIdx = supplyCrates.length - 1; cIdx >= 0; cIdx--) {
+            const crate = supplyCrates[cIdx];
+            if (!crate) continue;
+
+            if (crate.userData && crate.userData.speed) {
+                crate.position.z += crate.userData.speed * dt;
+                // No unearned auto-delivery: uncracked crates smash on the barricade granting modest repair scrap
+                if (crate.position.z >= 0) {
+                    audio.playHit();
+                    spawnExplosionParticles(crate.position, 14, 'cyan');
+                    const scrapHeal = 15;
+                    gameState.playerHp = Math.min(gameState.maxHp, gameState.playerHp + scrapHeal);
+                    showFloatingDamage("SCRAP SALVAGE +" + scrapHeal + " HP", playerGroup.position, "#38bdf8");
+
+                    scene.remove(crate);
+                    supplyCrates.splice(cIdx, 1);
+                    continue;
+                }
+            }
+
+            crate.scale.lerp(new THREE.Vector3(1, 1, 1), dt * 10);
+            if (crate.userData && crate.userData.badge) {
+                crate.userData.badge.rotation.y += dt * 3.5;
+                crate.userData.badge.position.y = 3.4 + Math.sin(performance.now() * 0.005 + cIdx) * 0.2;
+            }
+            if (crate.userData && crate.userData.beacon) {
+                crate.userData.beacon.rotation.y += dt * 1.5;
+            }
+        }
+
+        // Homing loot to player
+        for (let lIdx = flyingLoots.length - 1; lIdx >= 0; lIdx--) {
+            const loot = flyingLoots[lIdx];
+            const targetPos = playerGroup.position.clone();
+            targetPos.y = 1.35;
+
+            const dir = new THREE.Vector3().subVectors(targetPos, loot.group.position);
+            const dist = dir.length();
+
+            loot.orb.rotation.y += dt * 8.0;
+            loot.ring.rotation.x += dt * 5.0;
+
+            if (dist < 1.8) {
+                addWeaponToStack(loot.weaponKey);
+                audio.playPickup();
+                showFloatingDamage("STACKED: " + WEAPONS[loot.weaponKey].symbol + "!", playerGroup.position, '#38bdf8');
+                spawnExplosionParticles(playerGroup.position, 16, 'cyan');
+
+                scene.remove(loot.group);
+                flyingLoots.splice(lIdx, 1);
+            } else {
+                dir.normalize();
+                loot.group.position.addScaledVector(dir, loot.speed * dt);
+            }
+        }
+
+        // Advance enemies along bridge
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            const e = enemies[i];
+            if (!e || !e.userData || e.userData.isDead) continue;
+
+            e.position.z += e.userData.speed * dt;
+            e.userData.animPhase += dt * (e.userData.speed * 2.2);
+
+            if (e.userData.limbParts && e.userData.limbParts.length > 0) {
+                e.userData.limbParts.forEach(function(limb, idx) {
+                    limb.rotation.x = Math.sin(e.userData.animPhase + idx * Math.PI) * 0.45;
+                });
+            }
+
+            if (e.position.z >= 0) {
+                gameState.playerHp = Math.max(0, gameState.playerHp - e.userData.damage);
+                audio.playExplosion(false);
+                spawnExplosionParticles(e.position, 14, 'orange');
+
+                if (gameState.screenShake) {
+                    camera.position.x += (Math.random() - 0.5) * 0.8;
+                    camera.position.y += (Math.random() - 0.5) * 0.8;
+                }
+
+                showFloatingDamage('-' + e.userData.damage, playerGroup.position, '#f43f5e');
+                scene.remove(e);
+                enemies.splice(i, 1);
+
+                if (gameState.playerHp <= 0) {
+                    triggerGameOver();
+                }
+            }
+        }
+
+        // Shockwaves animation
+        for (let sIdx = shockwaves.length - 1; sIdx >= 0; sIdx--) {
+            const sw = shockwaves[sIdx];
+            sw.life -= dt;
+            if (sw.life <= 0) {
+                scene.remove(sw.mesh);
+                shockwaves.splice(sIdx, 1);
+            } else {
+                const progress = 1 - (sw.life / sw.maxLife);
+                const scale = 1.0 + progress * sw.maxScale;
+                sw.mesh.scale.set(scale, scale, 1);
+                sw.mesh.material.opacity = (1 - progress) * 0.85;
+            }
+        }
+
+        if (gameState.comboTimer > 0) {
+            gameState.comboTimer -= dt;
+            if (gameState.comboTimer <= 0) {
+                gameState.combo = 0;
+            }
+        }
+
+        let queuedHostiles = 0;
+        enemyQueue.forEach(function(s) { queuedHostiles += s.count; });
+        if (queuedHostiles === 0 && enemies.length === 0 && !gameState.isGameOver && !gameState.isVictory) {
+            triggerVictory();
+        }
+    }
+
+    function triggerAreaSplash(center, radius, maxDamage) {
+        for (let k = enemies.length - 1; k >= 0; k--) {
+            const e = enemies[k];
+            if (!e || !e.userData || e.userData.isDead) continue;
+            const dx = e.position.x - center.x;
+            const dz = e.position.z - center.z;
+            const groundDist = Math.sqrt(dx * dx + dz * dz);
+            if (groundDist <= radius) {
+                const falloff = Math.max(0.4, 1.0 - (groundDist / radius) * 0.55);
+                const actualDmg = maxDamage * falloff;
+                e.userData.hp -= actualDmg;
+                showFloatingDamage('-' + Math.round(actualDmg), e.position, '#f43f5e');
+                if (e.userData.hp <= 0 && !e.userData.isDead) {
+                    handleEnemyDefeat(e);
+                }
+            }
+        }
+        for (let c = supplyCrates.length - 1; c >= 0; c--) {
+            const crate = supplyCrates[c];
+            if (!crate || !crate.userData) continue;
+            const dx = crate.position.x - center.x;
+            const dz = crate.position.z - center.z;
+            const groundDist = Math.sqrt(dx * dx + dz * dz);
+            if (groundDist <= radius) {
+                const falloff = Math.max(0.3, 1.0 - (groundDist / radius) * 0.6);
+                crate.userData.hp -= maxDamage * falloff;
+                if (crate.userData.hpBarFill) {
+                    crate.userData.hpBarFill.scale.x = Math.max(0, crate.userData.hp / crate.userData.maxHp);
+                }
+                if (crate.userData.hp <= 0) {
+                    gameState.cratesBroken++;
+                    spawnExplosionParticles(crate.position, 20, 'yellow');
+                    triggerMagneticLoot(crate.position, crate.userData.weaponKey);
+                    scene.remove(crate);
+                    supplyCrates.splice(c, 1);
+                }
+            }
+        }
+    }
+
+    function handleEnemyDefeat(e) {
+        if (!e || !e.userData || e.userData.isDead) return;
+        e.userData.isDead = true;
+        const idx = enemies.indexOf(e);
+        if (idx !== -1) enemies.splice(idx, 1);
+
+        gameState.kills++;
+        gameState.combo++;
+        gameState.comboTimer = 2.0;
+
+        const comboMultiplier = Math.min(3.5, 1 + (gameState.combo * 0.15));
+        const pts = Math.round(e.userData.scoreVal * comboMultiplier);
+        gameState.score += pts;
+
+        audio.playExplosion(e.userData.type === 'boss');
+        spawnExplosionParticles(e.position, e.userData.type === 'boss' ? 32 : 16, 'orange');
+        showFloatingDamage('+' + pts, e.position, '#34d399');
+
+        scene.remove(e);
+    }
+
+    function addWeaponToStack(key) {
+        if (!WEAPONS[key]) return;
+        const existing = gameState.activeWeapons.find(function(w) { return w.key === key; });
+        if (existing) {
+            existing.timeLeft = WEAPONS[key].duration;
+        } else {
+            if (gameState.activeWeapons.length >= 3) {
+                gameState.activeWeapons.splice(1, 1);
+            }
+            gameState.activeWeapons.push({ key: key, timeLeft: WEAPONS[key].duration });
+        }
+    }
+
+    function undoWeaponOrRepair() {
+        if (gameState.activeWeapons.length > 1) {
+            gameState.activeWeapons.pop();
+            showFloatingDamage("UNDO: WEAPON REMOVED", playerGroup.position, '#38bdf8');
+            audio.playPickup();
+        } else {
+            const heal = 35;
+            gameState.playerHp = Math.min(gameState.maxHp, gameState.playerHp + heal);
+            showFloatingDamage("REPAIRED +" + heal + " HP", playerGroup.position, '#34d399');
+            audio.playPickup();
+        }
+    }
+
+    const floatContainer = document.getElementById('floating-text-container');
+    const MAX_FLOAT_TEXTS = 8;
+
+    function showFloatingDamage(text, worldPos, color) {
+        color = color || '#facc15';
+        while (floatingTexts.length >= MAX_FLOAT_TEXTS) {
+            const old = floatingTexts.shift();
+            if (old && old.element && old.element.parentNode) old.element.parentNode.removeChild(old.element);
+        }
+
+        const el = document.createElement('div');
+        el.className = 'damage-float';
+        el.style.color = color;
+        el.textContent = text;
+        floatContainer.appendChild(el);
+
+        const item = { element: el, pos: worldPos.clone(), life: 0.65 };
+        floatingTexts.push(item);
+    }
+
+    function updateFloatingTexts(dt) {
+        const wp = new THREE.Vector3();
+        for (let i = floatingTexts.length - 1; i >= 0; i--) {
+            const f = floatingTexts[i];
+            if (!f) continue;
+            f.life -= dt;
+            if (f.life <= 0) {
+                if (f.element && f.element.parentNode) f.element.parentNode.removeChild(f.element);
+                floatingTexts.splice(i, 1);
+                continue;
+            }
+            wp.copy(f.pos);
+            wp.y += (0.65 - f.life) * 1.6;
+            wp.project(camera);
+
+            const x = (wp.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-(wp.y * 0.5) + 0.5) * window.innerHeight;
+            f.element.style.left = x + 'px';
+            f.element.style.top = y + 'px';
+        }
+    }
+
+    function setTargetLaneFromClientX(clientX) {
+        const ratio = clientX / window.innerWidth;
+        const bridgeBound = (BRIDGE_WIDTH / 2) - 1.2;
+        targetX.target = (ratio - 0.5) * 2 * bridgeBound;
+    }
+
+    window.addEventListener('mousemove', function(e) {
+        setTargetLaneFromClientX(e.clientX);
+        audio.init();
+    });
+
+    window.addEventListener('touchmove', function(e) {
+        if (e.touches.length > 0) {
+            setTargetLaneFromClientX(e.touches[0].clientX);
+        }
+        audio.init();
+    }, { passive: true });
+
+    window.addEventListener('touchstart', function(e) {
+        if (e.touches.length > 0) {
+            setTargetLaneFromClientX(e.touches[0].clientX);
+        }
+        audio.init();
+    }, { passive: true });
+
+    const keyState = {};
+    window.addEventListener('keydown', function(e) {
+        keyState[e.code] = true;
+        audio.init();
+        if (e.code === 'KeyP') togglePause();
+        if (e.code === 'KeyZ') undoWeaponOrRepair();
+    });
+    window.addEventListener('keyup', function(e) {
+        keyState[e.code] = false;
+    });
+
+    const uiLevel = document.getElementById('ui-level');
+    const uiHpVal = document.getElementById('ui-hp-val');
+    const uiHpBar = document.getElementById('ui-hp-bar');
+    const uiEnemies = document.getElementById('ui-enemies-remaining');
+    const uiScore = document.getElementById('ui-score');
+    const uiComboTag = document.getElementById('ui-combo-tag');
+    const uiWeaponsStack = document.getElementById('ui-weapons-stack');
+    const uiSeedDisplay = document.getElementById('ui-seed-display');
+
+    function updateHUD(dt) {
+        uiLevel.textContent = gameState.level;
+        uiHpVal.textContent = Math.round(gameState.playerHp) + ' / ' + gameState.maxHp;
+        uiHpBar.style.width = Math.max(0, (gameState.playerHp / gameState.maxHp) * 100) + '%';
+        uiSeedDisplay.textContent = LevelGenConfig.seed;
+
+        let queuedHostiles = 0;
+        enemyQueue.forEach(function(s) { queuedHostiles += s.count; });
+        uiEnemies.textContent = queuedHostiles + enemies.length;
+        uiScore.textContent = gameState.score;
+
+        if (gameState.combo > 1) {
+            uiComboTag.classList.remove('hidden');
+            uiComboTag.textContent = gameState.combo + 'x STREAK';
+        } else {
+            uiComboTag.classList.add('hidden');
+        }
+
+        uiWeaponsStack.innerHTML = '';
+        gameState.activeWeapons.forEach(function(wEntry) {
+            const w = WEAPONS[wEntry.key];
+            if (!w) return;
+            const badge = document.createElement('div');
+            badge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950/80 border text-[11px] font-black';
+            badge.style.borderColor = w.color;
+            badge.style.color = w.color;
+
+            const timeStr = wEntry.timeLeft === Infinity ? '∞' : Math.ceil(wEntry.timeLeft) + 's';
+            badge.innerHTML = '<span>' + w.symbol + '</span><span class="text-[10px] opacity-75 font-mono">' + timeStr + '</span>';
+            uiWeaponsStack.appendChild(badge);
+        });
+    }
+
+    function togglePause() {
+        if (gameState.isGameOver || gameState.isVictory) return;
+        gameState.isPaused = !gameState.isPaused;
+        document.getElementById('modal-pause').classList.toggle('hidden', !gameState.isPaused);
+    }
+
+    function triggerGameOver() {
+        gameState.isGameOver = true;
+        document.getElementById('fail-kills').textContent = gameState.kills;
+        document.getElementById('fail-score').textContent = gameState.score;
+        document.getElementById('modal-gameover').classList.remove('hidden');
+    }
+
+    function triggerVictory() {
+        gameState.isVictory = true;
+        const acc = gameState.shotsFired > 0 ? Math.round((gameState.shotsHit / gameState.shotsFired) * 100) : 100;
+        document.getElementById('vic-kills').textContent = gameState.kills;
+        document.getElementById('vic-acc').textContent = acc + '%';
+        document.getElementById('vic-crates').textContent = gameState.cratesBroken;
+        document.getElementById('vic-score').textContent = gameState.score;
+
+        const duelCard = document.getElementById('friend-duel-card');
+        const duelBanner = document.getElementById('duel-winner-banner');
+
+        if (gameState.isFriendMode) {
+            gameState.friendScores.p2 = gameState.score;
+            document.getElementById('p1-duel-score').textContent = gameState.friendScores.p1 + ' PTS';
+            document.getElementById('p2-duel-score').textContent = gameState.friendScores.p2 + ' PTS';
+
+            if (gameState.friendScores.p2 > gameState.friendScores.p1) {
+                duelBanner.textContent = "🏆 Player 2 (Friend) Won the Duel!";
+            } else if (gameState.friendScores.p2 < gameState.friendScores.p1) {
+                duelBanner.textContent = "🏆 Player 1 Holds the Record Victory!";
+            } else {
+                duelBanner.textContent = "🤝 Perfect Tactical Tie!";
+            }
+            duelCard.classList.remove('hidden');
+            gameState.isFriendMode = false;
+        } else {
+            duelCard.classList.add('hidden');
+        }
+
+        document.getElementById('modal-victory').classList.remove('hidden');
+    }
+
+    function resetLevel(retainScore) {
+        retainScore = retainScore || false;
+        gameState.playerHp = gameState.maxHp;
+        gameState.activeWeapons = [{ key: 'rifle', timeLeft: Infinity }];
+        gameState.shotsFired = 0;
+        gameState.shotsHit = 0;
+        gameState.kills = 0;
+        gameState.cratesBroken = 0;
+        gameState.combo = 0;
+        gameState.comboTimer = 0;
+        if (!retainScore) gameState.score = 0;
+        gameState.isGameOver = false;
+        gameState.isVictory = false;
+        gameState.isPaused = false;
+        lastSpawnedCrateWeapon = null;
+
+        bullets.concat(supplyCrates, flyingLoots, enemies, shockwaves).forEach(function(obj) {
+            if (obj) scene.remove(obj.mesh || obj.group || obj);
+        });
+        bullets.length = 0;
+        supplyCrates.length = 0;
+        flyingLoots.length = 0;
+        enemies.length = 0;
+        shockwaves.length = 0;
+
+        floatingTexts.forEach(function(f) { if (f && f.element && f.element.parentNode) f.element.parentNode.removeChild(f.element); });
+        floatingTexts.length = 0;
+
+        document.getElementById('modal-victory').classList.add('hidden');
+        document.getElementById('modal-gameover').classList.add('hidden');
+        document.getElementById('modal-pause').classList.add('hidden');
+        document.getElementById('modal-level-select').classList.add('hidden');
+
+        playerGroup.position.set(0, 0, 3.2);
+        targetX.current = 0;
+        targetX.target = 0;
+
+        buildWave(gameState.level);
+    }
+
+    function setLevelDirectly(newLvl) {
+        gameState.level = Math.max(1, parseInt(newLvl) || 1);
+        Storage.set('ba_level', gameState.level);
+        resetLevel(false);
+        showFloatingDamage("DEPLOYED: LEVEL " + gameState.level, playerGroup.position, '#38bdf8');
+    }
+
+    document.getElementById('btn-lvl-prev').addEventListener('click', function() {
+        if (gameState.level > 1) {
+            setLevelDirectly(gameState.level - 1);
+        }
+    });
+
+    document.getElementById('btn-lvl-next').addEventListener('click', function() {
+        setLevelDirectly(gameState.level + 1);
+    });
+
+    const modalLvlSelect = document.getElementById('modal-level-select');
+    const inputJumpLvl = document.getElementById('input-jump-lvl');
+
+    document.getElementById('btn-lvl-jump').addEventListener('click', function() {
+        inputJumpLvl.value = gameState.level;
+        modalLvlSelect.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-lvl-modal').addEventListener('click', function() {
+        modalLvlSelect.classList.add('hidden');
+    });
+
+    document.getElementById('btn-confirm-jump-lvl').addEventListener('click', function() {
+        setLevelDirectly(inputJumpLvl.value);
+    });
+
+    document.querySelectorAll('.btn-quick-lvl').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            setLevelDirectly(btn.getAttribute('data-lvl'));
+        });
+    });
+
+    document.getElementById('btn-fail-select-lvl').addEventListener('click', function() {
+        document.getElementById('modal-gameover').classList.add('hidden');
+        inputJumpLvl.value = gameState.level;
+        modalLvlSelect.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-pause-change-lvl').addEventListener('click', function() {
+        document.getElementById('modal-pause').classList.add('hidden');
+        inputJumpLvl.value = gameState.level;
+        modalLvlSelect.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-undo').addEventListener('click', undoWeaponOrRepair);
+    document.getElementById('btn-restart').addEventListener('click', function() { resetLevel(false); });
+    document.getElementById('btn-pause').addEventListener('click', togglePause);
+    document.getElementById('btn-resume').addEventListener('click', togglePause);
+    document.getElementById('btn-pause-restart').addEventListener('click', function() { resetLevel(false); });
+    document.getElementById('btn-retry').addEventListener('click', function() { resetLevel(false); });
+
+    document.getElementById('btn-next-level').addEventListener('click', function() {
+        gameState.level++;
+        Storage.set('ba_level', gameState.level);
+        resetLevel(true);
+    });
+
+    document.getElementById('btn-play-again').addEventListener('click', function() {
+        resetLevel(false);
+    });
+
+    document.getElementById('btn-pass-friend').addEventListener('click', function() {
+        gameState.friendScores.p1 = gameState.score;
+        gameState.isFriendMode = true;
+        resetLevel(false);
+        showFloatingDamage("PLAYER 2'S TURN! GO!", playerGroup.position, '#facc15');
+    });
+
+    const modalConfig = document.getElementById('modal-config');
+    const cfgSeedInput = document.getElementById('cfg-seed');
+    const cfgBaseInput = document.getElementById('cfg-base-enemies');
+    const cfgLvlInput = document.getElementById('cfg-enemies-per-lvl');
+    const cfgCrateSlider = document.getElementById('cfg-enemies-per-crate');
+    const cfgCrateVal = document.getElementById('cfg-crate-val');
+    const cfgCrawlerRatio = document.getElementById('cfg-crawler-ratio');
+    const cfgBruteRatio = document.getElementById('cfg-brute-ratio');
+    const cfgCalcLvl = document.getElementById('cfg-calc-lvl');
+    const cfgCalcEnemies = document.getElementById('cfg-calc-enemies');
+    const cfgCalcCrates = document.getElementById('cfg-calc-crates');
+
+    function syncConfigUI() {
+        cfgSeedInput.value = LevelGenConfig.seed;
+        cfgBaseInput.value = LevelGenConfig.baseEnemies;
+        cfgLvlInput.value = LevelGenConfig.enemiesPerLvl;
+        cfgCrateSlider.value = LevelGenConfig.enemiesPerCrate;
+        cfgCrateVal.textContent = LevelGenConfig.enemiesPerCrate;
+        cfgCrawlerRatio.value = LevelGenConfig.crawlerRatio;
+        cfgBruteRatio.value = LevelGenConfig.bruteRatio;
+
+        const currentLvl = gameState.level;
+        const total = LevelGenConfig.baseEnemies + (currentLvl - 1) * LevelGenConfig.enemiesPerLvl;
+        const baseInterval = LevelGenConfig.enemiesPerCrate;
+        const earlyCrates = Math.min(3, Math.floor(total / baseInterval));
+        const remEnemies = Math.max(0, total - (earlyCrates * baseInterval));
+        const lateCrates = Math.floor(remEnemies / (baseInterval * 1.35));
+        const totalEstimatedCrates = earlyCrates + lateCrates;
+
+        cfgCalcLvl.textContent = currentLvl;
+        cfgCalcEnemies.textContent = total;
+        cfgCalcCrates.textContent = Math.max(1, totalEstimatedCrates);
+    }
+
+    document.getElementById('btn-config').addEventListener('click', function() {
+        syncConfigUI();
+        modalConfig.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-config').addEventListener('click', function() {
+        modalConfig.classList.add('hidden');
+    });
+
+    cfgCrateSlider.addEventListener('input', function() {
+        cfgCrateVal.textContent = cfgCrateSlider.value;
+        const total = parseInt(cfgBaseInput.value) + (gameState.level - 1) * parseInt(cfgLvlInput.value);
+        const baseInterval = parseInt(cfgCrateSlider.value);
+        const earlyCrates = Math.min(3, Math.floor(total / baseInterval));
+        const remEnemies = Math.max(0, total - (earlyCrates * baseInterval));
+        const lateCrates = Math.floor(remEnemies / (baseInterval * 1.35));
+        cfgCalcCrates.textContent = Math.max(1, earlyCrates + lateCrates);
+    });
+
+    document.getElementById('btn-apply-config').addEventListener('click', function() {
+        LevelGenConfig.seed = parseInt(cfgSeedInput.value) || 0;
+        LevelGenConfig.baseEnemies = parseInt(cfgBaseInput.value) || 48;
+        LevelGenConfig.enemiesPerLvl = parseInt(cfgLvlInput.value) || 18;
+        LevelGenConfig.enemiesPerCrate = parseInt(cfgCrateSlider.value) || 22;
+        LevelGenConfig.crawlerRatio = parseFloat(cfgCrawlerRatio.value) || 0.36;
+        LevelGenConfig.bruteRatio = parseFloat(cfgBruteRatio.value) || 0.22;
+
+        Storage.set('ba_gen_cfg', LevelGenConfig);
+        modalConfig.classList.add('hidden');
+        resetLevel(false);
+        showFloatingDamage("CONFIG APPLIED: SEED " + LevelGenConfig.seed, playerGroup.position, '#818cf8');
+    });
+
+    document.getElementById('btn-default-config').addEventListener('click', function() {
+        LevelGenConfig.seed = 0;
+        LevelGenConfig.baseEnemies = 48;
+        LevelGenConfig.enemiesPerLvl = 18;
+        LevelGenConfig.enemiesPerCrate = 22;
+        LevelGenConfig.crawlerRatio = 0.36;
+        LevelGenConfig.bruteRatio = 0.22;
+        syncConfigUI();
+    });
+
+    const btnAudio = document.getElementById('btn-audio');
+    const iconSoundOn = document.getElementById('icon-sound-on');
+    const iconSoundOff = document.getElementById('icon-sound-off');
+
+    btnAudio.addEventListener('click', function() {
+        audio.init();
+        audio.soundEnabled = !audio.soundEnabled;
+        audio.musicEnabled = audio.soundEnabled;
+        iconSoundOn.classList.toggle('hidden', !audio.soundEnabled);
+        iconSoundOff.classList.toggle('hidden', audio.soundEnabled);
+    });
+
+    const modalSettings = document.getElementById('modal-settings');
+    document.getElementById('btn-settings').addEventListener('click', function() {
+        modalSettings.classList.remove('hidden');
+    });
+    document.getElementById('btn-close-settings').addEventListener('click', function() {
+        modalSettings.classList.add('hidden');
+    });
+    document.getElementById('btn-save-settings').addEventListener('click', function() {
+        audio.soundEnabled = document.getElementById('setting-sfx').checked;
+        audio.musicEnabled = document.getElementById('setting-music').checked;
+        gameState.screenShake = document.getElementById('setting-shake').checked;
+        gameState.showLaser = document.getElementById('setting-laser').checked;
+        laserGuide.visible = gameState.showLaser;
+
+        Storage.set('ba_shake', gameState.screenShake);
+        Storage.set('ba_laser', gameState.showLaser);
+        modalSettings.classList.add('hidden');
+    });
+
+    window.addEventListener('resize', function() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    const targetX = { current: 0, target: 0 };
+    let lastFrameTime = performance.now();
+
+    function gameLoop(time) {
+        requestAnimationFrame(gameLoop);
+
+        const dt = Math.min((time - lastFrameTime) / 1000, 0.08);
+        lastFrameTime = time;
+
+        if (gameState.isPaused || gameState.isGameOver || gameState.isVictory) {
+            renderer.render(scene, camera);
+            return;
+        }
+
+        const bridgeBound = (BRIDGE_WIDTH / 2) - 1.2;
+        if (keyState['ArrowLeft'] || keyState['KeyA']) targetX.target -= 20 * dt;
+        if (keyState['ArrowRight'] || keyState['KeyD']) targetX.target += 20 * dt;
+        targetX.target = Math.max(-bridgeBound, Math.min(bridgeBound, targetX.target));
+
+        targetX.current += (targetX.target - targetX.current) * 15 * dt;
+        playerGroup.position.x = targetX.current;
+
+        haloMesh.rotation.z += dt * 2.0;
+
+        const baseCamX = playerGroup.position.x * 0.35;
+        camera.position.x += (baseCamX - camera.position.x) * 6 * dt;
+        camera.position.y += (22 - camera.position.y) * 6 * dt;
+        camera.position.z += (18 - camera.position.z) * 6 * dt;
+
+        attemptAutoFire(time / 1000);
+
+        for (let i = 0; i < particlePool.length; i++) {
+            const p = particlePool[i];
+            if (p && p.active) {
+                p.life += dt;
+                if (p.life >= p.maxLife) {
+                    p.active = false;
+                    p.mesh.visible = false;
+                } else {
+                    p.vel.y -= 18 * dt;
+                    p.mesh.position.addScaledVector(p.vel, dt);
+                }
+            }
+        }
+
+        updateCombat(dt);
+        updateHUD(dt);
+        updateFloatingTexts(dt);
+
+        renderer.render(scene, camera);
+    }
+
+    window.onload = function() {
+        buildWave(gameState.level);
+        laserGuide.visible = gameState.showLaser;
+        requestAnimationFrame(gameLoop);
+    };
+    </script>
+</body>
+</html>
