@@ -19,7 +19,8 @@ Live links to play:
 * [Home Duo 🔵⭕](https://alexfc14.github.io/vibe-games/home-duo/play.html)
 * [Congas 🚆](https://alexfc14.github.io/vibe-games/congas/play.html)
 * [Planar 🔲](https://alexfc14.github.io/vibe-games/planar/play.html)
-* [Bridge Assault 💀](https://alexfc14.github.io/vibe-games/bridge-assault/play.html) | [V2 💀☠️](https://alexfc14.github.io/vibe-games/bridge-assault/play_intense.html)
+* [Bridge Assault 💀](https://alexfc14.github.io/vibe-games/bridge-assault/play.html)
+
 
 ----
 # License
