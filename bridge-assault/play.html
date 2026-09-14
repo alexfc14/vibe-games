@@ -48,7 +48,6 @@
     <div id="canvas-container"></div>
     <div id="floating-text-container" class="absolute inset-0 pointer-events-none z-20 overflow-hidden"></div>
 
-    <!-- UI Overlay Layer -->
     <div id="ui-layer" class="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-3 sm:p-5">
         
         <!-- Top Status Bar -->
@@ -71,7 +70,7 @@
                             <span>BARRICADE</span>
                             <span id="ui-hp-val" class="text-cyan-400 font-bold">120 / 120</span>
                         </div>
-                        <div class="w-28 sm:w-40 h-2 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-700/50 mt-1">
+                        <div class="w-28 sm:w-44 h-2.5 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-700/50 mt-1">
                             <div id="ui-hp-bar" class="h-full bg-gradient-to-r from-emerald-500 via-cyan-400 to-sky-400 rounded-full transition-all duration-200" style="width: 100%;"></div>
                         </div>
                     </div>
@@ -86,7 +85,7 @@
                     <span class="text-slate-600">|</span>
                     <div class="flex items-center gap-1.5">
                         <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_#facc15]"></span>
-                        <span class="text-amber-300">Armored Crate (Carve Lane)</span>
+                        <span class="text-amber-300">Crates (Carve & Drill)</span>
                     </div>
                 </div>
             </div>
@@ -104,7 +103,6 @@
                 </div>
             </div>
 
-            <!-- Right: Action Buttons & Config Controls -->
             <div class="flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
                 <button id="btn-config" title="Generator Config & Seed" class="w-10 h-10 rounded-xl bg-indigo-600/90 hover:bg-indigo-500 active:scale-95 transition border border-indigo-400/60 flex items-center justify-center shadow-lg text-white font-black">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
@@ -143,7 +141,7 @@
         <!-- Bottom Tip Bar -->
         <div class="w-full max-w-xl mx-auto flex flex-col items-center gap-1 mb-1">
             <div class="text-[11px] text-slate-400 font-medium tracking-wide bg-slate-950/60 px-3 py-1 rounded-full border border-slate-800 pointer-events-none">
-                Seed: <span id="ui-seed-display" class="text-cyan-400 font-mono font-bold">0</span> • Drill through the vanguard to crack armored crates
+                Seed: <span id="ui-seed-display" class="text-cyan-400 font-mono font-bold">0</span> • Carve holes into hordes to crack tactical weapon crates
             </div>
         </div>
     </div>
@@ -159,11 +157,12 @@
             <div class="flex items-center gap-2 mb-4">
                 <input id="input-jump-lvl" type="number" min="1" max="100" value="1" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-center text-lg font-black text-white focus:outline-none focus:border-cyan-400">
             </div>
-            <div class="grid grid-cols-4 gap-1.5 mb-4">
+            <div class="grid grid-cols-5 gap-1.5 mb-4">
                 <button class="btn-quick-lvl py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-slate-300" data-lvl="1">L1</button>
-                <button class="btn-quick-lvl py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-emerald-400" data-lvl="7">L7</button>
-                <button class="btn-quick-lvl py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-cyan-400" data-lvl="12">L12</button>
-                <button class="btn-quick-lvl py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-rose-400" data-lvl="13">L13</button>
+                <button class="btn-quick-lvl py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-emerald-400" data-lvl="18">L18</button>
+                <button class="btn-quick-lvl py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-cyan-400" data-lvl="28">L28</button>
+                <button class="btn-quick-lvl py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-amber-400" data-lvl="29">L29</button>
+                <button class="btn-quick-lvl py-1 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/50 rounded-lg text-xs font-black text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.4)]" data-lvl="30">L30</button>
             </div>
             <button id="btn-confirm-jump-lvl" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs transition shadow-lg shadow-cyan-500/20 active:scale-95">
                 LOAD SELECTED LEVEL
@@ -191,27 +190,27 @@
                 <div class="grid grid-cols-2 gap-2">
                     <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
                         <label class="block text-slate-400 text-[10px] uppercase">Base Hostiles (L1)</label>
-                        <input id="cfg-base-enemies" type="number" step="1" min="10" max="150" value="48" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-white font-mono font-bold">
+                        <input id="cfg-base-enemies" type="number" step="1" min="10" max="100" value="30" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-white font-mono font-bold">
                     </div>
                     <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
                         <label class="block text-slate-400 text-[10px] uppercase">+ Hostiles / Level</label>
-                        <input id="cfg-enemies-per-lvl" type="number" step="1" min="0" max="60" value="18" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-white font-mono font-bold">
+                        <input id="cfg-enemies-per-lvl" type="number" step="1" min="0" max="50" value="12" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-white font-mono font-bold">
                     </div>
                 </div>
 
                 <div class="bg-indigo-950/30 p-3 rounded-xl border border-indigo-500/30">
                     <div class="flex justify-between items-center mb-1">
                         <label class="text-indigo-300 text-[11px] font-bold">Base Crate Interval</label>
-                        <span id="cfg-crate-val" class="text-amber-400 font-mono font-black">22</span>
+                        <span id="cfg-crate-val" class="text-amber-400 font-mono font-black">16</span>
                     </div>
-                    <input id="cfg-enemies-per-crate" type="range" min="12" max="32" value="22" class="w-full accent-indigo-500 cursor-pointer">
-                    <p class="text-[10px] text-slate-400 mt-1">Crates are nested deep inside squads and reinforced with heavy armor plating.</p>
+                    <input id="cfg-enemies-per-crate" type="range" min="10" max="30" value="16" class="w-full accent-indigo-500 cursor-pointer">
+                    <p class="text-[10px] text-slate-400 mt-1">Crates are embedded inside hordes and guarded by monster vanguards.</p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
                     <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
                         <label class="block text-slate-400 text-[10px] uppercase">Crawler Ratio</label>
-                        <input id="cfg-crawler-ratio" type="number" step="0.05" min="0.1" max="0.8" value="0.36" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-white font-mono font-bold">
+                        <input id="cfg-crawler-ratio" type="number" step="0.05" min="0.1" max="0.8" value="0.38" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-white font-mono font-bold">
                     </div>
                     <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
                         <label class="block text-slate-400 text-[10px] uppercase">Brute Ratio</label>
@@ -220,8 +219,8 @@
                 </div>
 
                 <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
-                    <span>Active Level <span id="cfg-calc-lvl">7</span> Expected Stats:</span>
-                    <span class="text-cyan-300 font-mono font-bold"><span id="cfg-calc-enemies">156</span> Hostiles • <span id="cfg-calc-crates">6</span> Crates</span>
+                    <span>Active Level <span id="cfg-calc-lvl">1</span> Stats:</span>
+                    <span class="text-cyan-300 font-mono font-bold"><span id="cfg-calc-enemies">30</span> Hostiles • <span id="cfg-calc-crates">2</span> Crates</span>
                 </div>
             </div>
 
@@ -414,15 +413,15 @@
         };
     }
 
-    // Armored crate requires 85 HP of direct fire to crack, ensuring you must focus-drill it
+    // Generator Configuration Object
     const LevelGenConfig = Storage.get('ba_gen_cfg', {
         seed: 0,
-        baseEnemies: 48,
-        enemiesPerLvl: 18,
-        enemiesPerCrate: 22,
-        crawlerRatio: 0.36,
+        baseEnemies: 30,
+        enemiesPerLvl: 12,
+        enemiesPerCrate: 16,
+        crawlerRatio: 0.38,
         bruteRatio: 0.22,
-        crateHp: 85
+        crateHp: 45
     });
 
     let activePRNG = createPRNG(LevelGenConfig.seed);
@@ -435,6 +434,8 @@
             this.musicTimer = null;
             this.noiseBuffer = null;
             this.bassStep = 0;
+            this.chargeOsc = null;
+            this.chargeGain = null;
         }
 
         init() {
@@ -453,16 +454,114 @@
             this.startMusic();
         }
 
+        playRailgunCharge(duration = 0.52) {
+            if (!this.soundEnabled || !this.ctx) return;
+            this.stopRailgunCharge();
+            const t = this.ctx.currentTime;
+            this.chargeOsc = this.ctx.createOscillator();
+            this.chargeGain = this.ctx.createGain();
+
+            this.chargeOsc.type = 'sawtooth';
+            this.chargeOsc.frequency.setValueAtTime(180, t);
+            this.chargeOsc.frequency.exponentialRampToValueAtTime(1750, t + duration);
+
+            this.chargeGain.gain.setValueAtTime(0.01, t);
+            this.chargeGain.gain.linearRampToValueAtTime(0.24, t + duration);
+
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(320, t);
+            filter.frequency.exponentialRampToValueAtTime(2400, t + duration);
+            filter.Q.setValueAtTime(3.2, t);
+
+            this.chargeOsc.connect(filter);
+            filter.connect(this.chargeGain);
+            this.chargeGain.connect(this.ctx.destination);
+
+            this.chargeOsc.start(t);
+            this.chargeOsc.stop(t + duration);
+        }
+
+        stopRailgunCharge() {
+            if (this.chargeOsc) {
+                try {
+                    this.chargeOsc.stop();
+                    this.chargeOsc.disconnect();
+                } catch (e) {}
+                this.chargeOsc = null;
+            }
+        }
+
         playShoot(type) {
             if (!this.soundEnabled || !this.ctx) return;
             const t = this.ctx.currentTime;
+
+            if (type === 'railgun') {
+                this.stopRailgunCharge();
+                // 1. "p": Sharp transient capacitor discharge snap
+                const oscSnap = this.ctx.createOscillator();
+                const gainSnap = this.ctx.createGain();
+                oscSnap.type = 'triangle';
+                oscSnap.frequency.setValueAtTime(450, t);
+                oscSnap.frequency.exponentialRampToValueAtTime(80, t + 0.028);
+                gainSnap.gain.setValueAtTime(0.45, t);
+                gainSnap.gain.exponentialRampToValueAtTime(0.001, t + 0.028);
+                oscSnap.connect(gainSnap);
+                gainSnap.connect(this.ctx.destination);
+                oscSnap.start(t);
+                oscSnap.stop(t + 0.03);
+
+                // 2. "zz": Biting resonant bandpass frequency sweep
+                const oscZap = this.ctx.createOscillator();
+                const gainZap = this.ctx.createGain();
+                const filterZap = this.ctx.createBiquadFilter();
+
+                oscZap.type = 'sawtooth';
+                oscZap.frequency.setValueAtTime(1800, t);
+                oscZap.frequency.exponentialRampToValueAtTime(300, t + 0.16);
+
+                filterZap.type = 'bandpass';
+                filterZap.frequency.setValueAtTime(2200, t);
+                filterZap.frequency.exponentialRampToValueAtTime(550, t + 0.16);
+                filterZap.Q.setValueAtTime(5.5, t);
+
+                gainZap.gain.setValueAtTime(0.38, t);
+                gainZap.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+
+                oscZap.connect(filterZap);
+                filterZap.connect(gainZap);
+                gainZap.connect(this.ctx.destination);
+                oscZap.start(t);
+                oscZap.stop(t + 0.17);
+
+                // 3. "t": High-frequency ionization spark fizzle
+                if (this.noiseBuffer) {
+                    const fizzleSrc = this.ctx.createBufferSource();
+                    fizzleSrc.buffer = this.noiseBuffer;
+                    const fizzleFilter = this.ctx.createBiquadFilter();
+                    fizzleFilter.type = 'highpass';
+                    fizzleFilter.frequency.setValueAtTime(3400, t);
+                    fizzleFilter.frequency.exponentialRampToValueAtTime(6200, t + 0.14);
+
+                    const fizzleGain = this.ctx.createGain();
+                    fizzleGain.gain.setValueAtTime(0.25, t + 0.02);
+                    fizzleGain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+
+                    fizzleSrc.connect(fizzleFilter);
+                    fizzleFilter.connect(fizzleGain);
+                    fizzleGain.connect(this.ctx.destination);
+                    fizzleSrc.start(t + 0.02);
+                    fizzleSrc.stop(t + 0.15);
+                }
+                return;
+            }
+
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
 
-            osc.connect(gain);
-            gain.connect(this.ctx.destination);
-
             if (type === 'rifle') {
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(380, t);
                 osc.frequency.exponentialRampToValueAtTime(70, t + 0.08);
@@ -471,6 +570,8 @@
                 osc.start(t);
                 osc.stop(t + 0.08);
             } else if (type === 'shotgun') {
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(240, t);
                 osc.frequency.exponentialRampToValueAtTime(40, t + 0.14);
@@ -479,6 +580,8 @@
                 osc.start(t);
                 osc.stop(t + 0.14);
             } else if (type === 'plasma') {
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(880, t);
                 osc.frequency.exponentialRampToValueAtTime(220, t + 0.09);
@@ -487,13 +590,71 @@
                 osc.start(t);
                 osc.stop(t + 0.09);
             } else if (type === 'rocket') {
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(140, t);
-                osc.frequency.linearRampToValueAtTime(320, t + 0.16);
+                osc.frequency.setValueAtTime(160, t);
+                osc.frequency.linearRampToValueAtTime(360, t + 0.16);
                 gain.gain.setValueAtTime(0.3, t);
                 gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
                 osc.start(t);
                 osc.stop(t + 0.16);
+            } else if (type === 'cannon') {
+                // Muted turret thud: low sine curve through muffled low-pass filter
+                const subFilter = this.ctx.createBiquadFilter();
+                subFilter.type = 'lowpass';
+                subFilter.frequency.setValueAtTime(170, t);
+                subFilter.frequency.exponentialRampToValueAtTime(40, t + 0.26);
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(92, t);
+                osc.frequency.exponentialRampToValueAtTime(30, t + 0.24);
+
+                osc.disconnect();
+                osc.connect(subFilter);
+                subFilter.connect(gain);
+
+                gain.gain.setValueAtTime(0.55, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.26);
+                osc.start(t);
+                osc.stop(t + 0.26);
+
+                if (this.noiseBuffer) {
+                    // Muffled transient mechanical "T" breech click (fast 24ms damping)
+                    const clickSrc = this.ctx.createBufferSource();
+                    clickSrc.buffer = this.noiseBuffer;
+                    const clickFilter = this.ctx.createBiquadFilter();
+                    clickFilter.type = 'bandpass';
+                    clickFilter.frequency.setValueAtTime(820, t);
+                    clickFilter.Q.setValueAtTime(4.2, t);
+
+                    const clickGain = this.ctx.createGain();
+                    clickGain.gain.setValueAtTime(0.38, t);
+                    clickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.024);
+
+                    clickSrc.connect(clickFilter);
+                    clickFilter.connect(clickGain);
+                    clickGain.connect(this.ctx.destination);
+                    clickSrc.start(t);
+                    clickSrc.stop(t + 0.025);
+
+                    // Muffled turret chamber pressure dispersion
+                    const presSrc = this.ctx.createBufferSource();
+                    presSrc.buffer = this.noiseBuffer;
+                    const presFilter = this.ctx.createBiquadFilter();
+                    presFilter.type = 'lowpass';
+                    presFilter.frequency.setValueAtTime(240, t);
+
+                    const presGain = this.ctx.createGain();
+                    presGain.gain.setValueAtTime(0.28, t);
+                    presGain.gain.exponentialRampToValueAtTime(0.001, t + 0.19);
+
+                    presSrc.connect(presFilter);
+                    presFilter.connect(presGain);
+                    presGain.connect(this.ctx.destination);
+                    presSrc.start(t);
+                    presSrc.stop(t + 0.19);
+                }
             }
         }
 
@@ -513,15 +674,47 @@
             osc.stop(t + 0.05);
         }
 
+        playPierceHit() {
+            if (!this.soundEnabled || !this.ctx) return;
+            const t = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(420, t);
+            osc.frequency.exponentialRampToValueAtTime(90, t + 0.09);
+            gain.gain.setValueAtTime(0.25, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.09);
+        }
+
+        playArcZap() {
+            if (!this.soundEnabled || !this.ctx) return;
+            const t = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(960, t);
+            osc.frequency.exponentialRampToValueAtTime(180, t + 0.06);
+            gain.gain.setValueAtTime(0.22, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.06);
+        }
+
         playCrateArmorClink() {
             if (!this.soundEnabled || !this.ctx) return;
             const t = this.ctx.currentTime;
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
             osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(820, t);
-            osc.frequency.exponentialRampToValueAtTime(340, t + 0.06);
-            gain.gain.setValueAtTime(0.18, t);
+            osc.frequency.setValueAtTime(760, t);
+            osc.frequency.exponentialRampToValueAtTime(320, t + 0.06);
+            gain.gain.setValueAtTime(0.16, t);
             gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
             osc.connect(gain);
             gain.connect(this.ctx.destination);
@@ -538,18 +731,18 @@
             const filter = this.ctx.createBiquadFilter();
             filter.type = 'lowpass';
             filter.frequency.setValueAtTime(isBig ? 450 : 700, t);
-            filter.frequency.exponentialRampToValueAtTime(25, t + (isBig ? 0.85 : 0.35));
+            filter.frequency.exponentialRampToValueAtTime(25, t + (isBig ? 0.75 : 0.35));
 
             const gain = this.ctx.createGain();
-            gain.gain.setValueAtTime(isBig ? 0.55 : 0.25, t);
-            gain.gain.exponentialRampToValueAtTime(0.001, t + (isBig ? 0.85 : 0.35));
+            gain.gain.setValueAtTime(isBig ? 0.5 : 0.25, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + (isBig ? 0.75 : 0.35));
 
             src.connect(filter);
             filter.connect(gain);
             gain.connect(this.ctx.destination);
 
             src.start(t);
-            src.stop(t + (isBig ? 0.85 : 0.35));
+            src.stop(t + (isBig ? 0.75 : 0.35));
         }
 
         playPickup() {
@@ -607,11 +800,11 @@
             name: "Twin Heavy Blaster",
             symbol: "RIFLE",
             color: "#38bdf8",
-            damage: 30,
-            fireRate: 0.13,
+            damage: 28,
+            fireRate: 0.14,
             pellets: 1,
             spread: 0.03,
-            speed: 60,
+            speed: 58,
             sound: 'rifle',
             duration: Infinity
         },
@@ -619,60 +812,101 @@
             name: "Breach Scattergun",
             symbol: "SG-4",
             color: "#fb923c",
-            damage: 28,
-            fireRate: 0.26,
+            damage: 24,
+            fireRate: 0.30,
             pellets: 6,
-            spread: 0.22,
-            speed: 56,
+            spread: 0.24,
+            speed: 54,
             sound: 'shotgun',
-            duration: 13
+            duration: 16
         },
         minigun: {
             name: "Vulcan Rotary Cannon",
             symbol: "GATLING",
             color: "#facc15",
-            damage: 22,
-            fireRate: 0.052,
+            damage: 18,
+            fireRate: 0.055,
             pellets: 1,
-            spread: 0.065,
-            speed: 72,
+            spread: 0.07,
+            speed: 70,
             sound: 'rifle',
-            duration: 13
+            duration: 16
+        },
+        cannon: {
+            name: "Heavy Tank Barrel",
+            symbol: "TANK",
+            color: "#10b981",
+            damage: 310,
+            fireRate: 0.74,
+            pellets: 1,
+            spread: 0.01,
+            speed: 76,
+            pierceCapacity: 6,
+            sound: 'cannon',
+            duration: 16
+        },
+        railgun: {
+            name: "Ion Beam Railgun",
+            symbol: "RAILGUN",
+            color: "#06b6d4",
+            damage: 850,
+            fireRate: 1.65,
+            chargeTime: 0.52,
+            pellets: 1,
+            spread: 0.005,
+            speed: 108,
+            pierceCapacity: 26,
+            chainArcCount: 4,
+            chainArcRadius: 9.5,
+            chainArcDamage: 220,
+            sound: 'railgun',
+            duration: 16
         },
         rocket: {
             name: "Thermobaric RPG",
             symbol: "RPG",
             color: "#f43f5e",
-            damage: 280,
-            splashRadius: 4.2,
-            fireRate: 0.72,
+            damage: 320,
+            splashRadius: 8.5,
+            fireRate: 0.85,
             pellets: 1,
             spread: 0.015,
-            speed: 54,
+            speed: 52,
             sound: 'rocket',
-            duration: 11
+            duration: 16
         },
         plasma: {
             name: "Overcharged Plasma Beam",
             symbol: "PLASMA",
             color: "#c084fc",
-            damage: 64,
-            fireRate: 0.13,
+            damage: 56,
+            fireRate: 0.15,
             pellets: 2,
-            spread: 0.035,
-            speed: 68,
+            spread: 0.04,
+            speed: 64,
             sound: 'plasma',
-            duration: 13
+            duration: 16
         }
     };
 
     let lastSpawnedCrateWeapon = null;
+    let cratesSinceTank = 0;
+    let cratesSinceRailgun = 0;
+    let cratesSpawnedInLevel = 0;
+
+    function calculateMaxHp(lvl) {
+        if (lvl < 18) return 120;
+        return 120 + Math.min(80, (lvl - 17) * 25);
+    }
+
+    const initialLvl = Storage.get('ba_level', 1);
+    const initialMaxHp = calculateMaxHp(initialLvl);
 
     const gameState = {
-        level: Storage.get('ba_level', 1),
+        level: initialLvl,
         score: 0,
-        playerHp: 120,
-        maxHp: 120,
+        playerHp: initialMaxHp,
+        maxHp: initialMaxHp,
         activeWeapons: [{ key: 'rifle', timeLeft: Infinity }],
         shotsFired: 0,
         shotsHit: 0,
@@ -818,6 +1052,17 @@
     playerSpot.position.set(0, 3.5, 0);
     playerGroup.add(playerSpot);
 
+    const railgunChargeState = {
+        isCharging: false,
+        chargeStart: 0,
+        chargeDuration: 0.52
+    };
+
+    const railChargeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0 });
+    const railChargeMesh = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 12), railChargeMat);
+    railChargeMesh.position.set(0, 1.35, -2.6);
+    playerGroup.add(railChargeMesh);
+
     playerGroup.position.set(0, 0, 3.2);
     scene.add(playerGroup);
 
@@ -828,24 +1073,36 @@
     const floatingTexts = [];
     const shockwaves = [];
 
+    let nextEntityId = 1;
+
     const bulletSphereGeo = new THREE.SphereGeometry(0.32, 6, 6);
     const bulletRocketGeo = new THREE.CylinderGeometry(0.32, 0.45, 1.6, 6);
     bulletRocketGeo.rotateX(Math.PI / 2);
+
+    const bulletTankGeo = new THREE.CylinderGeometry(0.38, 0.42, 2.3, 8);
+    bulletTankGeo.rotateX(Math.PI / 2);
+
+    // Hyperion Ion Railgun Mach-8 Slug Geometry
+    const bulletRailGeo = new THREE.CylinderGeometry(0.24, 0.28, 3.4, 8);
+    bulletRailGeo.rotateX(Math.PI / 2);
 
     const bulletMaterials = {
         rifle: new THREE.MeshBasicMaterial({ color: 0x38bdf8 }),
         shotgun: new THREE.MeshBasicMaterial({ color: 0xfb923c }),
         minigun: new THREE.MeshBasicMaterial({ color: 0xfacc15 }),
         rocket: new THREE.MeshBasicMaterial({ color: 0xf43f5e }),
-        plasma: new THREE.MeshBasicMaterial({ color: 0xc084fc })
+        plasma: new THREE.MeshBasicMaterial({ color: 0xc084fc }),
+        cannon: new THREE.MeshBasicMaterial({ color: 0x10b981 }),
+        railgun: new THREE.MeshBasicMaterial({ color: 0x06b6d4 })
     };
 
-    const PARTICLE_COUNT = 120;
+    const PARTICLE_COUNT = 110;
     const particlePool = [];
-    const pGeo = new THREE.BoxGeometry(0.28, 0.28, 0.28);
+    const pGeo = new THREE.BoxGeometry(0.26, 0.26, 0.26);
     const pMatOrange = new THREE.MeshBasicMaterial({ color: 0xf97316 });
     const pMatYellow = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
     const pMatCyan = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+    const pMatGreen = new THREE.MeshBasicMaterial({ color: 0x10b981 });
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
         const p = new THREE.Mesh(pGeo, pMatOrange);
@@ -862,7 +1119,11 @@
 
     function spawnExplosionParticles(pos, count, colorType) {
         let spawned = 0;
-        const mat = colorType === 'yellow' ? pMatYellow : (colorType === 'cyan' ? pMatCyan : pMatOrange);
+        let mat = pMatOrange;
+        if (colorType === 'yellow') mat = pMatYellow;
+        else if (colorType === 'cyan') mat = pMatCyan;
+        else if (colorType === 'green') mat = pMatGreen;
+
         for (let i = 0; i < particlePool.length && spawned < count; i++) {
             const p = particlePool[i];
             if (!p.active) {
@@ -871,21 +1132,21 @@
                 p.mesh.position.copy(pos);
                 p.mesh.visible = true;
                 p.life = 0;
-                p.maxLife = 0.35 + Math.random() * 0.4;
+                p.maxLife = 0.35 + Math.random() * 0.35;
                 p.vel.set(
-                    (Math.random() - 0.5) * 20,
-                    Math.random() * 11 + 3,
-                    (Math.random() - 0.5) * 20
+                    (Math.random() - 0.5) * 18,
+                    Math.random() * 10 + 3,
+                    (Math.random() - 0.5) * 18
                 );
                 spawned++;
             }
         }
     }
 
-    function spawnVisualShockwave(pos, maxRadius) {
+    function spawnVisualShockwave(pos, maxRadius, colorHex) {
         const ringGeo = new THREE.RingGeometry(0.3, 0.9, 28);
         const ringMat = new THREE.MeshBasicMaterial({
-            color: 0xf43f5e,
+            color: colorHex || 0xf43f5e,
             side: THREE.DoubleSide,
             transparent: true,
             opacity: 0.85
@@ -898,9 +1159,9 @@
         shockwaves.push({
             mesh: mesh,
             currentScale: 1.0,
-            maxScale: maxRadius * 1.25,
-            life: 0.38,
-            maxLife: 0.38
+            maxScale: maxRadius * 1.2,
+            life: 0.35,
+            maxLife: 0.35
         });
     }
 
@@ -1014,20 +1275,122 @@
     const crateCoreMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
     const crateBeaconMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.65 });
 
+    function pickCrateWeaponForLevel(level) {
+        cratesSpawnedInLevel++;
+        const activeKeys = (gameState && gameState.activeWeapons) ? gameState.activeWeapons.map(w => w.key) : [];
+        const hasTankActive = activeKeys.includes('cannon');
+        const hasRailgunActive = activeKeys.includes('railgun');
+
+        // LEVEL 30+: Introduces the Hyperion Ion Railgun to solve extreme horde density
+        if (level >= 30) {
+            // Opening crate of level 30 gives an immediate Railgun showcase
+            if (cratesSpawnedInLevel === 1) {
+                cratesSinceRailgun = 0;
+                return 'railgun';
+            }
+
+            // Anti-drought check: ensure you don't go > 2 crates without a Railgun
+            if (!hasRailgunActive && cratesSinceRailgun >= 2) {
+                cratesSinceRailgun = 0;
+                return 'railgun';
+            }
+
+            // High natural roll rate for Railgun when not currently holding one
+            if (!hasRailgunActive && activePRNG() < 0.48) {
+                cratesSinceRailgun = 0;
+                return 'railgun';
+            }
+
+            // If player already has the Railgun, supply Tank Barrel or RPG to create dual heavy artillery
+            cratesSinceRailgun++;
+            if (!hasTankActive && (cratesSinceTank >= 2 || activePRNG() < 0.38)) {
+                cratesSinceTank = 0;
+                return 'cannon';
+            }
+
+            const heavyEndgamePool = ['rocket', 'cannon', 'minigun', 'plasma'];
+            return heavyEndgamePool[Math.floor(activePRNG() * heavyEndgamePool.length)];
+        }
+
+        // LEVEL 29: Exact tuned balance where Level 29 was perfected
+        if (level === 29) {
+            if (!hasTankActive) {
+                if (cratesSinceTank >= 2 || (cratesSpawnedInLevel === 1 && activePRNG() < 0.5)) {
+                    cratesSinceTank = 0;
+                    return 'cannon';
+                }
+                if (activePRNG() < 0.35) {
+                    cratesSinceTank = 0;
+                    return 'cannon';
+                }
+                cratesSinceTank++;
+                const nonTankPool = ['rocket', 'minigun', 'plasma', 'shotgun'];
+                return nonTankPool[Math.floor(activePRNG() * nonTankPool.length)];
+            } else {
+                if (activePRNG() < 0.18) {
+                    cratesSinceTank = 0;
+                    return 'cannon';
+                }
+                cratesSinceTank++;
+                const secondaryPool = ['rocket', 'minigun', 'plasma', 'shotgun', 'minigun'];
+                return secondaryPool[Math.floor(activePRNG() * secondaryPool.length)];
+            }
+        }
+
+        // LEVELS 27 & 28: Exact balanced formula where Level 28 was beaten
+        if (level >= 27) {
+            const standardPool27_28 = ['cannon', 'minigun', 'plasma', 'shotgun', 'rocket'];
+            if (cratesSinceTank >= 2) {
+                cratesSinceTank = 0;
+                return 'cannon';
+            }
+            const picked = standardPool27_28[Math.floor(activePRNG() * standardPool27_28.length)];
+            if (picked === 'cannon') cratesSinceTank = 0; else cratesSinceTank++;
+            return picked;
+        }
+
+        // LEVEL 26: Moderate tank frequency
+        if (level === 26) {
+            if (cratesSinceTank >= 3) {
+                cratesSinceTank = 0;
+                return 'cannon';
+            }
+            const weaponCycle26 = ['cannon', 'minigun', 'plasma', 'cannon', 'shotgun', 'rocket', 'plasma'];
+            const picked = weaponCycle26[Math.floor(activePRNG() * weaponCycle26.length)];
+            if (picked === 'cannon') cratesSinceTank = 0; else cratesSinceTank++;
+            return picked;
+        }
+
+        // LEVEL 25: Exactly 1-in-7 introductory drop rate
+        if (level === 25) {
+            const weaponCycle25 = ['minigun', 'shotgun', 'plasma', 'rocket', 'shotgun', 'plasma', 'cannon'];
+            let picked = weaponCycle25[Math.floor(activePRNG() * weaponCycle25.length)];
+            if (picked === 'cannon' && lastSpawnedCrateWeapon === 'cannon') {
+                picked = activePRNG() > 0.5 ? 'plasma' : 'rocket';
+            }
+            return picked;
+        }
+
+        // LEVELS 1 - 24: Verbatim original rotation without tank
+        const weaponCycle1_24 = ['shotgun', 'minigun', 'plasma', 'shotgun', 'plasma', 'rocket'];
+        let picked = weaponCycle1_24[Math.floor(activePRNG() * weaponCycle1_24.length)];
+        if (picked === 'rocket' && lastSpawnedCrateWeapon === 'rocket') {
+            picked = activePRNG() > 0.5 ? 'minigun' : 'plasma';
+        }
+        return picked;
+    }
+
     function createSupplyCrate(x, z, preferredWeapon) {
         const group = new THREE.Group();
 
-        // Armored heavy vault box
         const crateBox = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.0, 2.4), crateGoldMat);
         crateBox.position.y = 1.0;
         group.add(crateBox);
 
-        // Heavy steel corner brackets
         const corner = new THREE.Mesh(new THREE.BoxGeometry(2.65, 0.6, 2.65), crateArmorMat);
         corner.position.y = 1.0;
         group.add(corner);
 
-        // Heavy reinforced armor ribs
         const rib = new THREE.Mesh(new THREE.BoxGeometry(2.65, 2.2, 0.5), crateArmorMat);
         rib.position.y = 1.0;
         group.add(rib);
@@ -1050,7 +1413,6 @@
         beacon.position.y = 11.0;
         group.add(beacon);
 
-        // Small overhead armor health bar
         const hpBarBg = new THREE.Mesh(
             new THREE.PlaneGeometry(2.2, 0.25),
             new THREE.MeshBasicMaterial({ color: 0x0f172a, side: THREE.DoubleSide })
@@ -1067,25 +1429,23 @@
 
         group.position.set(x, 0, z);
 
-        const weaponKeys = ['shotgun', 'minigun', 'plasma', 'minigun', 'plasma', 'shotgun', 'rocket'];
         let weaponKey = preferredWeapon;
         if (!weaponKey) {
-            weaponKey = weaponKeys[Math.floor(activePRNG() * weaponKeys.length)];
-            if (weaponKey === 'rocket' && lastSpawnedCrateWeapon === 'rocket') {
-                weaponKey = activePRNG() > 0.5 ? 'minigun' : 'plasma';
-            }
+            weaponKey = pickCrateWeaponForLevel(gameState.level);
         }
         lastSpawnedCrateWeapon = weaponKey;
 
-        const maxHp = LevelGenConfig.crateHp || 85;
+        const maxHp = LevelGenConfig.crateHp || 45;
+        const crateSpeed = gameState.level >= 18 ? 4.8 : 3.8;
 
         group.userData = {
+            id: nextEntityId++,
             hp: maxHp,
             maxHp: maxHp,
             weaponKey: weaponKey,
-            radius: 1.6, // Tighter target radius requiring deliberate line-of-sight aiming
+            radius: 1.6,
             depth: 2.4,
-            speed: 3.8,
+            speed: crateSpeed,
             isCrate: true,
             badge: badge,
             beacon: beacon,
@@ -1121,7 +1481,7 @@
             weaponKey: weaponKey,
             orb: orb,
             ring: ring,
-            speed: 38
+            speed: 40
         });
     }
 
@@ -1131,18 +1491,20 @@
     function buildWave(level) {
         enemyQueue = [];
         lastSpawnedCrateWeapon = null;
+        cratesSinceTank = 0;
+        cratesSinceRailgun = 0;
+        cratesSpawnedInLevel = 0;
         
         const levelSeed = (LevelGenConfig.seed + (level - 1) * 9973) >>> 0;
         activePRNG = createPRNG(levelSeed);
 
         const totalEnemies = LevelGenConfig.baseEnemies + (level - 1) * LevelGenConfig.enemiesPerLvl;
-        const baseInterval = Math.max(16, LevelGenConfig.enemiesPerCrate);
+        const baseInterval = Math.max(12, LevelGenConfig.enemiesPerCrate);
 
         let added = 0;
         let cratesAssignedInWave = 0;
         let lastCrateEnemyCount = 0;
 
-        // Guaranteed opening crate for Level 7+ to eliminate early dry spells
         let forceFirstCrate = (level >= 7);
 
         while (added < totalEnemies) {
@@ -1157,10 +1519,20 @@
                 cratesAssignedInWave++;
             } else {
                 let dynamicInterval;
-                if (level >= 7) {
+                if (level >= 30) {
+                    // Continuous 10-kill crate cadence for heavy weapon escort
+                    dynamicInterval = 10;
+                } else if (level >= 29) {
+                    // Firm 15-16 kill combat cadence
+                    dynamicInterval = (added >= 265 && added <= 315) ? 15 : 16;
+                } else if (level >= 27) {
+                    dynamicInterval = (cratesAssignedInWave < 3) ? baseInterval : Math.round(baseInterval * 1.18);
+                } else if (level >= 18) {
+                    dynamicInterval = (cratesAssignedInWave < 3) ? baseInterval : Math.round(baseInterval * 1.2);
+                } else if (level >= 7) {
                     dynamicInterval = (cratesAssignedInWave < 3) ? baseInterval : Math.round(baseInterval * 1.35);
                 } else {
-                    dynamicInterval = (cratesAssignedInWave < 2) ? baseInterval : Math.round(baseInterval * 2.2);
+                    dynamicInterval = (cratesAssignedInWave < 2) ? baseInterval : Math.round(baseInterval * 1.8);
                 }
 
                 if (added - lastCrateEnemyCount >= dynamicInterval) {
@@ -1199,36 +1571,63 @@
 
         enemy.position.set(xPos, 0, zPos);
 
-        let hp = 45 + (gameState.level - 1) * 8;
-        let speed = 5.0 + Math.min(3.0, (gameState.level - 1) * 0.25);
-        let scoreVal = 100;
-        let scale = 1.0;
+        let hp, speed, scoreVal, scale;
 
-        if (type === 'crawler') {
-            hp = 30 + (gameState.level - 1) * 6;
-            speed = Math.min(9.4, 7.2 + (gameState.level - 1) * 0.28);
-            scoreVal = 80;
-            scale = 0.9;
-        } else if (type === 'brute') {
-            hp = 150 + (gameState.level - 1) * 28;
-            speed = Math.min(5.0, 3.2 + (gameState.level - 1) * 0.16);
-            scoreVal = 280;
-            scale = 1.25;
-        } else if (type === 'boss') {
-            hp = 650 + gameState.level * 180;
-            speed = Math.min(3.6, 2.2 + (gameState.level - 1) * 0.12);
-            scoreVal = 1500;
-            scale = 1.5;
+        if (gameState.level < 18) {
+            hp = 45 + (gameState.level - 1) * 10;
+            speed = 5.2 + (gameState.level - 1) * 0.3;
+            scoreVal = 100;
+            scale = 1.0;
+
+            if (type === 'crawler') {
+                hp = 30 + (gameState.level - 1) * 8;
+                speed = 7.8 + (gameState.level - 1) * 0.4;
+                scoreVal = 80;
+                scale = 0.9;
+            } else if (type === 'brute') {
+                hp = 160 + (gameState.level - 1) * 35;
+                speed = 3.4 + (gameState.level - 1) * 0.2;
+                scoreVal = 280;
+                scale = 1.25;
+            } else if (type === 'boss') {
+                hp = 750 + gameState.level * 220;
+                speed = 2.4 + (gameState.level - 1) * 0.15;
+                scoreVal = 1500;
+                scale = 1.5;
+            }
+        } else {
+            hp = 45 + 17 * 10 + (gameState.level - 18) * 8;
+            speed = Math.min(9.2, 5.2 + 17 * 0.3 + (gameState.level - 18) * 0.1);
+            scoreVal = 100;
+            scale = 1.0;
+
+            if (type === 'crawler') {
+                hp = 30 + 17 * 8 + (gameState.level - 18) * 6;
+                speed = Math.min(12.0, 7.8 + 17 * 0.4);
+                scoreVal = 80;
+                scale = 0.9;
+            } else if (type === 'brute') {
+                hp = 160 + 17 * 35 + (gameState.level - 18) * 25;
+                speed = Math.min(5.5, 3.4 + 17 * 0.2);
+                scoreVal = 280;
+                scale = 1.25;
+            } else if (type === 'boss') {
+                hp = 750 + gameState.level * 200;
+                speed = Math.min(4.2, 2.4 + 17 * 0.15);
+                scoreVal = 1500;
+                scale = 1.5;
+            }
         }
 
         enemy.scale.set(scale, scale, scale);
         enemy.userData = {
+            id: nextEntityId++,
             type: type,
             hp: hp,
             maxHp: hp,
             speed: speed,
             scoreVal: scoreVal,
-            damage: type === 'boss' ? 38 : (type === 'brute' ? 22 : 11),
+            damage: type === 'boss' ? 40 : (type === 'brute' ? 25 : 12),
             radius: 1.0 * scale,
             isDead: false,
             limbParts: limbParts,
@@ -1238,22 +1637,20 @@
         scene.add(enemy);
         enemies.push(enemy);
 
-        // Crates are shielded BEHIND the frontline monsters so you MUST drill a hole through the horde to crack them
         if (spawnCrateInside) {
-            const crateX = Math.max(-4.8, Math.min(4.8, (xPos > 0 ? xPos - 1.8 : xPos + 1.8)));
-
-            let weaponCycle = ['shotgun', 'minigun', 'plasma', 'minigun', 'shotgun', 'plasma'];
-            if (gameState.level >= 7) {
-                weaponCycle = ['minigun', 'plasma', 'shotgun', 'minigun', 'plasma', 'rocket'];
-            }
-            let assignedWeapon = weaponCycle[Math.floor(activePRNG() * weaponCycle.length)];
-            if (assignedWeapon === 'rocket' && lastSpawnedCrateWeapon === 'rocket') {
-                assignedWeapon = activePRNG() > 0.5 ? 'minigun' : 'plasma';
-            }
+            const crateX = Math.max(-4.8, Math.min(4.8, (xPos > 0 ? xPos - 2.0 : xPos + 2.0)));
+            const assignedWeapon = pickCrateWeaponForLevel(gameState.level);
             lastSpawnedCrateWeapon = assignedWeapon;
 
-            // Place crate directly behind the vanguard (further along -Z), guarded by the squad
-            const crateZ = Math.min(-20, zPos - 3.5);
+            let crateZ;
+            if (gameState.level >= 18) {
+                crateZ = Math.max(-28, Math.min(-16, zPos + 18));
+            } else if (gameState.level >= 7) {
+                crateZ = Math.max(-32, Math.min(-16, zPos + 12));
+            } else {
+                crateZ = zPos;
+            }
+
             createSupplyCrate(crateX, crateZ, assignedWeapon);
         }
     }
@@ -1266,7 +1663,6 @@
             for (let i = 0; i < squad.count; i++) {
                 const x = ((i / Math.max(1, squad.count - 1)) - 0.5) * 2 * (xSpan * 0.85);
                 const z = baseZ - (i * 2.2);
-                // Crates are protected behind the lead vanguard swarmers
                 spawnMonsterEntity(squad.type, x, z, squad.spawnCrateInside && i === squad.count - 1);
             }
         } else if (squad.formation === 'line') {
@@ -1290,23 +1686,67 @@
             const wConf = WEAPONS[wEntry.key];
             if (!wConf) return;
 
-            const lastShot = lastShotTimes[wEntry.key] || 0;
-            if (time - lastShot < wConf.fireRate) return;
+            if (wEntry.key === 'railgun') {
+                const lastShot = lastShotTimes['railgun'] || 0;
+                if (time - lastShot < wConf.fireRate) {
+                    if (railgunChargeState.isCharging) {
+                        railgunChargeState.isCharging = false;
+                        railChargeMat.opacity = 0;
+                        audio.stopRailgunCharge();
+                    }
+                    return;
+                }
+
+                if (!railgunChargeState.isCharging) {
+                    railgunChargeState.isCharging = true;
+                    railgunChargeState.chargeStart = time;
+                    railgunChargeState.chargeDuration = wConf.chargeTime || 0.52;
+                    audio.playRailgunCharge(railgunChargeState.chargeDuration);
+                }
+
+                const elapsedCharge = time - railgunChargeState.chargeStart;
+                const chargePct = Math.min(1.0, elapsedCharge / railgunChargeState.chargeDuration);
+
+                // Charge plasma sphere swelling at the barrel tip
+                railChargeMat.opacity = 0.25 + chargePct * 0.75;
+                const scale = 0.5 + chargePct * 1.5;
+                railChargeMesh.scale.set(scale, scale, scale);
+
+                if (chargePct < 1.0) {
+                    return; // Still gathering power
+                }
+
+                // Discharging Railgun shot
+                railgunChargeState.isCharging = false;
+                railChargeMat.opacity = 0;
+            } else {
+                const lastShot = lastShotTimes[wEntry.key] || 0;
+                if (time - lastShot < wConf.fireRate) return;
+            }
 
             lastShotTimes[wEntry.key] = time;
             gameState.shotsFired++;
             audio.playShoot(wConf.sound);
 
             muzzleFlash.material.opacity = 1.0;
-            setTimeout(function() { muzzleFlash.material.opacity = 0; }, 35);
+            setTimeout(function() { muzzleFlash.material.opacity = 0; }, 40);
+
+            const isRPG = wConf.symbol === 'RPG';
+            const isCannon = wConf.symbol === 'TANK';
+            const isRailgun = wConf.symbol === 'RAILGUN';
+            
+            let bGeo = bulletSphereGeo;
+            if (isRPG) bGeo = bulletRocketGeo;
+            else if (isCannon) bGeo = bulletTankGeo;
+            else if (isRailgun) bGeo = bulletRailGeo;
+
+            const bMat = bulletMaterials[wEntry.key];
+            const effectiveDmg = wConf.damage;
 
             const origin = new THREE.Vector3(0, 1.35, -2.6);
             origin.applyMatrix4(playerGroup.matrixWorld);
 
             const straightDir = new THREE.Vector3(0, 0, -1);
-            const isRPG = wConf.symbol === 'RPG';
-            const bGeo = isRPG ? bulletRocketGeo : bulletSphereGeo;
-            const bMat = bulletMaterials[wEntry.key];
 
             for (let i = 0; i < wConf.pellets; i++) {
                 const dir = straightDir.clone();
@@ -1322,30 +1762,45 @@
                     mesh: bMesh,
                     dir: dir,
                     speed: wConf.speed,
-                    damage: wConf.damage,
+                    damage: effectiveDmg,
                     splashRadius: wConf.splashRadius || 0,
-                    life: 1.25,
+                    pierceCapacity: wConf.pierceCapacity || 0,
+                    pierceLeft: wConf.pierceCapacity || 0,
+                    chainArcCount: wConf.chainArcCount || 0,
+                    chainArcRadius: wConf.chainArcRadius || 0,
+                    chainArcDamage: wConf.chainArcDamage || 0,
+                    hitEntities: new Set(),
+                    life: 1.3,
                     weaponKey: wEntry.key,
                     prevZ: origin.z
                 });
                 scene.add(bMesh);
             }
+
+            if ((isCannon || isRailgun) && gameState.screenShake) {
+                camera.position.z += 0.09;
+                camera.position.y += (Math.random() - 0.5) * 0.3;
+            }
         });
 
         if (gameState.screenShake && gameState.activeWeapons.length > 0) {
-            camera.position.z += 0.04;
+            camera.position.z += 0.03;
         }
     }
 
     function updateCombat(dt) {
         spawnCooldown -= dt;
-        if (spawnCooldown <= 0 && enemyQueue.length > 0 && enemies.length < 24) {
-            const nextSquad = enemyQueue.shift();
-            dispatchSquad(nextSquad);
-            spawnCooldown = 0.35 + Math.random() * 0.45;
+        if (spawnCooldown <= 0 && enemyQueue.length > 0) {
+            const nextHasCrate = enemyQueue[0] && enemyQueue[0].spawnCrateInside;
+            const allowEmergencyDispatch = (gameState.level >= 29 && nextHasCrate && supplyCrates.length === 0 && enemies.length < 26);
+
+            if (enemies.length < 24 || allowEmergencyDispatch) {
+                const nextSquad = enemyQueue.shift();
+                dispatchSquad(nextSquad);
+                spawnCooldown = 0.35 + Math.random() * 0.45;
+            }
         }
 
-        // Weapon timer decrement
         for (let i = gameState.activeWeapons.length - 1; i >= 0; i--) {
             const wEntry = gameState.activeWeapons[i];
             if (wEntry.key !== 'rifle') {
@@ -1359,7 +1814,12 @@
             gameState.activeWeapons.push({ key: 'rifle', timeLeft: Infinity });
         }
 
-        // Bullets update & collision
+        // Cancel charging visuals if railgun expired
+        if (railgunChargeState.isCharging && !gameState.activeWeapons.some(w => w.key === 'railgun')) {
+            railgunChargeState.isCharging = false;
+            railChargeMat.opacity = 0;
+        }
+
         for (let i = bullets.length - 1; i >= 0; i--) {
             const b = bullets[i];
             const prevZ = b.prevZ !== undefined ? b.prevZ : b.mesh.position.z;
@@ -1368,7 +1828,6 @@
             b.prevZ = currZ;
             b.life -= dt;
 
-            // Stop horizon spawn-killing
             if (currZ < -46) {
                 scene.remove(b.mesh);
                 bullets.splice(i, 1);
@@ -1377,10 +1836,11 @@
 
             let bulletRemoved = false;
 
-            // Frontline enemies physically shield crates: check monster collision first so player must drill through horde
+            // Enemy collision check
             for (let k = enemies.length - 1; k >= 0; k--) {
                 const e = enemies[k];
                 if (!e || !e.userData || e.userData.isDead) continue;
+                if (b.hitEntities.has(e.userData.id)) continue;
 
                 const ez = e.position.z;
                 const ex = e.position.x;
@@ -1392,14 +1852,46 @@
                 const inXRange = Math.abs(b.mesh.position.x - ex) <= r;
 
                 if (inZRange && inXRange) {
+                    b.hitEntities.add(e.userData.id);
                     gameState.shotsHit++;
                     e.userData.hp -= b.damage;
-                    audio.playHit();
-                    showFloatingDamage('-' + Math.round(b.damage), e.position, e.userData.type === 'boss' ? '#ec4899' : '#f43f5e');
+
+                    if (b.weaponKey === 'railgun') {
+                        audio.playPierceHit();
+                        audio.playArcZap();
+                        spawnExplosionParticles(b.mesh.position, 18, 'cyan');
+                        spawnVisualShockwave(b.mesh.position, 3.2, 0x06b6d4);
+                        showFloatingDamage('RAIL -' + Math.round(b.damage), e.position, '#06b6d4');
+
+                        // Discharge secondary high-voltage electrical arcs once per shot upon penetration
+                        if (b.chainArcCount > 0) {
+                            let arcsTriggered = 0;
+                            for (let aIdx = enemies.length - 1; aIdx >= 0 && arcsTriggered < b.chainArcCount; aIdx--) {
+                                const target = enemies[aIdx];
+                                if (!target || target === e || !target.userData || target.userData.isDead) continue;
+                                const dist = target.position.distanceTo(e.position);
+                                if (dist <= b.chainArcRadius) {
+                                    target.userData.hp -= b.chainArcDamage;
+                                    showFloatingDamage('⚡ -' + Math.round(b.chainArcDamage), target.position, '#38bdf8');
+                                    spawnExplosionParticles(target.position, 10, 'cyan');
+                                    if (target.userData.hp <= 0) handleEnemyDefeat(target);
+                                    arcsTriggered++;
+                                }
+                            }
+                            b.chainArcCount = 0; // Discharge electrical capacitor once per round
+                        }
+                    } else if (b.pierceCapacity > 0) {
+                        audio.playPierceHit();
+                        spawnExplosionParticles(b.mesh.position, 10, 'green');
+                        showFloatingDamage('-' + Math.round(b.damage), e.position, '#10b981');
+                    } else {
+                        audio.playHit();
+                        showFloatingDamage('-' + Math.round(b.damage), e.position, e.userData.type === 'boss' ? '#ec4899' : '#f43f5e');
+                    }
 
                     if (b.splashRadius > 0) {
                         audio.playExplosion(true);
-                        spawnExplosionParticles(b.mesh.position, 30, 'orange');
+                        spawnExplosionParticles(b.mesh.position, 32, 'orange');
                         spawnVisualShockwave(b.mesh.position, b.splashRadius);
                         triggerAreaSplash(b.mesh.position, b.splashRadius, b.damage);
                     }
@@ -1408,18 +1900,36 @@
                         handleEnemyDefeat(e);
                     }
 
-                    scene.remove(b.mesh);
-                    bullets.splice(i, 1);
-                    bulletRemoved = true;
-                    break;
+                    // Pierce mechanic: consume pierce points based on size
+                    if (b.pierceCapacity > 0) {
+                        let pierceCost = 2; // default trooper
+                        if (e.userData.type === 'crawler') pierceCost = 1;
+                        else if (e.userData.type === 'brute') pierceCost = 4;
+                        else if (e.userData.type === 'boss') pierceCost = 8;
+
+                        b.pierceLeft -= pierceCost;
+                        if (b.pierceLeft <= 0) {
+                            scene.remove(b.mesh);
+                            bullets.splice(i, 1);
+                            bulletRemoved = true;
+                            break;
+                        }
+                    } else {
+                        scene.remove(b.mesh);
+                        bullets.splice(i, 1);
+                        bulletRemoved = true;
+                        break;
+                    }
                 }
             }
             if (bulletRemoved) continue;
 
-            // Check collision against armored supply crates
+            // Supply Crate collision check
             for (let cIdx = supplyCrates.length - 1; cIdx >= 0; cIdx--) {
                 const crate = supplyCrates[cIdx];
                 if (!crate || !crate.userData) continue;
+                if (b.hitEntities.has(crate.userData.id)) continue;
+
                 const cz = crate.position.z;
                 const cx = crate.position.x;
                 const halfDepth = (crate.userData.depth || 2.4) * 0.5;
@@ -1427,9 +1937,10 @@
                 const maxZ = Math.max(prevZ, currZ) + 0.3;
 
                 const inZRange = (maxZ >= cz - halfDepth) && (minZ <= cz + halfDepth);
-                const inXRange = Math.abs(b.mesh.position.x - cx) <= (crate.userData.radius + 0.35);
+                const inXRange = Math.abs(b.mesh.position.x - cx) <= (crate.userData.radius + 0.4);
 
                 if (inZRange && inXRange) {
+                    b.hitEntities.add(crate.userData.id);
                     crate.userData.hp -= b.damage;
                     audio.playCrateArmorClink();
 
@@ -1444,12 +1955,11 @@
 
                     if (b.splashRadius > 0) {
                         audio.playExplosion(true);
-                        spawnExplosionParticles(b.mesh.position, 28, 'orange');
+                        spawnExplosionParticles(b.mesh.position, 32, 'orange');
                         spawnVisualShockwave(b.mesh.position, b.splashRadius);
                         triggerAreaSplash(b.mesh.position, b.splashRadius, b.damage);
                     }
 
-                    // Only cracked if direct concentrated fire broke through its full armored HP
                     if (crate.userData.hp <= 0) {
                         gameState.cratesBroken++;
                         audio.playExplosion(false);
@@ -1462,10 +1972,20 @@
                         supplyCrates.splice(cIdx, 1);
                     }
 
-                    scene.remove(b.mesh);
-                    bullets.splice(i, 1);
-                    bulletRemoved = true;
-                    break;
+                    if (b.pierceCapacity > 0) {
+                        b.pierceLeft -= 3; // Crates consume 3 pierce points
+                        if (b.pierceLeft <= 0) {
+                            scene.remove(b.mesh);
+                            bullets.splice(i, 1);
+                            bulletRemoved = true;
+                            break;
+                        }
+                    } else {
+                        scene.remove(b.mesh);
+                        bullets.splice(i, 1);
+                        bulletRemoved = true;
+                        break;
+                    }
                 }
             }
             if (bulletRemoved) continue;
@@ -1476,18 +1996,16 @@
             }
         }
 
-        // Advance supply crates along bridge
         for (let cIdx = supplyCrates.length - 1; cIdx >= 0; cIdx--) {
             const crate = supplyCrates[cIdx];
             if (!crate) continue;
 
             if (crate.userData && crate.userData.speed) {
                 crate.position.z += crate.userData.speed * dt;
-                // No unearned auto-delivery: uncracked crates smash on the barricade granting modest repair scrap
                 if (crate.position.z >= 0) {
                     audio.playHit();
                     spawnExplosionParticles(crate.position, 14, 'cyan');
-                    const scrapHeal = 15;
+                    const scrapHeal = 20;
                     gameState.playerHp = Math.min(gameState.maxHp, gameState.playerHp + scrapHeal);
                     showFloatingDamage("SCRAP SALVAGE +" + scrapHeal + " HP", playerGroup.position, "#38bdf8");
 
@@ -1507,7 +2025,6 @@
             }
         }
 
-        // Homing loot to player
         for (let lIdx = flyingLoots.length - 1; lIdx >= 0; lIdx--) {
             const loot = flyingLoots[lIdx];
             const targetPos = playerGroup.position.clone();
@@ -1522,8 +2039,8 @@
             if (dist < 1.8) {
                 addWeaponToStack(loot.weaponKey);
                 audio.playPickup();
-                showFloatingDamage("STACKED: " + WEAPONS[loot.weaponKey].symbol + "!", playerGroup.position, '#38bdf8');
-                spawnExplosionParticles(playerGroup.position, 16, 'cyan');
+                showFloatingDamage("STACKED: " + WEAPONS[loot.weaponKey].symbol + "!", playerGroup.position, WEAPONS[loot.weaponKey].color);
+                spawnExplosionParticles(playerGroup.position, 16, loot.weaponKey === 'cannon' ? 'green' : 'cyan');
 
                 scene.remove(loot.group);
                 flyingLoots.splice(lIdx, 1);
@@ -1533,7 +2050,6 @@
             }
         }
 
-        // Advance enemies along bridge
         for (let i = enemies.length - 1; i >= 0; i--) {
             const e = enemies[i];
             if (!e || !e.userData || e.userData.isDead) continue;
@@ -1567,7 +2083,6 @@
             }
         }
 
-        // Shockwaves animation
         for (let sIdx = shockwaves.length - 1; sIdx >= 0; sIdx--) {
             const sw = shockwaves[sIdx];
             sw.life -= dt;
@@ -1663,8 +2178,21 @@
         if (existing) {
             existing.timeLeft = WEAPONS[key].duration;
         } else {
-            if (gameState.activeWeapons.length >= 3) {
-                gameState.activeWeapons.splice(1, 1);
+            // Level 30+ allows 4 weapons (Blaster + Railgun + Tank + RPG)
+            const maxSlots = gameState.level >= 30 ? 4 : 3;
+            if (gameState.activeWeapons.length >= maxSlots) {
+                // Discard the secondary weapon with the least remaining time (preserve Railgun)
+                let dropIdx = 1;
+                let minRemaining = Infinity;
+                for (let i = 1; i < gameState.activeWeapons.length; i++) {
+                    const w = gameState.activeWeapons[i];
+                    const priorityScore = (w.key === 'railgun' && gameState.level >= 30) ? w.timeLeft + 100 : w.timeLeft;
+                    if (priorityScore < minRemaining) {
+                        minRemaining = priorityScore;
+                        dropIdx = i;
+                    }
+                }
+                gameState.activeWeapons.splice(dropIdx, 1);
             }
             gameState.activeWeapons.push({ key: key, timeLeft: WEAPONS[key].duration });
         }
@@ -1672,11 +2200,11 @@
 
     function undoWeaponOrRepair() {
         if (gameState.activeWeapons.length > 1) {
-            gameState.activeWeapons.pop();
-            showFloatingDamage("UNDO: WEAPON REMOVED", playerGroup.position, '#38bdf8');
+            const removed = gameState.activeWeapons.pop();
+            showFloatingDamage("UNDO: " + WEAPONS[removed.key].symbol + " REMOVED", playerGroup.position, '#38bdf8');
             audio.playPickup();
         } else {
-            const heal = 35;
+            const heal = 30;
             gameState.playerHp = Math.min(gameState.maxHp, gameState.playerHp + heal);
             showFloatingDamage("REPAIRED +" + heal + " HP", playerGroup.position, '#34d399');
             audio.playPickup();
@@ -1793,12 +2321,23 @@
             const w = WEAPONS[wEntry.key];
             if (!w) return;
             const badge = document.createElement('div');
-            badge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950/80 border text-[11px] font-black';
+            badge.className = 'flex items-center justify-between gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950/80 border text-[11px] font-black';
             badge.style.borderColor = w.color;
             badge.style.color = w.color;
 
             const timeStr = wEntry.timeLeft === Infinity ? '∞' : Math.ceil(wEntry.timeLeft) + 's';
-            badge.innerHTML = '<span>' + w.symbol + '</span><span class="text-[10px] opacity-75 font-mono">' + timeStr + '</span>';
+            let statusSuffix = '';
+            if (wEntry.key === 'railgun') {
+                if (railgunChargeState.isCharging) {
+                    statusSuffix = ' <span class="text-[9px] text-amber-300 font-mono tracking-tighter animate-pulse">⚡ CHARGING</span>';
+                } else {
+                    const elapsedSinceShot = (performance.now() / 1000) - (lastShotTimes['railgun'] || 0);
+                    if (elapsedSinceShot < w.fireRate) {
+                        statusSuffix = ' <span class="text-[9px] text-cyan-300 font-mono tracking-tighter">RECHARGING</span>';
+                    }
+                }
+            }
+            badge.innerHTML = '<span>' + w.symbol + statusSuffix + '</span><span class="text-[10px] opacity-75 font-mono">' + timeStr + '</span>';
             uiWeaponsStack.appendChild(badge);
         });
     }
@@ -1850,6 +2389,7 @@
 
     function resetLevel(retainScore) {
         retainScore = retainScore || false;
+        gameState.maxHp = calculateMaxHp(gameState.level);
         gameState.playerHp = gameState.maxHp;
         gameState.activeWeapons = [{ key: 'rifle', timeLeft: Infinity }];
         gameState.shotsFired = 0;
@@ -1863,6 +2403,13 @@
         gameState.isVictory = false;
         gameState.isPaused = false;
         lastSpawnedCrateWeapon = null;
+        cratesSinceTank = 0;
+        cratesSinceRailgun = 0;
+        cratesSpawnedInLevel = 0;
+        railgunChargeState.isCharging = false;
+        railChargeMat.opacity = 0;
+        if (audio) audio.stopRailgunCharge();
+        muzzleFlash.material.opacity = 0;
 
         bullets.concat(supplyCrates, flyingLoots, enemies, shockwaves).forEach(function(obj) {
             if (obj) scene.remove(obj.mesh || obj.group || obj);
@@ -1987,14 +2534,11 @@
         const currentLvl = gameState.level;
         const total = LevelGenConfig.baseEnemies + (currentLvl - 1) * LevelGenConfig.enemiesPerLvl;
         const baseInterval = LevelGenConfig.enemiesPerCrate;
-        const earlyCrates = Math.min(3, Math.floor(total / baseInterval));
-        const remEnemies = Math.max(0, total - (earlyCrates * baseInterval));
-        const lateCrates = Math.floor(remEnemies / (baseInterval * 1.35));
-        const totalEstimatedCrates = earlyCrates + lateCrates;
+        const totalEstimatedCrates = Math.max(1, Math.round(total / baseInterval));
 
         cfgCalcLvl.textContent = currentLvl;
         cfgCalcEnemies.textContent = total;
-        cfgCalcCrates.textContent = Math.max(1, totalEstimatedCrates);
+        cfgCalcCrates.textContent = totalEstimatedCrates;
     }
 
     document.getElementById('btn-config').addEventListener('click', function() {
@@ -2010,18 +2554,15 @@
         cfgCrateVal.textContent = cfgCrateSlider.value;
         const total = parseInt(cfgBaseInput.value) + (gameState.level - 1) * parseInt(cfgLvlInput.value);
         const baseInterval = parseInt(cfgCrateSlider.value);
-        const earlyCrates = Math.min(3, Math.floor(total / baseInterval));
-        const remEnemies = Math.max(0, total - (earlyCrates * baseInterval));
-        const lateCrates = Math.floor(remEnemies / (baseInterval * 1.35));
-        cfgCalcCrates.textContent = Math.max(1, earlyCrates + lateCrates);
+        cfgCalcCrates.textContent = Math.max(1, Math.round(total / baseInterval));
     });
 
     document.getElementById('btn-apply-config').addEventListener('click', function() {
         LevelGenConfig.seed = parseInt(cfgSeedInput.value) || 0;
-        LevelGenConfig.baseEnemies = parseInt(cfgBaseInput.value) || 48;
-        LevelGenConfig.enemiesPerLvl = parseInt(cfgLvlInput.value) || 18;
-        LevelGenConfig.enemiesPerCrate = parseInt(cfgCrateSlider.value) || 22;
-        LevelGenConfig.crawlerRatio = parseFloat(cfgCrawlerRatio.value) || 0.36;
+        LevelGenConfig.baseEnemies = parseInt(cfgBaseInput.value) || 30;
+        LevelGenConfig.enemiesPerLvl = parseInt(cfgLvlInput.value) || 12;
+        LevelGenConfig.enemiesPerCrate = parseInt(cfgCrateSlider.value) || 16;
+        LevelGenConfig.crawlerRatio = parseFloat(cfgCrawlerRatio.value) || 0.38;
         LevelGenConfig.bruteRatio = parseFloat(cfgBruteRatio.value) || 0.22;
 
         Storage.set('ba_gen_cfg', LevelGenConfig);
@@ -2032,10 +2573,10 @@
 
     document.getElementById('btn-default-config').addEventListener('click', function() {
         LevelGenConfig.seed = 0;
-        LevelGenConfig.baseEnemies = 48;
-        LevelGenConfig.enemiesPerLvl = 18;
-        LevelGenConfig.enemiesPerCrate = 22;
-        LevelGenConfig.crawlerRatio = 0.36;
+        LevelGenConfig.baseEnemies = 30;
+        LevelGenConfig.enemiesPerLvl = 12;
+        LevelGenConfig.enemiesPerCrate = 16;
+        LevelGenConfig.crawlerRatio = 0.38;
         LevelGenConfig.bruteRatio = 0.22;
         syncConfigUI();
     });
