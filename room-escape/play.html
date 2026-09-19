@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>The Coordinate Nexus - Room Maze</title>
+  <!-- Tailwind CSS for HUD and modal components -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js for 3D architectural rendering -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #0c0f14;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #e2e8f0;
+    }
+
+    .font-serif-title {
+      font-family: 'Cinzel', serif;
+    }
+
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 1;
+    }
+
+    .glass-panel {
+      background: rgba(16, 22, 34, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.6), 0 0 20px rgba(180, 150, 90, 0.08);
+    }
+
+    .glass-btn {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .glass-btn:hover {
+      background: rgba(51, 65, 85, 0.85);
+      border-color: rgba(234, 179, 8, 0.5);
+      transform: translateY(-1px);
+    }
+    .glass-btn:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    @keyframes subtleGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(234, 179, 8, 0.2); }
+      50% { box-shadow: 0 0 30px rgba(234, 179, 8, 0.45); }
+    }
+    .target-pulse {
+      animation: subtleGlow 3s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="relative w-full h-full select-none bg-slate-950">
+
+  <div id="canvas-container" class="absolute inset-0 z-0"></div>
+
+  <!-- HUD Overlay -->
+  <header class="absolute top-0 left-0 right-0 z-10 p-3 sm:p-5 pointer-events-none flex flex-col sm:flex-row justify-between items-center gap-3">
+    <!-- Level and Room Info -->
+    <div class="pointer-events-auto flex items-center gap-3 glass-panel px-4 py-2.5 rounded-2xl cursor-pointer hover:border-amber-500/50 transition" id="hud-level-badge" title="Click to switch chamber">
+      <div class="flex flex-col">
+        <div class="flex items-center gap-2">
+          <span class="text-xs uppercase tracking-widest text-amber-400 font-semibold" id="hud-level-title">The First Vault</span>
+          <span class="text-[11px] text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded-full" id="hud-structure-tag">Sector I</span>
+        </div>
+        <div class="flex items-baseline gap-2 mt-0.5">
+          <span class="text-xs text-slate-400">Current:</span>
+          <span class="font-mono-code font-bold text-amber-200 text-lg" id="hud-current-room">11</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Target Objective & Stage/Streak Indicator -->
+    <div class="pointer-events-auto target-pulse glass-panel px-6 py-2.5 rounded-2xl border-amber-500/30 flex items-center gap-4">
+      <div class="flex flex-col items-center">
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10px] uppercase tracking-widest text-amber-300 font-medium">Mission Objective</span>
+          <span id="hud-stage-tag" class="text-[10px] font-mono-code font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded-full">1/3</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-medium text-slate-300">GO TO ROOM</span>
+          <span class="font-mono-code text-2xl font-black text-amber-300 tracking-wider" id="hud-target-room">75</span>
+        </div>
+      </div>
+      <div class="h-8 w-px bg-slate-700/80"></div>
+      <div class="flex flex-col items-center min-w-[70px]">
+        <span class="text-[10px] uppercase tracking-widest text-slate-400 font-medium" id="hud-timer-label">Time</span>
+        <span class="font-mono-code text-xl font-bold text-slate-100" id="hud-timer-val">01:00</span>
+      </div>
+    </div>
+
+    <!-- Right Controls: Lightbulb Hint, Undo, Restart, Sound, Pause, Settings -->
+    <div class="pointer-events-auto flex items-center gap-2">
+      <button id="btn-hint" title="Chamber Hint & Coordinate Cheat Sheet" class="glass-btn p-2.5 rounded-xl text-amber-400 hover:text-amber-200 hover:bg-amber-500/20 border-amber-500/30 flex items-center justify-center transition shadow-sm">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
+      </button>
+      <button id="btn-undo" title="Undo Move" class="glass-btn p-2.5 rounded-xl text-slate-300 hover:text-white flex items-center justify-center">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a5 5 0 015 5v2m-15-7l4-4m-4 4l4 4"/></svg>
+      </button>
+      <button id="btn-restart" title="Restart Chamber" class="glass-btn p-2.5 rounded-xl text-slate-300 hover:text-white flex items-center justify-center">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      </button>
+      <button id="btn-sound" title="Toggle Sound" class="glass-btn p-2.5 rounded-xl text-slate-300 hover:text-white flex items-center justify-center">
+        <svg id="icon-sound-on" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+        <svg id="icon-sound-off" class="w-5 h-5 hidden text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>
+      </button>
+      <button id="btn-pause" title="Pause Game" class="glass-btn p-2.5 rounded-xl text-slate-300 hover:text-white flex items-center justify-center">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </button>
+      <button id="btn-settings" title="Settings" class="glass-btn p-2.5 rounded-xl text-slate-300 hover:text-white flex items-center justify-center">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Bottom stats bar -->
+  <footer class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center gap-2">
+    <div class="pointer-events-auto glass-panel px-5 py-2 rounded-2xl flex items-center gap-4 text-xs">
+      <div class="flex items-center gap-1.5 text-slate-400">
+        <span>Moves:</span>
+        <span class="font-mono-code font-bold text-slate-200" id="hud-moves">0</span>
+      </div>
+      <div class="w-1 h-1 rounded-full bg-slate-600"></div>
+      <div class="flex items-center gap-1.5 text-slate-400">
+        <span>Doors Available:</span>
+        <span class="font-mono-code font-bold text-amber-300" id="hud-door-count">0</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Notification Toast message box -->
+  <div id="toast-msg" class="absolute top-20 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-2 glass-panel px-5 py-2.5 rounded-xl border-amber-500/40 text-sm font-medium text-amber-200 shadow-xl">
+    Notification
+  </div>
+
+  <!-- LEVEL COMPLETE MODAL -->
+  <div id="modal-complete" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div class="glass-panel w-full max-w-md rounded-3xl p-6 sm:p-8 text-center border-amber-500/40 shadow-2xl relative overflow-hidden">
+      <div class="absolute -top-12 -right-12 w-36 h-36 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <h2 class="text-2xl sm:text-3xl font-serif-title font-bold text-amber-300 tracking-wide" id="modal-complete-title">Chamber Solved</h2>
+      <p class="text-xs text-amber-400/90 font-mono-code mt-1 font-semibold uppercase tracking-wider" id="modal-complete-subtitle">All 3 Target Checkpoints Secured</p>
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-2 gap-3 my-5">
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-3">
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Total Time</div>
+          <div class="text-xl font-mono-code font-bold text-white mt-0.5" id="stat-time">00:24</div>
+        </div>
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-3">
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Total Moves</div>
+          <div class="text-xl font-mono-code font-bold text-white mt-0.5" id="stat-moves">14</div>
+        </div>
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-3">
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Optimal Route</div>
+          <div class="text-xl font-mono-code font-bold text-amber-300 mt-0.5" id="stat-optimal">10</div>
+        </div>
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-3">
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Efficiency</div>
+          <div class="text-xl font-mono-code font-bold text-emerald-400 mt-0.5" id="stat-efficiency">82%</div>
+        </div>
+      </div>
+
+      <!-- Infinite Mode Suggestion Banner (shown when all levels mastered) -->
+      <div id="infinite-promo-box" class="hidden mb-5 p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-cyan-500/15 border border-amber-500/30 text-left">
+        <div class="flex items-center gap-2 text-amber-300 font-bold text-xs">
+          <span class="text-base">✨</span>
+          <span>All 8 Chambers Mastered! Infinite Mode Unlocked</span>
+        </div>
+        <p class="text-[11px] text-slate-300 mt-1 leading-relaxed">
+          Delve through never-ending random targets in any chamber of your choice.
+        </p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col gap-2.5">
+        <button id="btn-modal-infinite" class="hidden w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-500 via-indigo-500 to-amber-500 hover:from-purple-400 hover:to-amber-400 text-white font-bold text-sm tracking-wide shadow-lg shadow-purple-500/25 transition active:scale-[0.98]">
+          Play Infinite Mode on This Level
+        </button>
+        <button id="btn-modal-next" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold tracking-wide shadow-lg shadow-amber-500/25 transition active:scale-[0.98]">
+          Next Chamber
+        </button>
+        <button id="btn-modal-retry" class="w-full glass-btn py-2.5 px-3 rounded-xl text-slate-200 hover:text-white text-xs font-semibold">
+          Play Again
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAUSE MODAL -->
+  <div id="modal-pause" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div class="glass-panel w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl">
+      <h2 class="text-2xl font-serif-title font-bold text-slate-100">Contemplation</h2>
+      <p class="text-xs text-slate-400 mt-1">Maze state suspended</p>
+      <div class="my-6 space-y-3">
+        <button id="btn-resume" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm">
+          Resume
+        </button>
+        <button id="btn-pause-restart" class="w-full glass-btn py-3 rounded-xl text-slate-200 text-sm font-semibold">
+          Restart Chamber
+        </button>
+        <button id="btn-pause-settings" class="w-full glass-btn py-3 rounded-xl text-slate-300 text-sm">
+          Settings
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div id="modal-settings" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div class="glass-panel w-full max-w-md rounded-3xl p-6 sm:p-7 border-slate-700/60 shadow-2xl">
+      <div class="flex justify-between items-center mb-5">
+        <h2 class="text-xl font-serif-title font-bold text-slate-100">Settings & Directory</h2>
+        <button id="btn-settings-close" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-sm">
+        <!-- Infinite Mode Toggle -->
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-900/60 border border-slate-800" id="setting-infinite-row">
+          <div>
+            <div class="font-semibold text-purple-300 flex items-center gap-1.5">
+              <span>Infinite Mode</span>
+              <span id="badge-infinite-unlocked" class="hidden text-[10px] font-mono-code font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.2 rounded-full">UNLOCKED</span>
+            </div>
+            <div class="text-xs text-slate-400">Keep solving endless random target rooms</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-infinite" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+          </label>
+        </div>
+
+        <!-- Timer Mode Toggle -->
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-900/60 border border-slate-800">
+          <div>
+            <div class="font-semibold text-slate-200">Timer Challenge (60s)</div>
+            <div class="text-xs text-slate-400">Resets on reaching each target checkpoint</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-timer" class="sr-only peer" checked>
+            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+          </label>
+        </div>
+
+        <!-- Audio Volume -->
+        <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2">
+          <div class="flex justify-between text-xs text-slate-300">
+            <span>Synthesis Ambient Volume</span>
+            <span id="label-volume" class="font-mono-code">70%</span>
+          </div>
+          <input type="range" id="slider-volume" min="0" max="100" value="70" class="w-full accent-amber-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+        </div>
+
+        <!-- Camera Transition Speed -->
+        <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2">
+          <div class="flex justify-between text-xs text-slate-300">
+            <span>Door Transition Speed</span>
+            <span id="label-speed" class="font-mono-code">Normal</span>
+          </div>
+          <input type="range" id="slider-speed" min="1" max="3" value="2" class="w-full accent-amber-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+        </div>
+
+        <!-- Level Selector Jump (All 8 freely testable) -->
+        <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between text-xs text-slate-300 font-medium">
+            <span>Select Chamber</span>
+            <span class="text-[10px] text-amber-400 font-mono">8 Sectors</span>
+          </div>
+          <div class="grid grid-cols-4 sm:grid-cols-8 gap-2" id="unlocked-levels-container">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-settings-save" class="w-full mt-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm">
+        Done
+      </button>
+    </div>
+  </div>
+
+  <!-- MINIMAP / HINT MODAL -->
+  <div id="modal-hint" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-5">
+    <div class="glass-panel w-full max-w-2xl rounded-3xl p-5 sm:p-6 border-amber-500/30 shadow-2xl flex flex-col max-h-[90vh]">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shrink-0">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-lg font-serif-title font-bold text-amber-300 leading-tight">Chamber Hint & Map</h2>
+              <span class="text-[10px] font-bold tracking-wider uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full">Cheat Sheet</span>
+            </div>
+            <!-- Descriptive Grid Name & Coordinate Explanation -->
+            <div id="minimap-grid-desc" class="text-xs font-mono-code text-emerald-400 font-semibold mt-1">
+              8×8 Ulam Spiral — Concentric counterclockwise integer spiral (1–64)
+            </div>
+            <p class="text-[11px] text-slate-400 mt-0.5">Topological structure, current position & available doors</p>
+          </div>
+        </div>
+        <button id="btn-hint-close" class="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Minimap Canvas Container -->
+      <div class="relative w-full my-3 flex-1 min-h-[300px] max-h-[500px] bg-slate-950/70 border border-slate-800 rounded-2xl overflow-hidden flex items-center justify-center">
+        <canvas id="minimap-canvas" class="w-full h-full block"></canvas>
+      </div>
+
+      <!-- Legend & Info Footer -->
+      <div class="flex flex-wrap items-center justify-between gap-3 text-xs pt-2 border-t border-slate-800">
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] ring-2 ring-white"></span>
+            <span class="text-slate-300 font-medium">You (<span id="minimap-cur-label" class="font-mono-code text-cyan-300">1</span>)</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-emerald-400 ring-2 ring-emerald-300/40"></span>
+            <span class="text-slate-300 font-medium">Available Doors</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-amber-400 ring-2 ring-amber-300/40"></span>
+            <span class="text-slate-300 font-medium">Target Room</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+            <span class="text-slate-400">Other Chambers</span>
+          </div>
+        </div>
+
+        <button id="btn-hint-dismiss" class="py-2 px-5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition">
+          Return to Room
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME OVER / TIMEOUT MODAL -->
+  <div id="modal-timeout" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+    <div class="glass-panel w-full max-w-sm rounded-3xl p-6 text-center border-red-500/30 shadow-2xl">
+      <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <h2 class="text-2xl font-serif-title font-bold text-red-400">Nexus Closed</h2>
+      <p class="text-xs text-slate-400 mt-1">Time expired before reaching the target room.</p>
+      <div class="mt-6 flex flex-col gap-2.5">
+        <button id="btn-timeout-retry" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm">
+          Try Again
+        </button>
+        <button id="btn-timeout-notimer" class="w-full glass-btn py-2.5 rounded-xl text-slate-300 text-xs">
+          Disable Timer & Retry
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  if (navigator.audioSession) {
+    try {
+      navigator.audioSession.type = "playback";
+    } catch(e) {
+      console.warn("AudioSession setting skipped:", e);
+    }
+  }
+
+  const StorageFallback = {
+    getItem(key) {
+      try {
+        const val = localStorage.getItem(key);
+        if (val !== null) return val;
+      } catch (e) {}
+      const match = document.cookie.match(new RegExp('(^| )' + key + '=([^;]+)'));
+      return match ? decodeURIComponent(match[2]) : null;
+    },
+    setItem(key, value) {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {}
+      try {
+        document.cookie = `${key}=${encodeURIComponent(value)};path=/;max-age=31536000`;
+      } catch (e) {}
+    }
+  };
+
+  class SoundEngine {
+    constructor() {
+      this.ctx = null;
+      this.enabled = true;
+      this.volume = 0.7;
+      this.gainMaster = null;
+    }
+
+    init() {
+      if (this.ctx) return;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AudioContextClass();
+
+      this.gainMaster = this.ctx.createGain();
+      this.gainMaster.gain.setValueAtTime(this.volume, this.ctx.currentTime);
+      this.gainMaster.connect(this.ctx.destination);
+
+      this.startAmbientSynthesis();
+    }
+
+    setVolume(val) {
+      this.volume = Math.max(0, Math.min(1, val));
+      if (this.gainMaster && this.ctx) {
+        this.gainMaster.gain.setTargetAtTime(this.enabled ? this.volume : 0, this.ctx.currentTime, 0.05);
+      }
+    }
+
+    toggleMute() {
+      this.enabled = !this.enabled;
+      if (this.gainMaster && this.ctx) {
+        this.gainMaster.gain.setTargetAtTime(this.enabled ? this.volume : 0, this.ctx.currentTime, 0.05);
+      }
+      return this.enabled;
+    }
+
+    startAmbientSynthesis() {
+      if (!this.ctx) return;
+      const freqs = [146.83, 220.00, 261.63, 329.63, 349.23];
+      
+      freqs.forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+
+        osc.type = idx % 2 === 0 ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(freq + (Math.random() * 0.4 - 0.2), this.ctx.currentTime);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(450 + idx * 80, this.ctx.currentTime);
+
+        gain.gain.setValueAtTime(0.02, this.ctx.currentTime);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.gainMaster);
+        osc.start();
+
+        const lfo = this.ctx.createOscillator();
+        const lfoGain = this.ctx.createGain();
+        lfo.frequency.setValueAtTime(0.08 + idx * 0.03, this.ctx.currentTime);
+        lfoGain.gain.setValueAtTime(0.015, this.ctx.currentTime);
+        lfo.connect(gain.gain);
+        lfo.start();
+      });
+    }
+
+    playDoorTravel() {
+      if (!this.enabled || !this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const filter = this.ctx.createBiquadFilter();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(120, now);
+      osc.frequency.exponentialRampToValueAtTime(380, now + 0.35);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(300, now);
+      filter.frequency.exponentialRampToValueAtTime(1400, now + 0.2);
+      filter.frequency.exponentialRampToValueAtTime(200, now + 0.45);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.exponentialRampToValueAtTime(0.12, now + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.gainMaster);
+
+      osc.start(now);
+      osc.stop(now + 0.5);
+    }
+
+    playTargetReached() {
+      if (!this.enabled || !this.ctx) return;
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((note, i) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const now = this.ctx.currentTime + i * 0.1;
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(note, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.18, now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+        osc.connect(gain);
+        gain.connect(this.gainMaster);
+
+        osc.start(now);
+        osc.stop(now + 1.3);
+      });
+    }
+
+    playUndo() {
+      if (!this.enabled || !this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(160, now + 0.25);
+
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+      osc.connect(gain);
+      gain.connect(this.gainMaster);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    }
+  }
+
+  const sound = new SoundEngine();
+
+  const LEVEL_CONFIGS = [
+    {
+      id: 1,
+      name: "The First Vault",
+      subtitle: "Sector I",
+      gridDescription: "9×9 Cartesian Grid — Coordinates: (Column, Row)",
+      generator: () => {
+        const rooms = {};
+        for (let c = 1; c <= 9; c++) {
+          for (let r = 1; r <= 9; r++) {
+            const id = `${c}${r}`;
+            const neighbors = [];
+            if (r < 9) neighbors.push(`${c}${r + 1}`);
+            if (r > 1) neighbors.push(`${c}${r - 1}`);
+            if (c < 9) neighbors.push(`${c + 1}${r}`);
+            if (c > 1) neighbors.push(`${c - 1}${r}`);
+            rooms[id] = neighbors;
+          }
+        }
+        return {
+          startRoom: "11",
+          targets: ["75", "28", "82"],
+          rooms: rooms,
+          structureTag: "Sector I"
+        };
+      }
+    },
+    {
+      id: 2,
+      name: "The Iron Sanctum",
+      subtitle: "Sector II",
+      gridDescription: "4×4×4 Isometric Cube — Coordinates: (X, Y, Z)",
+      generator: () => {
+        const rooms = {};
+        for (let x = 1; x <= 4; x++) {
+          for (let y = 1; y <= 4; y++) {
+            for (let z = 1; z <= 4; z++) {
+              const id = `${x}${y}${z}`;
+              const neighbors = [];
+              if (x < 4) neighbors.push(`${x + 1}${y}${z}`);
+              if (x > 1) neighbors.push(`${x - 1}${y}${z}`);
+              if (y < 4) neighbors.push(`${x}${y + 1}${z}`);
+              if (y > 1) neighbors.push(`${x}${y - 1}${z}`);
+              if (z < 4) neighbors.push(`${x}${y}${z + 1}`);
+              if (z > 1) neighbors.push(`${x}${y}${z - 1}`);
+              rooms[id] = neighbors;
+            }
+          }
+        }
+        return {
+          startRoom: "111",
+          targets: ["432", "143", "314"],
+          rooms: rooms,
+          structureTag: "Sector II"
+        };
+      }
+    },
+    {
+      id: 3,
+      name: "The Obsidian Loop",
+      subtitle: "Sector III",
+      gridDescription: "Concentric Polar Rings — Coordinates: (Ring 1–5, Sector 1–8)",
+      generator: () => {
+        const rooms = {};
+        for (let r = 1; r <= 5; r++) {
+          for (let s = 1; s <= 8; s++) {
+            const id = `${r}${s}`;
+            const neighbors = [];
+            const prevS = s === 1 ? 8 : s - 1;
+            const nextS = s === 8 ? 1 : s + 1;
+            neighbors.push(`${r}${nextS}`);
+            neighbors.push(`${r}${prevS}`);
+            if (r < 5) neighbors.push(`${r + 1}${s}`);
+            if (r > 1) neighbors.push(`${r - 1}${s}`);
+            rooms[id] = neighbors;
+          }
+        }
+        return {
+          startRoom: "11",
+          targets: ["47", "23", "55"],
+          rooms: rooms,
+          structureTag: "Sector III"
+        };
+      }
+    },
+    {
+      id: 4,
+      name: "The Woven Path",
+      subtitle: "Sector IV",
+      gridDescription: "Binary Tree Hierarchy — Path prefix string (0 = Left, 1 = Right)",
+      generator: () => {
+        const rooms = {};
+        function buildTree(node, depth) {
+          rooms[node] = [];
+          if (node.length > 1) {
+            const parent = node.slice(0, -1);
+            rooms[node].push(parent);
+          }
+          if (depth < 5) {
+            const leftChild = node + "0";
+            const rightChild = node + "1";
+            rooms[node].push(leftChild);
+            rooms[node].push(rightChild);
+            buildTree(leftChild, depth + 1);
+            buildTree(rightChild, depth + 1);
+          }
+        }
+        buildTree("1", 0);
+        return {
+          startRoom: "1",
+          targets: ["10110", "1101", "10011"],
+          rooms: rooms,
+          structureTag: "Sector IV"
+        };
+      }
+    },
+    {
+      id: 5,
+      name: "The Infinite Core",
+      subtitle: "Sector V",
+      gridDescription: "7×7 Cyclic Torus — Wraparound coordinates (Col 0–6, Row 0–6)",
+      generator: () => {
+        const rooms = {};
+        for (let c = 0; c < 7; c++) {
+          for (let r = 0; r < 7; r++) {
+            const id = `${c}${r}`;
+            const right = `${(c + 1) % 7}${r}`;
+            const left = `${(c + 6) % 7}${r}`;
+            const up = `${c}${(r + 1) % 7}`;
+            const down = `${c}${(r + 6) % 7}`;
+            rooms[id] = [up, down, right, left];
+          }
+        }
+        return {
+          startRoom: "00",
+          targets: ["54", "16", "42"],
+          rooms: rooms,
+          structureTag: "Sector V"
+        };
+      }
+    },
+    {
+      id: 6,
+      name: "The Amber Lattice",
+      subtitle: "Sector VI",
+      gridDescription: "Hexagonal Lattice — Biaxial: Right (+1, 0), Down-Right (0, +1)",
+      generator: () => {
+        const rooms = {};
+        const validHexes = new Set();
+        for (let v = 0; v <= 6; v++) {
+          const minU = v <= 3 ? (3 - v) : 0;
+          const maxU = v <= 3 ? 6 : (9 - v);
+          for (let u = minU; u <= maxU; u++) {
+            validHexes.add(`${u}${v}`);
+          }
+        }
+
+        const dirs = [
+          [1, 0],   // Right
+          [-1, 0],  // Left
+          [0, 1],   // Down-Right
+          [0, -1],  // Up-Left
+          [-1, 1],  // Down-Left
+          [1, -1]   // Up-Right
+        ];
+
+        validHexes.forEach(id => {
+          const u = parseInt(id.charAt(0), 10);
+          const v = parseInt(id.charAt(1), 10);
+          const neighbors = [];
+          dirs.forEach(([du, dv]) => {
+            const nid = `${u + du}${v + dv}`;
+            if (validHexes.has(nid)) {
+              neighbors.push(nid);
+            }
+          });
+          rooms[id] = neighbors;
+        });
+
+        return {
+          startRoom: "03",
+          targets: ["60", "15", "53"],
+          rooms: rooms,
+          structureTag: "Sector VI"
+        };
+      }
+    },
+    {
+      id: 7,
+      name: "The Grand Gambit",
+      subtitle: "Sector VII",
+      gridDescription: "8×8 Knight's Lattice — Chess Knight (L-shaped) moves: (Row, Column)",
+      generator: () => {
+        const rooms = {};
+        const knightJumps = [
+          [-2, -1], [-2, 1],
+          [-1, -2], [-1, 2],
+          [1, -2],  [1, 2],
+          [2, -1],  [2, 1]
+        ];
+
+        for (let r = 1; r <= 8; r++) {
+          for (let c = 1; c <= 8; c++) {
+            const id = `${r}${c}`;
+            const neighbors = [];
+            knightJumps.forEach(([dr, dc]) => {
+              const nr = r + dr;
+              const nc = c + dc;
+              if (nr >= 1 && nr <= 8 && nc >= 1 && nc <= 8) {
+                neighbors.push(`${nr}${nc}`);
+              }
+            });
+            rooms[id] = neighbors;
+          }
+        }
+
+        return {
+          startRoom: "11",
+          targets: ["88", "35", "72"],
+          rooms: rooms,
+          structureTag: "Sector VII"
+        };
+      }
+    },
+    {
+      id: 8,
+      name: "The Coiled Spiral",
+      subtitle: "Sector VIII",
+      gridDescription: "8×8 Ulam Spiral — Concentric counterclockwise square spiral (1–64)",
+      generator: () => {
+        const grid = [
+          [64, 63, 62, 61, 60, 59, 58, 57],
+          [37, 36, 35, 34, 33, 32, 31, 56],
+          [38, 17, 16, 15, 14, 13, 30, 55],
+          [39, 18,  5,  4,  3, 12, 29, 54],
+          [40, 19,  6,  1,  2, 11, 28, 53],
+          [41, 20,  7,  8,  9, 10, 27, 52],
+          [42, 21, 22, 23, 24, 25, 26, 51],
+          [43, 44, 45, 46, 47, 48, 49, 50]
+        ];
+
+        const rooms = {};
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            const id = grid[r][c].toString();
+            const neighbors = [];
+            if (r > 0) neighbors.push(grid[r - 1][c].toString());
+            if (r < 7) neighbors.push(grid[r + 1][c].toString());
+            if (c > 0) neighbors.push(grid[r][c - 1].toString());
+            if (c < 7) neighbors.push(grid[r][c + 1].toString());
+            rooms[id] = neighbors;
+          }
+        }
+
+        return {
+          startRoom: "1",
+          targets: ["64", "25", "47"],
+          rooms: rooms,
+          structureTag: "Sector VIII"
+        };
+      }
+    }
+  ];
+
+  function computeShortestPath(network, start, target) {
+    if (start === target) return [start];
+    const queue = [[start]];
+    const visited = new Set([start]);
+
+    while (queue.length > 0) {
+      const path = queue.shift();
+      const current = path[path.length - 1];
+      const neighbors = network[current] || [];
+
+      for (const n of neighbors) {
+        if (n === target) {
+          return [...path, n];
+        }
+        if (!visited.has(n)) {
+          visited.add(n);
+          queue.push([...path, n]);
+        }
+      }
+    }
+    return [start];
+  }
+
+  class RoomMazeScene {
+    constructor(container) {
+      this.container = container;
+      this.doors = [];
+      this.animating = false;
+      this.transitionSpeedFactor = 1.0;
+      this.inputCooldown = 0;
+
+      this.initThree();
+      this.buildEnclosedRoom();
+      this.setupRaycasting();
+      this.animate();
+    }
+
+    lockInput(durationMs = 450) {
+      this.inputCooldown = performance.now() + durationMs;
+    }
+
+    initThree() {
+      this.scene = new THREE.Scene();
+      this.scene.background = new THREE.Color(0x0f141f);
+      this.scene.fog = new THREE.FogExp2(0x0f141f, 0.025);
+
+      this.defaultCamPos = new THREE.Vector3(0, 1.7, 4.8);
+      this.camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, 0.1, 100);
+      this.camera.position.copy(this.defaultCamPos);
+
+      this.renderer = new THREE.WebGLRenderer({ antialias: true });
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      this.container.appendChild(this.renderer.domElement);
+
+      window.addEventListener('resize', () => this.onResize());
+
+      this.ambientLight = new THREE.AmbientLight(0xdbe4f0, 0.7);
+      this.scene.add(this.ambientLight);
+
+      this.centralLight = new THREE.PointLight(0xfef08a, 1.9, 20);
+      this.centralLight.position.set(0, 4.2, 0.5);
+      this.centralLight.castShadow = true;
+      this.scene.add(this.centralLight);
+
+      const wallWash = new THREE.DirectionalLight(0xffedd5, 0.45);
+      wallWash.position.set(0, 5, 4);
+      this.scene.add(wallWash);
+    }
+
+    onResize() {
+      this.camera.aspect = window.innerWidth / window.innerHeight;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    createStoneTexture(colorHex, mortarHex) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = colorHex;
+      ctx.fillRect(0, 0, 512, 512);
+
+      ctx.strokeStyle = mortarHex;
+      ctx.lineWidth = 5;
+      const stepY = 64;
+      const stepX = 128;
+      let row = 0;
+      for (let y = 0; y <= 512; y += stepY) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(512, y);
+        ctx.stroke();
+
+        const offset = (row % 2) * (stepX / 2);
+        for (let x = offset; x <= 512; x += stepX) {
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x, y + stepY);
+          ctx.stroke();
+        }
+        row++;
+      }
+
+      const imgData = ctx.getImageData(0, 0, 512, 512);
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        const noise = (Math.random() - 0.5) * 22;
+        imgData.data[i] = Math.min(255, Math.max(0, imgData.data[i] + noise));
+        imgData.data[i+1] = Math.min(255, Math.max(0, imgData.data[i+1] + noise));
+        imgData.data[i+2] = Math.min(255, Math.max(0, imgData.data[i+2] + noise));
+      }
+      ctx.putImageData(imgData, 0, 0);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    buildEnclosedRoom() {
+      const floorTex = this.createStoneTexture('#1e2430', '#131822');
+      floorTex.repeat.set(4, 4);
+
+      const wallTex = this.createStoneTexture('#252f40', '#181e2b');
+      wallTex.repeat.set(3, 2);
+
+      const floorMat = new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.65, metalness: 0.1 });
+      const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.8, metalness: 0.15 });
+      const trimMat = new THREE.MeshStandardMaterial({ color: 0x1b2230, roughness: 0.5, metalness: 0.3 });
+
+      const roomW = 16;
+      const roomH = 5.2;
+      const roomD = 14;
+
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(roomW, roomD), floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      this.scene.add(floor);
+
+      const ceiling = new THREE.Mesh(
+        new THREE.PlaneGeometry(roomW, roomD),
+        new THREE.MeshStandardMaterial({ color: 0x141a24, roughness: 0.9 })
+      );
+      ceiling.position.y = roomH;
+      ceiling.rotation.x = Math.PI / 2;
+      this.scene.add(ceiling);
+
+      for (let z = -5; z <= 5; z += 3.2) {
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.4, 0.45), trimMat);
+        beam.position.set(0, roomH - 0.2, z);
+        this.scene.add(beam);
+      }
+
+      const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(roomW, roomH), wallMat);
+      frontWall.position.set(0, roomH / 2, -5.5);
+      frontWall.receiveShadow = true;
+      this.scene.add(frontWall);
+
+      const backWall = new THREE.Mesh(new THREE.PlaneGeometry(roomW, roomH), wallMat);
+      backWall.position.set(0, roomH / 2, 6.5);
+      backWall.rotation.y = Math.PI;
+      this.scene.add(backWall);
+
+      const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(roomD, roomH), wallMat);
+      leftWall.position.set(-roomW / 2, roomH / 2, 0.5);
+      leftWall.rotation.y = Math.PI / 2;
+      leftWall.receiveShadow = true;
+      this.scene.add(leftWall);
+
+      const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(roomD, roomH), wallMat);
+      rightWall.position.set(roomW / 2, roomH / 2, 0.5);
+      rightWall.rotation.y = -Math.PI / 2;
+      rightWall.receiveShadow = true;
+      this.scene.add(rightWall);
+
+      const baseboardFront = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.35, 0.2), trimMat);
+      baseboardFront.position.set(0, 0.175, -5.4);
+      this.scene.add(baseboardFront);
+
+      [-6, 6].forEach((x) => {
+        const sconce = new THREE.PointLight(0xf59e0b, 0.7, 8);
+        sconce.position.set(x, 2.8, -4.8);
+        this.scene.add(sconce);
+
+        const fixture = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.08, 0.45, 8), trimMat);
+        fixture.position.set(x, 2.8, -5.3);
+        this.scene.add(fixture);
+      });
+    }
+
+    createPlacardTexture(roomCode, isPrev = false) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      const grad = ctx.createLinearGradient(0, 0, 512, 256);
+      grad.addColorStop(0, '#2b2314');
+      grad.addColorStop(0.5, '#45381d');
+      grad.addColorStop(1, '#1e180d');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 512, 256);
+
+      ctx.strokeStyle = '#eab308';
+      ctx.lineWidth = 12;
+      ctx.strokeRect(8, 8, 496, 240);
+
+      ctx.fillStyle = isPrev ? '#94a3b8' : '#fef08a';
+      ctx.font = 'bold 34px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(isPrev ? "← RETURN" : "ROOM", 256, 68);
+
+      ctx.fillStyle = isPrev ? '#cbd5e1' : '#facc15';
+      ctx.font = 'bold 98px "JetBrains Mono", monospace';
+      ctx.shadowColor = '#d97706';
+      ctx.shadowBlur = 12;
+      ctx.fillText(roomCode, 256, 178);
+
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    renderDoors(doorList, previousRoomId, onDoorSelectCallback) {
+      this.doors.forEach(d => this.scene.remove(d.group));
+      this.doors = [];
+
+      const count = doorList.length;
+      if (count === 0) return;
+
+      const scale = count > 6 ? 0.72 : (count > 4 ? 0.85 : 1.0);
+      const spacing = count > 6 ? 1.72 : (count > 4 ? 2.2 : (count > 3 ? 2.6 : 2.9));
+      const startX = -((count - 1) * spacing) / 2;
+
+      doorList.forEach((targetRoomId, idx) => {
+        const isPrevious = targetRoomId === previousRoomId;
+        const posX = startX + idx * spacing;
+        const posZ = -4.9;
+
+        const doorGroup = new THREE.Group();
+        doorGroup.position.set(posX, 0, posZ);
+        doorGroup.scale.set(scale, scale, scale);
+
+        doorGroup.lookAt(new THREE.Vector3(posX * 0.15, 0, this.camera.position.z));
+
+        const frameMat = new THREE.MeshStandardMaterial({
+          color: isPrevious ? 0x222c3c : 0x24344d,
+          roughness: 0.65,
+          metalness: 0.25
+        });
+
+        const postGeo = new THREE.BoxGeometry(0.25, 3.4, 0.4);
+        const leftPost = new THREE.Mesh(postGeo, frameMat);
+        leftPost.position.set(-1.0, 1.7, 0);
+        doorGroup.add(leftPost);
+
+        const rightPost = new THREE.Mesh(postGeo, frameMat);
+        rightPost.position.set(1.0, 1.7, 0);
+        doorGroup.add(rightPost);
+
+        const lintelGeo = new THREE.BoxGeometry(2.25, 0.35, 0.45);
+        const lintel = new THREE.Mesh(lintelGeo, frameMat);
+        lintel.position.set(0, 3.45, 0);
+        doorGroup.add(lintel);
+
+        const hingePivot = new THREE.Group();
+        hingePivot.position.set(-0.85, 0, 0);
+        doorGroup.add(hingePivot);
+
+        const leafGeo = new THREE.BoxGeometry(1.7, 3.2, 0.12);
+        const leafMat = new THREE.MeshStandardMaterial({
+          color: isPrevious ? 0x1e293b : 0x162235,
+          roughness: 0.5,
+          metalness: 0.2
+        });
+        const doorLeaf = new THREE.Mesh(leafGeo, leafMat);
+        doorLeaf.position.set(0.85, 1.6, 0);
+        doorLeaf.castShadow = true;
+        hingePivot.add(doorLeaf);
+
+        const handle = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.04, 0.04, 0.22, 12),
+          new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.8, roughness: 0.2 })
+        );
+        handle.rotation.x = Math.PI / 2;
+        handle.position.set(1.52, 1.5, 0.1);
+        hingePivot.add(handle);
+
+        const placardTex = this.createPlacardTexture(targetRoomId, isPrevious);
+        const placardMat = new THREE.MeshBasicMaterial({ map: placardTex });
+        const placard = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.62), placardMat);
+        placard.position.set(0.85, 2.35, 0.08);
+        hingePivot.add(placard);
+
+        const doorLight = new THREE.PointLight(isPrevious ? 0x94a3b8 : 0xf59e0b, 0.85, 3.2);
+        doorLight.position.set(0, 0.4, 0.3);
+        doorGroup.add(doorLight);
+
+        this.scene.add(doorGroup);
+
+        const clickableMeshes = [doorLeaf, placard, handle, leftPost, rightPost, lintel];
+
+        this.doors.push({
+          group: doorGroup,
+          hingePivot: hingePivot,
+          targetRoomId: targetRoomId,
+          isPrevious: isPrevious,
+          doorLeaf: doorLeaf,
+          placard: placard,
+          clickableMeshes: clickableMeshes,
+          callback: () => onDoorSelectCallback(targetRoomId, this.doors.find(d => d.targetRoomId === targetRoomId))
+        });
+      });
+    }
+
+    setupRaycasting() {
+      this.raycaster = new THREE.Raycaster();
+      this.mouse = new THREE.Vector2();
+
+      const getInteractiveTargets = () => {
+        const targets = [];
+        this.doors.forEach(d => {
+          d.clickableMeshes.forEach(m => targets.push({ mesh: m, door: d }));
+        });
+        return targets;
+      };
+
+      const updatePointer = (clientX, clientY) => {
+        const rect = this.renderer.domElement.getBoundingClientRect();
+        this.mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+      };
+
+      this.renderer.domElement.addEventListener('mousemove', (e) => {
+        if (this.animating) {
+          this.renderer.domElement.style.cursor = 'default';
+          return;
+        }
+        updatePointer(e.clientX, e.clientY);
+        const targets = getInteractiveTargets();
+        const hits = this.raycaster.intersectObjects(targets.map(t => t.mesh));
+        this.renderer.domElement.style.cursor = hits.length > 0 ? 'pointer' : 'default';
+      });
+
+      const onClickOrTouch = (e) => {
+        if (this.animating || performance.now() < this.inputCooldown) return;
+        if (e.target !== this.renderer.domElement) return;
+
+        let clientX = e.clientX;
+        let clientY = e.clientY;
+        if (e.touches && e.touches.length > 0) {
+          clientX = e.touches[0].clientX;
+          clientY = e.touches[0].clientY;
+        }
+
+        updatePointer(clientX, clientY);
+
+        const interactiveTargets = getInteractiveTargets();
+        const hits = this.raycaster.intersectObjects(interactiveTargets.map(i => i.mesh));
+        if (hits.length > 0) {
+          const match = interactiveTargets.find(i => i.mesh === hits[0].object);
+          if (match) {
+            match.door.callback();
+          }
+        }
+      };
+
+      this.renderer.domElement.addEventListener('click', onClickOrTouch);
+      this.renderer.domElement.addEventListener('touchstart', onClickOrTouch, { passive: true });
+    }
+
+    openDoorAndTransition(doorObj, onComplete) {
+      this.animating = true;
+      sound.playDoorTravel();
+
+      const startTime = performance.now();
+      const duration = 520 / this.transitionSpeedFactor;
+      const initialCamZ = this.camera.position.z;
+      const targetCamZ = initialCamZ - 2.8;
+
+      const animStep = (now) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+
+        if (doorObj && doorObj.hingePivot) {
+          doorObj.hingePivot.rotation.y = -ease * (Math.PI * 0.44);
+        }
+
+        this.camera.position.z = initialCamZ + (targetCamZ - initialCamZ) * ease;
+        this.centralLight.intensity = 1.9 * (1 - ease * 0.5);
+
+        if (progress < 1) {
+          requestAnimationFrame(animStep);
+        } else {
+          this.camera.position.copy(this.defaultCamPos);
+          this.centralLight.intensity = 1.9;
+          this.animating = false;
+          if (onComplete) onComplete();
+        }
+      };
+
+      requestAnimationFrame(animStep);
+    }
+
+    animate() {
+      requestAnimationFrame(() => this.animate());
+      this.renderer.render(this.scene, this.camera);
+    }
+  }
+
+  class RoomMazeGame {
+    constructor() {
+      this.currentLevelIndex = 0;
+      this.unlockedLevels = LEVEL_CONFIGS.length;
+      this.timerEnabled = true;
+      this.currentRoom = null;
+      this.moveHistory = [];
+      this.timerSeconds = 60;
+      this.timerInterval = null;
+      this.isPaused = false;
+      this.levelStartTime = null;
+      this.minimapOpen = false;
+
+      // Infinite Mode state
+      this.infiniteMode = false;
+      this.infiniteModeUnlocked = false;
+      this.infiniteStreak = 0;
+      this.completedLevels = new Set();
+
+      // 3-target checkpoint tracking
+      this.currentTargetIndex = 0;
+      this.targets = [];
+      this.currentTarget = null;
+
+      this.scene = new RoomMazeScene(document.getElementById('canvas-container'));
+      this.loadProgress();
+      this.bindUIEvents();
+      this.startLevel(this.currentLevelIndex);
+    }
+
+    loadProgress() {
+      this.unlockedLevels = LEVEL_CONFIGS.length;
+      const savedTimer = StorageFallback.getItem('coordinate_nexus_timer');
+      if (savedTimer !== null) {
+        this.timerEnabled = savedTimer === 'true';
+      }
+
+      const savedInfinite = StorageFallback.getItem('coordinate_nexus_infinite');
+      if (savedInfinite !== null) {
+        this.infiniteMode = savedInfinite === 'true';
+      }
+
+      const savedUnlockedInfinite = StorageFallback.getItem('coordinate_nexus_infinite_unlocked');
+      if (savedUnlockedInfinite === 'true') {
+        this.infiniteModeUnlocked = true;
+      }
+
+      const savedCompleted = StorageFallback.getItem('coordinate_nexus_completed_set');
+      if (savedCompleted) {
+        try {
+          const arr = JSON.parse(savedCompleted);
+          this.completedLevels = new Set(arr);
+          if (this.completedLevels.size >= LEVEL_CONFIGS.length) {
+            this.infiniteModeUnlocked = true;
+          }
+        } catch (e) {}
+      }
+    }
+
+    saveProgress() {
+      StorageFallback.setItem('coordinate_nexus_timer', this.timerEnabled.toString());
+      StorageFallback.setItem('coordinate_nexus_infinite', this.infiniteMode.toString());
+      StorageFallback.setItem('coordinate_nexus_infinite_unlocked', this.infiniteModeUnlocked.toString());
+      StorageFallback.setItem('coordinate_nexus_completed_set', JSON.stringify([...this.completedLevels]));
+    }
+
+    getRandomTargetRoom(excludeRoom = this.currentRoom) {
+      const allRoomIds = Object.keys(this.levelData.rooms);
+      if (allRoomIds.length <= 1) return allRoomIds[0] || "1";
+
+      // Prefer rooms at least 2 steps away to ensure an engaging navigation puzzle
+      const candidates = allRoomIds.filter(id => id !== excludeRoom);
+      const farCandidates = candidates.filter(id => {
+        const path = computeShortestPath(this.levelData.rooms, excludeRoom, id);
+        return path.length >= 3;
+      });
+
+      const pool = farCandidates.length > 0 ? farCandidates : candidates;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    startLevel(index) {
+      this.isPaused = false;
+      this.scene.animating = false;
+      this.scene.camera.position.copy(this.scene.defaultCamPos);
+
+      this.currentLevelIndex = index;
+      const config = LEVEL_CONFIGS[index];
+      this.levelData = config.generator();
+
+      this.currentRoom = this.levelData.startRoom;
+      this.moveHistory = [this.currentRoom];
+      this.levelStartTime = performance.now();
+
+      if (this.infiniteMode) {
+        this.infiniteStreak = 0;
+        this.currentTarget = this.getRandomTargetRoom(this.currentRoom);
+      } else {
+        this.currentTargetIndex = 0;
+        this.targets = (this.levelData.targets && this.levelData.targets.length > 0)
+          ? this.levelData.targets
+          : [this.levelData.targetRoom || "75"];
+        this.currentTarget = this.targets[0];
+      }
+
+      this.scene.lockInput(180);
+
+      document.getElementById('hud-level-title').innerText = config.name;
+      document.getElementById('hud-structure-tag').innerText = this.infiniteMode 
+        ? `${this.levelData.structureTag} • ∞` 
+        : this.levelData.structureTag;
+
+      this.updateHUDObjective();
+      this.renderCurrentRoom();
+      this.hideAllModals();
+
+      if (this.timerEnabled) {
+        document.getElementById('hud-timer-label').style.display = 'block';
+        document.getElementById('hud-timer-val').style.display = 'block';
+        this.timerSeconds = 60;
+        this.startTimer();
+      } else {
+        document.getElementById('hud-timer-label').style.display = 'none';
+        document.getElementById('hud-timer-val').style.display = 'none';
+        this.stopTimer();
+      }
+    }
+
+    updateHUDObjective() {
+      const stageTag = document.getElementById('hud-stage-tag');
+      if (this.infiniteMode) {
+        stageTag.innerText = `∞ ${this.infiniteStreak}`;
+        stageTag.className = "text-[10px] font-mono-code font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.2 rounded-full";
+      } else {
+        stageTag.innerText = `${this.currentTargetIndex + 1}/${this.targets.length}`;
+        stageTag.className = "text-[10px] font-mono-code font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded-full";
+      }
+      document.getElementById('hud-target-room').innerText = this.currentTarget;
+    }
+
+    renderCurrentRoom() {
+      document.getElementById('hud-current-room').innerText = this.currentRoom;
+      document.getElementById('hud-moves').innerText = (this.moveHistory.length - 1).toString();
+
+      const rawNeighbors = this.levelData.rooms[this.currentRoom] || [];
+      const previousRoom = this.moveHistory.length > 1 ? this.moveHistory[this.moveHistory.length - 2] : null;
+
+      let orderedDoors = [];
+      if (previousRoom && rawNeighbors.includes(previousRoom)) {
+        orderedDoors.push(previousRoom);
+        rawNeighbors.forEach(n => {
+          if (n !== previousRoom) orderedDoors.push(n);
+        });
+      } else {
+        orderedDoors = [...rawNeighbors];
+      }
+
+      document.getElementById('hud-door-count').innerText = orderedDoors.length.toString();
+
+      this.scene.renderDoors(orderedDoors, previousRoom, (chosenRoomId, doorObj) => {
+        this.goToRoom(chosenRoomId, doorObj);
+      });
+
+      if (this.minimapOpen) {
+        this.renderMinimap();
+      }
+    }
+
+    startTimer() {
+      this.stopTimer();
+      const timerVal = document.getElementById('hud-timer-val');
+      const updateDisplay = () => {
+        const mins = Math.floor(this.timerSeconds / 60);
+        const secs = this.timerSeconds % 60;
+        timerVal.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        if (this.timerSeconds <= 10) {
+          timerVal.classList.add('text-red-400');
+          timerVal.classList.remove('text-slate-100');
+        } else {
+          timerVal.classList.remove('text-red-400');
+          timerVal.classList.add('text-slate-100');
+        }
+      };
+      updateDisplay();
+
+      this.timerInterval = setInterval(() => {
+        if (this.isPaused) return;
+        this.timerSeconds--;
+        updateDisplay();
+        if (this.timerSeconds <= 0) {
+          this.stopTimer();
+          this.handleTimeout();
+        }
+      }, 1000);
+    }
+
+    stopTimer() {
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+      }
+    }
+
+    goToRoom(chosenRoomId, doorObj) {
+      if (this.scene.animating || this.isPaused) return;
+
+      this.scene.openDoorAndTransition(doorObj, () => {
+        this.moveHistory.push(chosenRoomId);
+        this.currentRoom = chosenRoomId;
+        this.renderCurrentRoom();
+
+        // Check target arrival
+        if (this.currentRoom === this.currentTarget) {
+          if (this.infiniteMode) {
+            // Infinite Mode: continuous loop of random targets
+            this.infiniteStreak++;
+            sound.playTargetReached();
+
+            if (this.timerEnabled) {
+              this.timerSeconds = 60;
+              this.startTimer();
+            }
+
+            const nextTarget = this.getRandomTargetRoom(this.currentRoom);
+            this.currentTarget = nextTarget;
+            this.updateHUDObjective();
+            this.showToast(`✨ Target Reached! Streak: ${this.infiniteStreak} • Next: Room ${this.currentTarget}`);
+            this.renderCurrentRoom();
+          } else {
+            // Standard 3-target sequence
+            const totalTargets = this.targets.length;
+            const currentStage = this.currentTargetIndex + 1;
+
+            if (currentStage < totalTargets) {
+              sound.playTargetReached();
+              this.currentTargetIndex++;
+              this.currentTarget = this.targets[this.currentTargetIndex];
+
+              if (this.timerEnabled) {
+                this.timerSeconds = 60;
+                this.startTimer();
+              }
+
+              this.updateHUDObjective();
+              this.showToast(`🎯 Checkpoint ${currentStage}/${totalTargets} reached! Next: Room ${this.currentTarget}`);
+              this.renderCurrentRoom();
+            } else {
+              this.handleLevelWin();
+            }
+          }
+        }
+      });
+    }
+
+    undoMove() {
+      if (this.scene.animating || this.isPaused) return;
+      if (this.moveHistory.length <= 1) {
+        this.showToast("At starting room");
+        return;
+      }
+      sound.playUndo();
+      this.moveHistory.pop();
+      this.currentRoom = this.moveHistory[this.moveHistory.length - 1];
+      this.renderCurrentRoom();
+      this.showToast("Returned to previous room");
+    }
+
+    handleTimeout() {
+      document.getElementById('modal-timeout').classList.remove('hidden');
+    }
+
+    handleLevelWin() {
+      this.stopTimer();
+      sound.playTargetReached();
+
+      this.completedLevels.add(this.currentLevelIndex);
+      if (this.completedLevels.size >= LEVEL_CONFIGS.length || this.currentLevelIndex === LEVEL_CONFIGS.length - 1) {
+        this.infiniteModeUnlocked = true;
+      }
+      this.saveProgress();
+
+      const timeElapsedMs = performance.now() - this.levelStartTime;
+      const totalSecs = Math.max(1, Math.round(timeElapsedMs / 1000));
+      const mins = Math.floor(totalSecs / 60);
+      const secs = totalSecs % 60;
+      const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      const movesTaken = this.moveHistory.length - 1;
+
+      // Cumulative shortest route across all targets
+      let totalOptimalMoves = 0;
+      let prevCheckpoint = this.levelData.startRoom;
+      for (const t of this.targets) {
+        const route = computeShortestPath(this.levelData.rooms, prevCheckpoint, t);
+        totalOptimalMoves += (route.length - 1);
+        prevCheckpoint = t;
+      }
+
+      const efficiency = Math.round((totalOptimalMoves / Math.max(totalOptimalMoves, movesTaken)) * 100);
+
+      document.getElementById('stat-time').innerText = timeStr;
+      document.getElementById('stat-moves').innerText = movesTaken.toString();
+      document.getElementById('stat-optimal').innerText = totalOptimalMoves.toString();
+      document.getElementById('stat-efficiency').innerText = `${efficiency}%`;
+
+      const nextBtn = document.getElementById('btn-modal-next');
+      const infiniteBtn = document.getElementById('btn-modal-infinite');
+      const promoBox = document.getElementById('infinite-promo-box');
+
+      // Check if all chambers passed or final level won
+      const allPassed = this.completedLevels.size >= LEVEL_CONFIGS.length || this.currentLevelIndex >= LEVEL_CONFIGS.length - 1;
+      if (allPassed) {
+        promoBox.classList.remove('hidden');
+        infiniteBtn.classList.remove('hidden');
+        nextBtn.innerText = "Next Chamber";
+      } else {
+        promoBox.classList.add('hidden');
+        infiniteBtn.classList.add('hidden');
+        nextBtn.innerText = "Next Chamber";
+        nextBtn.disabled = false;
+      }
+
+      document.getElementById('modal-complete').classList.remove('hidden');
+    }
+
+    hideAllModals() {
+      document.getElementById('modal-complete').classList.add('hidden');
+      document.getElementById('modal-pause').classList.add('hidden');
+      document.getElementById('modal-settings').classList.add('hidden');
+      document.getElementById('modal-timeout').classList.add('hidden');
+      document.getElementById('modal-hint').classList.add('hidden');
+      this.minimapOpen = false;
+    }
+
+    showToast(text) {
+      const toast = document.getElementById('toast-msg');
+      toast.innerText = text;
+      toast.classList.remove('opacity-0', '-translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      clearTimeout(this.toastTimeout);
+      this.toastTimeout = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', '-translate-y-2');
+      }, 2600);
+    }
+
+    bindUIEvents() {
+      const startAudio = () => {
+        sound.init();
+        window.removeEventListener('click', startAudio);
+        window.removeEventListener('keydown', startAudio);
+      };
+      window.addEventListener('click', startAudio);
+      window.addEventListener('keydown', startAudio);
+
+      document.getElementById('btn-hint').addEventListener('click', () => this.openMinimap());
+      document.getElementById('btn-hint-close').addEventListener('click', () => this.closeMinimap());
+      document.getElementById('btn-hint-dismiss').addEventListener('click', () => this.closeMinimap());
+
+      const levelBadge = document.getElementById('hud-level-badge');
+      if (levelBadge) {
+        levelBadge.addEventListener('click', () => this.openSettings());
+      }
+
+      document.getElementById('btn-undo').addEventListener('click', () => this.undoMove());
+      document.getElementById('btn-restart').addEventListener('click', () => this.startLevel(this.currentLevelIndex));
+
+      document.getElementById('btn-sound').addEventListener('click', () => {
+        const on = sound.toggleMute();
+        document.getElementById('icon-sound-on').classList.toggle('hidden', !on);
+        document.getElementById('icon-sound-off').classList.toggle('hidden', on);
+        this.showToast(on ? "Sound Enabled" : "Sound Muted");
+      });
+
+      document.getElementById('btn-pause').addEventListener('click', () => {
+        this.isPaused = true;
+        document.getElementById('modal-pause').classList.remove('hidden');
+      });
+
+      document.getElementById('btn-resume').addEventListener('click', () => {
+        this.isPaused = false;
+        document.getElementById('modal-pause').classList.add('hidden');
+      });
+
+      document.getElementById('btn-pause-restart').addEventListener('click', () => {
+        this.startLevel(this.currentLevelIndex);
+      });
+
+      document.getElementById('btn-pause-settings').addEventListener('click', () => {
+        document.getElementById('modal-pause').classList.add('hidden');
+        this.openSettings();
+      });
+
+      document.getElementById('btn-settings').addEventListener('click', () => this.openSettings());
+      document.getElementById('btn-settings-close').addEventListener('click', () => {
+        document.getElementById('modal-settings').classList.add('hidden');
+        this.isPaused = false;
+      });
+      document.getElementById('btn-settings-save').addEventListener('click', () => {
+        document.getElementById('modal-settings').classList.add('hidden');
+        this.isPaused = false;
+      });
+
+      // Infinite mode toggle in settings
+      document.getElementById('toggle-infinite').addEventListener('change', (e) => {
+        this.infiniteMode = e.target.checked;
+        this.saveProgress();
+        this.startLevel(this.currentLevelIndex);
+      });
+
+      // Direct shortcut button on level complete modal
+      document.getElementById('btn-modal-infinite').addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.infiniteMode = true;
+        document.getElementById('toggle-infinite').checked = true;
+        this.saveProgress();
+        this.hideAllModals();
+        this.startLevel(this.currentLevelIndex);
+        this.showToast("♾️ Infinite Mode Activated! Endless targets awaits.");
+      });
+
+      document.getElementById('toggle-timer').addEventListener('change', (e) => {
+        this.timerEnabled = e.target.checked;
+        this.saveProgress();
+        this.startLevel(this.currentLevelIndex);
+      });
+
+      document.getElementById('slider-volume').addEventListener('input', (e) => {
+        const vol = parseInt(e.target.value, 10) / 100;
+        sound.setVolume(vol);
+        document.getElementById('label-volume').innerText = `${e.target.value}%`;
+        this.saveProgress();
+      });
+
+      document.getElementById('slider-speed').addEventListener('input', (e) => {
+        const speeds = ["Deliberate", "Normal", "Fast"];
+        const factors = [0.8, 1.15, 1.6];
+        const val = parseInt(e.target.value, 10);
+        this.scene.transitionSpeedFactor = factors[val - 1];
+        document.getElementById('label-speed').innerText = speeds[val - 1];
+      });
+
+      document.getElementById('btn-modal-next').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const nextIdx = (this.currentLevelIndex + 1) % LEVEL_CONFIGS.length;
+        this.startLevel(nextIdx);
+      });
+      document.getElementById('btn-modal-retry').addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.startLevel(this.currentLevelIndex);
+      });
+
+      document.getElementById('btn-timeout-retry').addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.startLevel(this.currentLevelIndex);
+      });
+      document.getElementById('btn-timeout-notimer').addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.timerEnabled = false;
+        document.getElementById('toggle-timer').checked = false;
+        this.saveProgress();
+        this.startLevel(this.currentLevelIndex);
+      });
+    }
+
+    computeNodeCoordinates() {
+      const rooms = this.levelData.rooms;
+      const coords = {};
+      const roomIds = Object.keys(rooms);
+
+      switch (this.currentLevelIndex) {
+        case 0: { // 9x9 Cartesian Grid
+          roomIds.forEach(id => {
+            const col = parseInt(id.charAt(0), 10);
+            const row = parseInt(id.charAt(1), 10);
+            coords[id] = { x: col, y: 10 - row };
+          });
+          break;
+        }
+        case 1: { // 4x4x4 Cube (XYZ)
+          roomIds.forEach(id => {
+            const x = parseInt(id.charAt(0), 10);
+            const y = parseInt(id.charAt(1), 10);
+            const z = parseInt(id.charAt(2), 10);
+            coords[id] = { x: (z - 1) * 5 + x, y: 5 - y };
+          });
+          break;
+        }
+        case 2: { // Radial Ring Network (5 rings of 8 sectors)
+          roomIds.forEach(id => {
+            const ring = parseInt(id.charAt(0), 10);
+            const sec = parseInt(id.charAt(1), 10);
+            const angle = ((sec - 1) / 8) * Math.PI * 2 - Math.PI / 2;
+            const rad = ring * 1.8;
+            coords[id] = {
+              x: 10 + Math.cos(angle) * rad,
+              y: 10 + Math.sin(angle) * rad
+            };
+          });
+          break;
+        }
+        case 3: { // Binary Tree
+          roomIds.forEach(id => {
+            const depth = id.length - 1;
+            let val = 0;
+            for (let i = 1; i < id.length; i++) {
+              val = (val << 1) | (id.charAt(i) === '1' ? 1 : 0);
+            }
+            const totalInRow = Math.pow(2, depth);
+            coords[id] = {
+              x: ((val + 0.5) / totalInRow) * 18,
+              y: depth * 2.8 + 1
+            };
+          });
+          break;
+        }
+        case 4: { // 7x7 Torus Grid
+          roomIds.forEach(id => {
+            const c = parseInt(id.charAt(0), 10);
+            const r = parseInt(id.charAt(1), 10);
+            coords[id] = { x: c + 1, y: 8 - (r + 1) };
+          });
+          break;
+        }
+        case 5: { // Hex Grid (Biaxial projection)
+          roomIds.forEach(id => {
+            const u = parseInt(id.charAt(0), 10);
+            const v = parseInt(id.charAt(1), 10);
+            coords[id] = {
+              x: u + 0.5 * v,
+              y: v * 0.866
+            };
+          });
+          break;
+        }
+        case 6: { // 8x8 Chessboard Knight's Lattice
+          roomIds.forEach(id => {
+            const r = parseInt(id.charAt(0), 10);
+            const c = parseInt(id.charAt(1), 10);
+            coords[id] = { x: c, y: 9 - r };
+          });
+          break;
+        }
+        case 7: { // 8x8 Ulam Spiral Lattice
+          const grid = [
+            [64, 63, 62, 61, 60, 59, 58, 57],
+            [37, 36, 35, 34, 33, 32, 31, 56],
+            [38, 17, 16, 15, 14, 13, 30, 55],
+            [39, 18,  5,  4,  3, 12, 29, 54],
+            [40, 19,  6,  1,  2, 11, 28, 53],
+            [41, 20,  7,  8,  9, 10, 27, 52],
+            [42, 21, 22, 23, 24, 25, 26, 51],
+            [43, 44, 45, 46, 47, 48, 49, 50]
+          ];
+          for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+              coords[grid[r][c].toString()] = { x: c + 1, y: 8 - r };
+            }
+          }
+          break;
+        }
+        default: {
+          roomIds.forEach((id, idx) => {
+            const angle = (idx / roomIds.length) * Math.PI * 2;
+            coords[id] = { x: 10 + Math.cos(angle) * 8, y: 10 + Math.sin(angle) * 8 };
+          });
+          break;
+        }
+      }
+      return coords;
+    }
+
+    openMinimap() {
+      this.minimapOpen = true;
+      const config = LEVEL_CONFIGS[this.currentLevelIndex];
+      const descEl = document.getElementById('minimap-grid-desc');
+      if (descEl && config) {
+        descEl.innerText = config.gridDescription || "Topological Chamber Network";
+      }
+      document.getElementById('modal-hint').classList.remove('hidden');
+      document.getElementById('minimap-cur-label').innerText = this.currentRoom;
+      this.renderMinimap();
+    }
+
+    closeMinimap() {
+      this.minimapOpen = false;
+      document.getElementById('modal-hint').classList.add('hidden');
+    }
+
+    renderMinimap() {
+      const canvas = document.getElementById('minimap-canvas');
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(300, rect.width * dpr);
+      canvas.height = Math.max(220, rect.height * dpr);
+
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const rooms = this.levelData.rooms;
+      const roomIds = Object.keys(rooms);
+      const coords = this.computeNodeCoordinates();
+
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      roomIds.forEach(id => {
+        const pt = coords[id];
+        if (pt) {
+          if (pt.x < minX) minX = pt.x;
+          if (pt.x > maxX) maxX = pt.x;
+          if (pt.y < minY) minY = pt.y;
+          if (pt.y > maxY) maxY = pt.y;
+        }
+      });
+
+      const padX = 40 * dpr;
+      const padY = 40 * dpr;
+      const rangeX = Math.max(0.001, maxX - minX);
+      const rangeY = Math.max(0.001, maxY - minY);
+      const scaleX = (canvas.width - padX * 2) / rangeX;
+      const scaleY = (canvas.height - padY * 2) / rangeY;
+      const scale = Math.min(scaleX, scaleY);
+
+      const offsetX = (canvas.width - rangeX * scale) / 2;
+      const offsetY = (canvas.height - rangeY * scale) / 2;
+
+      const toScreen = (pt) => ({
+        x: offsetX + (pt.x - minX) * scale,
+        y: offsetY + (pt.y - minY) * scale
+      });
+
+      const currentRoom = this.currentRoom;
+      const targetRoom = this.currentTarget;
+      const neighbors = new Set(rooms[currentRoom] || []);
+
+      // Draw passages
+      ctx.lineWidth = 1.5 * dpr;
+      const drawnEdges = new Set();
+
+      roomIds.forEach(u => {
+        const p1 = coords[u] ? toScreen(coords[u]) : null;
+        if (!p1) return;
+        const adj = rooms[u] || [];
+        for (const v of adj) {
+          const edgeKey = u < v ? `${u}-${v}` : `${v}-${u}`;
+          if (drawnEdges.has(edgeKey)) continue;
+          drawnEdges.add(edgeKey);
+
+          const p2 = coords[v] ? toScreen(coords[v]) : null;
+          if (!p2) continue;
+
+          const isCurrentEdge = (u === currentRoom && neighbors.has(v)) || (v === currentRoom && neighbors.has(u));
+
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          if (isCurrentEdge) {
+            ctx.strokeStyle = '#34d399';
+            ctx.lineWidth = 3 * dpr;
+            ctx.stroke();
+          } else {
+            ctx.strokeStyle = 'rgba(71, 85, 105, 0.45)';
+            ctx.lineWidth = 1.5 * dpr;
+            ctx.stroke();
+          }
+        }
+      });
+
+      // Draw nodes
+      const baseNodeRadius = Math.max(4 * dpr, Math.min(10 * dpr, scale * 0.28));
+
+      roomIds.forEach(id => {
+        const pt = coords[id];
+        if (!pt) return;
+        const pos = toScreen(pt);
+        const isCurrent = id === currentRoom;
+        const isNeighbor = neighbors.has(id);
+        const isTarget = id === targetRoom;
+
+        ctx.beginPath();
+        if (isCurrent) {
+          ctx.arc(pos.x, pos.y, baseNodeRadius * 1.5, 0, Math.PI * 2);
+          ctx.fillStyle = '#22d3ee';
+          ctx.shadowColor = '#06b6d4';
+          ctx.shadowBlur = 14 * dpr;
+          ctx.fill();
+          ctx.lineWidth = 3 * dpr;
+          ctx.strokeStyle = '#ffffff';
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        } else if (isTarget) {
+          ctx.arc(pos.x, pos.y, baseNodeRadius * 1.3, 0, Math.PI * 2);
+          ctx.fillStyle = '#f59e0b';
+          ctx.shadowColor = '#d97706';
+          ctx.shadowBlur = 10 * dpr;
+          ctx.fill();
+          ctx.lineWidth = 2.5 * dpr;
+          ctx.strokeStyle = '#fef08a';
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        } else if (isNeighbor) {
+          ctx.arc(pos.x, pos.y, baseNodeRadius * 1.2, 0, Math.PI * 2);
+          ctx.fillStyle = '#10b981';
+          ctx.shadowColor = '#059669';
+          ctx.shadowBlur = 8 * dpr;
+          ctx.fill();
+          ctx.lineWidth = 2 * dpr;
+          ctx.strokeStyle = '#a7f3d0';
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        } else {
+          ctx.arc(pos.x, pos.y, baseNodeRadius * 0.85, 0, Math.PI * 2);
+          ctx.fillStyle = '#334155';
+          ctx.fill();
+          ctx.lineWidth = 1 * dpr;
+          ctx.strokeStyle = '#475569';
+          ctx.stroke();
+        }
+
+        if (isCurrent || isNeighbor || isTarget || roomIds.length <= 64) {
+          ctx.font = `bold ${Math.max(9 * dpr, 10.5 * dpr)}px 'JetBrains Mono', monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = isCurrent ? '#082f49' : (isTarget ? '#451a03' : (isNeighbor ? '#064e3b' : '#cbd5e1'));
+          ctx.fillText(id, pos.x, pos.y);
+        }
+      });
+    }
+
+    openSettings() {
+      this.isPaused = true;
+      document.getElementById('toggle-timer').checked = this.timerEnabled;
+      document.getElementById('toggle-infinite').checked = this.infiniteMode;
+
+      const badge = document.getElementById('badge-infinite-unlocked');
+      if (this.infiniteModeUnlocked) {
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+
+      const container = document.getElementById('unlocked-levels-container');
+      container.innerHTML = '';
+      LEVEL_CONFIGS.forEach((lvl, idx) => {
+        const btn = document.createElement('button');
+        const isCurrent = idx === this.currentLevelIndex;
+        btn.className = `py-2 rounded-xl text-xs font-bold transition ${
+          isCurrent 
+            ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-300' 
+            : 'bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white border border-slate-700'
+        }`;
+        btn.innerText = `Ch ${lvl.id}`;
+        btn.title = lvl.name;
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.isPaused = false;
+          document.getElementById('modal-settings').classList.add('hidden');
+          this.startLevel(idx);
+        });
+        container.appendChild(btn);
+      });
+
+      document.getElementById('modal-settings').classList.remove('hidden');
+    }
+  }
+
+  window.addEventListener('load', () => {
+    window.gameInstance = new RoomMazeGame();
+  });
+  </script>
+</body>
+</html>
