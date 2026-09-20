@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>The Coordinate Nexus - Room Maze</title>
   <!-- Tailwind CSS for HUD and modal components -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Three.js for 3D architectural rendering -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=JetBrains+Mono:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
     * {
       box-sizing: border-box;
@@ -24,7 +24,7 @@
       width: 100vw;
       height: 100vh;
       overflow: hidden;
-      background-color: #0b0f17;
+      background-color: #0b0e14;
       font-family: 'Plus Jakarta Sans', sans-serif;
       color: #e2e8f0;
     }
@@ -37,7 +37,7 @@
       font-family: 'JetBrains Mono', monospace;
     }
 
-    canvas {
+    canvas#three-canvas {
       position: absolute;
       top: 0;
       left: 0;
@@ -48,21 +48,21 @@
     }
 
     .glass-panel {
-      background: rgba(14, 20, 32, 0.88);
+      background: rgba(15, 21, 32, 0.85);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.65), 0 0 20px rgba(180, 150, 90, 0.08);
     }
 
     .glass-btn {
-      background: rgba(28, 38, 54, 0.82);
+      background: rgba(30, 41, 59, 0.75);
       backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .glass-btn:hover {
-      background: rgba(45, 58, 80, 0.95);
+      background: rgba(51, 65, 85, 0.9);
       border-color: rgba(234, 179, 8, 0.5);
       transform: translateY(-1px);
     }
@@ -70,265 +70,281 @@
       transform: translateY(1px) scale(0.97);
     }
 
-    /* Subtle objective glow animation */
-    @keyframes objectivePulse {
-      0%, 100% { box-shadow: 0 0 12px rgba(234, 179, 8, 0.2); }
-      50% { box-shadow: 0 0 24px rgba(234, 179, 8, 0.42); }
+    @keyframes subtleGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(234, 179, 8, 0.2); }
+      50% { box-shadow: 0 0 30px rgba(234, 179, 8, 0.45); }
     }
-    .objective-pill {
-      animation: objectivePulse 3s infinite ease-in-out;
+    .target-pulse {
+      animation: subtleGlow 3s infinite ease-in-out;
     }
 
-    /* Rotate phone overlay prompt for portrait mobile devices */
-    #rotate-device-modal {
-      display: none;
+    @keyframes celebrationPop {
+      0% { transform: scale(0.85); opacity: 0; }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); opacity: 1; }
     }
-    @media (max-width: 850px) and (orientation: portrait) {
-      #rotate-device-modal {
-        display: flex !important;
-      }
+    .animate-celebrate {
+      animation: celebrationPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
   </style>
 </head>
 <body class="relative w-full h-full select-none bg-slate-950">
 
-  <!-- 3D Canvas Mount Point -->
-  <div id="canvas-container" class="absolute inset-0 z-0"></div>
+  <div id="canvas-container" class="absolute inset-0 z-0">
+    <canvas id="three-canvas"></canvas>
+  </div>
 
-  <!-- Rotate Device Prompt (Portrait Phones) -->
-  <aside id="rotate-device-modal" class="fixed inset-0 z-50 flex-col items-center justify-center bg-slate-950/95 p-6 text-center backdrop-blur-xl">
-    <div class="w-16 h-16 mb-4 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 animate-pulse">
-      <svg class="w-9 h-9" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+  <!-- Mobile Landscape Warning Prompt -->
+  <div id="rotate-device-modal" class="fixed inset-0 z-40 hidden flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-xl p-6 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 mb-4 animate-bounce">
+      <svg class="w-8 h-8 rotate-90" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
       </svg>
     </div>
-    <h3 class="text-xl font-serif-title font-bold text-amber-300">Turn Phone Horizontally</h3>
-    <p class="text-xs text-slate-400 mt-2 max-w-xs leading-relaxed">
-      Rotate your device to landscape orientation so the chamber doors and subway station names can be displayed clearly.
+    <h3 class="text-xl font-serif-title font-bold text-amber-300">Rotate Device</h3>
+    <p class="text-xs text-slate-300 max-w-xs mt-2 leading-relaxed">
+      Please turn your phone horizontally for full chamber width and clear door readability.
     </p>
-    <button id="btn-dismiss-rotate" class="mt-6 px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white">
-      Continue in Portrait anyway
-    </button>
-  </aside>
+  </div>
 
-  <!-- Slim, Compact HUD Header -->
-  <header class="absolute top-0 left-0 right-0 z-10 p-2 sm:p-4 pointer-events-none flex flex-col gap-1.5 max-w-5xl mx-auto">
-    <!-- Top Row: Chamber Title / Dropdown & Action Controls -->
+  <!-- Compact Top HUD Bar -->
+  <header class="absolute top-0 left-0 right-0 z-20 p-2 sm:p-4 pointer-events-none flex flex-col gap-1.5 max-w-5xl mx-auto">
+    <!-- Row 1: Level pill button on left, action controls on right -->
     <div class="flex items-center justify-between gap-2">
-      <!-- Chamber selector button -->
-      <button id="btn-chamber-dropdown" class="pointer-events-auto glass-panel px-3 py-1.5 rounded-xl flex items-center gap-2 hover:border-amber-500/50 transition cursor-pointer">
-        <span class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]"></span>
-        <span class="text-xs uppercase tracking-wider text-amber-300 font-bold" id="hud-level-title">Chamber 1</span>
-        <span class="text-[10px] text-slate-400 font-mono-code" id="hud-structure-tag">Sector I</span>
+      <!-- Level Selector Button (Shows Level X only during gameplay) -->
+      <button id="btn-quick-chamber" class="pointer-events-auto flex items-center gap-2 glass-panel px-3 py-1.5 rounded-xl border border-slate-700/70 hover:border-amber-500/50 transition cursor-pointer text-left">
+        <div class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></div>
+        <span class="text-xs font-bold text-amber-300 tracking-wide uppercase" id="hud-chamber-name">Level 1</span>
         <svg class="w-3.5 h-3.5 text-slate-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
       </button>
 
-      <!-- Action Buttons -->
-      <div class="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
-        <button id="btn-hint" title="Map & Coordinate Hints" class="glass-btn p-2 rounded-xl text-amber-400 hover:text-amber-200 hover:bg-amber-500/20 border-amber-500/30 flex items-center justify-center">
-          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <!-- Action Controls -->
+      <div class="pointer-events-auto flex items-center gap-1.5">
+        <button id="btn-hint" title="Chamber Hint & Map" class="glass-btn p-2 rounded-xl text-amber-400 hover:text-amber-200 border-amber-500/30">
+          <svg class="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
           </svg>
         </button>
-        <button id="btn-undo" title="Undo Move" class="glass-btn p-2 rounded-xl text-slate-300 hover:text-white flex items-center justify-center">
-          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a5 5 0 015 5v2m-15-7l4-4m-4 4l4 4"/></svg>
+        <button id="btn-undo" title="Undo Move" class="glass-btn p-2 rounded-xl text-slate-300 hover:text-white">
+          <svg class="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a5 5 0 015 5v2m-15-7l4-4m-4 4l4 4"/></svg>
         </button>
-        <button id="btn-restart" title="Restart Chamber" class="glass-btn p-2 rounded-xl text-slate-300 hover:text-white flex items-center justify-center">
-          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <button id="btn-restart" title="Restart Chamber" class="glass-btn p-2 rounded-xl text-slate-300 hover:text-white">
+          <svg class="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
         </button>
-        <button id="btn-sound" title="Toggle Sound" class="glass-btn p-2 rounded-xl text-slate-300 hover:text-white flex items-center justify-center">
-          <svg id="icon-sound-on" class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
-          <svg id="icon-sound-off" class="w-4 h-4 sm:w-5 sm:h-5 hidden text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>
+        <button id="btn-sound" title="Toggle Sound" class="glass-btn p-2 rounded-xl text-slate-300 hover:text-white">
+          <svg id="icon-sound-on" class="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+          <svg id="icon-sound-off" class="w-4 h-4 sm:w-4.5 sm:h-4.5 hidden text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>
         </button>
-        <button id="btn-pause" title="Pause Game" class="glass-btn p-2 rounded-xl text-slate-300 hover:text-white flex items-center justify-center">
-          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <button id="btn-pause" title="Pause Game" class="glass-btn p-2 rounded-xl text-slate-300 hover:text-white">
+          <svg class="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </button>
-        <button id="btn-settings" title="Settings" class="glass-btn p-2 rounded-xl text-slate-300 hover:text-white flex items-center justify-center">
-          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+        <button id="btn-settings" title="Settings" class="glass-btn p-2 rounded-xl text-slate-300 hover:text-white">
+          <svg class="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
       </div>
     </div>
 
-    <!-- Row 2: Mission Banner (GO TO: X • NOW IN: Y) with Timer & Stage Counter -->
-    <div class="pointer-events-auto objective-pill glass-panel px-3 sm:px-4 py-1.5 rounded-xl border-amber-500/30 flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2 sm:gap-3 overflow-hidden text-xs sm:text-sm">
-        <span id="hud-stage-tag" class="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-mono-code font-bold text-[11px] border border-amber-500/30 shrink-0">1/3</span>
-        <div class="flex items-center gap-1.5 truncate">
-          <span class="text-slate-400 font-semibold uppercase text-[11px] shrink-0">GO TO:</span>
-          <span class="font-mono-code font-bold text-amber-300 truncate" id="hud-target-room">75</span>
-        </div>
-        <span class="text-slate-600 font-bold shrink-0">•</span>
-        <div class="flex items-center gap-1.5 truncate">
-          <span class="text-slate-400 font-semibold uppercase text-[11px] shrink-0">NOW IN:</span>
-          <span class="font-mono-code font-bold text-cyan-300 truncate" id="hud-current-room">11</span>
+    <!-- Row 2: Objective & Location Banner with High-Visibility "GO TO" Target -->
+    <div class="pointer-events-auto target-pulse glass-panel px-3.5 py-2 rounded-xl border border-amber-500/30 flex items-center justify-between gap-2.5 shadow-lg">
+      <div class="flex items-center gap-2.5 overflow-hidden">
+        <!-- Stage badge (e.g., 1/3 or Infinite) -->
+        <span id="hud-stage-tag" class="text-xs font-bold px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0">1/3</span>
+        
+        <!-- Objective & Location text -->
+        <div class="flex items-center gap-2 text-sm sm:text-base font-semibold truncate">
+          <span class="text-amber-400 font-bold text-xs sm:text-sm tracking-wide">GO TO:</span>
+          <span id="hud-target-name" class="font-black text-amber-300 font-mono-code text-sm sm:text-lg truncate drop-shadow-[0_0_10px_rgba(245,158,11,0.35)]">Japan</span>
+          <span class="text-slate-600 px-0.5">•</span>
+          <span class="text-slate-400 font-medium text-xs sm:text-sm">NOW IN:</span>
+          <span id="hud-current-name" class="font-bold text-cyan-300 font-mono-code text-xs sm:text-base truncate">Spain</span>
         </div>
       </div>
 
       <!-- Timer Counter -->
-      <div class="flex items-center gap-1 font-mono-code text-xs sm:text-sm font-bold text-slate-200 shrink-0" id="hud-timer-container">
-        <span id="hud-timer-val">00:45</span>
+      <div id="hud-timer-container" class="flex items-center gap-1.5 pl-2 border-l border-slate-700/60 shrink-0">
+        <span class="font-mono-code text-xs sm:text-sm font-bold text-slate-100" id="hud-timer-val">01:00</span>
       </div>
     </div>
   </header>
 
-  <!-- Bottom Door Status Badge -->
-  <footer class="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center">
-    <div class="pointer-events-auto glass-panel px-3.5 py-1 rounded-full flex items-center gap-3 text-[11px] text-slate-400">
-      <div>Moves: <span id="hud-moves" class="font-mono-code font-bold text-slate-200">0</span></div>
-      <div class="w-1 h-1 rounded-full bg-slate-600"></div>
-      <div>Doors: <span id="hud-door-count" class="font-mono-code font-bold text-amber-300">0</span></div>
-    </div>
-  </footer>
-
-  <!-- Notification Toast message box -->
-  <div id="toast-msg" class="absolute top-16 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-2 glass-panel px-4 py-2 rounded-xl border-amber-500/40 text-xs font-semibold text-amber-200 shadow-xl max-w-sm text-center">
+  <!-- Notification Toast Message -->
+  <div id="toast-msg" class="absolute top-16 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-2 glass-panel px-4 py-2 rounded-xl border-amber-500/40 text-xs sm:text-sm font-medium text-amber-200 shadow-xl">
     Notification
   </div>
 
-  <!-- LEVEL COMPLETE MODAL -->
-  <aside id="modal-complete" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+  <!-- LEVEL COMPLETE MODAL (Final 3/3 target solved) -->
+  <div id="modal-complete" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
     <div class="glass-panel w-full max-w-md rounded-3xl p-6 sm:p-7 text-center border-amber-500/40 shadow-2xl relative overflow-hidden">
       <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300">
         <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
-      <h2 class="text-2xl font-serif-title font-bold text-amber-300 tracking-wide" id="complete-title">Chamber Cleared</h2>
-      <p class="text-xs text-slate-400 mt-1" id="complete-subtitle">All 3 consecutive targets reached on time.</p>
+      <h2 class="text-xl sm:text-2xl font-serif-title font-bold text-amber-300 tracking-wide">Chamber Solved</h2>
+      <p class="text-xs text-slate-400 mt-1" id="complete-subtitle">All 3 consecutive destinations reached.</p>
 
       <!-- Stats Grid -->
       <div class="grid grid-cols-2 gap-2.5 my-4">
-        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-2.5">
-          <div class="text-[10px] text-slate-400 uppercase tracking-wider">Total Time</div>
-          <div class="text-lg font-mono-code font-bold text-white mt-0.5" id="stat-time">00:24</div>
+        <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-2.5">
+          <div class="text-[10px] text-slate-400 uppercase tracking-wider">Time Taken</div>
+          <div class="text-base sm:text-lg font-mono-code font-bold text-white mt-0.5" id="stat-time">00:24</div>
         </div>
-        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-2.5">
-          <div class="text-[10px] text-slate-400 uppercase tracking-wider">Moves Taken</div>
-          <div class="text-lg font-mono-code font-bold text-white mt-0.5" id="stat-moves">14</div>
+        <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-2.5">
+          <div class="text-[10px] text-slate-400 uppercase tracking-wider">Total Moves</div>
+          <div class="text-base sm:text-lg font-mono-code font-bold text-white mt-0.5" id="stat-moves">14</div>
         </div>
-        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-2.5">
+        <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-2.5">
           <div class="text-[10px] text-slate-400 uppercase tracking-wider">Optimal Route</div>
-          <div class="text-lg font-mono-code font-bold text-amber-300 mt-0.5" id="stat-optimal">10</div>
+          <div class="text-base sm:text-lg font-mono-code font-bold text-amber-300 mt-0.5" id="stat-optimal">10</div>
         </div>
-        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-2.5">
+        <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-2.5">
           <div class="text-[10px] text-slate-400 uppercase tracking-wider">Efficiency</div>
-          <div class="text-lg font-mono-code font-bold text-emerald-400 mt-0.5" id="stat-efficiency">82%</div>
+          <div class="text-base sm:text-lg font-mono-code font-bold text-emerald-400 mt-0.5" id="stat-efficiency">82%</div>
         </div>
-      </div>
-
-      <!-- Infinite Mode Promotion (Surfaced when all chambers beaten) -->
-      <div id="infinite-promo-container" class="hidden mb-4 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-left">
-        <div class="flex items-center gap-2">
-          <span class="text-amber-400 font-bold text-xs uppercase tracking-wider">✨ Infinite Mode Unlocked</span>
-        </div>
-        <p class="text-[11px] text-slate-300 mt-1 leading-snug">All 9 chambers mastered! Continue playing with continuous random targets in this chamber.</p>
-        <button id="btn-modal-infinite" class="w-full mt-2.5 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition">
-          Play Infinite Mode on This Level
-        </button>
       </div>
 
       <!-- Action Buttons -->
       <div class="flex flex-col gap-2">
-        <button id="btn-modal-next" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold tracking-wide shadow-lg transition">
+        <button id="btn-modal-next" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs sm:text-sm tracking-wide shadow-md transition active:scale-[0.98]">
           Next Chamber
         </button>
         <button id="btn-modal-retry" class="w-full glass-btn py-2 px-3 rounded-xl text-slate-200 hover:text-white text-xs font-semibold">
           Play Again
         </button>
+        <button id="btn-modal-infinite" class="w-full py-2 px-3 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 text-xs font-semibold transition">
+          Play Infinite Mode on This Level
+        </button>
       </div>
     </div>
-  </aside>
+  </div>
+
+  <!-- CHECKPOINT CELEBRATION MODAL (For stages 1 & 2) -->
+  <div id="modal-checkpoint" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+    <div class="glass-panel w-full max-w-sm sm:max-w-md rounded-3xl p-6 sm:p-7 text-center border-amber-500/40 shadow-2xl relative overflow-hidden animate-celebrate">
+      <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shadow-[0_0_25px_rgba(245,158,11,0.35)]">
+        <svg class="w-8 h-8 animate-pulse" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+
+      <span id="checkpoint-stage-badge" class="inline-block text-[11px] font-bold tracking-wider uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-full mb-2">
+        Checkpoint Complete!
+      </span>
+
+      <h2 id="checkpoint-title" class="text-xl sm:text-2xl font-serif-title font-bold text-amber-300">
+        Target Reached!
+      </h2>
+
+      <div class="my-4 p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
+        <div class="text-xs text-slate-400">
+          Reached: <span id="checkpoint-achieved-name" class="font-bold text-emerald-400 font-mono-code text-sm"></span>
+        </div>
+        <div class="border-t border-slate-800/80 pt-2">
+          <div class="text-[11px] text-amber-400/80 uppercase font-bold tracking-wider">Next Destination</div>
+          <div id="checkpoint-next-name" class="text-lg sm:text-xl font-mono-code font-extrabold text-amber-300 mt-0.5"></div>
+        </div>
+      </div>
+
+      <button id="btn-checkpoint-continue" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm tracking-wide shadow-lg shadow-amber-500/25 transition active:scale-[0.98] cursor-pointer">
+        Continue to Next Goal &rarr;
+      </button>
+    </div>
+  </div>
 
   <!-- PAUSE MODAL -->
-  <aside id="modal-pause" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+  <div id="modal-pause" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
     <div class="glass-panel w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl">
-      <h2 class="text-2xl font-serif-title font-bold text-slate-100">Contemplation</h2>
+      <h2 class="text-xl font-serif-title font-bold text-slate-100">Contemplation</h2>
       <p class="text-xs text-slate-400 mt-1">Maze state suspended</p>
       <div class="my-5 space-y-2.5">
-        <button id="btn-resume" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs">
+        <button id="btn-resume" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm">
           Resume
         </button>
-        <button id="btn-pause-restart" class="w-full glass-btn py-2.5 rounded-xl text-slate-200 text-xs font-semibold">
+        <button id="btn-pause-restart" class="w-full glass-btn py-2.5 rounded-xl text-slate-200 text-xs sm:text-sm font-semibold">
           Restart Chamber
         </button>
-        <button id="btn-pause-settings" class="w-full glass-btn py-2.5 rounded-xl text-slate-300 text-xs">
+        <button id="btn-pause-settings" class="w-full glass-btn py-2.5 rounded-xl text-slate-300 text-xs sm:text-sm">
           Settings
         </button>
       </div>
     </div>
-  </aside>
+  </div>
 
-  <!-- SETTINGS MODAL -->
-  <aside id="modal-settings" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
-    <div class="glass-panel w-full max-w-md rounded-3xl p-5 sm:p-6 border-slate-700/60 shadow-2xl max-h-[92vh] overflow-y-auto">
+  <!-- SETTINGS MODAL (Displays descriptive names in the selector) -->
+  <div id="modal-settings" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+    <div class="glass-panel w-full max-w-md rounded-3xl p-6 border-slate-700/60 shadow-2xl max-h-[92vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-serif-title font-bold text-slate-100">Settings & Chambers</h2>
+        <h2 class="text-lg font-serif-title font-bold text-slate-100">Settings</h2>
         <button id="btn-settings-close" class="text-slate-400 hover:text-white p-1 rounded-lg">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
 
-      <div class="space-y-3 text-xs">
+      <div class="space-y-3.5 text-xs sm:text-sm">
         <!-- Infinite Mode Toggle -->
-        <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-900/60 border border-slate-800">
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-purple-950/40 border border-purple-800/60">
           <div>
-            <div class="font-bold text-amber-300 text-sm">Infinite Mode</div>
-            <div class="text-[11px] text-slate-400">Continuous random targets without chamber clearing</div>
+            <div class="font-semibold text-purple-200">Infinite Mode</div>
+            <div class="text-[11px] text-purple-300/70">Continuous random targets on current level</div>
           </div>
           <label class="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" id="toggle-infinite" class="sr-only peer">
-            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+            <div class="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
           </label>
         </div>
 
         <!-- Timer Mode Toggle -->
-        <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-900/60 border border-slate-800">
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
           <div>
-            <div class="font-semibold text-slate-200 text-sm">Timer Challenge</div>
-            <div class="text-[11px] text-slate-400">60s time limit per target door</div>
+            <div class="font-semibold text-slate-200">Timer Challenge</div>
+            <div class="text-[11px] text-slate-400">60s time limit per target room</div>
           </div>
           <label class="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" id="toggle-timer" class="sr-only peer" checked>
-            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+            <div class="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
           </label>
         </div>
 
         <!-- Audio Volume -->
-        <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1.5">
-          <div class="flex justify-between text-slate-300">
+        <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
+          <div class="flex justify-between text-xs text-slate-300">
             <span>Ambient Synthesis Volume</span>
             <span id="label-volume" class="font-mono-code">70%</span>
           </div>
           <input type="range" id="slider-volume" min="0" max="100" value="70" class="w-full accent-amber-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer">
         </div>
 
-        <!-- Chamber Selector Jump -->
-        <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2">
-          <div class="text-slate-300 font-semibold">Chambers Directory (1–9)</div>
-          <div class="grid grid-cols-3 gap-2" id="unlocked-levels-container">
-            <!-- Populated dynamically via JS -->
+        <!-- Chamber Selector Directory with Descriptive Names -->
+        <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+          <div class="text-xs text-slate-300 font-medium">Select Level</div>
+          <div class="grid grid-cols-2 gap-1.5" id="unlocked-levels-container">
+            <!-- Populated via JS with descriptive titles -->
           </div>
         </div>
       </div>
 
-      <button id="btn-settings-save" class="w-full mt-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs">
+      <button id="btn-settings-save" class="w-full mt-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm">
         Done
       </button>
     </div>
-  </aside>
+  </div>
 
-  <!-- MINIMAP / HINT MODAL -->
-  <aside id="modal-hint" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-5">
+  <!-- MINIMAP / CHEAT SHEET MODAL -->
+  <div id="modal-hint" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/85 backdrop-blur-md p-2 sm:p-4">
     <div class="glass-panel w-full max-w-2xl rounded-3xl p-4 sm:p-5 border-amber-500/30 shadow-2xl flex flex-col max-h-[92vh]">
+      <!-- Header -->
       <div class="flex items-center justify-between pb-2.5 border-b border-slate-800">
         <div class="flex items-center gap-2.5">
           <div class="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shrink-0">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
             </svg>
           </div>
           <div>
-            <h2 class="text-base font-serif-title font-bold text-amber-300 leading-tight">Chamber Map & Hints</h2>
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm sm:text-base font-serif-title font-bold text-amber-300 leading-tight">Chamber Map & Hints</h2>
+              <span class="text-[9px] font-bold tracking-wider uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full">Cheat Sheet</span>
+            </div>
             <div id="minimap-grid-desc" class="text-[11px] font-mono-code text-emerald-400 font-medium">
-              Topological Network Structure
+              Topological Network
             </div>
           </div>
         </div>
@@ -337,16 +353,16 @@
         </button>
       </div>
 
-      <!-- Canvas for Minimap Rendering -->
-      <div class="relative w-full my-2.5 flex-1 min-h-[260px] max-h-[480px] bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden flex items-center justify-center">
+      <!-- Minimap Canvas -->
+      <div class="relative w-full my-2.5 flex-1 min-h-[260px] max-h-[500px] bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden flex items-center justify-center">
         <canvas id="minimap-canvas" class="w-full h-full block"></canvas>
       </div>
 
-      <!-- Legend & Dismiss Button -->
+      <!-- Legend Footer -->
       <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] pt-2 border-t border-slate-800">
         <div class="flex flex-wrap items-center gap-3">
           <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 ring-2 ring-white"></span>
             <span class="text-slate-300">You (<span id="minimap-cur-label" class="font-mono-code text-cyan-300"></span>)</span>
           </div>
           <div class="flex items-center gap-1.5">
@@ -354,28 +370,34 @@
             <span class="text-slate-300">Available Doors</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]"></span>
-            <span class="text-slate-300">Target</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+            <span class="text-slate-300">Goal Target (<span id="minimap-tgt-label" class="font-mono-code text-amber-300"></span>)</span>
           </div>
         </div>
-
-        <button id="btn-hint-dismiss" class="py-1.5 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition">
-          Back to Chamber
-        </button>
+        <div class="flex items-center gap-2">
+          <button id="btn-minimap-zoom" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 transition">
+            <svg id="zoom-icon-in" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"/></svg>
+            <svg id="zoom-icon-out" class="w-3.5 h-3.5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM7 10h6"/></svg>
+            <span id="zoom-btn-label" class="text-xs font-semibold">Zoom In</span>
+          </button>
+          <button id="btn-hint-dismiss" class="py-1.5 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition">
+            Return to Room
+          </button>
+        </div>
       </div>
     </div>
-  </aside>
+  </div>
 
-  <!-- GAME OVER / TIMEOUT MODAL -->
-  <aside id="modal-timeout" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+  <!-- TIMEOUT MODAL -->
+  <div id="modal-timeout" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
     <div class="glass-panel w-full max-w-sm rounded-3xl p-6 text-center border-red-500/30 shadow-2xl">
-      <div class="w-12 h-12 mx-auto mb-2.5 rounded-2xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400">
+      <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
-      <h2 class="text-xl font-serif-title font-bold text-red-400">Time Expired</h2>
-      <p class="text-xs text-slate-400 mt-1">Door locks engaged before reaching the destination room.</p>
+      <h2 class="text-xl font-serif-title font-bold text-red-400">Nexus Closed</h2>
+      <p class="text-xs text-slate-400 mt-1">Time expired before reaching the target room.</p>
       <div class="mt-5 flex flex-col gap-2">
-        <button id="btn-timeout-retry" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs">
+        <button id="btn-timeout-retry" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm">
           Try Again
         </button>
         <button id="btn-timeout-notimer" class="w-full glass-btn py-2 rounded-xl text-slate-300 text-xs">
@@ -383,11 +405,9 @@
         </button>
       </div>
     </div>
-  </aside>
+  </div>
 
-  <!-- Complete JavaScript Game Engine -->
   <script>
-  /* AudioSession setup for iOS / iPad compatibility */
   if (navigator.audioSession) {
     try {
       navigator.audioSession.type = "playback";
@@ -396,7 +416,6 @@
     }
   }
 
-  /* Robust persistent storage across iframe sandboxes */
   const StorageFallback = {
     getItem(key) {
       try {
@@ -416,7 +435,6 @@
     }
   };
 
-  /* Procedural Web Audio Engine */
   class SoundEngine {
     constructor() {
       this.ctx = null;
@@ -455,7 +473,6 @@
     startAmbientSynthesis() {
       if (!this.ctx) return;
       const freqs = [146.83, 220.00, 261.63, 329.63, 349.23];
-      
       freqs.forEach((freq, idx) => {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
@@ -466,8 +483,7 @@
 
         filter.type = 'lowpass';
         filter.frequency.setValueAtTime(450 + idx * 80, this.ctx.currentTime);
-
-        gain.gain.setValueAtTime(0.015, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.018, this.ctx.currentTime);
 
         osc.connect(filter);
         filter.connect(gain);
@@ -492,23 +508,45 @@
 
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(120, now);
-      osc.frequency.exponentialRampToValueAtTime(360, now + 0.3);
+      osc.frequency.exponentialRampToValueAtTime(380, now + 0.35);
 
       filter.type = 'lowpass';
       filter.frequency.setValueAtTime(300, now);
-      filter.frequency.exponentialRampToValueAtTime(1300, now + 0.18);
-      filter.frequency.exponentialRampToValueAtTime(180, now + 0.4);
+      filter.frequency.exponentialRampToValueAtTime(1400, now + 0.2);
+      filter.frequency.exponentialRampToValueAtTime(200, now + 0.45);
 
       gain.gain.setValueAtTime(0.001, now);
-      gain.gain.exponentialRampToValueAtTime(0.12, now + 0.08);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      gain.gain.exponentialRampToValueAtTime(0.12, now + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
 
       osc.connect(filter);
       filter.connect(gain);
       gain.connect(this.gainMaster);
 
       osc.start(now);
-      osc.stop(now + 0.45);
+      osc.stop(now + 0.5);
+    }
+
+    playCheckpointChime() {
+      if (!this.enabled || !this.ctx) return;
+      const notes = [523.25, 659.25, 783.99];
+      notes.forEach((note, i) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const now = this.ctx.currentTime + i * 0.08;
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(note, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.16, now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+        osc.connect(gain);
+        gain.connect(this.gainMaster);
+        osc.start(now);
+        osc.stop(now + 0.9);
+      });
     }
 
     playTargetReached() {
@@ -517,20 +555,20 @@
       notes.forEach((note, i) => {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-        const now = this.ctx.currentTime + i * 0.09;
+        const now = this.ctx.currentTime + i * 0.1;
 
         osc.type = 'sine';
         osc.frequency.setValueAtTime(note, now);
 
         gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(0.16, now + 0.03);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
+        gain.gain.linearRampToValueAtTime(0.18, now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
 
         osc.connect(gain);
         gain.connect(this.gainMaster);
 
         osc.start(now);
-        osc.stop(now + 1.2);
+        osc.stop(now + 1.3);
       });
     }
 
@@ -542,25 +580,22 @@
 
       osc.type = 'sine';
       osc.frequency.setValueAtTime(320, now);
-      osc.frequency.exponentialRampToValueAtTime(160, now + 0.22);
+      osc.frequency.exponentialRampToValueAtTime(160, now + 0.25);
 
-      gain.gain.setValueAtTime(0.12, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
 
       osc.connect(gain);
       gain.connect(this.gainMaster);
       osc.start(now);
-      osc.stop(now + 0.25);
+      osc.stop(now + 0.3);
     }
   }
 
   const sound = new SoundEngine();
 
-  /* =========================================================================
-     COMPLETE BARCELONA METRO STATIONS DATABASE (L1 TO L5 - ALL 123 STATIONS)
-     ========================================================================= */
   const BCN_METRO_STATIONS = {
-    // L1: 30 stations (Hospital de Bellvitge to Fondo)
+    // L1: 30 stations
     101: { name: "Hospital de Bellvitge", line: "L1", color: "#e11428" },
     102: { name: "Bellvitge", line: "L1", color: "#e11428" },
     103: { name: "Av. Carrilet", line: "L1", color: "#e11428" },
@@ -592,79 +627,79 @@
     129: { name: "Santa Coloma", line: "L1", color: "#e11428" },
     130: { name: "Fondo", line: "L1", color: "#e11428" },
 
-    // L2: 18 stations (Paral·lel to Badalona Pompeu Fabra)
-    201: { name: "Paral·lel", line: "L2", color: "#92278f" },
-    202: { name: "Sant Antoni", line: "L2", color: "#92278f" },
-    203: { name: "Universitat", line: "L2", color: "#92278f" },
-    204: { name: "Passeig de Gràcia", line: "L2", color: "#92278f" },
-    205: { name: "Tetuan", line: "L2", color: "#92278f" },
-    206: { name: "Monumental", line: "L2", color: "#92278f" },
-    207: { name: "Sagrada Família", line: "L2", color: "#92278f" },
-    208: { name: "Encants", line: "L2", color: "#92278f" },
-    209: { name: "Clot", line: "L2", color: "#92278f" },
-    210: { name: "Bac de Roda", line: "L2", color: "#92278f" },
-    211: { name: "Sant Martí", line: "L2", color: "#92278f" },
-    212: { name: "La Pau", line: "L2", color: "#92278f" },
-    213: { name: "Verneda", line: "L2", color: "#92278f" },
-    214: { name: "Artigues | Sant Adrià", line: "L2", color: "#92278f" },
-    215: { name: "Sant Roc", line: "L2", color: "#92278f" },
-    216: { name: "Gorg", line: "L2", color: "#92278f" },
-    217: { name: "Pep Ventura", line: "L2", color: "#92278f" },
-    218: { name: "Badalona Pompeu Fabra", line: "L2", color: "#92278f" },
+    // L2: 18 stations
+    201: { name: "Paral·lel", line: "L2", color: "#93278f" },
+    202: { name: "Sant Antoni", line: "L2", color: "#93278f" },
+    203: { name: "Universitat", line: "L2", color: "#93278f" },
+    204: { name: "Passeig de Gràcia", line: "L2", color: "#93278f" },
+    205: { name: "Tetuan", line: "L2", color: "#93278f" },
+    206: { name: "Monumental", line: "L2", color: "#93278f" },
+    207: { name: "Sagrada Família", line: "L2", color: "#93278f" },
+    208: { name: "Encants", line: "L2", color: "#93278f" },
+    209: { name: "Clot", line: "L2", color: "#93278f" },
+    210: { name: "Bac de Roda", line: "L2", color: "#93278f" },
+    211: { name: "Sant Martí", line: "L2", color: "#93278f" },
+    212: { name: "La Pau", line: "L2", color: "#93278f" },
+    213: { name: "Verneda", line: "L2", color: "#93278f" },
+    214: { name: "Artigues | Sant Adrià", line: "L2", color: "#93278f" },
+    215: { name: "Sant Roc", line: "L2", color: "#93278f" },
+    216: { name: "Gorg", line: "L2", color: "#93278f" },
+    217: { name: "Pep Ventura", line: "L2", color: "#93278f" },
+    218: { name: "Badalona Pompeu Fabra", line: "L2", color: "#93278f" },
 
-    // L3: 26 stations (Zona Universitària to Trinitat Nova)
-    301: { name: "Zona Universitària", line: "L3", color: "#2da843" },
-    302: { name: "Palau Reial", line: "L3", color: "#2da843" },
-    303: { name: "Maria Cristina", line: "L3", color: "#2da843" },
-    304: { name: "Les Corts", line: "L3", color: "#2da843" },
-    305: { name: "Plaça del Centre", line: "L3", color: "#2da843" },
-    306: { name: "Sants Estació", line: "L3", color: "#2da843" },
-    307: { name: "Tarragona", line: "L3", color: "#2da843" },
-    308: { name: "Espanya", line: "L3", color: "#2da843" },
-    309: { name: "Poble Sec", line: "L3", color: "#2da843" },
-    310: { name: "Paral·lel", line: "L3", color: "#2da843" },
-    311: { name: "Drassanes", line: "L3", color: "#2da843" },
-    312: { name: "Liceu", line: "L3", color: "#2da843" },
-    313: { name: "Catalunya", line: "L3", color: "#2da843" },
-    314: { name: "Passeig de Gràcia", line: "L3", color: "#2da843" },
-    315: { name: "Diagonal", line: "L3", color: "#2da843" },
-    316: { name: "Fontana", line: "L3", color: "#2da843" },
-    317: { name: "Lesseps", line: "L3", color: "#2da843" },
-    318: { name: "Vallcarca", line: "L3", color: "#2da843" },
-    319: { name: "Penitents", line: "L3", color: "#2da843" },
-    320: { name: "Vall d'Hebron", line: "L3", color: "#2da843" },
-    321: { name: "Montbau", line: "L3", color: "#2da843" },
-    322: { name: "Mundet", line: "L3", color: "#2da843" },
-    323: { name: "Valldaura", line: "L3", color: "#2da843" },
-    324: { name: "Canyelles", line: "L3", color: "#2da843" },
-    325: { name: "Roquetes", line: "L3", color: "#2da843" },
-    326: { name: "Trinitat Nova", line: "L3", color: "#2da843" },
+    // L3: 26 stations
+    301: { name: "Zona Universitària", line: "L3", color: "#43b02a" },
+    302: { name: "Palau Reial", line: "L3", color: "#43b02a" },
+    303: { name: "Maria Cristina", line: "L3", color: "#43b02a" },
+    304: { name: "Les Corts", line: "L3", color: "#43b02a" },
+    305: { name: "Plaça del Centre", line: "L3", color: "#43b02a" },
+    306: { name: "Sants Estació", line: "L3", color: "#43b02a" },
+    307: { name: "Tarragona", line: "L3", color: "#43b02a" },
+    308: { name: "Espanya", line: "L3", color: "#43b02a" },
+    309: { name: "Poble Sec", line: "L3", color: "#43b02a" },
+    310: { name: "Paral·lel", line: "L3", color: "#43b02a" },
+    311: { name: "Drassanes", line: "L3", color: "#43b02a" },
+    312: { name: "Liceu", line: "L3", color: "#43b02a" },
+    313: { name: "Catalunya", line: "L3", color: "#43b02a" },
+    314: { name: "Passeig de Gràcia", line: "L3", color: "#43b02a" },
+    315: { name: "Diagonal", line: "L3", color: "#43b02a" },
+    316: { name: "Fontana", line: "L3", color: "#43b02a" },
+    317: { name: "Lesseps", line: "L3", color: "#43b02a" },
+    318: { name: "Vallcarca", line: "L3", color: "#43b02a" },
+    319: { name: "Penitents", line: "L3", color: "#43b02a" },
+    320: { name: "Vall d'Hebron", line: "L3", color: "#43b02a" },
+    321: { name: "Montbau", line: "L3", color: "#43b02a" },
+    322: { name: "Mundet", line: "L3", color: "#43b02a" },
+    323: { name: "Valldaura", line: "L3", color: "#43b02a" },
+    324: { name: "Canyelles", line: "L3", color: "#43b02a" },
+    325: { name: "Roquetes", line: "L3", color: "#43b02a" },
+    326: { name: "Trinitat Nova", line: "L3", color: "#43b02a" },
 
-    // L4: 22 stations (Trinitat Nova to La Pau)
-    401: { name: "Trinitat Nova", line: "L4", color: "#ffb400" },
-    402: { name: "Via Júlia", line: "L4", color: "#ffb400" },
-    403: { name: "Llucmajor", line: "L4", color: "#ffb400" },
-    404: { name: "Maragall", line: "L4", color: "#ffb400" },
-    405: { name: "Guinardó | Sant Pau", line: "L4", color: "#ffb400" },
-    406: { name: "Alfons X", line: "L4", color: "#ffb400" },
-    407: { name: "Joanic", line: "L4", color: "#ffb400" },
-    408: { name: "Verdaguer", line: "L4", color: "#ffb400" },
-    409: { name: "Girona", line: "L4", color: "#ffb400" },
-    410: { name: "Passeig de Gràcia", line: "L4", color: "#ffb400" },
-    411: { name: "Urquinaona", line: "L4", color: "#ffb400" },
-    412: { name: "Jaume I", line: "L4", color: "#ffb400" },
-    413: { name: "Barceloneta", line: "L4", color: "#ffb400" },
-    414: { name: "Ciutadella | Olímpica", line: "L4", color: "#ffb400" },
-    415: { name: "Bogatell", line: "L4", color: "#ffb400" },
-    416: { name: "Llacuna", line: "L4", color: "#ffb400" },
-    417: { name: "Poblenou", line: "L4", color: "#ffb400" },
-    418: { name: "Selva de Mar", line: "L4", color: "#ffb400" },
-    419: { name: "Maresme | Fòrum", line: "L4", color: "#ffb400" },
-    420: { name: "Besòs Mar", line: "L4", color: "#ffb400" },
-    421: { name: "Besòs", line: "L4", color: "#ffb400" },
-    422: { name: "La Pau", line: "L4", color: "#ffb400" },
+    // L4: 22 stations
+    401: { name: "Trinitat Nova", line: "L4", color: "#ffb81c" },
+    402: { name: "Via Júlia", line: "L4", color: "#ffb81c" },
+    403: { name: "Llucmajor", line: "L4", color: "#ffb81c" },
+    404: { name: "Maragall", line: "L4", color: "#ffb81c" },
+    405: { name: "Guinardó | Sant Pau", line: "L4", color: "#ffb81c" },
+    406: { name: "Alfons X", line: "L4", color: "#ffb81c" },
+    407: { name: "Joanic", line: "L4", color: "#ffb81c" },
+    408: { name: "Verdaguer", line: "L4", color: "#ffb81c" },
+    409: { name: "Girona", line: "L4", color: "#ffb81c" },
+    410: { name: "Passeig de Gràcia", line: "L4", color: "#ffb81c" },
+    411: { name: "Urquinaona", line: "L4", color: "#ffb81c" },
+    412: { name: "Jaume I", line: "L4", color: "#ffb81c" },
+    413: { name: "Barceloneta", line: "L4", color: "#ffb81c" },
+    414: { name: "Ciutadella | Vila Olímpica", line: "L4", color: "#ffb81c" },
+    415: { name: "Bogatell", line: "L4", color: "#ffb81c" },
+    416: { name: "Llacuna", line: "L4", color: "#ffb81c" },
+    417: { name: "Poblenou", line: "L4", color: "#ffb81c" },
+    418: { name: "Selva de Mar", line: "L4", color: "#ffb81c" },
+    419: { name: "El Maresme | Fòrum", line: "L4", color: "#ffb81c" },
+    420: { name: "Besòs Mar", line: "L4", color: "#ffb81c" },
+    421: { name: "Besòs", line: "L4", color: "#ffb81c" },
+    422: { name: "La Pau", line: "L4", color: "#ffb81c" },
 
-    // L5: 27 stations (Cornellà Centre to Vall d'Hebron)
+    // L5: 27 stations
     501: { name: "Cornellà Centre", line: "L5", color: "#0072ce" },
     502: { name: "Gavarra", line: "L5", color: "#0072ce" },
     503: { name: "Sant Ildefons", line: "L5", color: "#0072ce" },
@@ -694,8 +729,193 @@
     527: { name: "Vall d'Hebron", line: "L5", color: "#0072ce" }
   };
 
-  /* Helper to format station or room titles */
-  function getRoomDisplayInfo(roomId, isMetro) {
+  const WORLD_COUNTRIES = {
+    // Africa
+    "Algeria": { code: "DZ", continent: "AFRICA", color: "#f97316", lon: 2.6, lat: 28.0, neighbors: ["Libya", "Mali", "Mauritania", "Morocco", "Niger", "Tunisia", "Western Sahara"] },
+    "Angola": { code: "AO", continent: "AFRICA", color: "#f97316", lon: 17.9, lat: -12.3, neighbors: ["Democratic Republic of the Congo", "Republic of the Congo", "Namibia", "Zambia"] },
+    "Benin": { code: "BJ", continent: "AFRICA", color: "#f97316", lon: 2.3, lat: 9.3, neighbors: ["Burkina Faso", "Niger", "Nigeria", "Togo"] },
+    "Botswana": { code: "BW", continent: "AFRICA", color: "#f97316", lon: 24.7, lat: -22.3, neighbors: ["Namibia", "South Africa", "Zambia", "Zimbabwe"] },
+    "Burkina Faso": { code: "BF", continent: "AFRICA", color: "#f97316", lon: -1.5, lat: 12.4, neighbors: ["Benin", "Côte d'Ivoire", "Ghana", "Mali", "Niger", "Togo"] },
+    "Burundi": { code: "BI", continent: "AFRICA", color: "#f97316", lon: 29.9, lat: -3.4, neighbors: ["Democratic Republic of the Congo", "Rwanda", "Tanzania"] },
+    "Cameroon": { code: "CM", continent: "AFRICA", color: "#f97316", lon: 12.4, lat: 5.7, neighbors: ["Central African Republic", "Chad", "Republic of the Congo", "Equatorial Guinea", "Gabon", "Nigeria"] },
+    "Central African Republic": { code: "CF", continent: "AFRICA", color: "#f97316", lon: 20.9, lat: 6.6, neighbors: ["Cameroon", "Chad", "Democratic Republic of the Congo", "Republic of the Congo", "South Sudan", "Sudan"] },
+    "Chad": { code: "TD", continent: "AFRICA", color: "#f97316", lon: 18.7, lat: 15.5, neighbors: ["Cameroon", "Central African Republic", "Libya", "Niger", "Nigeria", "Sudan"] },
+    "Côte d'Ivoire": { code: "CI", continent: "AFRICA", color: "#f97316", lon: -5.5, lat: 7.5, neighbors: ["Burkina Faso", "Ghana", "Guinea", "Liberia", "Mali"] },
+    "Democratic Republic of the Congo": { code: "CD", continent: "AFRICA", color: "#f97316", lon: 23.7, lat: -2.9, neighbors: ["Angola", "Burundi", "Central African Republic", "Republic of the Congo", "Rwanda", "South Sudan", "Tanzania", "Uganda", "Zambia"] },
+    "Djibouti": { code: "DJ", continent: "AFRICA", color: "#f97316", lon: 42.6, lat: 11.8, neighbors: ["Eritrea", "Ethiopia", "Somalia"] },
+    "Egypt": { code: "EG", continent: "AFRICA", color: "#f97316", lon: 30.8, lat: 26.8, neighbors: ["Israel", "Palestine", "Libya", "Sudan"] },
+    "Equatorial Guinea": { code: "GQ", continent: "AFRICA", color: "#f97316", lon: 10.3, lat: 1.6, neighbors: ["Cameroon", "Gabon"] },
+    "Eritrea": { code: "ER", continent: "AFRICA", color: "#f97316", lon: 39.8, lat: 15.2, neighbors: ["Djibouti", "Ethiopia", "Sudan"] },
+    "Eswatini": { code: "SZ", continent: "AFRICA", color: "#f97316", lon: 31.5, lat: -26.5, neighbors: ["Mozambique", "South Africa"] },
+    "Ethiopia": { code: "ET", continent: "AFRICA", color: "#f97316", lon: 39.8, lat: 9.1, neighbors: ["Djibouti", "Eritrea", "Kenya", "Somalia", "South Sudan", "Sudan"] },
+    "Gabon": { code: "GA", continent: "AFRICA", color: "#f97316", lon: 11.6, lat: -0.8, neighbors: ["Cameroon", "Republic of the Congo", "Equatorial Guinea"] },
+    "Gambia": { code: "GM", continent: "AFRICA", color: "#f97316", lon: -15.3, lat: 13.4, neighbors: ["Senegal"] },
+    "Ghana": { code: "GH", continent: "AFRICA", color: "#f97316", lon: -1.0, lat: 7.9, neighbors: ["Burkina Faso", "Côte d'Ivoire", "Togo"] },
+    "Guinea": { code: "GN", continent: "AFRICA", color: "#f97316", lon: -9.7, lat: 9.9, neighbors: ["Côte d'Ivoire", "Guinea-Bissau", "Liberia", "Mali", "Senegal", "Sierra Leone"] },
+    "Guinea-Bissau": { code: "GW", continent: "AFRICA", color: "#f97316", lon: -15.2, lat: 11.8, neighbors: ["Guinea", "Senegal"] },
+    "Kenya": { code: "KE", continent: "AFRICA", color: "#f97316", lon: 37.9, lat: 0.0, neighbors: ["Ethiopia", "Somalia", "South Sudan", "Tanzania", "Uganda"] },
+    "Lesotho": { code: "LS", continent: "AFRICA", color: "#f97316", lon: 28.2, lat: -29.6, neighbors: ["South Africa"] },
+    "Liberia": { code: "LR", continent: "AFRICA", color: "#f97316", lon: -9.4, lat: 6.4, neighbors: ["Côte d'Ivoire", "Guinea", "Sierra Leone"] },
+    "Libya": { code: "LY", continent: "AFRICA", color: "#f97316", lon: 17.2, lat: 26.3, neighbors: ["Algeria", "Chad", "Egypt", "Niger", "Sudan", "Tunisia"] },
+    "Madagascar": { code: "MG", continent: "AFRICA", color: "#f97316", lon: 46.9, lat: -18.8, neighbors: ["Mozambique"] },
+    "Malawi": { code: "MW", continent: "AFRICA", color: "#f97316", lon: 34.3, lat: -13.2, neighbors: ["Mozambique", "Tanzania", "Zambia"] },
+    "Mali": { code: "ML", continent: "AFRICA", color: "#f97316", lon: -3.9, lat: 17.6, neighbors: ["Algeria", "Burkina Faso", "Côte d'Ivoire", "Guinea", "Mauritania", "Niger", "Senegal"] },
+    "Mauritania": { code: "MR", continent: "AFRICA", color: "#f97316", lon: -10.9, lat: 20.3, neighbors: ["Algeria", "Mali", "Senegal", "Western Sahara"] },
+    "Morocco": { code: "MA", continent: "AFRICA", color: "#f97316", lon: -7.1, lat: 31.8, neighbors: ["Algeria", "Western Sahara", "Spain"] },
+    "Mozambique": { code: "MZ", continent: "AFRICA", color: "#f97316", lon: 35.5, lat: -18.7, neighbors: ["Eswatini", "Malawi", "South Africa", "Tanzania", "Zambia", "Zimbabwe", "Madagascar"] },
+    "Namibia": { code: "NA", continent: "AFRICA", color: "#f97316", lon: 18.5, lat: -22.6, neighbors: ["Angola", "Botswana", "South Africa", "Zambia"] },
+    "Niger": { code: "NE", continent: "AFRICA", color: "#f97316", lon: 8.1, lat: 17.6, neighbors: ["Algeria", "Benin", "Burkina Faso", "Chad", "Libya", "Mali", "Nigeria"] },
+    "Nigeria": { code: "NG", continent: "AFRICA", color: "#f97316", lon: 8.7, lat: 9.1, neighbors: ["Benin", "Cameroon", "Chad", "Niger"] },
+    "Republic of the Congo": { code: "CG", continent: "AFRICA", color: "#f97316", lon: 15.8, lat: -0.2, neighbors: ["Angola", "Cameroon", "Central African Republic", "Democratic Republic of the Congo", "Gabon"] },
+    "Rwanda": { code: "RW", continent: "AFRICA", color: "#f97316", lon: 29.9, lat: -2.0, neighbors: ["Burundi", "Democratic Republic of the Congo", "Tanzania", "Uganda"] },
+    "Senegal": { code: "SN", continent: "AFRICA", color: "#f97316", lon: -14.5, lat: 14.5, neighbors: ["Gambia", "Guinea", "Guinea-Bissau", "Mali", "Mauritania"] },
+    "Sierra Leone": { code: "SL", continent: "AFRICA", color: "#f97316", lon: -11.8, lat: 8.5, neighbors: ["Guinea", "Liberia"] },
+    "Somalia": { code: "SO", continent: "AFRICA", color: "#f97316", lon: 46.2, lat: 5.1, neighbors: ["Djibouti", "Ethiopia", "Kenya"] },
+    "South Africa": { code: "ZA", continent: "AFRICA", color: "#f97316", lon: 25.1, lat: -29.0, neighbors: ["Botswana", "Eswatini", "Lesotho", "Mozambique", "Namibia", "Zimbabwe"] },
+    "South Sudan": { code: "SS", continent: "AFRICA", color: "#f97316", lon: 31.3, lat: 6.9, neighbors: ["Central African Republic", "Democratic Republic of the Congo", "Ethiopia", "Kenya", "Sudan", "Uganda"] },
+    "Sudan": { code: "SD", continent: "AFRICA", color: "#f97316", lon: 30.2, lat: 12.9, neighbors: ["Central African Republic", "Chad", "Egypt", "Eritrea", "Ethiopia", "Libya", "South Sudan"] },
+    "Tanzania": { code: "TZ", continent: "AFRICA", color: "#f97316", lon: 34.8, lat: -6.4, neighbors: ["Burundi", "Democratic Republic of the Congo", "Kenya", "Malawi", "Mozambique", "Rwanda", "Uganda", "Zambia"] },
+    "Togo": { code: "TG", continent: "AFRICA", color: "#f97316", lon: 0.8, lat: 8.6, neighbors: ["Benin", "Burkina Faso", "Ghana"] },
+    "Tunisia": { code: "TN", continent: "AFRICA", color: "#f97316", lon: 9.5, lat: 33.9, neighbors: ["Algeria", "Libya"] },
+    "Uganda": { code: "UG", continent: "AFRICA", color: "#f97316", lon: 32.3, lat: 1.4, neighbors: ["Democratic Republic of the Congo", "Kenya", "Rwanda", "South Sudan", "Tanzania"] },
+    "Western Sahara": { code: "EH", continent: "AFRICA", color: "#f97316", lon: -12.9, lat: 24.2, neighbors: ["Algeria", "Mauritania", "Morocco"] },
+    "Zambia": { code: "ZM", continent: "AFRICA", color: "#f97316", lon: 27.8, lat: -13.1, neighbors: ["Angola", "Botswana", "Democratic Republic of the Congo", "Malawi", "Mozambique", "Namibia", "Tanzania", "Zimbabwe"] },
+    "Zimbabwe": { code: "ZW", continent: "AFRICA", color: "#f97316", lon: 29.2, lat: -19.0, neighbors: ["Botswana", "Mozambique", "South Africa", "Zambia"] },
+
+    // Asia
+    "Afghanistan": { code: "AF", continent: "ASIA", color: "#f43f5e", lon: 67.7, lat: 33.9, neighbors: ["China", "Iran", "Pakistan", "Tajikistan", "Turkmenistan", "Uzbekistan"] },
+    "Armenia": { code: "AM", continent: "ASIA", color: "#f43f5e", lon: 45.0, lat: 40.1, neighbors: ["Azerbaijan", "Georgia", "Iran", "Turkey"] },
+    "Azerbaijan": { code: "AZ", continent: "ASIA", color: "#f43f5e", lon: 47.6, lat: 40.1, neighbors: ["Armenia", "Georgia", "Iran", "Russia", "Turkey"] },
+    "Bangladesh": { code: "BD", continent: "ASIA", color: "#f43f5e", lon: 90.4, lat: 23.7, neighbors: ["India", "Myanmar"] },
+    "Bhutan": { code: "BT", continent: "ASIA", color: "#f43f5e", lon: 90.4, lat: 27.5, neighbors: ["China", "India"] },
+    "Brunei": { code: "BN", continent: "ASIA", color: "#f43f5e", lon: 114.7, lat: 4.5, neighbors: ["Malaysia"] },
+    "Cambodia": { code: "KH", continent: "ASIA", color: "#f43f5e", lon: 104.9, lat: 12.6, neighbors: ["Laos", "Thailand", "Vietnam"] },
+    "China": { code: "CN", continent: "ASIA", color: "#f43f5e", lon: 104.2, lat: 35.9, neighbors: ["Afghanistan", "Bhutan", "India", "Kazakhstan", "Kyrgyzstan", "Laos", "Mongolia", "Myanmar", "Nepal", "North Korea", "Pakistan", "Russia", "Tajikistan", "Vietnam", "Taiwan"] },
+    "Georgia": { code: "GE", continent: "ASIA", color: "#f43f5e", lon: 43.4, lat: 42.3, neighbors: ["Armenia", "Azerbaijan", "Russia", "Turkey"] },
+    "India": { code: "IN", continent: "ASIA", color: "#f43f5e", lon: 79.0, lat: 20.6, neighbors: ["Bangladesh", "Bhutan", "China", "Myanmar", "Nepal", "Pakistan", "Sri Lanka"] },
+    "Indonesia": { code: "ID", continent: "ASIA", color: "#f43f5e", lon: 113.9, lat: -0.8, neighbors: ["Malaysia", "Papua New Guinea", "Timor-Leste", "Australia", "Philippines"] },
+    "Iran": { code: "IR", continent: "ASIA", color: "#f43f5e", lon: 53.7, lat: 32.4, neighbors: ["Afghanistan", "Armenia", "Azerbaijan", "Iraq", "Pakistan", "Turkey", "Turkmenistan"] },
+    "Iraq": { code: "IQ", continent: "ASIA", color: "#f43f5e", lon: 43.7, lat: 33.2, neighbors: ["Iran", "Jordan", "Kuwait", "Saudi Arabia", "Syria", "Turkey"] },
+    "Israel": { code: "IL", continent: "ASIA", color: "#f43f5e", lon: 34.8, lat: 31.0, neighbors: ["Egypt", "Jordan", "Lebanon", "Palestine", "Syria"] },
+    "Japan": { code: "JP", continent: "ASIA", color: "#f43f5e", lon: 138.3, lat: 36.2, neighbors: ["Russia", "South Korea", "Taiwan"] },
+    "Jordan": { code: "JO", continent: "ASIA", color: "#f43f5e", lon: 36.2, lat: 30.6, neighbors: ["Iraq", "Israel", "Palestine", "Saudi Arabia", "Syria"] },
+    "Kazakhstan": { code: "KZ", continent: "ASIA", color: "#f43f5e", lon: 66.9, lat: 48.0, neighbors: ["China", "Kyrgyzstan", "Russia", "Turkmenistan", "Uzbekistan"] },
+    "Kuwait": { code: "KW", continent: "ASIA", color: "#f43f5e", lon: 47.5, lat: 29.3, neighbors: ["Iraq", "Saudi Arabia"] },
+    "Kyrgyzstan": { code: "KG", continent: "ASIA", color: "#f43f5e", lon: 74.8, lat: 41.2, neighbors: ["China", "Kazakhstan", "Tajikistan", "Uzbekistan"] },
+    "Laos": { code: "LA", continent: "ASIA", color: "#f43f5e", lon: 102.5, lat: 19.9, neighbors: ["Cambodia", "China", "Myanmar", "Thailand", "Vietnam"] },
+    "Lebanon": { code: "LB", continent: "ASIA", color: "#f43f5e", lon: 35.9, lat: 33.9, neighbors: ["Israel", "Syria"] },
+    "Malaysia": { code: "MY", continent: "ASIA", color: "#f43f5e", lon: 101.9, lat: 4.2, neighbors: ["Brunei", "Indonesia", "Thailand", "Philippines"] },
+    "Mongolia": { code: "MN", continent: "ASIA", color: "#f43f5e", lon: 103.8, lat: 46.9, neighbors: ["China", "Russia"] },
+    "Myanmar": { code: "MM", continent: "ASIA", color: "#f43f5e", lon: 95.9, lat: 21.9, neighbors: ["Bangladesh", "China", "India", "Laos", "Thailand"] },
+    "Nepal": { code: "NP", continent: "ASIA", color: "#f43f5e", lon: 84.1, lat: 28.4, neighbors: ["China", "India"] },
+    "North Korea": { code: "KP", continent: "ASIA", color: "#f43f5e", lon: 127.5, lat: 40.3, neighbors: ["China", "Russia", "South Korea"] },
+    "Oman": { code: "OM", continent: "ASIA", color: "#f43f5e", lon: 55.9, lat: 21.5, neighbors: ["Saudi Arabia", "United Arab Emirates", "Yemen"] },
+    "Pakistan": { code: "PK", continent: "ASIA", color: "#f43f5e", lon: 69.3, lat: 30.4, neighbors: ["Afghanistan", "China", "India", "Iran"] },
+    "Palestine": { code: "PS", continent: "ASIA", color: "#f43f5e", lon: 35.2, lat: 31.9, neighbors: ["Egypt", "Israel", "Jordan"] },
+    "Philippines": { code: "PH", continent: "ASIA", color: "#f43f5e", lon: 121.8, lat: 12.9, neighbors: ["Taiwan", "Indonesia", "Malaysia"] },
+    "Qatar": { code: "QA", continent: "ASIA", color: "#f43f5e", lon: 51.2, lat: 25.3, neighbors: ["Saudi Arabia"] },
+    "Russia": { code: "RU", continent: "EURASIA", color: "#f43f5e", lon: 105.3, lat: 61.5, neighbors: ["Azerbaijan", "Belarus", "China", "Estonia", "Finland", "Georgia", "Kazakhstan", "Latvia", "Lithuania", "Mongolia", "North Korea", "Norway", "Poland", "Ukraine", "United States", "Japan"] },
+    "Saudi Arabia": { code: "SA", continent: "ASIA", color: "#f43f5e", lon: 45.1, lat: 23.9, neighbors: ["Iraq", "Jordan", "Kuwait", "Oman", "Qatar", "United Arab Emirates", "Yemen"] },
+    "South Korea": { code: "KR", continent: "ASIA", color: "#f43f5e", lon: 128.0, lat: 35.9, neighbors: ["North Korea", "Japan"] },
+    "Sri Lanka": { code: "LK", continent: "ASIA", color: "#f43f5e", lon: 80.8, lat: 7.9, neighbors: ["India"] },
+    "Syria": { code: "SY", continent: "ASIA", color: "#f43f5e", lon: 39.0, lat: 34.8, neighbors: ["Iraq", "Israel", "Jordan", "Lebanon", "Turkey"] },
+    "Taiwan": { code: "TW", continent: "ASIA", color: "#f43f5e", lon: 121.0, lat: 23.7, neighbors: ["China", "Philippines", "Japan"] },
+    "Tajikistan": { code: "TJ", continent: "ASIA", color: "#f43f5e", lon: 71.3, lat: 38.9, neighbors: ["Afghanistan", "China", "Kyrgyzstan", "Uzbekistan"] },
+    "Thailand": { code: "TH", continent: "ASIA", color: "#f43f5e", lon: 100.9, lat: 15.9, neighbors: ["Cambodia", "Laos", "Malaysia", "Myanmar"] },
+    "Timor-Leste": { code: "TL", continent: "ASIA", color: "#f43f5e", lon: 125.7, lat: -8.9, neighbors: ["Indonesia"] },
+    "Turkey": { code: "TR", continent: "EURASIA", color: "#f43f5e", lon: 35.2, lat: 39.0, neighbors: ["Armenia", "Azerbaijan", "Bulgaria", "Georgia", "Greece", "Iran", "Iraq", "Syria"] },
+    "Turkmenistan": { code: "TM", continent: "ASIA", color: "#f43f5e", lon: 59.6, lat: 39.0, neighbors: ["Afghanistan", "Iran", "Kazakhstan", "Uzbekistan"] },
+    "United Arab Emirates": { code: "AE", continent: "ASIA", color: "#f43f5e", lon: 53.8, lat: 23.4, neighbors: ["Oman", "Saudi Arabia"] },
+    "Uzbekistan": { code: "UZ", continent: "ASIA", color: "#f43f5e", lon: 64.6, lat: 41.4, neighbors: ["Afghanistan", "Kazakhstan", "Kyrgyzstan", "Tajikistan", "Turkmenistan"] },
+    "Vietnam": { code: "VN", continent: "ASIA", color: "#f43f5e", lon: 108.3, lat: 14.1, neighbors: ["Cambodia", "China", "Laos"] },
+    "Yemen": { code: "YE", continent: "ASIA", color: "#f43f5e", lon: 48.5, lat: 15.6, neighbors: ["Oman", "Saudi Arabia"] },
+
+    // Europe
+    "Albania": { code: "AL", continent: "EUROPE", color: "#38bdf8", lon: 20.2, lat: 41.2, neighbors: ["Greece", "Kosovo", "Montenegro", "North Macedonia"] },
+    "Austria": { code: "AT", continent: "EUROPE", color: "#38bdf8", lon: 14.6, lat: 47.5, neighbors: ["Czech Republic", "Germany", "Hungary", "Italy", "Slovakia", "Slovenia", "Switzerland"] },
+    "Belarus": { code: "BY", continent: "EUROPE", color: "#38bdf8", lon: 28.0, lat: 53.7, neighbors: ["Latvia", "Lithuania", "Poland", "Russia", "Ukraine"] },
+    "Belgium": { code: "BE", continent: "EUROPE", color: "#38bdf8", lon: 4.5, lat: 50.5, neighbors: ["France", "Germany", "Luxembourg", "Netherlands"] },
+    "Bosnia and Herzegovina": { code: "BA", continent: "EUROPE", color: "#38bdf8", lon: 17.8, lat: 43.9, neighbors: ["Croatia", "Montenegro", "Serbia"] },
+    "Bulgaria": { code: "BG", continent: "EUROPE", color: "#38bdf8", lon: 25.5, lat: 42.7, neighbors: ["Greece", "North Macedonia", "Romania", "Serbia", "Turkey"] },
+    "Croatia": { code: "HR", continent: "EUROPE", color: "#38bdf8", lon: 15.2, lat: 45.1, neighbors: ["Bosnia and Herzegovina", "Hungary", "Montenegro", "Serbia", "Slovenia"] },
+    "Czech Republic": { code: "CZ", continent: "EUROPE", color: "#38bdf8", lon: 15.5, lat: 49.8, neighbors: ["Austria", "Germany", "Poland", "Slovakia"] },
+    "Denmark": { code: "DK", continent: "EUROPE", color: "#38bdf8", lon: 9.5, lat: 56.3, neighbors: ["Germany", "Sweden"] },
+    "Estonia": { code: "EE", continent: "EUROPE", color: "#38bdf8", lon: 25.0, lat: 58.6, neighbors: ["Latvia", "Russia", "Finland"] },
+    "Finland": { code: "FI", continent: "EUROPE", color: "#38bdf8", lon: 25.7, lat: 61.9, neighbors: ["Norway", "Russia", "Sweden", "Estonia"] },
+    "France": { code: "FR", continent: "EUROPE", color: "#38bdf8", lon: 2.2, lat: 46.2, neighbors: ["Belgium", "Germany", "Italy", "Luxembourg", "Spain", "Switzerland", "United Kingdom"] },
+    "Germany": { code: "DE", continent: "EUROPE", color: "#38bdf8", lon: 10.4, lat: 51.2, neighbors: ["Austria", "Belgium", "Czech Republic", "Denmark", "France", "Luxembourg", "Netherlands", "Poland", "Switzerland"] },
+    "Greece": { code: "GR", continent: "EUROPE", color: "#38bdf8", lon: 21.8, lat: 39.1, neighbors: ["Albania", "Bulgaria", "North Macedonia", "Turkey"] },
+    "Hungary": { code: "HU", continent: "EUROPE", color: "#38bdf8", lon: 19.5, lat: 47.2, neighbors: ["Austria", "Croatia", "Romania", "Serbia", "Slovakia", "Slovenia", "Ukraine"] },
+    "Ireland": { code: "IE", continent: "EUROPE", color: "#38bdf8", lon: -8.2, lat: 53.4, neighbors: ["United Kingdom"] },
+    "Italy": { code: "IT", continent: "EUROPE", color: "#38bdf8", lon: 12.6, lat: 41.9, neighbors: ["Austria", "France", "Switzerland", "Slovenia"] },
+    "Kosovo": { code: "XK", continent: "EUROPE", color: "#38bdf8", lon: 20.9, lat: 42.6, neighbors: ["Albania", "Montenegro", "North Macedonia", "Serbia"] },
+    "Latvia": { code: "LV", continent: "EUROPE", color: "#38bdf8", lon: 24.6, lat: 56.9, neighbors: ["Belarus", "Estonia", "Lithuania", "Russia"] },
+    "Lithuania": { code: "LT", continent: "EUROPE", color: "#38bdf8", lon: 23.9, lat: 55.2, neighbors: ["Belarus", "Latvia", "Poland", "Russia"] },
+    "Luxembourg": { code: "LU", continent: "EUROPE", color: "#38bdf8", lon: 6.1, lat: 49.8, neighbors: ["Belgium", "France", "Germany"] },
+    "Moldova": { code: "MD", continent: "EUROPE", color: "#38bdf8", lon: 28.4, lat: 47.4, neighbors: ["Romania", "Ukraine"] },
+    "Montenegro": { code: "ME", continent: "EUROPE", color: "#38bdf8", lon: 19.4, lat: 42.7, neighbors: ["Albania", "Bosnia and Herzegovina", "Croatia", "Kosovo", "Serbia"] },
+    "Netherlands": { code: "NL", continent: "EUROPE", color: "#38bdf8", lon: 5.3, lat: 52.1, neighbors: ["Belgium", "Germany"] },
+    "North Macedonia": { code: "MK", continent: "EUROPE", color: "#38bdf8", lon: 21.7, lat: 41.6, neighbors: ["Albania", "Bulgaria", "Greece", "Kosovo", "Serbia"] },
+    "Norway": { code: "NO", continent: "EUROPE", color: "#38bdf8", lon: 8.5, lat: 60.5, neighbors: ["Finland", "Russia", "Sweden"] },
+    "Poland": { code: "PL", continent: "EUROPE", color: "#38bdf8", lon: 19.1, lat: 51.9, neighbors: ["Belarus", "Czech Republic", "Germany", "Lithuania", "Russia", "Slovakia", "Ukraine"] },
+    "Portugal": { code: "PT", continent: "EUROPE", color: "#38bdf8", lon: -8.2, lat: 39.4, neighbors: ["Spain"] },
+    "Romania": { code: "RO", continent: "EUROPE", color: "#38bdf8", lon: 24.9, lat: 45.9, neighbors: ["Bulgaria", "Hungary", "Moldova", "Serbia", "Ukraine"] },
+    "Serbia": { code: "RS", continent: "EUROPE", color: "#38bdf8", lon: 21.0, lat: 44.0, neighbors: ["Bosnia and Herzegovina", "Bulgaria", "Croatia", "Hungary", "Kosovo", "Montenegro", "North Macedonia", "Romania"] },
+    "Slovakia": { code: "SK", continent: "EUROPE", color: "#38bdf8", lon: 19.7, lat: 48.7, neighbors: ["Austria", "Czech Republic", "Hungary", "Poland", "Ukraine"] },
+    "Slovenia": { code: "SI", continent: "EUROPE", color: "#38bdf8", lon: 15.0, lat: 46.2, neighbors: ["Austria", "Croatia", "Italy", "Hungary"] },
+    "Spain": { code: "ES", continent: "EUROPE", color: "#38bdf8", lon: -3.7, lat: 40.5, neighbors: ["France", "Portugal", "Morocco"] },
+    "Sweden": { code: "SE", continent: "EUROPE", color: "#38bdf8", lon: 18.6, lat: 60.1, neighbors: ["Finland", "Norway", "Denmark"] },
+    "Switzerland": { code: "CH", continent: "EUROPE", color: "#38bdf8", lon: 8.2, lat: 46.8, neighbors: ["Austria", "France", "Germany", "Italy"] },
+    "Ukraine": { code: "UA", continent: "EUROPE", color: "#38bdf8", lon: 31.2, lat: 48.4, neighbors: ["Belarus", "Hungary", "Moldova", "Poland", "Romania", "Russia", "Slovakia"] },
+    "United Kingdom": { code: "UK", continent: "EUROPE", color: "#38bdf8", lon: -3.4, lat: 55.4, neighbors: ["Ireland", "France"] },
+
+    // North America
+    "Belize": { code: "BZ", continent: "NORTH AMERICA", color: "#10b981", lon: -88.5, lat: 17.2, neighbors: ["Guatemala", "Mexico"] },
+    "Canada": { code: "CA", continent: "NORTH AMERICA", color: "#10b981", lon: -106.3, lat: 56.1, neighbors: ["United States"] },
+    "Costa Rica": { code: "CR", continent: "NORTH AMERICA", color: "#10b981", lon: -83.8, lat: 9.7, neighbors: ["Nicaragua", "Panama"] },
+    "Cuba": { code: "CU", continent: "NORTH AMERICA", color: "#10b981", lon: -77.8, lat: 21.5, neighbors: ["United States", "Haiti", "Jamaica"] },
+    "Dominican Republic": { code: "DO", continent: "NORTH AMERICA", color: "#10b981", lon: -70.2, lat: 18.7, neighbors: ["Haiti"] },
+    "El Salvador": { code: "SV", continent: "NORTH AMERICA", color: "#10b981", lon: -88.9, lat: 13.8, neighbors: ["Guatemala", "Honduras"] },
+    "Guatemala": { code: "GT", continent: "NORTH AMERICA", color: "#10b981", lon: -90.2, lat: 15.8, neighbors: ["Belize", "El Salvador", "Honduras", "Mexico"] },
+    "Haiti": { code: "HT", continent: "NORTH AMERICA", color: "#10b981", lon: -72.3, lat: 18.9, neighbors: ["Dominican Republic", "Cuba", "Jamaica"] },
+    "Honduras": { code: "HN", continent: "NORTH AMERICA", color: "#10b981", lon: -86.2, lat: 15.2, neighbors: ["El Salvador", "Guatemala", "Nicaragua"] },
+    "Jamaica": { code: "JM", continent: "NORTH AMERICA", color: "#10b981", lon: -77.3, lat: 18.1, neighbors: ["Cuba", "Haiti"] },
+    "Mexico": { code: "MX", continent: "NORTH AMERICA", color: "#10b981", lon: -102.6, lat: 23.6, neighbors: ["Belize", "Guatemala", "United States"] },
+    "Nicaragua": { code: "NI", continent: "NORTH AMERICA", color: "#10b981", lon: -85.2, lat: 12.9, neighbors: ["Costa Rica", "Honduras"] },
+    "Panama": { code: "PA", continent: "NORTH AMERICA", color: "#10b981", lon: -80.8, lat: 8.5, neighbors: ["Colombia", "Costa Rica"] },
+    "United States": { code: "US", continent: "NORTH AMERICA", color: "#10b981", lon: -95.7, lat: 37.1, neighbors: ["Canada", "Mexico", "Russia", "Cuba"] },
+
+    // South America
+    "Argentina": { code: "AR", continent: "SOUTH AMERICA", color: "#059669", lon: -63.6, lat: -38.4, neighbors: ["Bolivia", "Brazil", "Chile", "Paraguay", "Uruguay"] },
+    "Bolivia": { code: "BO", continent: "SOUTH AMERICA", color: "#059669", lon: -63.6, lat: -16.3, neighbors: ["Argentina", "Brazil", "Chile", "Paraguay", "Peru"] },
+    "Brazil": { code: "BR", continent: "SOUTH AMERICA", color: "#059669", lon: -51.9, lat: -14.2, neighbors: ["Argentina", "Bolivia", "Colombia", "Guyana", "Paraguay", "Peru", "Suriname", "Uruguay", "Venezuela"] },
+    "Chile": { code: "CL", continent: "SOUTH AMERICA", color: "#059669", lon: -71.5, lat: -35.7, neighbors: ["Argentina", "Bolivia", "Peru"] },
+    "Colombia": { code: "CO", continent: "SOUTH AMERICA", color: "#059669", lon: -74.3, lat: 4.6, neighbors: ["Brazil", "Ecuador", "Panama", "Peru", "Venezuela"] },
+    "Ecuador": { code: "EC", continent: "SOUTH AMERICA", color: "#059669", lon: -78.2, lat: -1.8, neighbors: ["Colombia", "Peru"] },
+    "Guyana": { code: "GY", continent: "SOUTH AMERICA", color: "#059669", lon: -58.9, lat: 4.9, neighbors: ["Brazil", "Suriname", "Venezuela"] },
+    "Paraguay": { code: "PY", continent: "SOUTH AMERICA", color: "#059669", lon: -58.4, lat: -23.4, neighbors: ["Argentina", "Bolivia", "Brazil"] },
+    "Peru": { code: "PE", continent: "SOUTH AMERICA", color: "#059669", lon: -75.0, lat: -9.2, neighbors: ["Bolivia", "Brazil", "Chile", "Colombia", "Ecuador"] },
+    "Suriname": { code: "SR", continent: "SOUTH AMERICA", color: "#059669", lon: -56.0, lat: 3.9, neighbors: ["Brazil", "Guyana"] },
+    "Uruguay": { code: "UY", continent: "SOUTH AMERICA", color: "#059669", lon: -55.8, lat: -32.5, neighbors: ["Argentina", "Brazil"] },
+    "Venezuela": { code: "VE", continent: "SOUTH AMERICA", color: "#059669", lon: -66.6, lat: 6.4, neighbors: ["Brazil", "Colombia", "Guyana"] },
+
+    // Oceania
+    "Australia": { code: "AU", continent: "OCEANIA", color: "#a855f7", lon: 133.8, lat: -25.3, neighbors: ["Indonesia", "Papua New Guinea", "New Zealand"] },
+    "New Zealand": { code: "NZ", continent: "OCEANIA", color: "#a855f7", lon: 174.9, lat: -40.9, neighbors: ["Australia"] },
+    "Papua New Guinea": { code: "PG", continent: "OCEANIA", color: "#a855f7", lon: 143.9, lat: -6.3, neighbors: ["Indonesia", "Australia"] }
+  };
+
+  function getRoomDisplayInfo(roomId, isMetro, isCountry) {
+    if (isCountry && WORLD_COUNTRIES[roomId]) {
+      const c = WORLD_COUNTRIES[roomId];
+      return {
+        label: roomId,
+        badge: c.continent,
+        color: c.color,
+        code: c.code,
+        isCountry: true
+      };
+    }
     if (isMetro && BCN_METRO_STATIONS[roomId]) {
       const st = BCN_METRO_STATIONS[roomId];
       return {
@@ -707,20 +927,93 @@
     }
     return {
       label: roomId.toString(),
-      badge: null,
-      color: "#facc15",
-      isMetro: false
+      badge: "",
+      color: "#eab308",
+      isMetro: false,
+      isCountry: false
     };
   }
 
-  /* =========================================================================
-     LEVEL GENERATOR CONFIGURATIONS (CHAMBERS 1 TO 9)
-     ========================================================================= */
   const LEVEL_CONFIGS = [
     {
       id: 1,
-      name: "Chamber 1",
-      subtitle: "Sector I",
+      name: "World Countries",
+      key: "countries",
+      gridDescription: "Global Terrestrial Adjacency — Borders, Island Straits & Continental Bridges",
+      generator: () => {
+        const rooms = {};
+        const countryKeys = Object.keys(WORLD_COUNTRIES);
+        countryKeys.forEach(c => { rooms[c] = []; });
+
+        countryKeys.forEach(c => {
+          const nbrs = WORLD_COUNTRIES[c].neighbors || [];
+          nbrs.forEach(n => {
+            if (rooms[n]) {
+              if (!rooms[c].includes(n)) rooms[c].push(n);
+              if (!rooms[n].includes(c)) rooms[n].push(c);
+            }
+          });
+        });
+
+        return {
+          startRoom: "Spain",
+          targets: ["Japan", "Australia", "Brazil"],
+          rooms: rooms,
+          structureTag: "World Countries"
+        };
+      }
+    },
+    {
+      id: 2,
+      name: "Barcelona Metro",
+      key: "metro",
+      gridDescription: "Barcelona Metro — Lines L1 to L5 (123 Stations & Transfers)",
+      generator: () => {
+        const rooms = {};
+        for (const stId in BCN_METRO_STATIONS) {
+          rooms[stId] = [];
+        }
+
+        const lineGroups = { L1: [], L2: [], L3: [], L4: [], L5: [] };
+        for (const stId in BCN_METRO_STATIONS) {
+          lineGroups[BCN_METRO_STATIONS[stId].line].push(parseInt(stId, 10));
+        }
+
+        for (const line in lineGroups) {
+          const list = lineGroups[line].sort((a, b) => a - b);
+          for (let i = 0; i < list.length; i++) {
+            const u = list[i].toString();
+            if (i > 0) rooms[u].push(list[i - 1].toString());
+            if (i < list.length - 1) rooms[u].push(list[i + 1].toString());
+          }
+        }
+
+        const transfers = [
+          ["116", "313"], ["112", "308"], ["204", "314"], ["204", "410"], ["314", "410"],
+          ["207", "516"], ["115", "203"], ["117", "411"], ["110", "510"], ["306", "511"],
+          ["315", "514"], ["408", "515"], ["404", "521"], ["121", "209"], ["123", "519"],
+          ["201", "310"], ["212", "422"], ["326", "401"], ["320", "527"]
+        ];
+
+        transfers.forEach(([a, b]) => {
+          if (rooms[a] && rooms[b]) {
+            if (!rooms[a].includes(b)) rooms[a].push(b);
+            if (!rooms[b].includes(a)) rooms[b].push(a);
+          }
+        });
+
+        return {
+          startRoom: "116",
+          targets: ["516", "413", "301"],
+          rooms: rooms,
+          structureTag: "Barcelona Metro"
+        };
+      }
+    },
+    {
+      id: 3,
+      name: "9×9 Cartesian Grid",
+      key: "cartesian",
       gridDescription: "9×9 Cartesian Grid — Coordinates: (Column, Row)",
       generator: () => {
         const rooms = {};
@@ -739,14 +1032,14 @@
           startRoom: "11",
           targets: ["75", "28", "82"],
           rooms: rooms,
-          structureTag: "Sector I"
+          structureTag: "9×9 Grid"
         };
       }
     },
     {
-      id: 2,
-      name: "Chamber 2",
-      subtitle: "Sector II",
+      id: 4,
+      name: "4×4×4 Spatial Cube",
+      key: "cube",
       gridDescription: "4×4×4 Isometric Cube — Coordinates: (X, Y, Z)",
       generator: () => {
         const rooms = {};
@@ -767,16 +1060,16 @@
         }
         return {
           startRoom: "111",
-          targets: ["432", "144", "413"],
+          targets: ["432", "144", "314"],
           rooms: rooms,
-          structureTag: "Sector II"
+          structureTag: "Isometric Cube"
         };
       }
     },
     {
-      id: 3,
-      name: "Chamber 3",
-      subtitle: "Sector III",
+      id: 5,
+      name: "Concentric Polar Rings",
+      key: "polar",
       gridDescription: "Concentric Polar Rings — Coordinates: (Ring 1–5, Sector 1–8)",
       generator: () => {
         const rooms = {};
@@ -795,16 +1088,16 @@
         }
         return {
           startRoom: "11",
-          targets: ["47", "23", "55"],
+          targets: ["47", "23", "56"],
           rooms: rooms,
-          structureTag: "Sector III"
+          structureTag: "Polar Rings"
         };
       }
     },
     {
-      id: 4,
-      name: "Chamber 4",
-      subtitle: "Sector IV",
+      id: 6,
+      name: "Binary Tree Hierarchy",
+      key: "tree",
       gridDescription: "Binary Tree Hierarchy — Path prefix string (0 = Left, 1 = Right)",
       generator: () => {
         const rooms = {};
@@ -828,14 +1121,14 @@
           startRoom: "1",
           targets: ["10110", "11001", "10011"],
           rooms: rooms,
-          structureTag: "Sector IV"
+          structureTag: "Binary Tree"
         };
       }
     },
     {
-      id: 5,
-      name: "Chamber 5",
-      subtitle: "Sector V",
+      id: 7,
+      name: "7×7 Cyclic Torus",
+      key: "torus",
       gridDescription: "7×7 Cyclic Torus — Wraparound coordinates (Col 0–6, Row 0–6)",
       generator: () => {
         const rooms = {};
@@ -851,16 +1144,16 @@
         }
         return {
           startRoom: "00",
-          targets: ["54", "26", "61"],
+          targets: ["54", "16", "62"],
           rooms: rooms,
-          structureTag: "Sector V"
+          structureTag: "Cyclic Torus"
         };
       }
     },
     {
-      id: 6,
-      name: "Chamber 6",
-      subtitle: "Sector VI",
+      id: 8,
+      name: "Hexagonal Lattice",
+      key: "hex",
       gridDescription: "Hexagonal Lattice — Biaxial: Right (+1, 0), Down-Right (0, +1)",
       generator: () => {
         const rooms = {};
@@ -872,7 +1165,6 @@
             validHexes.add(`${u}${v}`);
           }
         }
-
         const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1], [-1, 1], [1, -1]];
         validHexes.forEach(id => {
           const u = parseInt(id.charAt(0), 10);
@@ -880,37 +1172,34 @@
           const neighbors = [];
           dirs.forEach(([du, dv]) => {
             const nid = `${u + du}${v + dv}`;
-            if (validHexes.has(nid)) {
-              neighbors.push(nid);
-            }
+            if (validHexes.has(nid)) neighbors.push(nid);
           });
           rooms[id] = neighbors;
         });
-
         return {
           startRoom: "03",
           targets: ["60", "15", "53"],
           rooms: rooms,
-          structureTag: "Sector VI"
+          structureTag: "Hex Lattice"
         };
       }
     },
     {
-      id: 7,
-      name: "Chamber 7",
-      subtitle: "Sector VII",
-      gridDescription: "8×8 Chessboard Knight's Lattice — Coordinates: (Row 1–8, Col 1–8)",
+      id: 9,
+      name: "Chess Knight's Moves",
+      key: "knight",
+      gridDescription: "8×8 Chessboard — Knight's Lattice (Two-digit coordinates: Row 1–8, Col 1–8)",
       generator: () => {
         const rooms = {};
-        const knightMoves = [
-          [2, 1], [2, -1], [-2, 1], [-2, -1],
-          [1, 2], [1, -2], [-1, 2], [-1, -2]
+        const knightOffsets = [
+          [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+          [1, -2], [1, 2], [2, -1], [2, 1]
         ];
         for (let r = 1; r <= 8; r++) {
           for (let c = 1; c <= 8; c++) {
             const id = `${r}${c}`;
             const neighbors = [];
-            knightMoves.forEach(([dr, dc]) => {
+            knightOffsets.forEach(([dr, dc]) => {
               const nr = r + dr;
               const nc = c + dc;
               if (nr >= 1 && nr <= 8 && nc >= 1 && nc <= 8) {
@@ -924,127 +1213,67 @@
           startRoom: "11",
           targets: ["88", "35", "72"],
           rooms: rooms,
-          structureTag: "Sector VII"
+          structureTag: "Knight's Path"
         };
       }
     },
     {
-      id: 8,
-      name: "Chamber 8",
-      subtitle: "Sector VIII",
-      gridDescription: "8×8 Ulam Spiral Lattice — Standard orthogonal links (1–64)",
+      id: 10,
+      name: "Ulam Prime Spiral",
+      key: "ulam",
+      gridDescription: "8×8 Square Grid — Ulam Spiral Numbers 1 to 64",
       generator: () => {
-        const rooms = {};
-        const grid = [
-          [64, 63, 62, 61, 60, 59, 58, 57],
-          [37, 36, 35, 34, 33, 32, 31, 56],
-          [38, 17, 16, 15, 14, 13, 30, 55],
-          [39, 18,  5,  4,  3, 12, 29, 54],
-          [40, 19,  6,  1,  2, 11, 28, 53],
-          [41, 20,  7,  8,  9, 10, 27, 52],
-          [42, 21, 22, 23, 24, 25, 26, 51],
-          [43, 44, 45, 46, 47, 48, 49, 50]
-        ];
+        const grid = Array.from({ length: 8 }, () => Array(8).fill(0));
+        let r = 4, c = 3;
+        grid[r][c] = 1;
 
-        const posMap = {};
-        for (let r = 0; r < 8; r++) {
-          for (let c = 0; c < 8; c++) {
-            const val = grid[r][c].toString();
-            posMap[val] = { r, c };
-            rooms[val] = [];
+        let num = 2;
+        let step = 1;
+        const dRow = [0, -1, 0, 1];
+        const dCol = [1, 0, -1, 0];
+        let dir = 0;
+
+        while (num <= 64) {
+          for (let i = 0; i < 2; i++) {
+            for (let s = 0; s < step; s++) {
+              r += dRow[dir];
+              c += dCol[dir];
+              if (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                grid[r][c] = num;
+                num++;
+              }
+              if (num > 64) break;
+            }
+            dir = (dir + 1) % 4;
+            if (num > 64) break;
           }
+          step++;
         }
 
-        const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-        Object.keys(posMap).forEach(id => {
-          const { r, c } = posMap[id];
-          dirs.forEach(([dr, dc]) => {
-            const nr = r + dr;
-            const nc = c + dc;
-            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
-              rooms[id].push(grid[nr][nc].toString());
-            }
-          });
-        });
+        const rooms = {};
+        for (let row = 0; row < 8; row++) {
+          for (let col = 0; col < 8; col++) {
+            const id = grid[row][col].toString();
+            const neighbors = [];
+            if (row > 0) neighbors.push(grid[row - 1][col].toString());
+            if (row < 7) neighbors.push(grid[row + 1][col].toString());
+            if (col > 0) neighbors.push(grid[row][col - 1].toString());
+            if (col < 7) neighbors.push(grid[row][col + 1].toString());
+            rooms[id] = neighbors;
+          }
+        }
 
         return {
           startRoom: "1",
           targets: ["64", "25", "47"],
           rooms: rooms,
-          structureTag: "Sector VIII"
-        };
-      }
-    },
-    {
-      id: 9,
-      name: "Chamber 9",
-      subtitle: "Sector IX",
-      gridDescription: "Barcelona Metro (L1 to L5) — 123 Authentic Stations & Transfers",
-      generator: () => {
-        const rooms = {};
-        Object.keys(BCN_METRO_STATIONS).forEach(id => {
-          rooms[id] = [];
-        });
-
-        function linkLine(startId, endId) {
-          for (let i = startId; i < endId; i++) {
-            const u = i.toString();
-            const v = (i + 1).toString();
-            if (rooms[u] && rooms[v]) {
-              if (!rooms[u].includes(v)) rooms[u].push(v);
-              if (!rooms[v].includes(u)) rooms[v].push(u);
-            }
-          }
-        }
-
-        // Link linear paths for all 5 metro lines
-        linkLine(101, 130); // L1 (30 stations)
-        linkLine(201, 218); // L2 (18 stations)
-        linkLine(301, 326); // L3 (26 stations)
-        linkLine(401, 422); // L4 (22 stations)
-        linkLine(501, 527); // L5 (27 stations)
-
-        // Real transfer tunnel correspondences between metro lines
-        const transfers = [
-          ["110", "510"], // Plaça de Sants (L1 ↔ L5)
-          ["112", "308"], // Espanya (L1 ↔ L3)
-          ["115", "203"], // Universitat (L1 ↔ L2)
-          ["116", "313"], // Catalunya (L1 ↔ L3)
-          ["117", "411"], // Urquinaona (L1 ↔ L4)
-          ["121", "209"], // Clot (L1 ↔ L2)
-          ["123", "519"], // La Sagrera (L1 ↔ L5)
-          ["201", "310"], // Paral·lel (L2 ↔ L3)
-          ["204", "314"], // Passeig de Gràcia (L2 ↔ L3)
-          ["204", "410"], // Passeig de Gràcia (L2 ↔ L4)
-          ["314", "410"], // Passeig de Gràcia (L3 ↔ L4)
-          ["207", "516"], // Sagrada Família (L2 ↔ L5)
-          ["212", "422"], // La Pau (L2 ↔ L4)
-          ["306", "511"], // Sants Estació (L3 ↔ L5)
-          ["315", "514"], // Diagonal (L3 ↔ L5)
-          ["320", "527"], // Vall d'Hebron (L3 ↔ L5)
-          ["326", "401"], // Trinitat Nova (L3 ↔ L4)
-          ["404", "521"], // Maragall (L4 ↔ L5)
-          ["408", "515"]  // Verdaguer (L4 ↔ L5)
-        ];
-
-        transfers.forEach(([a, b]) => {
-          if (rooms[a] && rooms[b]) {
-            if (!rooms[a].includes(b)) rooms[a].push(b);
-            if (!rooms[b].includes(a)) rooms[b].push(a);
-          }
-        });
-
-        return {
-          startRoom: "116", // Catalunya
-          targets: ["516", "413", "301"], // Sagrada Família -> Barceloneta -> Zona Universitària
-          rooms: rooms,
-          structureTag: "Sector IX"
+          structureTag: "Ulam Spiral",
+          gridMatrix: grid
         };
       }
     }
   ];
 
-  /* BFS Shortest Path Route Calculator */
   function computeShortestPath(network, start, target) {
     if (start === target) return [start];
     const queue = [[start]];
@@ -1066,14 +1295,12 @@
     return [start];
   }
 
-  /* =========================================================================
-     THREE.JS 3D CHAMBER ARCHITECTURE & DOOR RENDERING
-     ========================================================================= */
   class RoomMazeScene {
-    constructor(container) {
-      this.container = container;
+    constructor(canvas) {
+      this.canvas = canvas;
       this.doors = [];
       this.animating = false;
+      this.transitionSpeedFactor = 1.0;
       this.inputCooldown = 0;
 
       this.initThree();
@@ -1082,49 +1309,48 @@
       this.animate();
     }
 
-    lockInput(durationMs = 280) {
+    lockInput(durationMs = 350) {
       this.inputCooldown = performance.now() + durationMs;
     }
 
     initThree() {
       this.scene = new THREE.Scene();
       this.scene.background = new THREE.Color(0x0a0e17);
-      this.scene.fog = new THREE.FogExp2(0x0a0e17, 0.02);
+      this.scene.fog = new THREE.FogExp2(0x0a0e17, 0.022);
 
-      // Elevated camera position framed close to eye-level to minimize floor space
-      this.defaultCamPos = new THREE.Vector3(0, 2.05, 1.95);
-      this.camera = new THREE.PerspectiveCamera(56, window.innerWidth / window.innerHeight, 0.1, 80);
+      this.defaultCamPos = new THREE.Vector3(0, 2.45, 2.6);
+      this.lookTarget = new THREE.Vector3(0, 2.45, -4.95);
+
+      this.camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, 0.1, 100);
       this.camera.position.copy(this.defaultCamPos);
-      this.camera.lookAt(0, 2.05, -4.95);
+      this.camera.lookAt(this.lookTarget);
 
-      this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+      this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       this.renderer.shadowMap.enabled = true;
       this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      this.container.appendChild(this.renderer.domElement);
 
       window.addEventListener('resize', () => this.onResize());
 
-      this.ambientLight = new THREE.AmbientLight(0xccd8e8, 0.75);
+      this.ambientLight = new THREE.AmbientLight(0xdbe4f0, 0.88);
       this.scene.add(this.ambientLight);
 
-      this.centralLight = new THREE.PointLight(0xfef08a, 1.8, 18);
-      this.centralLight.position.set(0, 4.4, 0.2);
+      this.centralLight = new THREE.PointLight(0xfef08a, 2.2, 26);
+      this.centralLight.position.set(0, 4.4, 0.5);
       this.centralLight.castShadow = true;
       this.scene.add(this.centralLight);
 
-      const wallWash = new THREE.DirectionalLight(0xffedd5, 0.5);
-      wallWash.position.set(0, 4.8, 3.2);
+      const wallWash = new THREE.DirectionalLight(0xffedd5, 0.55);
+      wallWash.position.set(0, 5.2, 4);
       this.scene.add(wallWash);
     }
 
     onResize() {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      this.camera.aspect = w / h;
+      this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
-      this.renderer.setSize(w, h);
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.camera.lookAt(this.lookTarget);
     }
 
     createStoneTexture(colorHex, mortarHex) {
@@ -1159,7 +1385,7 @@
 
       const imgData = ctx.getImageData(0, 0, 512, 512);
       for (let i = 0; i < imgData.data.length; i += 4) {
-        const noise = (Math.random() - 0.5) * 18;
+        const noise = (Math.random() - 0.5) * 20;
         imgData.data[i] = Math.min(255, Math.max(0, imgData.data[i] + noise));
         imgData.data[i+1] = Math.min(255, Math.max(0, imgData.data[i+1] + noise));
         imgData.data[i+2] = Math.min(255, Math.max(0, imgData.data[i+2] + noise));
@@ -1173,271 +1399,325 @@
     }
 
     buildEnclosedRoom() {
-      const floorTex = this.createStoneTexture('#1b212c', '#111620');
+      const floorTex = this.createStoneTexture('#1b212c', '#10141d');
       floorTex.repeat.set(4, 4);
 
-      const wallTex = this.createStoneTexture('#253040', '#161d28');
+      const wallTex = this.createStoneTexture('#232c3c', '#161c27');
       wallTex.repeat.set(3, 2);
 
       const floorMat = new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.65, metalness: 0.1 });
       const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.8, metalness: 0.15 });
-      const trimMat = new THREE.MeshStandardMaterial({ color: 0x1a212e, roughness: 0.5, metalness: 0.3 });
+      const trimMat = new THREE.MeshStandardMaterial({ color: 0x18202d, roughness: 0.5, metalness: 0.3 });
 
-      const roomW = 18;
-      const roomH = 5.6;
+      const roomW = 24;
+      const roomH = 5.8;
       const roomD = 14;
 
-      // Floor strictly at Y = 0
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(roomW, roomD), floorMat);
       floor.rotation.x = -Math.PI / 2;
-      floor.position.set(0, 0, 0.5);
+      floor.position.y = 0;
       floor.receiveShadow = true;
       this.scene.add(floor);
 
-      // Ceiling at Y = roomH
       const ceiling = new THREE.Mesh(
         new THREE.PlaneGeometry(roomW, roomD),
-        new THREE.MeshStandardMaterial({ color: 0x101622, roughness: 0.9 })
+        new THREE.MeshStandardMaterial({ color: 0x111620, roughness: 0.9 })
       );
-      ceiling.position.set(0, roomH, 0.5);
+      ceiling.position.y = roomH;
       ceiling.rotation.x = Math.PI / 2;
       this.scene.add(ceiling);
 
-      // Ceiling crossbeams
-      for (let z = -4.5; z <= 5.5; z += 3.2) {
-        const beam = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.35, 0.4), trimMat);
-        beam.position.set(0, roomH - 0.175, z);
+      for (let z = -5; z <= 5; z += 3.2) {
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.4, 0.45), trimMat);
+        beam.position.set(0, roomH - 0.2, z);
         this.scene.add(beam);
       }
 
-      // Front Wall plane at z = -4.95
       const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(roomW, roomH), wallMat);
-      frontWall.position.set(0, roomH / 2, -4.95);
+      frontWall.position.set(0, roomH / 2, -5.0);
       frontWall.receiveShadow = true;
       this.scene.add(frontWall);
 
-      // Side Walls & Back Wall
-      const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(roomD, roomH), wallMat);
-      leftWall.position.set(-roomW / 2, roomH / 2, 0.5);
-      leftWall.rotation.y = Math.PI / 2;
-      leftWall.receiveShadow = true;
-      this.scene.add(leftWall);
-
-      const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(roomD, roomH), wallMat);
-      rightWall.position.set(roomW / 2, roomH / 2, 0.5);
-      rightWall.rotation.y = -Math.PI / 2;
-      rightWall.receiveShadow = true;
-      this.scene.add(rightWall);
-
-      // Decorative sconce lanterns
-      [-6.5, 6.5].forEach((x) => {
-        const sconce = new THREE.PointLight(0xf59e0b, 0.75, 7);
-        sconce.position.set(x, 2.7, -4.6);
+      [-10.2, 10.2].forEach((x) => {
+        const sconce = new THREE.PointLight(0xf59e0b, 0.8, 10);
+        sconce.position.set(x, 2.8, -4.75);
         this.scene.add(sconce);
 
-        const fixture = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.06, 0.4, 8), trimMat);
-        fixture.position.set(x, 2.7, -4.85);
+        const fixture = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.08, 0.45, 8), trimMat);
+        fixture.position.set(x, 2.8, -4.9);
         this.scene.add(fixture);
       });
     }
 
-    createPlacardTexture(roomId, isPrevious, isMetro) {
+    createPlacardTexture(roomId, isPrevious, isMetro, isCountry) {
       const canvas = document.createElement('canvas');
       canvas.width = 1024;
       canvas.height = 640;
       const ctx = canvas.getContext('2d');
 
-      const info = getRoomDisplayInfo(roomId, isMetro);
+      const info = getRoomDisplayInfo(roomId, isMetro, isCountry);
 
-      // Deep dark enamel background
       ctx.fillStyle = '#0f141d';
       ctx.fillRect(0, 0, 1024, 640);
 
-      // Solid inner panel
-      ctx.fillStyle = '#161e2b';
-      ctx.fillRect(16, 16, 992, 608);
+      ctx.fillStyle = isPrevious ? '#64748b' : (isMetro || isCountry ? info.color : '#eab308');
+      ctx.fillRect(0, 0, 1024, 18);
+      ctx.fillRect(0, 622, 1024, 18);
+      ctx.fillRect(0, 0, 18, 640);
+      ctx.fillRect(1006, 0, 18, 640);
 
-      // Crisp boundary frame
-      const frameColor = isPrevious ? '#64748b' : (isMetro ? info.color : '#eab308');
-      ctx.strokeStyle = frameColor;
-      ctx.lineWidth = 14;
-      ctx.strokeRect(20, 20, 984, 600);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(28, 28, 968, 584);
 
-      if (isMetro && info.isMetro) {
-        // Line Badge Pill (L1 to L5)
+      if (isCountry && info.isCountry) {
         const badgeText = info.badge;
-        ctx.font = 'bold 64px "JetBrains Mono", monospace';
-        const badgeW = ctx.measureText(badgeText).width + 64;
+        ctx.font = 'bold 58px "JetBrains Mono", monospace';
+        const badgeW = ctx.measureText(badgeText).width + 60;
         const badgeX = 512 - badgeW / 2;
-        const badgeY = 60;
-        const badgeH = 88;
+        const badgeY = 56;
+        const badgeH = 78;
 
         ctx.fillStyle = info.color;
         ctx.beginPath();
-        ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 20);
+        ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 18);
         ctx.fill();
 
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#0f141d';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(badgeText, 512, badgeY + badgeH / 2);
 
-        // Station Name (Large, auto-wrapping up to 2 lines)
         const name = info.label;
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        if (name.length <= 13) {
-          ctx.font = 'bold 106px "Plus Jakarta Sans", sans-serif';
-          ctx.fillText(name, 512, 360);
+        if (name.length <= 12) {
+          ctx.font = 'bold 112px "Plus Jakarta Sans", sans-serif';
+          ctx.fillText(name, 512, 335);
+        } else if (name.length <= 18) {
+          ctx.font = 'bold 88px "Plus Jakarta Sans", sans-serif';
+          ctx.fillText(name, 512, 335);
         } else {
-          ctx.font = 'bold 78px "Plus Jakarta Sans", sans-serif';
           const words = name.split(' ');
-          let line1 = '', line2 = '';
           const half = Math.ceil(words.length / 2);
-          line1 = words.slice(0, half).join(' ');
-          line2 = words.slice(half).join(' ');
-          ctx.fillText(line1, 512, 310);
-          ctx.fillText(line2, 512, 420);
+          const line1 = words.slice(0, half).join(' ');
+          const line2 = words.slice(half).join(' ');
+          ctx.font = 'bold 70px "Plus Jakarta Sans", sans-serif';
+          ctx.fillText(line1, 512, 280);
+          ctx.fillText(line2, 512, 395);
         }
 
         if (isPrevious) {
           ctx.fillStyle = '#94a3b8';
-          ctx.font = 'bold 42px "JetBrains Mono", monospace';
-          ctx.fillText("← RETURN", 512, 545);
+          ctx.font = 'bold 44px "JetBrains Mono", monospace';
+          ctx.fillText("← RETURN", 512, 535);
         }
-      } else {
-        // Standard Chamber Placard
-        if (isPrevious) {
-          ctx.fillStyle = '#94a3b8';
-          ctx.font = 'bold 54px "JetBrains Mono", monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText("← RETURN", 512, 130);
-        }
+      } else if (isMetro && info.isMetro) {
+        const pillW = 220;
+        const pillH = 88;
+        const pillX = 512 - pillW / 2;
+        const pillY = 56;
 
-        ctx.fillStyle = isPrevious ? '#cbd5e1' : '#facc15';
-        ctx.font = 'bold 260px "JetBrains Mono", monospace';
+        ctx.fillStyle = info.color;
+        ctx.beginPath();
+        ctx.roundRect(pillX, pillY, pillW, pillH, 20);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 64px "JetBrains Mono", monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.shadowColor = isPrevious ? '#475569' : '#d97706';
-        ctx.shadowBlur = 16;
-        ctx.fillText(roomId.toString(), 512, isPrevious ? 380 : 320);
+        ctx.fillText(info.badge, 512, pillY + pillH / 2 + 2);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const name = info.label;
+        if (name.length <= 12) {
+          ctx.font = 'bold 106px "Plus Jakarta Sans", sans-serif';
+          ctx.fillText(name, 512, 335);
+        } else if (name.length <= 18) {
+          ctx.font = 'bold 84px "Plus Jakarta Sans", sans-serif';
+          ctx.fillText(name, 512, 335);
+        } else {
+          const words = name.split(' ');
+          const half = Math.ceil(words.length / 2);
+          const line1 = words.slice(0, half).join(' ');
+          const line2 = words.slice(half).join(' ');
+          ctx.font = 'bold 68px "Plus Jakarta Sans", sans-serif';
+          ctx.fillText(line1, 512, 280);
+          ctx.fillText(line2, 512, 395);
+        }
+
+        if (isPrevious) {
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = 'bold 44px "JetBrains Mono", monospace';
+          ctx.fillText("← RETURN", 512, 535);
+        }
+      } else {
+        ctx.fillStyle = isPrevious ? '#94a3b8' : '#fef08a';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const text = info.label;
+        if (text.length <= 3) {
+          ctx.font = 'bold 270px "JetBrains Mono", monospace';
+        } else if (text.length <= 5) {
+          ctx.font = 'bold 200px "JetBrains Mono", monospace';
+        } else {
+          ctx.font = 'bold 140px "JetBrains Mono", monospace';
+        }
+        ctx.fillText(text, 512, isPrevious ? 300 : 320);
+
+        if (isPrevious) {
+          ctx.fillStyle = '#64748b';
+          ctx.font = 'bold 48px "JetBrains Mono", monospace';
+          ctx.fillText("← RETURN", 512, 510);
+        }
       }
 
       const tex = new THREE.CanvasTexture(canvas);
-      tex.generateMipmaps = true;
       tex.minFilter = THREE.LinearMipmapLinearFilter;
-      tex.magFilter = THREE.LinearFilter;
+      tex.generateMipmaps = true;
       return tex;
     }
 
-    renderDoors(doorList, previousRoomId, isMetro, onDoorSelectCallback) {
+    renderDoors(doorList, previousRoomId, isMetro, isCountry, onDoorSelectCallback) {
       this.doors.forEach(d => this.scene.remove(d.group));
       this.doors = [];
 
       const count = doorList.length;
       if (count === 0) return;
 
-      // Spacing scales dynamically to keep doors contained along the wall
-      let spacing = 2.85;
-      let doorScale = 1.0;
-      if (count === 4) { spacing = 2.65; doorScale = 0.95; }
-      else if (count === 5) { spacing = 2.35; doorScale = 0.88; }
-      else if (count >= 6) { spacing = 1.95; doorScale = 0.78; }
+      let cols, rows;
+      if (count <= 1) { cols = 1; rows = 1; }
+      else if (count === 2) { cols = 2; rows = 1; }
+      else if (count === 3) { cols = 3; rows = 1; }
+      else if (count === 4) { cols = 2; rows = 2; }
+      else if (count <= 6) { cols = 3; rows = 2; }
+      else if (count <= 8) { cols = 4; rows = 2; }
+      else if (count === 9) { cols = 3; rows = 3; }
+      else if (count <= 12) { cols = 4; rows = 3; }
+      else { cols = 4; rows = Math.ceil(count / 4); }
 
-      const startX = -((count - 1) * spacing) / 2;
+      const totalWallWidth = cols <= 2 ? 7.2 : (cols === 3 ? 11.2 : 14.8);
+      const totalWallHeight = rows === 1 ? 2.1 : (rows === 2 ? 3.3 : (rows === 3 ? 4.1 : 4.4));
+
+      const spacingX = totalWallWidth / cols;
+      const spacingY = totalWallHeight / rows;
+
+      const availW = spacingX * 0.90;
+      const availH = spacingY * 0.88;
+      const targetAspect = 1.55;
+
+      let lockerW, lockerH;
+      if (availW / availH > targetAspect) {
+        lockerH = availH;
+        lockerW = lockerH * targetAspect;
+      } else {
+        lockerW = availW;
+        lockerH = lockerW / targetAspect;
+      }
+
+      const scale = lockerW / 2.8;
+      const gridCenterY = 2.85;
+      const gridPosZ = -4.85;
+
+      const targetCamZ = this.defaultCamPos.z + (rows >= 4 || cols >= 4 ? 0.95 : (rows >= 3 ? 0.45 : -0.1));
+      const targetCamY = gridCenterY + 0.15;
+      this.camera.position.set(0, targetCamY, targetCamZ);
+      this.lookTarget.set(0, gridCenterY, gridPosZ - 0.1);
+      this.camera.lookAt(this.lookTarget);
 
       doorList.forEach((targetRoomId, idx) => {
         const isPrevious = targetRoomId === previousRoomId;
-        const posX = startX + idx * spacing;
-        const posZ = -4.88; // Embedded flush on the wall plane
+        const row = Math.floor(idx / cols);
+        const itemsInThisRow = (row === rows - 1) ? (count - row * cols) : cols;
+        const rowStartX = -((itemsInThisRow - 1) * spacingX) / 2;
+        const posX = rowStartX + (idx - row * cols) * spacingX;
 
-        const doorGroup = new THREE.Group();
-        // Strictly placed at ground level Y = 0
-        doorGroup.position.set(posX, 0.0, posZ);
-        doorGroup.rotation.set(0, 0, 0); // Flush on the wall plane
-        doorGroup.scale.set(doorScale, doorScale, doorScale);
+        const rowStartY = gridCenterY + ((rows - 1) * spacingY) / 2;
+        const posY = rowStartY - row * spacingY;
 
+        const lockerGroup = new THREE.Group();
+        lockerGroup.position.set(posX, posY, gridPosZ);
+
+        const frameDepth = 0.28;
+        const frameThickness = 0.09 * scale;
         const frameMat = new THREE.MeshStandardMaterial({
-          color: isPrevious ? 0x242e3f : 0x27364e,
-          roughness: 0.6,
-          metalness: 0.25
+          color: isPrevious ? 0x222c3c : 0x273549,
+          roughness: 0.5,
+          metalness: 0.35
         });
 
-        // Frame posts grounded to floor
-        const postH = 3.6;
-        const postGeo = new THREE.BoxGeometry(0.24, postH, 0.35);
-        const leftPost = new THREE.Mesh(postGeo, frameMat);
-        leftPost.position.set(-1.0, postH / 2, 0);
-        doorGroup.add(leftPost);
+        const topBar = new THREE.Mesh(new THREE.BoxGeometry(lockerW + frameThickness * 2, frameThickness, frameDepth), frameMat);
+        topBar.position.set(0, lockerH / 2 + frameThickness / 2, 0);
+        lockerGroup.add(topBar);
 
-        const rightPost = new THREE.Mesh(postGeo, frameMat);
-        rightPost.position.set(1.0, postH / 2, 0);
-        doorGroup.add(rightPost);
+        const bottomBar = new THREE.Mesh(new THREE.BoxGeometry(lockerW + frameThickness * 2, frameThickness, frameDepth), frameMat);
+        bottomBar.position.set(0, -lockerH / 2 - frameThickness / 2, 0);
+        lockerGroup.add(bottomBar);
 
-        // Header lintel
-        const lintelGeo = new THREE.BoxGeometry(2.24, 0.35, 0.4);
-        const lintel = new THREE.Mesh(lintelGeo, frameMat);
-        lintel.position.set(0, postH + 0.175, 0);
-        doorGroup.add(lintel);
+        const leftBar = new THREE.Mesh(new THREE.BoxGeometry(frameThickness, lockerH, frameDepth), frameMat);
+        leftBar.position.set(-lockerW / 2 - frameThickness / 2, 0, 0);
+        lockerGroup.add(leftBar);
 
-        // Hinge Pivot anchored at bottom-left corner
+        const rightBar = new THREE.Mesh(new THREE.BoxGeometry(frameThickness, lockerH, frameDepth), frameMat);
+        rightBar.position.set(lockerW / 2 + frameThickness / 2, 0, 0);
+        lockerGroup.add(rightBar);
+
+        const voidMat = new THREE.MeshBasicMaterial({ color: 0x05070a });
+        const voidMesh = new THREE.Mesh(new THREE.PlaneGeometry(lockerW, lockerH), voidMat);
+        voidMesh.position.set(0, 0, -frameDepth / 2 + 0.02);
+        lockerGroup.add(voidMesh);
+
         const hingePivot = new THREE.Group();
-        hingePivot.position.set(-0.88, 0, 0);
-        doorGroup.add(hingePivot);
+        hingePivot.position.set(-lockerW / 2, 0, 0);
+        lockerGroup.add(hingePivot);
 
-        // Door Leaf strictly resting at floor level
-        const leafH = postH;
-        const leafW = 1.76;
-        const leafGeo = new THREE.BoxGeometry(leafW, leafH, 0.12);
-        const leafMat = new THREE.MeshStandardMaterial({
-          color: isPrevious ? 0x1d2737 : 0x162234,
-          roughness: 0.5,
+        const doorLeafGeo = new THREE.BoxGeometry(lockerW, lockerH, 0.08);
+        const doorLeafMat = new THREE.MeshStandardMaterial({
+          color: isPrevious ? 0x1b2432 : 0x182232,
+          roughness: 0.6,
           metalness: 0.2
         });
-        const doorLeaf = new THREE.Mesh(leafGeo, leafMat);
-        doorLeaf.position.set(leafW / 2, leafH / 2, 0);
+        const doorLeaf = new THREE.Mesh(doorLeafGeo, doorLeafMat);
+        doorLeaf.position.set(lockerW / 2, 0, 0);
         doorLeaf.castShadow = true;
         hingePivot.add(doorLeaf);
 
-        // Door Handle
+        const handleMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.8, roughness: 0.2 });
         const handle = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.04, 0.04, 0.22, 12),
-          new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.8, roughness: 0.2 })
+          new THREE.CylinderGeometry(0.035 * scale, 0.035 * scale, 0.28 * scale, 12),
+          handleMat
         );
         handle.rotation.x = Math.PI / 2;
-        handle.position.set(leafW - 0.18, leafH * 0.44, 0.1);
+        handle.position.set(lockerW - 0.16 * scale, 0, 0.07);
         hingePivot.add(handle);
 
-        // Large high-resolution Placard
-        const placardTex = this.createPlacardTexture(targetRoomId, isPrevious, isMetro);
+        const placardW = lockerW * 0.90;
+        const placardH = placardW * (640 / 1024);
+
+        const placardTex = this.createPlacardTexture(targetRoomId, isPrevious, isMetro, isCountry);
         const placardMat = new THREE.MeshBasicMaterial({ map: placardTex });
-        const placard = new THREE.Mesh(new THREE.PlaneGeometry(1.60, 1.06), placardMat);
-        placard.position.set(leafW / 2, leafH * 0.65, 0.07);
+        const placard = new THREE.Mesh(new THREE.PlaneGeometry(placardW, placardH), placardMat);
+        placard.position.set(lockerW / 2, 0, 0.046);
         hingePivot.add(placard);
 
-        // Colored ambient threshold glow
-        const info = getRoomDisplayInfo(targetRoomId, isMetro);
-        const glowColor = isPrevious ? 0x94a3b8 : (isMetro ? parseInt(info.color.replace('#', '0x'), 16) : 0xf59e0b);
-        const doorLight = new THREE.PointLight(glowColor, 0.85, 3.5);
-        doorLight.position.set(0, 0.4, 0.35);
-        doorGroup.add(doorLight);
+        this.scene.add(lockerGroup);
 
-        this.scene.add(doorGroup);
-
-        const clickableMeshes = [doorLeaf, placard, handle, leftPost, rightPost, lintel];
-
-        this.doors.push({
-          group: doorGroup,
+        const doorObj = {
+          roomId: targetRoomId,
+          group: lockerGroup,
           hingePivot: hingePivot,
-          targetRoomId: targetRoomId,
-          isPrevious: isPrevious,
-          doorLeaf: doorLeaf,
-          placard: placard,
-          clickableMeshes: clickableMeshes,
-          callback: () => onDoorSelectCallback(targetRoomId, this.doors.find(d => d.targetRoomId === targetRoomId))
-        });
+          pos: { x: posX, y: posY, z: gridPosZ },
+          clickableMeshes: [doorLeaf, placard],
+          callback: () => onDoorSelectCallback(targetRoomId, doorObj)
+        };
+        this.doors.push(doorObj);
       });
     }
 
@@ -1473,7 +1753,6 @@
 
       const onClickOrTouch = (e) => {
         if (this.animating || performance.now() < this.inputCooldown) return;
-        if (e.target !== this.renderer.domElement) return;
 
         let clientX = e.clientX;
         let clientY = e.clientY;
@@ -1503,9 +1782,9 @@
       sound.playDoorTravel();
 
       const startTime = performance.now();
-      const duration = 460;
-      const initialCamZ = this.camera.position.z;
-      const targetCamZ = initialCamZ - 2.6;
+      const duration = 520 / this.transitionSpeedFactor;
+      const initialCamPos = this.camera.position.clone();
+      const targetCamPos = new THREE.Vector3(doorObj.pos.x, doorObj.pos.y, doorObj.pos.z + 1.2);
 
       const animStep = (now) => {
         const elapsed = now - startTime;
@@ -1513,17 +1792,18 @@
         const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
 
         if (doorObj && doorObj.hingePivot) {
-          doorObj.hingePivot.rotation.y = -ease * (Math.PI * 0.45);
+          doorObj.hingePivot.rotation.y = -ease * (Math.PI * 0.55);
         }
 
-        this.camera.position.z = initialCamZ + (targetCamZ - initialCamZ) * ease;
-        this.centralLight.intensity = 1.8 * (1 - ease * 0.45);
+        this.camera.position.lerpVectors(initialCamPos, targetCamPos, ease);
+        this.centralLight.intensity = 2.2 * (1 - ease * 0.45);
 
         if (progress < 1) {
           requestAnimationFrame(animStep);
         } else {
           this.camera.position.copy(this.defaultCamPos);
-          this.centralLight.intensity = 1.8;
+          this.camera.lookAt(this.lookTarget);
+          this.centralLight.intensity = 2.2;
           this.animating = false;
           if (onComplete) onComplete();
         }
@@ -1538,35 +1818,54 @@
     }
   }
 
-  /* =========================================================================
-     CORE GAME MANAGER WITH 3-TARGET CHAINING & INFINITE MODE
-     ========================================================================= */
   class RoomMazeGame {
     constructor() {
       this.currentLevelIndex = 0;
       this.unlockedLevels = LEVEL_CONFIGS.length;
       this.timerEnabled = true;
       this.infiniteMode = false;
+      this.infiniteStreak = 0;
+
       this.currentRoom = null;
+      this.targetStageIndex = 0;
+      this.targetList = [];
+      this.currentTarget = null;
+
       this.moveHistory = [];
+      this.legMoveCounts = [];
+      this.legShortestPaths = [];
+
       this.timerSeconds = 60;
       this.timerInterval = null;
       this.isPaused = false;
       this.levelStartTime = null;
       this.minimapOpen = false;
+      this.minimapZoomLocal = false;
 
-      // 3-Target Sequential Progress Tracker
-      this.targetQueue = [];
-      this.currentTargetIndex = 0;
-      this.stageHistory = [];
-
-      this.scene = new RoomMazeScene(document.getElementById('canvas-container'));
+      this.scene = new RoomMazeScene(document.getElementById('three-canvas'));
       this.loadProgress();
       this.bindUIEvents();
+      this.setupOrientationWatcher();
       this.startLevel(this.currentLevelIndex);
     }
 
+    setupOrientationWatcher() {
+      const modal = document.getElementById('rotate-device-modal');
+      const checkOrientation = () => {
+        const isMobile = window.innerWidth <= 840;
+        const isPortrait = window.innerHeight > window.innerWidth;
+        if (isMobile && isPortrait) {
+          modal.classList.remove('hidden');
+        } else {
+          modal.classList.add('hidden');
+        }
+      };
+      window.addEventListener('resize', checkOrientation);
+      checkOrientation();
+    }
+
     loadProgress() {
+      this.unlockedLevels = LEVEL_CONFIGS.length;
       const savedTimer = StorageFallback.getItem('coordinate_nexus_timer');
       if (savedTimer !== null) this.timerEnabled = savedTimer === 'true';
 
@@ -1575,24 +1874,16 @@
     }
 
     saveProgress() {
+      StorageFallback.setItem('coordinate_nexus_unlocked', this.unlockedLevels.toString());
       StorageFallback.setItem('coordinate_nexus_timer', this.timerEnabled.toString());
       StorageFallback.setItem('coordinate_nexus_infinite', this.infiniteMode.toString());
-    }
-
-    get isMetro() {
-      return this.currentLevelIndex === 8;
-    }
-
-    pickRandomTarget(excludeRoom) {
-      const allRooms = Object.keys(this.levelData.rooms);
-      const candidates = allRooms.filter(r => r !== excludeRoom);
-      return candidates[Math.floor(Math.random() * candidates.length)] || candidates[0];
     }
 
     startLevel(index) {
       this.isPaused = false;
       this.scene.animating = false;
       this.scene.camera.position.copy(this.scene.defaultCamPos);
+      this.scene.camera.lookAt(this.scene.lookTarget);
 
       this.currentLevelIndex = index;
       const config = LEVEL_CONFIGS[index];
@@ -1600,24 +1891,24 @@
 
       this.currentRoom = this.levelData.startRoom;
       this.moveHistory = [this.currentRoom];
-      this.levelStartTime = performance.now();
+      this.legMoveCounts = [];
+      this.legShortestPaths = [];
+      this.targetStageIndex = 0;
+      this.infiniteStreak = 0;
 
       if (this.infiniteMode) {
-        this.targetQueue = [this.pickRandomTarget(this.currentRoom)];
-        this.currentTargetIndex = 0;
+        this.currentTarget = this.pickRandomTarget(this.currentRoom);
       } else {
-        const rawTargets = this.levelData.targets || [this.levelData.targetRoom || "75"];
-        this.targetQueue = [...rawTargets];
-        this.currentTargetIndex = 0;
+        this.targetList = this.levelData.targets || [this.levelData.targetRoom];
+        this.currentTarget = this.targetList[0];
       }
 
-      this.stageHistory = [this.currentRoom];
+      this.levelStartTime = performance.now();
       this.scene.lockInput(200);
 
-      document.getElementById('hud-level-title').innerText = config.name;
-      document.getElementById('hud-structure-tag').innerText = this.levelData.structureTag;
-      document.getElementById('toggle-infinite').checked = this.infiniteMode;
-
+      // In the HUD, only show "Level X" to preserve mystery
+      document.getElementById('hud-chamber-name').innerText = `Level ${config.id}`;
+      this.updateHUDObjective();
       this.renderCurrentRoom();
       this.hideAllModals();
 
@@ -1631,28 +1922,42 @@
       }
     }
 
-    renderCurrentRoom() {
-      const activeTargetId = this.targetQueue[this.currentTargetIndex];
-      const targetInfo = getRoomDisplayInfo(activeTargetId, this.isMetro);
-      const currentInfo = getRoomDisplayInfo(this.currentRoom, this.isMetro);
+    pickRandomTarget(current) {
+      const allRooms = Object.keys(this.levelData.rooms);
+      const pool = allRooms.filter(r => r !== current);
+      if (pool.length === 0) return current;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
 
-      // Update GO TO: and NOW IN: in HUD
-      const targetEl = document.getElementById('hud-target-room');
+    updateHUDObjective() {
+      const config = LEVEL_CONFIGS[this.currentLevelIndex];
+      const isCountry = config.key === 'countries';
+      const isMetro = config.key === 'metro';
+
+      const targetInfo = getRoomDisplayInfo(this.currentTarget, isMetro, isCountry);
+      const currentInfo = getRoomDisplayInfo(this.currentRoom, isMetro, isCountry);
+
+      const targetEl = document.getElementById('hud-target-name');
       targetEl.innerText = targetInfo.label;
-      targetEl.style.color = targetInfo.color;
+      targetEl.style.color = (isMetro || isCountry) ? targetInfo.color : '#fcd34d';
 
-      const currentEl = document.getElementById('hud-current-room');
+      const currentEl = document.getElementById('hud-current-name');
       currentEl.innerText = currentInfo.label;
-      currentEl.style.color = currentInfo.color;
+      currentEl.style.color = (isMetro || isCountry) ? currentInfo.color : '#67e8f9';
 
-      const stageTag = document.getElementById('hud-stage-tag');
+      const stageEl = document.getElementById('hud-stage-tag');
       if (this.infiniteMode) {
-        stageTag.innerText = `∞ ${this.currentTargetIndex + 1}`;
+        stageEl.innerText = `∞ ${this.infiniteStreak + 1}`;
+        stageEl.className = "text-xs font-bold px-2.5 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0";
       } else {
-        stageTag.innerText = `${this.currentTargetIndex + 1}/${this.targetQueue.length}`;
+        const total = this.targetList.length || 3;
+        stageEl.innerText = `${this.targetStageIndex + 1}/${total}`;
+        stageEl.className = "text-xs font-bold px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0";
       }
+    }
 
-      document.getElementById('hud-moves').innerText = (this.moveHistory.length - 1).toString();
+    renderCurrentRoom() {
+      this.updateHUDObjective();
 
       const rawNeighbors = this.levelData.rooms[this.currentRoom] || [];
       const previousRoom = this.moveHistory.length > 1 ? this.moveHistory[this.moveHistory.length - 2] : null;
@@ -1667,9 +1972,11 @@
         orderedDoors = [...rawNeighbors];
       }
 
-      document.getElementById('hud-door-count').innerText = orderedDoors.length.toString();
+      const config = LEVEL_CONFIGS[this.currentLevelIndex];
+      const isCountry = config.key === 'countries';
+      const isMetro = config.key === 'metro';
 
-      this.scene.renderDoors(orderedDoors, previousRoom, this.isMetro, (chosenRoomId, doorObj) => {
+      this.scene.renderDoors(orderedDoors, previousRoom, isMetro, isCountry, (chosenRoomId, doorObj) => {
         this.goToRoom(chosenRoomId, doorObj);
       });
 
@@ -1687,10 +1994,10 @@
         timerVal.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         if (this.timerSeconds <= 10) {
           timerVal.classList.add('text-red-400');
-          timerVal.classList.remove('text-slate-200');
+          timerVal.classList.remove('text-slate-100');
         } else {
           timerVal.classList.remove('text-red-400');
-          timerVal.classList.add('text-slate-200');
+          timerVal.classList.add('text-slate-100');
         }
       };
       updateDisplay();
@@ -1719,37 +2026,69 @@
       this.scene.openDoorAndTransition(doorObj, () => {
         this.moveHistory.push(chosenRoomId);
         this.currentRoom = chosenRoomId;
+        this.renderCurrentRoom();
 
-        const currentGoal = this.targetQueue[this.currentTargetIndex];
-
-        if (this.currentRoom === currentGoal) {
-          if (this.infiniteMode) {
-            // Infinite mode: continuously generate next target
-            sound.playTargetReached();
-            this.stageHistory.push(this.currentRoom);
-            this.currentTargetIndex++;
-            this.targetQueue.push(this.pickRandomTarget(this.currentRoom));
-            this.timerSeconds = 60;
-            const nextInfo = getRoomDisplayInfo(this.targetQueue[this.currentTargetIndex], this.isMetro);
-            this.showToast(`🎯 Objective reached! Next: ${nextInfo.label}`);
-            this.renderCurrentRoom();
-          } else if (this.currentTargetIndex < this.targetQueue.length - 1) {
-            // Reached intermediate target 1 or 2
-            sound.playTargetReached();
-            this.stageHistory.push(this.currentRoom);
-            this.currentTargetIndex++;
-            this.timerSeconds = 60;
-            const nextInfo = getRoomDisplayInfo(this.targetQueue[this.currentTargetIndex], this.isMetro);
-            this.showToast(`🎯 Door ${this.currentTargetIndex}/${this.targetQueue.length} reached! Next: ${nextInfo.label}`);
-            this.renderCurrentRoom();
-          } else {
-            // All 3 consecutive targets reached! Level Complete!
-            this.handleLevelWin();
-          }
-        } else {
-          this.renderCurrentRoom();
+        if (this.currentRoom === this.currentTarget) {
+          this.handleTargetReached();
         }
       });
+    }
+
+    handleTargetReached() {
+      const config = LEVEL_CONFIGS[this.currentLevelIndex];
+      const isCountry = config.key === 'countries';
+      const isMetro = config.key === 'metro';
+      const achievedInfo = getRoomDisplayInfo(this.currentTarget, isMetro, isCountry);
+
+      if (this.infiniteMode) {
+        this.infiniteStreak++;
+        sound.playCheckpointChime();
+        this.showToast(`✨ Target Reached: ${achievedInfo.label}! Streak: ${this.infiniteStreak}`);
+        this.currentTarget = this.pickRandomTarget(this.currentRoom);
+        if (this.timerEnabled) {
+          this.timerSeconds = 60;
+          this.startTimer();
+        }
+        this.renderCurrentRoom();
+        return;
+      }
+
+      const totalStages = this.targetList.length;
+      if (this.targetStageIndex < totalStages - 1) {
+        // Intermediate Checkpoint: Show prominent celebratory modal
+        this.targetStageIndex++;
+        const prevTarget = this.currentTarget;
+        this.currentTarget = this.targetList[this.targetStageIndex];
+        const nextInfo = getRoomDisplayInfo(this.currentTarget, isMetro, isCountry);
+
+        sound.playCheckpointChime();
+        this.isPaused = true;
+
+        const badgeEl = document.getElementById('checkpoint-stage-badge');
+        if (badgeEl) badgeEl.innerText = `Checkpoint ${this.targetStageIndex} of ${totalStages} Complete!`;
+
+        const achievedEl = document.getElementById('checkpoint-achieved-name');
+        if (achievedEl) {
+          achievedEl.innerText = achievedInfo.label;
+          achievedEl.style.color = achievedInfo.color;
+        }
+
+        const nextEl = document.getElementById('checkpoint-next-name');
+        if (nextEl) {
+          nextEl.innerText = nextInfo.label;
+          nextEl.style.color = (isMetro || isCountry) ? nextInfo.color : '#fcd34d';
+        }
+
+        const checkpointModal = document.getElementById('modal-checkpoint');
+        if (checkpointModal) checkpointModal.classList.remove('hidden');
+
+        if (this.timerEnabled) {
+          this.timerSeconds = 60;
+        }
+      } else {
+        // All 3 stages completed
+        this.handleLevelWin();
+      }
     }
 
     undoMove() {
@@ -1780,12 +2119,12 @@
       const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
       const movesTaken = this.moveHistory.length - 1;
 
-      // Cumulative shortest route across all legs
-      const legs = [this.levelData.startRoom, ...this.targetQueue];
       let optimalMoves = 0;
-      for (let i = 0; i < legs.length - 1; i++) {
-        const route = computeShortestPath(this.levelData.rooms, legs[i], legs[i + 1]);
-        optimalMoves += Math.max(0, route.length - 1);
+      let legStart = this.levelData.startRoom;
+      for (const t of this.targetList) {
+        const route = computeShortestPath(this.levelData.rooms, legStart, t);
+        optimalMoves += (route.length - 1);
+        legStart = t;
       }
 
       const efficiency = Math.round((optimalMoves / Math.max(optimalMoves, movesTaken)) * 100);
@@ -1796,30 +2135,27 @@
       document.getElementById('stat-efficiency').innerText = `${efficiency}%`;
 
       const nextBtn = document.getElementById('btn-modal-next');
-      const promoContainer = document.getElementById('infinite-promo-container');
-
       if (this.currentLevelIndex >= LEVEL_CONFIGS.length - 1) {
-        nextBtn.innerText = "All 9 Chambers Cleared!";
-        promoContainer.classList.remove('hidden');
+        nextBtn.innerText = "All Chambers Solved!";
       } else {
         nextBtn.innerText = "Next Chamber";
-        promoContainer.classList.add('hidden');
       }
 
       document.getElementById('modal-complete').classList.remove('hidden');
     }
 
     hideAllModals() {
-      document.getElementById('modal-complete').classList.add('hidden');
-      document.getElementById('modal-pause').classList.add('hidden');
-      document.getElementById('modal-settings').classList.add('hidden');
-      document.getElementById('modal-timeout').classList.add('hidden');
-      document.getElementById('modal-hint').classList.add('hidden');
+      const modalIds = ['modal-complete', 'modal-pause', 'modal-settings', 'modal-timeout', 'modal-hint', 'modal-checkpoint'];
+      modalIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
       this.minimapOpen = false;
     }
 
     showToast(text) {
       const toast = document.getElementById('toast-msg');
+      if (!toast) return;
       toast.innerText = text;
       toast.classList.remove('opacity-0', '-translate-y-2');
       toast.classList.add('opacity-100', 'translate-y-0');
@@ -1840,14 +2176,34 @@
       window.addEventListener('click', startAudio);
       window.addEventListener('keydown', startAudio);
 
-      document.getElementById('btn-dismiss-rotate').addEventListener('click', () => {
-        document.getElementById('rotate-device-modal').style.display = 'none';
-      });
-
-      document.getElementById('btn-chamber-dropdown').addEventListener('click', () => this.openSettings());
+      document.getElementById('btn-quick-chamber').addEventListener('click', () => this.openSettings());
       document.getElementById('btn-hint').addEventListener('click', () => this.openMinimap());
       document.getElementById('btn-hint-close').addEventListener('click', () => this.closeMinimap());
       document.getElementById('btn-hint-dismiss').addEventListener('click', () => this.closeMinimap());
+
+      const checkpointBtn = document.getElementById('btn-checkpoint-continue');
+      if (checkpointBtn) {
+        checkpointBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const checkpointModal = document.getElementById('modal-checkpoint');
+          if (checkpointModal) checkpointModal.classList.add('hidden');
+          this.isPaused = false;
+          if (this.timerEnabled) {
+            this.startTimer();
+          }
+          this.renderCurrentRoom();
+        });
+      }
+
+      const zoomBtn = document.getElementById('btn-minimap-zoom');
+      if (zoomBtn) {
+        zoomBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.minimapZoomLocal = !this.minimapZoomLocal;
+          this.updateMinimapZoomUI();
+          this.renderMinimap();
+        });
+      }
 
       document.getElementById('btn-undo').addEventListener('click', () => this.undoMove());
       document.getElementById('btn-restart').addEventListener('click', () => this.startLevel(this.currentLevelIndex));
@@ -1900,30 +2256,33 @@
         this.startLevel(this.currentLevelIndex);
       });
 
-      document.getElementById('btn-modal-infinite').addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.infiniteMode = true;
-        document.getElementById('toggle-infinite').checked = true;
-        this.saveProgress();
-        this.hideAllModals();
-        this.startLevel(this.currentLevelIndex);
-      });
-
       document.getElementById('slider-volume').addEventListener('input', (e) => {
         const vol = parseInt(e.target.value, 10) / 100;
         sound.setVolume(vol);
         document.getElementById('label-volume').innerText = `${e.target.value}%`;
+        this.saveProgress();
       });
 
       document.getElementById('btn-modal-next').addEventListener('click', (e) => {
         e.stopPropagation();
         if (this.currentLevelIndex < LEVEL_CONFIGS.length - 1) {
           this.startLevel(this.currentLevelIndex + 1);
+        } else {
+          this.infiniteMode = true;
+          this.saveProgress();
+          this.startLevel(this.currentLevelIndex);
         }
       });
 
       document.getElementById('btn-modal-retry').addEventListener('click', (e) => {
         e.stopPropagation();
+        this.startLevel(this.currentLevelIndex);
+      });
+
+      document.getElementById('btn-modal-infinite').addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.infiniteMode = true;
+        this.saveProgress();
         this.startLevel(this.currentLevelIndex);
       });
 
@@ -1945,9 +2304,51 @@
       const rooms = this.levelData.rooms;
       const coords = {};
       const roomIds = Object.keys(rooms);
+      const config = LEVEL_CONFIGS[this.currentLevelIndex];
 
-      switch (this.currentLevelIndex) {
-        case 0: { // 9x9 Cartesian 2D Grid
+      switch (config.key) {
+        case "countries": { // World Countries
+          roomIds.forEach(id => {
+            const c = WORLD_COUNTRIES[id];
+            if (c) {
+              coords[id] = {
+                x: c.lon,
+                y: -c.lat
+              };
+            }
+          });
+          break;
+        }
+        case "metro": { // Barcelona Metro
+          roomIds.forEach(id => {
+            const num = parseInt(id, 10);
+            let x = 0, y = 0;
+            if (num >= 101 && num <= 130) {
+              const idx = num - 101;
+              x = 1 + idx * 0.55;
+              y = 5.8 - Math.sin(idx * 0.1) * 1.2;
+            } else if (num >= 201 && num <= 218) {
+              const idx = num - 201;
+              x = 6.8 + idx * 0.52;
+              y = 7.0 - idx * 0.18;
+            } else if (num >= 301 && num <= 326) {
+              const idx = num - 301;
+              x = 2.2 + idx * 0.52;
+              y = 3.6 + Math.sin(idx * 0.14) * 2.8;
+            } else if (num >= 401 && num <= 422) {
+              const idx = num - 401;
+              x = 15.5 - idx * 0.48;
+              y = 2.2 + Math.cos(idx * 0.15) * 4.2;
+            } else if (num >= 501 && num <= 527) {
+              const idx = num - 501;
+              x = 1.0 + idx * 0.55;
+              y = 4.8 + Math.cos(idx * 0.16) * 2.6;
+            }
+            coords[id] = { x: x, y: y };
+          });
+          break;
+        }
+        case "cartesian": { // 9x9 2D Grid
           roomIds.forEach(id => {
             const col = parseInt(id.charAt(0), 10);
             const row = parseInt(id.charAt(1), 10);
@@ -1955,7 +2356,7 @@
           });
           break;
         }
-        case 1: { // 4x4x4 Isometric Cube
+        case "cube": { // 4x4x4 Cube
           roomIds.forEach(id => {
             const x = parseInt(id.charAt(0), 10);
             const y = parseInt(id.charAt(1), 10);
@@ -1964,110 +2365,71 @@
           });
           break;
         }
-        case 2: { // Radial Ring Network
+        case "polar": { // Polar Rings
           roomIds.forEach(id => {
             const ring = parseInt(id.charAt(0), 10);
             const sec = parseInt(id.charAt(1), 10);
             const angle = ((sec - 1) / 8) * Math.PI * 2 - Math.PI / 2;
-            coords[id] = { x: 10 + Math.cos(angle) * (ring * 1.8), y: 10 + Math.sin(angle) * (ring * 1.8) };
+            const rad = ring * 1.8;
+            coords[id] = {
+              x: 10 + Math.cos(angle) * rad,
+              y: 10 + Math.sin(angle) * rad
+            };
           });
           break;
         }
-        case 3: { // Binary Tree
+        case "tree": { // Binary Tree
           roomIds.forEach(id => {
             const depth = id.length - 1;
             let val = 0;
-            for (let i = 1; i < id.length; i++) val = (val << 1) | (id.charAt(i) === '1' ? 1 : 0);
+            for (let i = 1; i < id.length; i++) {
+              val = (val << 1) | (id.charAt(i) === '1' ? 1 : 0);
+            }
             const totalInRow = Math.pow(2, depth);
-            coords[id] = { x: ((val + 0.5) / totalInRow) * 18, y: depth * 2.8 + 1 };
+            coords[id] = {
+              x: ((val + 0.5) / totalInRow) * 18,
+              y: depth * 2.8 + 1
+            };
           });
           break;
         }
-        case 4: { // 7x7 Torus Grid
+        case "torus": { // 7x7 Torus
           roomIds.forEach(id => {
-            coords[id] = { x: parseInt(id.charAt(0), 10) + 1, y: 8 - (parseInt(id.charAt(1), 10) + 1) };
+            const c = parseInt(id.charAt(0), 10);
+            const r = parseInt(id.charAt(1), 10);
+            coords[id] = { x: c + 1, y: 8 - (r + 1) };
           });
           break;
         }
-        case 5: { // Hex Grid
+        case "hex": { // Hex Grid
           roomIds.forEach(id => {
             const u = parseInt(id.charAt(0), 10);
             const v = parseInt(id.charAt(1), 10);
-            coords[id] = { x: u + 0.5 * v, y: v * 0.866 };
+            coords[id] = {
+              x: u + 0.5 * v,
+              y: v * 0.866
+            };
           });
           break;
         }
-        case 6: { // 8x8 Chessboard
+        case "knight": { // Chess Knight
           roomIds.forEach(id => {
-            coords[id] = { x: parseInt(id.charAt(1), 10), y: 9 - parseInt(id.charAt(0), 10) };
+            const r = parseInt(id.charAt(0), 10);
+            const c = parseInt(id.charAt(1), 10);
+            coords[id] = { x: c, y: 9 - r };
           });
           break;
         }
-        case 7: { // 8x8 Ulam Spiral
-          const grid = [
-            [64, 63, 62, 61, 60, 59, 58, 57],
-            [37, 36, 35, 34, 33, 32, 31, 56],
-            [38, 17, 16, 15, 14, 13, 30, 55],
-            [39, 18,  5,  4,  3, 12, 29, 54],
-            [40, 19,  6,  1,  2, 11, 28, 53],
-            [41, 20,  7,  8,  9, 10, 27, 52],
-            [42, 21, 22, 23, 24, 25, 26, 51],
-            [43, 44, 45, 46, 47, 48, 49, 50]
-          ];
-          for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) coords[grid[r][c].toString()] = { x: c + 1, y: 8 - r };
+        case "ulam": { // Ulam Spiral
+          const mat = this.levelData.gridMatrix;
+          if (mat) {
+            for (let r = 0; r < 8; r++) {
+              for (let c = 0; c < 8; c++) {
+                const id = mat[r][c].toString();
+                coords[id] = { x: c + 1, y: r + 1 };
+              }
+            }
           }
-          break;
-        }
-        case 8: { // Barcelona Metro Network (L1 to L5)
-          const l1Pos = {
-            101: [1.0, 1.0], 102: [1.8, 1.3], 103: [2.6, 1.6], 104: [3.4, 2.0],
-            105: [4.2, 2.4], 106: [5.0, 2.8], 107: [5.8, 3.2], 108: [6.6, 3.6],
-            109: [7.4, 4.0], 110: [8.2, 4.5], 111: [9.0, 5.0], 112: [9.8, 5.6],
-            113: [10.6, 6.2], 114: [11.4, 6.8], 115: [12.2, 7.4], 116: [13.0, 8.0],
-            117: [13.8, 8.6], 118: [14.6, 9.2], 119: [15.4, 9.8], 120: [16.2, 10.4],
-            121: [17.0, 11.0], 122: [17.7, 11.6], 123: [18.4, 12.2], 124: [19.0, 12.8],
-            125: [19.6, 13.4], 126: [20.2, 14.0], 127: [20.8, 14.6], 128: [21.4, 15.2],
-            129: [22.0, 15.8], 130: [22.6, 16.4]
-          };
-          const l2Pos = {
-            201: [11.8, 4.4], 202: [12.0, 5.9], 203: [12.2, 7.4], 204: [12.8, 8.6],
-            205: [13.8, 9.2], 206: [14.7, 9.7], 207: [15.6, 10.3], 208: [16.3, 10.7],
-            209: [17.0, 11.0], 210: [17.7, 10.8], 211: [18.5, 10.3], 212: [19.3, 9.6],
-            213: [20.0, 10.3], 214: [20.7, 11.0], 215: [21.4, 11.7], 216: [22.0, 12.3],
-            217: [22.5, 12.9], 218: [23.0, 13.5]
-          };
-          const l3Pos = {
-            301: [2.0, 9.5], 302: [2.8, 8.8], 303: [3.6, 8.1], 304: [4.4, 7.4],
-            305: [5.2, 6.7], 306: [6.5, 6.1], 307: [8.2, 5.8], 308: [9.8, 5.6],
-            309: [10.8, 5.0], 310: [11.8, 4.4], 311: [12.4, 5.4], 312: [12.7, 6.7],
-            313: [13.0, 8.0], 314: [12.8, 8.6], 315: [12.4, 9.8], 316: [12.0, 11.0],
-            317: [11.5, 12.2], 318: [11.0, 13.3], 319: [10.5, 14.4], 320: [10.0, 15.5],
-            321: [11.2, 16.0], 322: [12.4, 16.5], 323: [13.6, 17.0], 324: [14.8, 17.4],
-            325: [16.0, 17.7], 326: [17.2, 18.0]
-          };
-          const l4Pos = {
-            401: [17.2, 18.0], 402: [17.8, 16.8], 403: [18.2, 15.6], 404: [18.4, 14.4],
-            405: [17.2, 13.6], 406: [16.0, 12.8], 407: [14.8, 12.0], 408: [13.6, 11.2],
-            409: [13.2, 9.9], 410: [12.8, 8.6], 411: [13.8, 8.6], 412: [14.4, 7.3],
-            413: [14.8, 5.7], 414: [15.8, 6.4], 415: [16.6, 7.1], 416: [17.4, 7.7],
-            417: [18.1, 8.3], 418: [18.7, 8.8], 419: [19.2, 9.2], 420: [19.4, 9.3],
-            421: [19.4, 9.5], 422: [19.3, 9.6]
-          };
-          const l5Pos = {
-            501: [1.2, 3.0], 502: [2.0, 3.4], 503: [2.8, 3.8], 504: [3.6, 4.2],
-            505: [4.4, 4.6], 506: [5.2, 5.0], 507: [6.0, 5.4], 508: [6.8, 5.8],
-            509: [7.5, 5.2], 510: [8.2, 4.5], 511: [6.5, 6.1], 512: [8.0, 7.4],
-            513: [9.5, 8.6], 514: [12.4, 9.8], 515: [13.6, 11.2], 516: [15.6, 10.3],
-            517: [16.7, 11.4], 518: [17.6, 11.9], 519: [18.4, 12.2], 520: [18.4, 13.3],
-            521: [18.4, 14.4], 522: [18.1, 15.4], 523: [17.5, 16.2], 524: [16.5, 16.8],
-            525: [14.4, 16.5], 526: [12.2, 16.0], 527: [10.0, 15.5]
-          };
-          const allPos = Object.assign({}, l1Pos, l2Pos, l3Pos, l4Pos, l5Pos);
-          roomIds.forEach(id => {
-            const p = allPos[id];
-            coords[id] = p ? { x: p[0], y: 19 - p[1] } : { x: 10, y: 10 };
-          });
           break;
         }
         default: {
@@ -2085,12 +2447,46 @@
       this.minimapOpen = true;
       const config = LEVEL_CONFIGS[this.currentLevelIndex];
       const descEl = document.getElementById('minimap-grid-desc');
-      if (descEl && config) descEl.innerText = config.gridDescription;
-
+      if (descEl && config) {
+        descEl.innerText = config.gridDescription || "Topological Chamber Network";
+      }
       document.getElementById('modal-hint').classList.remove('hidden');
-      const curInfo = getRoomDisplayInfo(this.currentRoom, this.isMetro);
-      document.getElementById('minimap-cur-label').innerText = curInfo.label;
+
+      const isCountry = config.key === 'countries';
+      const isMetro = config.key === 'metro';
+      const curInfo = getRoomDisplayInfo(this.currentRoom, isMetro, isCountry);
+      const tgtInfo = getRoomDisplayInfo(this.currentTarget, isMetro, isCountry);
+
+      const curLabel = document.getElementById('minimap-cur-label');
+      if (curLabel) curLabel.innerText = curInfo.label;
+
+      const tgtLabel = document.getElementById('minimap-tgt-label');
+      if (tgtLabel) tgtLabel.innerText = tgtInfo.label;
+
+      this.updateMinimapZoomUI();
       this.renderMinimap();
+    }
+
+    updateMinimapZoomUI() {
+      const zoomBtn = document.getElementById('btn-minimap-zoom');
+      const inIcon = document.getElementById('zoom-icon-in');
+      const outIcon = document.getElementById('zoom-icon-out');
+      const label = document.getElementById('zoom-btn-label');
+
+      if (!zoomBtn) return;
+      if (this.minimapZoomLocal) {
+        inIcon.classList.add('hidden');
+        outIcon.classList.remove('hidden');
+        label.innerText = "Zoom Out";
+        zoomBtn.classList.remove('bg-slate-800');
+        zoomBtn.classList.add('bg-amber-500/20', 'border-amber-400');
+      } else {
+        inIcon.classList.remove('hidden');
+        outIcon.classList.add('hidden');
+        label.innerText = "Zoom In";
+        zoomBtn.classList.add('bg-slate-800');
+        zoomBtn.classList.remove('bg-amber-500/20', 'border-amber-400');
+      }
     }
 
     closeMinimap() {
@@ -2114,8 +2510,18 @@
       const roomIds = Object.keys(rooms);
       const coords = this.computeNodeCoordinates();
 
+      const currentRoom = this.currentRoom;
+      const targetRoom = this.currentTarget;
+      const neighbors = new Set(rooms[currentRoom] || []);
+      const config = LEVEL_CONFIGS[this.currentLevelIndex];
+      const isCountry = config.key === 'countries';
+      const isMetro = config.key === 'metro';
+
+      const localNodeSet = new Set([currentRoom, ...Array.from(neighbors)]);
+      const nodesToFrame = this.minimapZoomLocal ? Array.from(localNodeSet) : roomIds;
+
       let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      roomIds.forEach(id => {
+      nodesToFrame.forEach(id => {
         const pt = coords[id];
         if (pt) {
           if (pt.x < minX) minX = pt.x;
@@ -2125,8 +2531,20 @@
         }
       });
 
-      const padX = 36 * dpr;
-      const padY = 36 * dpr;
+      const minPaddingSpan = this.minimapZoomLocal ? 1.2 : 0.001;
+      if (maxX - minX < minPaddingSpan) {
+        const cx = (minX + maxX) / 2;
+        minX = cx - minPaddingSpan / 2;
+        maxX = cx + minPaddingSpan / 2;
+      }
+      if (maxY - minY < minPaddingSpan) {
+        const cy = (minY + maxY) / 2;
+        minY = cy - minPaddingSpan / 2;
+        maxY = cy + minPaddingSpan / 2;
+      }
+
+      const padX = (this.minimapZoomLocal ? 56 : 42) * dpr;
+      const padY = (this.minimapZoomLocal ? 52 : 38) * dpr;
       const rangeX = Math.max(0.001, maxX - minX);
       const rangeY = Math.max(0.001, maxY - minY);
       const scaleX = (canvas.width - padX * 2) / rangeX;
@@ -2141,17 +2559,18 @@
         y: offsetY + (pt.y - minY) * scale
       });
 
-      const currentRoom = this.currentRoom;
-      const targetRoom = this.targetQueue[this.currentTargetIndex];
-      const neighbors = new Set(rooms[currentRoom] || []);
+      const activeRenderSet = this.minimapZoomLocal ? localNodeSet : new Set(roomIds);
+      const nodesToDrawEdges = this.minimapZoomLocal ? Array.from(localNodeSet) : roomIds;
 
-      // Draw connection edges
+      ctx.lineWidth = (this.minimapZoomLocal ? 3.0 : 1.6) * dpr;
       const drawnEdges = new Set();
-      for (const u of roomIds) {
+
+      nodesToDrawEdges.forEach(u => {
         const p1 = coords[u] ? toScreen(coords[u]) : null;
-        if (!p1) continue;
+        if (!p1) return;
         const adj = rooms[u] || [];
         for (const v of adj) {
+          if (this.minimapZoomLocal && !activeRenderSet.has(v)) continue;
           const edgeKey = u < v ? `${u}-${v}` : `${v}-${u}`;
           if (drawnEdges.has(edgeKey)) continue;
           drawnEdges.add(edgeKey);
@@ -2164,27 +2583,23 @@
           ctx.beginPath();
           ctx.moveTo(p1.x, p1.y);
           ctx.lineTo(p2.x, p2.y);
-
           if (isCurrentEdge) {
             ctx.strokeStyle = '#34d399';
-            ctx.lineWidth = 3.2 * dpr;
-          } else if (this.isMetro) {
-            const st1 = BCN_METRO_STATIONS[u];
-            const st2 = BCN_METRO_STATIONS[v];
-            ctx.strokeStyle = (st1 && st2 && st1.line === st2.line) ? st1.color : 'rgba(148, 163, 184, 0.4)';
-            ctx.lineWidth = 2 * dpr;
+            ctx.lineWidth = (this.minimapZoomLocal ? 4.5 : 3.5) * dpr;
+            ctx.stroke();
           } else {
-            ctx.strokeStyle = 'rgba(71, 85, 105, 0.5)';
-            ctx.lineWidth = 1.5 * dpr;
+            ctx.strokeStyle = 'rgba(71, 85, 105, 0.4)';
+            ctx.lineWidth = (this.minimapZoomLocal ? 2.5 : 1.4) * dpr;
+            ctx.stroke();
           }
-          ctx.stroke();
         }
-      }
+      });
 
-      // Draw nodes
-      const baseNodeRadius = Math.max(3.5 * dpr, Math.min(9 * dpr, scale * 0.28));
+      const minRadius = this.minimapZoomLocal ? 16 * dpr : 5 * dpr;
+      const maxRadius = this.minimapZoomLocal ? 28 * dpr : 14 * dpr;
+      const nodeRadius = Math.max(minRadius, Math.min(maxRadius, scale * 0.32));
 
-      roomIds.forEach(id => {
+      activeRenderSet.forEach(id => {
         const pt = coords[id];
         if (!pt) return;
         const pos = toScreen(pt);
@@ -2192,60 +2607,97 @@
         const isNeighbor = neighbors.has(id);
         const isTarget = id === targetRoom;
 
+        const info = getRoomDisplayInfo(id, isMetro, isCountry);
+
         ctx.beginPath();
         if (isCurrent) {
-          ctx.arc(pos.x, pos.y, baseNodeRadius * 1.5, 0, Math.PI * 2);
+          ctx.arc(pos.x, pos.y, nodeRadius * 1.45, 0, Math.PI * 2);
           ctx.fillStyle = '#22d3ee';
           ctx.shadowColor = '#06b6d4';
-          ctx.shadowBlur = 12 * dpr;
+          ctx.shadowBlur = 14 * dpr;
           ctx.fill();
-          ctx.lineWidth = 2.5 * dpr;
+          ctx.lineWidth = 2.8 * dpr;
           ctx.strokeStyle = '#ffffff';
           ctx.stroke();
           ctx.shadowBlur = 0;
         } else if (isTarget) {
-          ctx.arc(pos.x, pos.y, baseNodeRadius * 1.35, 0, Math.PI * 2);
+          ctx.arc(pos.x, pos.y, nodeRadius * 1.35, 0, Math.PI * 2);
           ctx.fillStyle = '#f59e0b';
           ctx.shadowColor = '#d97706';
-          ctx.shadowBlur = 10 * dpr;
+          ctx.shadowBlur = 12 * dpr;
           ctx.fill();
-          ctx.lineWidth = 2 * dpr;
+          ctx.lineWidth = 2.5 * dpr;
           ctx.strokeStyle = '#fef08a';
           ctx.stroke();
           ctx.shadowBlur = 0;
         } else if (isNeighbor) {
-          ctx.arc(pos.x, pos.y, baseNodeRadius * 1.15, 0, Math.PI * 2);
+          ctx.arc(pos.x, pos.y, nodeRadius * 1.2, 0, Math.PI * 2);
           ctx.fillStyle = '#10b981';
           ctx.shadowColor = '#059669';
           ctx.shadowBlur = 8 * dpr;
           ctx.fill();
-          ctx.lineWidth = 1.5 * dpr;
+          ctx.lineWidth = 2.2 * dpr;
           ctx.strokeStyle = '#a7f3d0';
           ctx.stroke();
           ctx.shadowBlur = 0;
         } else {
-          ctx.arc(pos.x, pos.y, baseNodeRadius * 0.75, 0, Math.PI * 2);
-          if (this.isMetro && BCN_METRO_STATIONS[id]) {
-            ctx.fillStyle = BCN_METRO_STATIONS[id].color;
-          } else {
-            ctx.fillStyle = '#334155';
-          }
+          ctx.arc(pos.x, pos.y, nodeRadius, 0, Math.PI * 2);
+          ctx.fillStyle = isCountry ? 'rgba(30, 41, 59, 0.85)' : (isMetro ? info.color : '#1e293b');
           ctx.fill();
-          ctx.lineWidth = 1 * dpr;
+          ctx.lineWidth = 1.2 * dpr;
           ctx.strokeStyle = '#475569';
           ctx.stroke();
         }
 
-        // Labels for highlighted nodes
-        if (isCurrent || isTarget || isNeighbor || (!this.isMetro && roomIds.length <= 25)) {
-          const info = getRoomDisplayInfo(id, this.isMetro);
-          ctx.font = `bold ${Math.max(9 * dpr, 10.5 * dpr)}px 'JetBrains Mono', monospace`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'bottom';
-          ctx.fillStyle = isCurrent ? '#38bdf8' : (isTarget ? '#fbbf24' : (isNeighbor ? '#34d399' : '#cbd5e1'));
-          ctx.fillText(info.label, pos.x, pos.y - baseNodeRadius * 1.5);
+        let labelText = id;
+        if (isCountry && info.code) {
+          labelText = info.code;
+        } else if (isMetro && info.badge) {
+          labelText = info.badge;
         }
+
+        let fontSize = Math.max(8 * dpr, nodeRadius * 0.9);
+        if (labelText.length >= 4) fontSize *= 0.72;
+        if (labelText.length >= 3) fontSize *= 0.82;
+
+        ctx.font = `bold ${fontSize}px 'JetBrains Mono', monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = isCurrent ? '#082f49' : (isTarget ? '#451a03' : (isNeighbor ? '#064e3b' : '#f8fafc'));
+        ctx.fillText(labelText, pos.x, pos.y);
       });
+
+      if (this.minimapZoomLocal && !activeRenderSet.has(targetRoom) && coords[targetRoom] && coords[currentRoom]) {
+        const ptCur = toScreen(coords[currentRoom]);
+        const ptTgt = toScreen(coords[targetRoom]);
+        const angle = Math.atan2(ptTgt.y - ptCur.y, ptTgt.x - ptCur.x);
+
+        const edgePad = 32 * dpr;
+        const arrowDist = Math.min(canvas.width / 2 - edgePad, canvas.height / 2 - edgePad);
+        const arrowX = canvas.width / 2 + Math.cos(angle) * arrowDist;
+        const arrowY = canvas.height / 2 + Math.sin(angle) * arrowDist;
+
+        ctx.save();
+        ctx.fillStyle = '#f59e0b';
+        ctx.strokeStyle = '#fef08a';
+        ctx.lineWidth = 2 * dpr;
+        ctx.beginPath();
+        ctx.arc(arrowX, arrowY, 13 * dpr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#451a03';
+        ctx.font = `bold ${8 * dpr}px 'JetBrains Mono', monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("GOAL", arrowX, arrowY);
+
+        const tgtInfo = getRoomDisplayInfo(targetRoom, isMetro, isCountry);
+        ctx.fillStyle = '#fcd34d';
+        ctx.font = `bold ${10 * dpr}px 'Plus Jakarta Sans', sans-serif`;
+        ctx.fillText(`Target: ${tgtInfo.label}`, arrowX, arrowY - 17 * dpr);
+        ctx.restore();
+      }
     }
 
     openSettings() {
@@ -2258,13 +2710,17 @@
       LEVEL_CONFIGS.forEach((lvl, idx) => {
         const btn = document.createElement('button');
         const isCurrent = idx === this.currentLevelIndex;
-        btn.className = `py-2 rounded-xl text-xs font-bold transition ${
+        btn.className = `p-2.5 rounded-xl text-left transition flex flex-col justify-center ${
           isCurrent 
             ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-300' 
             : 'bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white border border-slate-700'
         }`;
-        btn.innerText = `Ch ${lvl.id}`;
-        btn.title = `${lvl.name}: ${lvl.subtitle}`;
+        
+        btn.innerHTML = `
+          <div class="text-[10px] font-mono-code font-bold uppercase ${isCurrent ? 'text-slate-900' : 'text-amber-400'}">Level ${lvl.id}</div>
+          <div class="text-xs font-bold truncate mt-0.5">${lvl.name}</div>
+        `;
+
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           this.isPaused = false;
@@ -2278,17 +2734,17 @@
     }
   }
 
-  /* Safe initialization handling for browser windows and sandboxed iframes */
-  function bootNexus() {
+  function startApplication() {
     if (!window.gameInstance) {
       window.gameInstance = new RoomMazeGame();
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bootNexus);
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    startApplication();
   } else {
-    bootNexus();
+    window.addEventListener('DOMContentLoaded', startApplication);
+    window.addEventListener('load', startApplication);
   }
   </script>
 </body>
