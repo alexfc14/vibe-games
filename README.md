@@ -21,7 +21,8 @@ Live links to play:
 * [Planar 🔲](https://alexfc14.github.io/vibe-games/planar/play.html)
 * [Bridge Assault 🔫](https://alexfc14.github.io/vibe-games/bridge-assault/play.html)
 * [Room Escape 🚪](https://alexfc14.github.io/vibe-games/room-escape/play-dev.html)
-* [Line Cross 🎌](https://alexfc14.github.io/vibe-games/line-cross/play-dev.html)
+* [Line Cross 🎌](https://alexfc14.github.io/vibe-games/line-cross/play.html)
+
 
 
 
