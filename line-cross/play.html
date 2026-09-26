@@ -124,7 +124,7 @@
       <button id="btnQuickRestart" title="Restart Board" class="btn-action w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-700">
         <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
       </button>
-      <button id="btnAudioToggle" title="Toggle Sound/Music" class="btn-action w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-700">
+      <button id="btnAudioToggle" title="Toggle Sound Effects" class="btn-action w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-700">
         <svg id="iconAudioOn" class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
         <svg id="iconAudioOff" class="w-4 h-4 sm:w-5 sm:h-5 hidden text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z m12-2l4 4m0-4l-4 4"/></svg>
       </button>
@@ -140,6 +140,15 @@
   <!-- Middle Area: 100% Unobstructed 3D Board Viewport -->
   <main id="canvasContainer" class="flex-1 w-full min-h-0 relative">
     <div class="board-texture"></div>
+    <!-- Floating Board Inspection Banner (Shown when inspecting final board) -->
+    <div id="inspectBanner" class="absolute top-4 left-1/2 -translate-x-1/2 z-30 hidden pointer-events-auto">
+      <div class="glass-card px-4 py-2 rounded-2xl flex items-center space-x-3 shadow-xl border border-stone-200/80">
+        <span class="text-xs font-bold text-stone-700">Inspecting Final Board</span>
+        <button id="btnExitInspect" class="btn-action px-3 py-1 bg-stone-800 text-white text-xs font-bold rounded-xl hover:bg-stone-900 transition-colors">
+          Back to Results
+        </button>
+      </div>
+    </div>
     <canvas id="webgl"></canvas>
   </main>
 
@@ -267,19 +276,22 @@
         </div>
       </div>
 
-      <!-- Must-Have Actions: Next Level, Play Again, Speed Recap -->
+      <!-- Must-Have Actions: Next Level, Play Again, Speed Recap, Inspect -->
       <div class="space-y-2.5 pt-1">
         <button id="btnNextLevel" class="btn-action w-full py-3.5 rounded-2xl bg-teal-600 text-white font-extrabold text-sm shadow-lg hover:bg-teal-700 flex items-center justify-center space-x-2">
           <span>Next Layout</span>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
         </button>
-        <div class="grid grid-cols-2 gap-2">
+        <div class="grid grid-cols-3 gap-2">
           <button id="btnPlayAgain" class="btn-action py-3 rounded-2xl bg-stone-100 text-stone-700 font-bold text-xs hover:bg-stone-200">
             Play Again
           </button>
+          <button id="btnInspectBoard" class="btn-action py-3 rounded-2xl bg-stone-100 text-stone-700 font-bold text-xs hover:bg-stone-200">
+            Inspect
+          </button>
           <button id="btnSpeedRecap" class="btn-action py-3 rounded-2xl bg-amber-50 border border-amber-300/80 text-amber-800 font-bold text-xs hover:bg-amber-100 flex items-center justify-center space-x-1.5">
             <svg class="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/><path d="M8 11V7l5 3-5 3v-2z"/></svg>
-            <span>Speed Recap</span>
+            <span>Recap</span>
           </button>
         </div>
       </div>
@@ -326,16 +338,12 @@
       } catch(e) {}
     }
 
-    // Audio Engine using Web Audio API synthesis (self-contained, no external URLs)
+    // Audio Engine using Web Audio API synthesis for SFX only
     class SoundEngine {
       constructor() {
         this.ctx = null;
         this.enabled = true;
         this.volume = 0.7;
-        this.musicPlaying = false;
-        this.musicTimer = null;
-        this.musicStep = 0;
-        this.pentatonicScale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
       }
 
       init() {
@@ -399,38 +407,6 @@
         notes.forEach((note, idx) => {
           setTimeout(() => this.playTone(note, 0.5, 'triangle', 0.25), idx * 120);
         });
-      }
-
-      startMusic() {
-        if (this.musicPlaying) return;
-        this.musicPlaying = true;
-        this.scheduleMusicStep();
-      }
-
-      stopMusic() {
-        this.musicPlaying = false;
-        if (this.musicTimer) {
-          clearTimeout(this.musicTimer);
-          this.musicTimer = null;
-        }
-      }
-
-      scheduleMusicStep() {
-        if (!this.musicPlaying || !this.enabled) return;
-        this.init();
-        if (this.ctx && this.volume > 0.05) {
-          // Relaxing ambient arpeggios
-          const noteIndex = Math.floor(Math.sin(this.musicStep * 0.4) * 3 + 3) % this.pentatonicScale.length;
-          const freq = this.pentatonicScale[noteIndex];
-          this.playTone(freq, 1.4, 'sine', 0.04);
-
-          // Deep root bass every 4 steps
-          if (this.musicStep % 4 === 0) {
-            this.playTone(freq * 0.5, 2.0, 'triangle', 0.045);
-          }
-        }
-        this.musicStep++;
-        this.musicTimer = setTimeout(() => this.scheduleMusicStep(), 750);
       }
     }
 
@@ -963,6 +939,22 @@
       return cylinder;
     }
 
+    // Highlight the game-winning lock line with an animated pulsating glow
+    function pulseWinningLine(lineMesh) {
+      if (!lineMesh || !lineMesh.material) return;
+      let step = 0;
+      const originalIntensity = lineMesh.material.emissiveIntensity || 0.18;
+      const interval = setInterval(() => {
+        step++;
+        if (step > 16) {
+          clearInterval(interval);
+          lineMesh.material.emissiveIntensity = originalIntensity;
+          return;
+        }
+        lineMesh.material.emissiveIntensity = (step % 2 === 0) ? 0.95 : 0.2;
+      }, 100);
+    }
+
     // Execute move
     function executeMove(idxA, idxB, player) {
       const lineMesh = create3DLineMesh(idxA, idxB, player);
@@ -989,8 +981,27 @@
       const opponentMoves = getAllLegalMoves(nextPlayer);
 
       if (opponentMoves.length === 0) {
-        // Player wins! Next player has no moves left
-        endGame(player);
+        // Player wins! The other player is trapped with no legal moves left
+        isGameOver = true;
+        pulseWinningLine(lineMesh);
+
+        // Deselect any chosen peg to keep the final board crystal clear
+        selectedPegIndex = null;
+        validTargetsForSelected = [];
+        updatePegVisualHighlights();
+
+        const pName = player === 1 
+          ? (config.mode === 'ai' ? 'You' : 'Player 1') 
+          : (config.mode === 'ai' ? 'AI' : 'Player 2');
+
+        const hint = document.getElementById('hintText');
+        hint.textContent = `${pName} connected Peg #${idxA + 1} & #${idxB + 1} — Opponent has no valid lines left!`;
+        hint.classList.add(player === 1 ? 'text-teal-700' : 'text-rose-700');
+
+        // Delay opening the modal by 1.4 seconds so the player clearly sees the final move and board state
+        setTimeout(() => {
+          endGame(player, moveData);
+        }, 1400);
       } else {
         // Switch turn
         activePlayer = nextPlayer;
@@ -1316,7 +1327,7 @@
       updateScoreboard();
     }
 
-    function endGame(winnerPlayer) {
+    function endGame(winnerPlayer, lastMove = null) {
       isGameOver = true;
       audio.playWin();
 
@@ -1325,22 +1336,24 @@
       const subtitle = document.getElementById('winnerSubtitle');
       const crown = document.getElementById('winnerCrown');
 
+      const moveDesc = lastMove ? ` Final move connected Peg #${lastMove.p1 + 1} and #${lastMove.p2 + 1}.` : '';
+
       if (config.mode === 'ai') {
         if (winnerPlayer === 1) {
           title.textContent = "Victory! You Won!";
           title.className = "text-2xl sm:text-3xl font-extrabold text-teal-700";
-          subtitle.textContent = "You trapped the AI with no legal crossing-free lines left!";
+          subtitle.textContent = `You trapped the AI with no legal crossing-free lines left!${moveDesc}`;
           crown.textContent = "🎉";
         } else {
           title.textContent = "AI Outmaneuvered You!";
           title.className = "text-2xl sm:text-3xl font-extrabold text-rose-700";
-          subtitle.textContent = "No valid lines remain for you. Try another layout!";
+          subtitle.textContent = `AI completed the lock.${moveDesc} All your remaining paths are blocked or intersect.`;
           crown.textContent = "🤖";
         }
       } else {
         title.textContent = winnerPlayer === 1 ? "Player 1 Wins!" : "Player 2 Wins!";
         title.className = winnerPlayer === 1 ? "text-2xl sm:text-3xl font-extrabold text-teal-700" : "text-2xl sm:text-3xl font-extrabold text-rose-700";
-        subtitle.textContent = "The opponent has no legal straight lines left to draw!";
+        subtitle.textContent = `Opponent has no legal straight lines left to draw!${moveDesc}`;
         crown.textContent = "🏆";
       }
 
@@ -1366,6 +1379,8 @@
       document.getElementById('modalPause').classList.add('hidden');
       document.getElementById('modalSettings').classList.add('hidden');
       document.getElementById('modalRecap').classList.add('hidden');
+      const inspectBanner = document.getElementById('inspectBanner');
+      if (inspectBanner) inspectBanner.classList.add('hidden');
 
       if (!preserveLayout || points.length !== config.pegsCount) {
         const newPts = generateValidBoardLayout(config.pegsCount);
@@ -1377,7 +1392,6 @@
 
       updatePegVisualHighlights();
       updateHUD();
-      audio.startMusic();
     }
 
     function undoLastMove() {
@@ -1566,12 +1580,6 @@
 
       document.getElementById('iconAudioOn').classList.toggle('hidden', !audio.enabled);
       document.getElementById('iconAudioOff').classList.toggle('hidden', audio.enabled);
-
-      if (audio.enabled) {
-        audio.startMusic();
-      } else {
-        audio.stopMusic();
-      }
     });
 
     document.getElementById('btnPause').addEventListener('click', () => {
@@ -1712,6 +1720,27 @@
     });
     document.getElementById('btnReplayRecap').addEventListener('click', playSpeedRecapAnimation);
     document.getElementById('btnDownloadRecap').addEventListener('click', downloadRecapVideo);
+
+    // Board Inspection feature listeners (with null safety checks)
+    const btnInspect = document.getElementById('btnInspectBoard');
+    if (btnInspect) {
+      btnInspect.addEventListener('click', () => {
+        const gameOverModal = document.getElementById('modalGameOver');
+        const banner = document.getElementById('inspectBanner');
+        if (gameOverModal) gameOverModal.classList.add('hidden');
+        if (banner) banner.classList.remove('hidden');
+      });
+    }
+
+    const btnExit = document.getElementById('btnExitInspect');
+    if (btnExit) {
+      btnExit.addEventListener('click', () => {
+        const banner = document.getElementById('inspectBanner');
+        const gameOverModal = document.getElementById('modalGameOver');
+        if (banner) banner.classList.add('hidden');
+        if (gameOverModal) gameOverModal.classList.remove('hidden');
+      });
+    }
 
     window.addEventListener('resize', updateCanvasSize);
 
