@@ -156,8 +156,8 @@
       top: 15%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(15, 23, 42, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.22);
       padding: 8px 18px;
       border-radius: 20px;
       font-weight: 600;
@@ -166,6 +166,7 @@
       opacity: 0;
       transition: opacity 0.3s ease, transform 0.3s ease;
       box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4);
+      white-space: nowrap;
     }
     .toast-message.show {
       opacity: 1;
@@ -198,12 +199,14 @@
       border-radius: 24px;
       padding: 26px;
       width: 90%;
-      max-width: 400px;
+      max-width: 420px;
       text-align: center;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
       display: flex;
       flex-direction: column;
       gap: 18px;
+      max-height: 90vh;
+      overflow-y: auto;
     }
     .card h2 {
       font-size: 1.6rem;
@@ -326,7 +329,7 @@
       flex-direction: column;
       gap: 12px;
       text-align: left;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       color: #cbd5e1;
       line-height: 1.45;
     }
@@ -522,6 +525,13 @@
           </div>
         </div>
         <div class="rule-item">
+          <span class="rule-icon">🔄</span>
+          <div class="rule-text">
+            <strong>Loop Breaking Rule</strong>
+            You cannot make a move that recreates an earlier board position. Forbidden loop moves are marked in <span style="color:#ef4444;font-weight:700;">red</span> and blocked.
+          </div>
+        </div>
+        <div class="rule-item">
           <span class="rule-icon">⏱️</span>
           <div class="rule-text">
             <strong>Turn Clock</strong>
@@ -651,34 +661,97 @@
     const TEAM_BLUE = 'blue';
     const TURN_TIME_LIMIT = 60; 
 
+    function getBoardSignature(board) {
+      let sig = '';
+      for (let r = 0; r < gridSize; r++) {
+        for (let c = 0; c < gridSize; c++) {
+          const p = board[r][c];
+          sig += p ? (p.team === TEAM_GREEN ? 'G' : 'B') : '.';
+        }
+      }
+      return sig;
+    }
+
     const AI = {
+      // Fast check if any piece of 'team' can slide into their goal in 1 move
+      canWinInOneMove: function(board, team) {
+        const goal = (team === TEAM_GREEN) ? greenGoal : blueGoal;
+        const ownHome = (team === TEAM_GREEN) ? blueGoal : greenGoal;
+
+        for (let r = 0; r < gridSize; r++) {
+          for (let c = 0; c < gridSize; c++) {
+            const p = board[r][c];
+            if (p && p.team === team) {
+              if (r === goal.r) {
+                const minC = Math.min(c, goal.c), maxC = Math.max(c, goal.c);
+                let blocked = false;
+                for (let col = minC + 1; col < maxC; col++) {
+                  if (board[r][col] || (r === ownHome.r && col === ownHome.c)) { blocked = true; break; }
+                }
+                if (!blocked) return { from: { r, c }, to: { r: goal.r, c: goal.c } };
+              }
+              if (c === goal.c) {
+                const minR = Math.min(r, goal.r), maxR = Math.max(r, goal.r);
+                let blocked = false;
+                for (let row = minR + 1; row < maxR; row++) {
+                  if (board[row][c] || (row === ownHome.r && c === ownHome.c)) { blocked = true; break; }
+                }
+                if (!blocked) return { from: { r, c }, to: { r: goal.r, c: goal.c } };
+              }
+            }
+          }
+        }
+        return null;
+      },
+
       getBestMove: function(board, aiTeam, difficulty) {
+        const oppTeam = (aiTeam === TEAM_BLUE) ? TEAM_GREEN : TEAM_BLUE;
+
+        // Priority 1: Take instant win if available
+        const instantWin = AI.canWinInOneMove(board, aiTeam);
+        if (instantWin) return instantWin;
+
         const allMoves = [];
         for (let r = 0; r < gridSize; r++) {
           for (let c = 0; c < gridSize; c++) {
             const piece = board[r][c];
             if (piece && piece.team === aiTeam) {
-              const moves = calculateValidMoves(r, c, board);
-              moves.forEach(m => allMoves.push({ from: { r, c }, to: m }));
+              const { legalMoves } = getPieceMoves(r, c, board);
+              legalMoves.forEach(m => allMoves.push({ from: { r, c }, to: m }));
+            }
+          }
+        }
+
+        if (allMoves.length === 0) {
+          for (let r = 0; r < gridSize; r++) {
+            for (let c = 0; c < gridSize; c++) {
+              const piece = board[r][c];
+              if (piece && piece.team === aiTeam) {
+                const moves = calculateValidMoves(r, c, board);
+                moves.forEach(m => allMoves.push({ from: { r, c }, to: m }));
+              }
             }
           }
         }
 
         if (allMoves.length === 0) return null;
 
-        if (difficulty === 'easy' && Math.random() < 0.70) {
+        // Occasional sub-optimal play only on Easy
+        if (difficulty === 'easy' && Math.random() < 0.65) {
           return allMoves[Math.floor(Math.random() * allMoves.length)];
         }
 
+        // Deeper search depths across all difficulties
         const depthMap = gridSize === 5 ? 
-          { 'easy': 1, 'medium': 2, 'medium-hard': 2, 'hard': 3, 'master': 3 } : 
-          { 'easy': 1, 'medium': 2, 'medium-hard': 3, 'hard': 4, 'master': 5 };
-        const maxDepth = depthMap[difficulty] || 2;
+          { 'easy': 1, 'medium': 2, 'medium-hard': 3, 'hard': 4, 'master': 5 } : 
+          { 'easy': 2, 'medium': 3, 'medium-hard': 4, 'hard': 5, 'master': 6 };
+        const maxDepth = depthMap[difficulty] || 3;
 
         let bestMove = null;
         let bestScore = -Infinity;
 
-        allMoves.sort(() => Math.random() - 0.5);
+        // Order candidate moves: prioritize moves that block threats or approach target
+        AI.orderMoves(allMoves, board, aiTeam);
 
         for (let move of allMoves) {
           const nextBoard = AI.cloneBoard(board);
@@ -689,8 +762,18 @@
             return move;
           }
 
+          // Immediate penalty if this move allows the opponent an instant win next turn
+          if (AI.canWinInOneMove(nextBoard, oppTeam)) {
+            const penaltyScore = -9500;
+            if (penaltyScore > bestScore || !bestMove) {
+              bestScore = penaltyScore;
+              bestMove = move;
+            }
+            continue;
+          }
+
           const score = AI.minimax(nextBoard, maxDepth - 1, -Infinity, Infinity, false, aiTeam);
-          if (score > bestScore) {
+          if (score > bestScore || !bestMove) {
             bestScore = score;
             bestMove = move;
           }
@@ -699,17 +782,43 @@
         return bestMove || allMoves[0];
       },
 
+      orderMoves: function(moves, board, team) {
+        const goal = (team === TEAM_BLUE) ? blueGoal : greenGoal;
+        const oppGoal = (team === TEAM_BLUE) ? greenGoal : blueGoal;
+
+        moves.sort((a, b) => {
+          // Direct win to goal
+          const aWins = (a.to.r === goal.r && a.to.c === goal.c) ? 1000 : 0;
+          const bWins = (b.to.r === goal.r && b.to.c === goal.c) ? 1000 : 0;
+          
+          // Defense: Moves intercepting opponent's goal entry paths
+          const aBlocks = (a.to.r === oppGoal.r || a.to.c === oppGoal.c) ? 40 : 0;
+          const bBlocks = (b.to.r === oppGoal.r || b.to.c === oppGoal.c) ? 40 : 0;
+
+          // Proximity to own target
+          const distA = Math.abs(a.to.r - goal.r) + Math.abs(a.to.c - goal.c);
+          const distB = Math.abs(b.to.r - goal.r) + Math.abs(b.to.c - goal.c);
+
+          return (bWins + bBlocks - distB) - (aWins + aBlocks - distA);
+        });
+      },
+
       minimax: function(board, depth, alpha, beta, isMaximizing, aiTeam) {
         const winner = AI.checkBoardWin(board);
         const oppTeam = aiTeam === TEAM_BLUE ? TEAM_GREEN : TEAM_BLUE;
 
         if (winner === aiTeam) return 10000 + depth;
         if (winner === oppTeam) return -10000 - depth;
+
+        // Quiescence leaf check: Detect if next player has an unstoppable 1-move win
+        const currentTeam = isMaximizing ? aiTeam : oppTeam;
+        if (AI.canWinInOneMove(board, currentTeam)) {
+          return isMaximizing ? (9500 + depth) : (-9500 - depth);
+        }
+
         if (depth === 0) return AI.evaluateBoard(board, aiTeam);
 
-        const currentTeam = isMaximizing ? aiTeam : oppTeam;
         const moves = [];
-
         for (let r = 0; r < gridSize; r++) {
           for (let c = 0; c < gridSize; c++) {
             const p = board[r][c];
@@ -721,6 +830,8 @@
         }
 
         if (moves.length === 0) return 0;
+
+        AI.orderMoves(moves, board, currentTeam);
 
         if (isMaximizing) {
           let maxEval = -Infinity;
@@ -756,7 +867,18 @@
         const aiTarget = aiTeam === TEAM_BLUE ? blueGoal : greenGoal;
         const oppTarget = oppTeam === TEAM_BLUE ? blueGoal : greenGoal;
 
+        // Immediate threat scoring
+        if (AI.canWinInOneMove(board, aiTeam)) return 8500;
+        if (AI.canWinInOneMove(board, oppTeam)) return -8500;
+
         let score = 0;
+
+        // Goal avenue defense inspection
+        // Evaluates whether the critical corridors into opponent's target are safely guarded
+        const oppRowClear = AI.isCorridorOpen(board, oppTarget.r, true);
+        const oppColClear = AI.isCorridorOpen(board, oppTarget.c, false);
+        if (oppRowClear) score -= 350;
+        if (oppColClear) score -= 350;
 
         for (let r = 0; r < gridSize; r++) {
           for (let c = 0; c < gridSize; c++) {
@@ -767,35 +889,51 @@
             const dr = Math.abs(r - target.r);
             const dc = Math.abs(c - target.c);
 
-            let slides = 0;
-            if (dr > 0) slides++;
-            if (dc > 0) slides++;
+            let slidesNeeded = 0;
+            if (dr > 0) slidesNeeded++;
+            if (dc > 0) slidesNeeded++;
 
+            // Check if piece has clear direct line to its goal
+            let alignedClear = false;
             if (r === target.r) {
               const minC = Math.min(c, target.c), maxC = Math.max(c, target.c);
               let blocked = false;
               for (let col = minC + 1; col < maxC; col++) {
                 if (board[r][col]) { blocked = true; break; }
               }
-              if (!blocked) slides = 1;
+              if (!blocked) { slidesNeeded = 1; alignedClear = true; }
             } else if (c === target.c) {
               const minR = Math.min(r, target.r), maxR = Math.max(r, target.r);
               let blocked = false;
               for (let row = minR + 1; row < maxR; row++) {
                 if (board[row][c]) { blocked = true; break; }
               }
-              if (!blocked) slides = 1;
+              if (!blocked) { slidesNeeded = 1; alignedClear = true; }
             }
 
-            const val = (10 - slides * 3) - (dr + dc) * 0.5;
+            // High penalty if opponent is positioned in an open corridor leading directly to victory
+            let pieceVal = (10 - slidesNeeded * 4) * 20 - (dr + dc) * 6;
+            if (alignedClear) {
+              pieceVal += 250;
+            }
+
             if (p.team === aiTeam) {
-              score += val;
+              score += pieceVal;
             } else {
-              score -= val * 1.25;
+              score -= pieceVal * 1.5;
             }
           }
         }
         return score;
+      },
+
+      isCorridorOpen: function(board, index, isRow) {
+        let count = 0;
+        for (let i = 0; i < gridSize; i++) {
+          const piece = isRow ? board[index][i] : board[i][index];
+          if (piece) count++;
+        }
+        return count <= 1; // Uncontested corridor with at most 1 piece
       },
 
       cloneBoard: function(board) {
@@ -874,6 +1012,18 @@
           g.connect(this.sfxGain);
           osc.start(now);
           osc.stop(now + 0.12);
+        } else if (type === 'blocked') {
+          const osc = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.setValueAtTime(130, now + 0.07);
+          g.gain.setValueAtTime(0.22, now);
+          g.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+          osc.connect(g);
+          g.connect(this.sfxGain);
+          osc.start(now);
+          osc.stop(now + 0.18);
         } else if (type === 'win') {
           const notes = [261.63, 329.63, 392.00, 523.25];
           notes.forEach((freq, idx) => {
@@ -957,7 +1107,9 @@
       turn: TEAM_GREEN,
       selectedPiece: null,
       validMoves: [],
+      forbiddenMoves: [],
       moveHistory: [],
+      boardSignatures: [],
       timeElapsed: 0,
       turnTimeLeft: TURN_TIME_LIMIT,
       timerInterval: null,
@@ -1011,7 +1163,7 @@
       if (!toast) return;
       toast.innerText = msg;
       toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 1200);
+      setTimeout(() => toast.classList.remove('show'), 1600);
     }
 
     function initBoardState() {
@@ -1083,6 +1235,36 @@
       });
 
       return moves;
+    }
+
+    function getPieceMoves(r, c, board) {
+      const rawMoves = calculateValidMoves(r, c, board);
+      const legalMoves = [];
+      const forbiddenMoves = [];
+
+      for (const m of rawMoves) {
+        const testBoard = AI.cloneBoard(board);
+        testBoard[m.r][m.c] = testBoard[r][c];
+        testBoard[r][c] = null;
+
+        const isWin = AI.checkBoardWin(testBoard) !== null;
+        const sig = getBoardSignature(testBoard);
+
+        const matchIdx = gameState.boardSignatures ? gameState.boardSignatures.lastIndexOf(sig) : -1;
+
+        if (!isWin && matchIdx !== -1) {
+          const movesAgo = gameState.moveCount - matchIdx;
+          forbiddenMoves.push({
+            r: m.r,
+            c: m.c,
+            movesAgo: Math.max(1, movesAgo)
+          });
+        } else {
+          legalMoves.push(m);
+        }
+      }
+
+      return { legalMoves, forbiddenMoves };
     }
 
     let scene, camera, renderer, raycaster, mouse;
@@ -1287,6 +1469,13 @@
           const mPos = getTilePosition(mv.r, mv.c);
           createHighlight(mPos.x, mPos.z, 0xe2e8f0, 0.44);
         });
+
+        if (gameState.forbiddenMoves) {
+          gameState.forbiddenMoves.forEach(mv => {
+            const mPos = getTilePosition(mv.r, mv.c);
+            createHighlight(mPos.x, mPos.z, 0xef4444, 0.44);
+          });
+        }
       }
     }
 
@@ -1296,7 +1485,7 @@
         color: colorHex,
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.85
+        opacity: 0.9
       });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.rotation.x = Math.PI / 2;
@@ -1345,12 +1534,15 @@
         if (gameState.selectedPiece && gameState.selectedPiece.r === r && gameState.selectedPiece.c === c) {
           gameState.selectedPiece = null;
           gameState.validMoves = [];
+          gameState.forbiddenMoves = [];
           renderPiecesFromState();
           return;
         }
 
         gameState.selectedPiece = { r, c, piece };
-        gameState.validMoves = calculateValidMoves(r, c, gameState.board);
+        const { legalMoves, forbiddenMoves } = getPieceMoves(r, c, gameState.board);
+        gameState.validMoves = legalMoves;
+        gameState.forbiddenMoves = forbiddenMoves;
         audioEngine.playSFX('select');
         renderPiecesFromState();
         return;
@@ -1361,9 +1553,17 @@
         if (move) {
           executeMove(gameState.selectedPiece, move);
         } else {
-          gameState.selectedPiece = null;
-          gameState.validMoves = [];
-          renderPiecesFromState();
+          const forbidden = gameState.forbiddenMoves && gameState.forbiddenMoves.find(m => m.r === r && m.c === c);
+          if (forbidden) {
+            audioEngine.playSFX('blocked');
+            const agoText = forbidden.movesAgo === 1 ? '1 move ago' : `${forbidden.movesAgo} moves ago`;
+            showToast(`Loop Rule: Position from ${agoText}!`);
+          } else {
+            gameState.selectedPiece = null;
+            gameState.validMoves = [];
+            gameState.forbiddenMoves = [];
+            renderPiecesFromState();
+          }
         }
       }
     }
@@ -1373,12 +1573,15 @@
       gameState.moveHistory.push({
         board: boardSnapshot,
         turn: gameState.turn,
-        moveCount: gameState.moveCount
+        moveCount: gameState.moveCount,
+        boardSignatures: [...gameState.boardSignatures]
       });
 
       const piece = gameState.board[from.r][from.c];
       gameState.board[from.r][from.c] = null;
       gameState.board[toMove.r][toMove.c] = piece;
+
+      gameState.boardSignatures.push(getBoardSignature(gameState.board));
 
       gameState.moveCount++;
       document.getElementById('move-count').innerText = `${gameState.moveCount} moves`;
@@ -1387,6 +1590,7 @@
 
       gameState.selectedPiece = null;
       gameState.validMoves = [];
+      gameState.forbiddenMoves = [];
 
       if (checkWinCondition()) {
         renderPiecesFromState();
@@ -1413,11 +1617,13 @@
         gameState.board = lastState.board;
         gameState.turn = lastState.turn;
         gameState.moveCount = lastState.moveCount;
+        gameState.boardSignatures = lastState.boardSignatures || [];
       }
 
       document.getElementById('move-count').innerText = `${gameState.moveCount} moves`;
       gameState.selectedPiece = null;
       gameState.validMoves = [];
+      gameState.forbiddenMoves = [];
 
       resetTurnCountdown();
       updateTurnUI();
@@ -1471,6 +1677,7 @@
       if (aiTimeout) clearTimeout(aiTimeout);
       createBoard();
       gameState.board = initBoardState();
+      gameState.boardSignatures = [getBoardSignature(gameState.board)];
 
       let startingTeam = TEAM_GREEN;
       if (appSettings.starter === 'blue') {
@@ -1482,6 +1689,7 @@
       gameState.turn = startingTeam;
       gameState.selectedPiece = null;
       gameState.validMoves = [];
+      gameState.forbiddenMoves = [];
       gameState.moveHistory = [];
       gameState.timeElapsed = 0;
       gameState.turnTimeLeft = TURN_TIME_LIMIT;
@@ -1522,7 +1730,6 @@
       document.getElementById('stat-winner').style.color = winner === TEAM_GREEN ? "#10b981" : "#3b82f6";
       document.getElementById('stat-streak').innerText = `${gameData.streak}`;
 
-      // Configure Difficulty adjustment button based on win/loss outcome vs AI
       const diffBtn = document.getElementById('btn-diff-action');
       if (appSettings.opponent === 'ai') {
         const curIdx = DIFFICULTIES.indexOf(appSettings.aiDifficulty);
