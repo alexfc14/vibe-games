@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>CrossLine: Planar Duel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #e8e1d2;
+      color: #2d3748;
+    }
+    /* Dedicated canvas container without floating panels */
+    #canvasContainer {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 40%, #f7f3ec 0%, #ece5d7 65%, #ddd4c0 100%);
+    }
+    canvas#webgl {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      outline: none;
+      display: block;
+    }
+    /* Subtle noise/linen texture overlay strictly on board canvas */
+    .board-texture {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.3;
+      background-image: radial-gradient(#7c6f58 0.75px, transparent 0.75px);
+      background-size: 18px 18px;
+    }
+    .header-bar {
+      background: rgba(255, 255, 255, 0.94);
+      border-bottom: 1px solid rgba(214, 204, 187, 0.8);
+      box-shadow: 0 2px 10px rgba(78, 62, 38, 0.05);
+    }
+    .footer-bar {
+      background: rgba(255, 255, 255, 0.92);
+      border-top: 1px solid rgba(214, 204, 187, 0.8);
+      box-shadow: 0 -2px 10px rgba(78, 62, 38, 0.04);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      box-shadow: 0 16px 36px -10px rgba(82, 67, 43, 0.16), 0 4px 12px rgba(82, 67, 43, 0.08);
+    }
+    .btn-action {
+      transition: all 0.15s ease;
+    }
+    .btn-action:hover {
+      transform: translateY(-1px);
+      background-color: #f5f0e6;
+    }
+    .btn-action:active {
+      transform: translateY(1px) scale(0.97);
+    }
+    .turn-glow-p1 {
+      box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.5), 0 2px 8px rgba(13, 148, 136, 0.2);
+    }
+    .turn-glow-p2 {
+      box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.5), 0 2px 8px rgba(225, 29, 72, 0.2);
+    }
+  </style>
+</head>
+<body class="w-full h-full flex flex-col">
+  <!-- Top Dedicated Navigation Bar (Completely Outside the Board Area) -->
+  <header class="header-bar h-14 sm:h-16 px-3 sm:px-6 w-full flex items-center justify-between z-20 shrink-0">
+    <!-- Title & Match Info -->
+    <div class="flex items-center space-x-2.5">
+      <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-800 flex items-center justify-center font-black text-base shadow-sm">
+        ☍
+      </div>
+      <div>
+        <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-stone-800 leading-none">CrossLine</h1>
+        <p class="text-[10px] sm:text-xs text-stone-500 font-semibold mt-0.5" id="gameModeLabel">Player vs AI</p>
+      </div>
+    </div>
+
+    <!-- Turn & Status Center Pill (Sleek and self-contained) -->
+    <div id="turnBanner" class="px-3.5 sm:px-5 py-1.5 rounded-full bg-stone-100/90 border border-stone-200/90 flex items-center space-x-3 transition-all duration-300 shadow-inner">
+      <div class="flex items-center space-x-1.5 sm:space-x-2">
+        <div id="p1Indicator" class="w-3.5 h-3.5 rounded-full bg-teal-600 transition-all duration-300"></div>
+        <span id="p1Label" class="text-xs font-bold text-stone-700 hidden sm:inline">P1</span>
+        <span id="p1Score" class="text-xs px-2 py-0.5 rounded-full bg-white font-mono font-bold text-stone-700 shadow-xs">0</span>
+      </div>
+      <div class="h-3 w-px bg-stone-300"></div>
+      <div class="flex items-center space-x-1.5 sm:space-x-2">
+        <span id="p2Score" class="text-xs px-2 py-0.5 rounded-full bg-white font-mono font-bold text-stone-700 shadow-xs">0</span>
+        <span id="p2Label" class="text-xs font-bold text-stone-500 hidden sm:inline">AI</span>
+        <div id="p2Indicator" class="w-3.5 h-3.5 rounded-full bg-rose-600/40 transition-all duration-300"></div>
+      </div>
+    </div>
+
+    <!-- Controls Row (Undo, Restart, Audio, Pause, Settings) -->
+    <div class="flex items-center space-x-1.5">
+      <button id="btnUndo" title="Undo Last Move" class="btn-action w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-700">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 10h10a5 5 0 015 5v2m0 0l-4-4m4 4l4-4M3 10l4-4m-4 4l4 4"/></svg>
+      </button>
+      <button id="btnQuickRestart" title="Restart Board" class="btn-action w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-700">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      </button>
+      <button id="btnAudioToggle" title="Toggle Sound/Music" class="btn-action w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-700">
+        <svg id="iconAudioOn" class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+        <svg id="iconAudioOff" class="w-4 h-4 sm:w-5 sm:h-5 hidden text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z m12-2l4 4m0-4l-4 4"/></svg>
+      </button>
+      <button id="btnPause" title="Pause Game" class="btn-action w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-700">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </button>
+      <button id="btnSettings" title="Game Settings" class="btn-action w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-700">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Middle Area: 100% Unobstructed 3D Board Viewport -->
+  <main id="canvasContainer" class="flex-1 w-full min-h-0 relative">
+    <div class="board-texture"></div>
+    <canvas id="webgl"></canvas>
+  </main>
+
+  <!-- Bottom Dedicated Status Bar (Completely Outside the Board Area) -->
+  <footer class="footer-bar h-10 px-4 w-full flex items-center justify-between z-20 shrink-0 text-xs font-semibold text-stone-600">
+    <div class="flex items-center space-x-2 truncate">
+      <span class="inline-block w-2 h-2 rounded-full bg-teal-500 shrink-0"></span>
+      <span id="hintText" class="truncate">Select a peg to start drawing</span>
+    </div>
+    <div class="flex items-center space-x-3 text-stone-500 font-mono text-[11px] shrink-0 pl-2">
+      <span id="layoutBadge" class="hidden sm:inline px-2 py-0.5 rounded bg-stone-100 text-stone-600 font-bold">Orbital</span>
+      <span id="movesCount">Lines: 0</span>
+      <span class="text-stone-300">•</span>
+      <span id="validMovesCount">Valid: -</span>
+    </div>
+  </footer>
+
+  <!-- Settings Modal -->
+  <div id="modalSettings" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-md hidden">
+    <div class="glass-card max-w-md w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold text-stone-800">Game Settings</h2>
+        <button id="btnCloseSettings" class="text-stone-400 hover:text-stone-700 p-1.5 rounded-xl">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Opponent Mode -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold uppercase tracking-wider text-stone-500">Opponent</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="optModeAi" class="py-2.5 px-3 rounded-xl font-bold text-sm text-center border-2 border-teal-600 bg-teal-50 text-teal-800">AI Opponent</button>
+            <button id="optModePvp" class="py-2.5 px-3 rounded-xl font-bold text-sm text-center border-2 border-transparent bg-stone-100 text-stone-600 hover:bg-stone-200">2 Players Local</button>
+          </div>
+        </div>
+
+        <!-- AI Difficulty -->
+        <div id="aiDifficultyRow" class="space-y-1.5">
+          <label class="text-xs font-bold uppercase tracking-wider text-stone-500">AI Level</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button data-diff="casual" class="diff-btn py-2 rounded-xl text-xs font-bold bg-stone-100 text-stone-600">Casual</button>
+            <button data-diff="tactical" class="diff-btn py-2 rounded-xl text-xs font-bold bg-teal-600 text-white">Tactical</button>
+            <button data-diff="master" class="diff-btn py-2 rounded-xl text-xs font-bold bg-stone-100 text-stone-600">Master</button>
+          </div>
+        </div>
+
+        <!-- Line Rule Mode -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold uppercase tracking-wider text-stone-500">Crossing Rule</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="ruleOpponentOnly" class="py-2 px-3 rounded-xl font-bold text-xs border-2 border-teal-600 bg-teal-50 text-teal-800">No Opponent Crossing</button>
+            <button id="ruleAllPlanar" class="py-2 px-3 rounded-xl font-bold text-xs border-2 border-transparent bg-stone-100 text-stone-600 hover:bg-stone-200">No Crossing Any</button>
+          </div>
+          <p class="text-[11px] text-stone-500">"No Opponent Crossing" lets you cross your own lines while blocking your rival.</p>
+        </div>
+
+        <!-- Points Quantity / Board Complexity -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between items-center text-xs font-bold text-stone-600">
+            <span class="uppercase tracking-wider text-stone-500">Pegs Count</span>
+            <span id="pegCountVal" class="font-mono text-teal-700">7 Pegs</span>
+          </div>
+          <input id="pegCountSlider" type="range" min="6" max="10" step="1" value="7" class="w-full accent-teal-600 cursor-pointer">
+        </div>
+
+        <!-- Sound volume -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between items-center text-xs font-bold text-stone-600">
+            <span class="uppercase tracking-wider text-stone-500">Audio Volume</span>
+            <span id="volumeVal" class="font-mono text-stone-600">70%</span>
+          </div>
+          <input id="volumeSlider" type="range" min="0" max="100" step="5" value="70" class="w-full accent-stone-700 cursor-pointer">
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <button id="btnRestartFromSettings" class="btn-action w-full py-3.5 rounded-2xl bg-stone-800 text-white font-bold text-sm shadow-lg hover:bg-stone-900">
+          Apply & Restart Level
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pause Modal -->
+  <div id="modalPause" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-md hidden">
+    <div class="glass-card max-w-sm w-full rounded-3xl p-6 text-center space-y-5 shadow-2xl">
+      <div class="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-700 flex items-center justify-center mx-auto text-2xl font-bold">
+        ❚❚
+      </div>
+      <div>
+        <h3 class="text-xl font-bold text-stone-800">Game Paused</h3>
+        <p class="text-xs text-stone-500 mt-1">Take a breath and plan your geometric line locks.</p>
+      </div>
+      <div class="space-y-2 pt-2">
+        <button id="btnResume" class="btn-action w-full py-3 rounded-2xl bg-teal-600 text-white font-bold text-sm shadow-md hover:bg-teal-700">Resume Match</button>
+        <button id="btnRestartLevel" class="btn-action w-full py-3 rounded-2xl bg-stone-100 text-stone-700 font-bold text-sm hover:bg-stone-200">Restart Board</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over / Stats Modal -->
+  <div id="modalGameOver" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-md hidden">
+    <div class="glass-card max-w-md w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl text-center">
+      <!-- Winner Badge -->
+      <div class="space-y-2">
+        <div id="winnerCrown" class="text-4xl animate-bounce">🏆</div>
+        <h2 id="winnerTitle" class="text-2xl sm:text-3xl font-extrabold text-stone-800">Player 1 Wins!</h2>
+        <p id="winnerSubtitle" class="text-sm font-semibold text-stone-500">No legal line remaining for the opponent.</p>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-3 gap-3 bg-stone-100/70 p-4 rounded-2xl border border-stone-200/60">
+        <div>
+          <div class="text-[10px] font-bold uppercase text-stone-400">Total Lines</div>
+          <div id="statTotalLines" class="text-lg font-black text-stone-700 font-mono">14</div>
+        </div>
+        <div>
+          <div class="text-[10px] font-bold uppercase text-stone-400">P1 Lines</div>
+          <div id="statP1Lines" class="text-lg font-black text-teal-700 font-mono">8</div>
+        </div>
+        <div>
+          <div class="text-[10px] font-bold uppercase text-stone-400">P2 Lines</div>
+          <div id="statP2Lines" class="text-lg font-black text-rose-700 font-mono">6</div>
+        </div>
+      </div>
+
+      <!-- Must-Have Actions: Next Level, Play Again, Speed Recap -->
+      <div class="space-y-2.5 pt-1">
+        <button id="btnNextLevel" class="btn-action w-full py-3.5 rounded-2xl bg-teal-600 text-white font-extrabold text-sm shadow-lg hover:bg-teal-700 flex items-center justify-center space-x-2">
+          <span>Next Layout</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btnPlayAgain" class="btn-action py-3 rounded-2xl bg-stone-100 text-stone-700 font-bold text-xs hover:bg-stone-200">
+            Play Again
+          </button>
+          <button id="btnSpeedRecap" class="btn-action py-3 rounded-2xl bg-amber-50 border border-amber-300/80 text-amber-800 font-bold text-xs hover:bg-amber-100 flex items-center justify-center space-x-1.5">
+            <svg class="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/><path d="M8 11V7l5 3-5 3v-2z"/></svg>
+            <span>Speed Recap</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Speed Recap Overlay Modal -->
+  <div id="modalRecap" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-md hidden">
+    <div class="glass-card max-w-lg w-full rounded-3xl p-6 space-y-4 shadow-2xl text-center">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <span class="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>
+          <h3 class="text-base font-bold text-stone-800">Match Timeline Recap</h3>
+        </div>
+        <button id="btnCloseRecap" class="text-stone-400 hover:text-stone-700 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="relative w-full aspect-video bg-stone-900/90 rounded-2xl overflow-hidden border border-stone-700/60 shadow-inner flex items-center justify-center">
+        <canvas id="recapCanvas" class="w-full h-full object-contain"></canvas>
+        <div id="recapBadge" class="absolute bottom-3 left-3 bg-stone-900/80 backdrop-blur-sm text-stone-200 px-3 py-1 rounded-lg text-xs font-mono font-semibold">
+          Step: 0 / 0
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2">
+        <button id="btnReplayRecap" class="btn-action py-2.5 px-4 rounded-xl bg-stone-100 text-stone-700 text-xs font-bold hover:bg-stone-200">
+          Replay
+        </button>
+        <button id="btnDownloadRecap" class="btn-action py-2.5 px-5 rounded-xl bg-teal-600 text-white text-xs font-bold shadow hover:bg-teal-700 flex items-center space-x-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span id="btnDownloadRecapText">Download WebM</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // iOS and Safari audio configuration
+    if (typeof navigator !== 'undefined' && navigator.audioSession) {
+      try {
+        navigator.audioSession.type = 'playback';
+      } catch(e) {}
+    }
+
+    // Audio Engine using Web Audio API synthesis (self-contained, no external URLs)
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        this.volume = 0.7;
+        this.musicPlaying = false;
+        this.musicTimer = null;
+        this.musicStep = 0;
+        this.pentatonicScale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, duration = 0.25, type = 'sine', gainVal = 0.2) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+          const finalGain = gainVal * this.volume;
+          gain.gain.setValueAtTime(finalGain, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      playPluck(player = 1) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const baseFreq = player === 1 ? 330 : 220;
+        this.playTone(baseFreq, 0.45, 'triangle', 0.25);
+        setTimeout(() => {
+          this.playTone(baseFreq * 1.5, 0.35, 'sine', 0.15);
+        }, 60);
+      }
+
+      playSelect() {
+        this.playTone(523.25, 0.12, 'sine', 0.12);
+      }
+
+      playInvalid() {
+        this.playTone(130.81, 0.25, 'sawtooth', 0.18);
+      }
+
+      playWin() {
+        if (!this.enabled) return;
+        const notes = [392, 523.25, 659.25, 783.99];
+        notes.forEach((note, idx) => {
+          setTimeout(() => this.playTone(note, 0.5, 'triangle', 0.25), idx * 120);
+        });
+      }
+
+      startMusic() {
+        if (this.musicPlaying) return;
+        this.musicPlaying = true;
+        this.scheduleMusicStep();
+      }
+
+      stopMusic() {
+        this.musicPlaying = false;
+        if (this.musicTimer) {
+          clearTimeout(this.musicTimer);
+          this.musicTimer = null;
+        }
+      }
+
+      scheduleMusicStep() {
+        if (!this.musicPlaying || !this.enabled) return;
+        this.init();
+        if (this.ctx && this.volume > 0.05) {
+          // Relaxing ambient arpeggios
+          const noteIndex = Math.floor(Math.sin(this.musicStep * 0.4) * 3 + 3) % this.pentatonicScale.length;
+          const freq = this.pentatonicScale[noteIndex];
+          this.playTone(freq, 1.4, 'sine', 0.04);
+
+          // Deep root bass every 4 steps
+          if (this.musicStep % 4 === 0) {
+            this.playTone(freq * 0.5, 2.0, 'triangle', 0.045);
+          }
+        }
+        this.musicStep++;
+        this.musicTimer = setTimeout(() => this.scheduleMusicStep(), 750);
+      }
+    }
+
+    const audio = new SoundEngine();
+
+    const Storage = {
+      save(key, val) {
+        try {
+          localStorage.setItem('crossline_' + key, JSON.stringify(val));
+        } catch (e) {
+          document.cookie = `crossline_${key}=${encodeURIComponent(JSON.stringify(val))}; path=/; max-age=31536000`;
+        }
+      },
+      load(key, fallback) {
+        try {
+          const val = localStorage.getItem('crossline_' + key);
+          if (val !== null) return JSON.parse(val);
+        } catch (e) {}
+        try {
+          const m = document.cookie.match(new RegExp('(?:^|; )crossline_' + key + '=([^;]*)'));
+          if (m) return JSON.parse(decodeURIComponent(m[1]));
+        } catch (e) {}
+        return fallback;
+      }
+    };
+
+    // Configuration state
+    const config = {
+      mode: Storage.load('mode', 'ai'), // 'ai' or 'pvp'
+      aiDiff: Storage.load('aiDiff', 'tactical'), // 'casual', 'tactical', 'master'
+      rule: Storage.load('rule', 'opponent_only'), // 'opponent_only' or 'all_planar'
+      pegsCount: Storage.load('pegsCount', 7),
+      audioEnabled: Storage.load('audioEnabled', true),
+      volume: Storage.load('volume', 70)
+    };
+
+    audio.enabled = config.audioEnabled;
+    audio.volume = config.volume / 100;
+
+    // 2D Point and Line Segment Intersection routines
+    class Point2D {
+      constructor(x, y, id) {
+        this.x = x;
+        this.y = y;
+        this.id = id;
+      }
+      dist(p) {
+        const dx = this.x - p.x;
+        const dy = this.y - p.y;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+    }
+
+    // Check if points are counter-clockwise orientation
+    function ccw(A, B, C) {
+      return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x);
+    }
+
+    // Determine if segment AB intersects segment CD strictly in their interior
+    function segmentsIntersect(A, B, C, D) {
+      // If segments share an endpoint, they meet at a peg which is valid (they don't "cross" each other)
+      if (A.id === C.id || A.id === D.id || B.id === C.id || B.id === D.id) {
+        return false;
+      }
+
+      // Check standard 2D segment crossing condition
+      const ccw1 = ccw(A, C, D);
+      const ccw2 = ccw(B, C, D);
+      const ccw3 = ccw(A, B, C);
+      const ccw4 = ccw(A, B, D);
+
+      return (ccw1 !== ccw2) && (ccw3 !== ccw4);
+    }
+
+    // Distance from point P to line segment AB
+    function distPointToSegment(P, A, B) {
+      const l2 = (B.x - A.x) ** 2 + (B.y - A.y) ** 2;
+      if (l2 === 0) return P.dist(A);
+      let t = ((P.x - A.x) * (B.x - A.x) + (P.y - A.y) * (B.y - A.y)) / l2;
+      t = Math.max(0, Math.min(1, t));
+      const projX = A.x + t * (B.x - A.x);
+      const projY = A.y + t * (B.y - A.y);
+      const dx = P.x - projX;
+      const dy = P.y - projY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    const canvas = document.getElementById('webgl');
+    const container = document.getElementById('canvasContainer');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf2ece1);
+
+    const camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 100);
+    camera.position.set(0, -0.6, 9.5);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // Responsive camera framing: ensure the whole circular board (radius 4.4) fits with safety margin
+    function updateCanvasSize() {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      if (w === 0 || h === 0) return;
+
+      camera.aspect = w / h;
+      
+      const boardDiameter = 9.2;
+      const vFovRad = (camera.fov * Math.PI) / 180;
+      const distForHeight = (boardDiameter / 2) / Math.tan(vFovRad / 2);
+      const distForWidth = distForHeight / camera.aspect;
+      
+      const idealDist = Math.max(distForHeight, distForWidth) * 1.08;
+      camera.position.z = Math.max(8.5, idealDist);
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+
+    // Ambient & Directional Lighting with Soft Shadows
+    const ambientLight = new THREE.AmbientLight(0xfff8ee, 0.85);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(5, 7, 9);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 1024;
+    dirLight.shadow.mapSize.height = 1024;
+    dirLight.shadow.camera.near = 0.5;
+    dirLight.shadow.camera.far = 25;
+    dirLight.shadow.camera.left = -6;
+    dirLight.shadow.camera.right = 6;
+    dirLight.shadow.camera.top = 6;
+    dirLight.shadow.camera.bottom = -6;
+    dirLight.shadow.bias = -0.0008;
+    scene.add(dirLight);
+
+    const rimLight = new THREE.DirectionalLight(0xe2e8f0, 0.35);
+    rimLight.position.set(-5, -6, 5);
+    scene.add(rimLight);
+
+    // Board 3D visual platform
+    const boardGroup = new THREE.Group();
+    scene.add(boardGroup);
+
+    // Board Base Disk
+    const boardGeometry = new THREE.CylinderGeometry(4.35, 4.45, 0.35, 64);
+    const boardMaterial = new THREE.MeshStandardMaterial({
+      color: 0xfbf8f3,
+      roughness: 0.45,
+      metalness: 0.08
+    });
+    const boardMesh = new THREE.Mesh(boardGeometry, boardMaterial);
+    boardMesh.rotation.x = Math.PI / 2;
+    boardMesh.position.z = -0.18;
+    boardMesh.receiveShadow = true;
+    boardGroup.add(boardMesh);
+
+    // Subtle Board Rim
+    const rimGeom = new THREE.TorusGeometry(4.36, 0.08, 16, 64);
+    const rimMat = new THREE.MeshStandardMaterial({
+      color: 0xd6cdbe,
+      roughness: 0.3,
+      metalness: 0.2
+    });
+    const rimMesh = new THREE.Mesh(rimGeom, rimMat);
+    rimMesh.position.z = -0.01;
+    boardGroup.add(rimMesh);
+
+    // Visual theme palette
+    const p1Color = 0x0d9488; // Emerald Teal
+    const p2Color = 0xe11d48; // Crimson Rose
+    const neutralPegColor = 0x64748b; // Slate
+    const selectedPegColor = 0xf59e0b; // Amber
+    const validTargetPegColor = 0x10b981; // Green
+
+    // Game Runtime State
+    let points = [];
+    let lines = [];
+    let pegMeshes = [];
+    let selectedPegIndex = null;
+    let validTargetsForSelected = [];
+    let activePlayer = 1;
+    let isGameOver = false;
+    let isPaused = false;
+    let isAiThinking = false;
+    let p1MoveCount = 0;
+    let p2MoveCount = 0;
+    let moveHistory = [];
+    let currentLayoutName = "Orbital";
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // Diverse generative layout generators allowing strategic dot blockages
+    const LayoutGenerators = [
+      {
+        name: "Twin Clusters",
+        generate: (count) => {
+          const pts = [];
+          const leftCount = Math.floor(count / 2);
+          const rightCount = count - leftCount;
+          
+          for (let i = 0; i < leftCount; i++) {
+            const angle = (i / leftCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+            const r = 0.8 + Math.random() * 0.9;
+            pts.push(new Point2D(-1.8 + Math.cos(angle) * r, Math.sin(angle) * r, pts.length));
+          }
+          for (let i = 0; i < rightCount; i++) {
+            const angle = (i / rightCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+            const r = 0.8 + Math.random() * 0.9;
+            pts.push(new Point2D(1.8 + Math.cos(angle) * r, Math.sin(angle) * r, pts.length));
+          }
+          return pts;
+        }
+      },
+      {
+        name: "Orbital Rings",
+        generate: (count) => {
+          const pts = [];
+          pts.push(new Point2D(0, 0, 0)); // Center pivot hub
+          const outerCount = count - 1;
+          const innerRing = Math.floor(outerCount * 0.4);
+          const outerRing = outerCount - innerRing;
+
+          const innerAngleOffset = Math.random() * Math.PI * 2;
+          for (let i = 0; i < innerRing; i++) {
+            const a = innerAngleOffset + (i / innerRing) * Math.PI * 2;
+            pts.push(new Point2D(Math.cos(a) * 1.5, Math.sin(a) * 1.5, pts.length));
+          }
+
+          const outerAngleOffset = Math.random() * Math.PI * 2;
+          for (let i = 0; i < outerRing; i++) {
+            const a = outerAngleOffset + (i / outerRing) * Math.PI * 2;
+            pts.push(new Point2D(Math.cos(a) * 3.1, Math.sin(a) * 3.1, pts.length));
+          }
+          return pts;
+        }
+      },
+      {
+        name: "Hourglass",
+        generate: (count) => {
+          const pts = [];
+          pts.push(new Point2D(0, 0, 0)); // Tactical neck peg
+          const wingCount = Math.floor((count - 1) / 2);
+          for (let i = 0; i < wingCount; i++) {
+            const y = 1.3 + Math.random() * 1.8;
+            const spread = (y / 3.0) * 2.8;
+            const x = (Math.random() - 0.5) * spread * 2;
+            pts.push(new Point2D(x, y, pts.length));
+          }
+          const remaining = count - pts.length;
+          for (let i = 0; i < remaining; i++) {
+            const y = -1.3 - Math.random() * 1.8;
+            const spread = (Math.abs(y) / 3.0) * 2.8;
+            const x = (Math.random() - 0.5) * spread * 2;
+            pts.push(new Point2D(x, y, pts.length));
+          }
+          return pts;
+        }
+      },
+      {
+        name: "Polygonal Nexus",
+        generate: (count) => {
+          const pts = [];
+          const rimCount = Math.max(4, count - 2);
+          const interiorCount = count - rimCount;
+          const rot = Math.random() * Math.PI;
+
+          for (let i = 0; i < rimCount; i++) {
+            const a = rot + (i / rimCount) * Math.PI * 2;
+            pts.push(new Point2D(Math.cos(a) * 3.2, Math.sin(a) * 3.2, pts.length));
+          }
+          for (let i = 0; i < interiorCount; i++) {
+            const a = rot + ((i + 0.5) / interiorCount) * Math.PI * 2;
+            pts.push(new Point2D(Math.cos(a) * 1.25, Math.sin(a) * 1.25, pts.length));
+          }
+          return pts;
+        }
+      },
+      {
+        name: "Spiral Arc",
+        generate: (count) => {
+          const pts = [];
+          const rot = Math.random() * Math.PI * 2;
+          for (let i = 0; i < count; i++) {
+            const t = i / (count - 1);
+            const a = rot + t * Math.PI * 2.8;
+            const r = 0.7 + t * 2.6;
+            pts.push(new Point2D(Math.cos(a) * r, Math.sin(a) * r, pts.length));
+          }
+          return pts;
+        }
+      },
+      {
+        name: "Organic Scatter",
+        generate: (count) => {
+          const pts = [];
+          const maxR = 3.3;
+          const minDist = 1.1;
+          for (let i = 0; i < count; i++) {
+            let placed = false;
+            for (let t = 0; t < 80; t++) {
+              const a = Math.random() * Math.PI * 2;
+              const r = Math.sqrt(Math.random()) * maxR;
+              const cand = new Point2D(Math.cos(a) * r, Math.sin(a) * r, pts.length);
+              let ok = true;
+              for (const p of pts) {
+                if (p.dist(cand) < minDist) {
+                  ok = false;
+                  break;
+                }
+              }
+              if (ok) {
+                pts.push(cand);
+                placed = true;
+                break;
+              }
+            }
+            if (!placed) {
+              const a = (i / count) * Math.PI * 2;
+              pts.push(new Point2D(Math.cos(a) * 2.5, Math.sin(a) * 2.5, pts.length));
+            }
+          }
+          return pts;
+        }
+      }
+    ];
+
+    function generateValidBoardLayout(count) {
+      const picker = LayoutGenerators[Math.floor(Math.random() * LayoutGenerators.length)];
+      currentLayoutName = picker.name;
+      const pts = picker.generate(count);
+      
+      // Ensure IDs match array indexes
+      pts.forEach((p, idx) => p.id = idx);
+      return pts;
+    }
+
+    function clearSceneBoard() {
+      // Remove lines
+      lines.forEach(l => {
+        if (l.mesh) scene.remove(l.mesh);
+      });
+      lines = [];
+
+      // Remove pegs
+      pegMeshes.forEach(p => {
+        scene.remove(p.group);
+      });
+      pegMeshes = [];
+    }
+
+    function initBoardVisuals(newPoints) {
+      clearSceneBoard();
+      points = newPoints;
+
+      // Peg materials
+      const pegGeom = new THREE.CylinderGeometry(0.24, 0.28, 0.16, 32);
+      const pegCapGeom = new THREE.SphereGeometry(0.24, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+
+      points.forEach((pt, index) => {
+        const group = new THREE.Group();
+        group.position.set(pt.x, pt.y, 0);
+
+        const baseMat = new THREE.MeshStandardMaterial({
+          color: neutralPegColor,
+          roughness: 0.3,
+          metalness: 0.2
+        });
+
+        const cylinder = new THREE.Mesh(pegGeom, baseMat);
+        cylinder.rotation.x = Math.PI / 2;
+        cylinder.castShadow = true;
+        cylinder.receiveShadow = true;
+        group.add(cylinder);
+
+        const cap = new THREE.Mesh(pegCapGeom, baseMat);
+        cap.position.z = 0.08;
+        cap.rotation.x = Math.PI / 2;
+        cap.castShadow = true;
+        group.add(cap);
+
+        // Halo ring indicator for selection
+        const haloGeom = new THREE.RingGeometry(0.32, 0.42, 32);
+        const haloMat = new THREE.MeshBasicMaterial({
+          color: selectedPegColor,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0
+        });
+        const halo = new THREE.Mesh(haloGeom, haloMat);
+        halo.position.z = 0.01;
+        group.add(halo);
+
+        // Invisible generous hit sphere for easy clicking/touching
+        const hitGeom = new THREE.SphereGeometry(0.65, 16, 16);
+        const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+        const hitMesh = new THREE.Mesh(hitGeom, hitMat);
+        hitMesh.userData = { pegIndex: index };
+        group.add(hitMesh);
+
+        scene.add(group);
+
+        pegMeshes.push({
+          group,
+          baseMat,
+          haloMat,
+          hitMesh,
+          point: pt
+        });
+      });
+    }
+
+    // Check if drawing a line between point index i and j is legal
+    function isMoveLegal(idxA, idxB, playerToCheck = activePlayer) {
+      if (idxA === idxB) return false;
+      const A = points[idxA];
+      const B = points[idxB];
+
+      // 1. Line already exists between these two points
+      for (const line of lines) {
+        if ((line.p1 === idxA && line.p2 === idxB) || (line.p1 === idxB && line.p2 === idxA)) {
+          return false;
+        }
+      }
+
+      // 2. Line must not pass through any other point
+      const safeRadius = 0.32;
+      for (let k = 0; k < points.length; k++) {
+        if (k === idxA || k === idxB) continue;
+        const P = points[k];
+        if (distPointToSegment(P, A, B) < safeRadius) {
+          return false;
+        }
+      }
+
+      // 3. Crossing check according to selected rule
+      for (const line of lines) {
+        const lineA = points[line.p1];
+        const lineB = points[line.p2];
+
+        if (config.rule === 'opponent_only') {
+          // Cannot cross lines drawn by the OTHER player
+          if (line.player !== playerToCheck) {
+            if (segmentsIntersect(A, B, lineA, lineB)) {
+              return false;
+            }
+          }
+        } else {
+          // Cannot cross ANY drawn line (full planar graph rule)
+          if (segmentsIntersect(A, B, lineA, lineB)) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+
+    // Get list of all legal moves for a given player
+    function getAllLegalMoves(player = activePlayer) {
+      const moves = [];
+      const n = points.length;
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+          if (isMoveLegal(i, j, player)) {
+            moves.push({ from: i, to: j });
+          }
+        }
+      }
+      return moves;
+    }
+
+    // Get all valid targets when a peg is already selected
+    function getValidTargetsFor(pegIdx, player = activePlayer) {
+      const targets = [];
+      for (let i = 0; i < points.length; i++) {
+        if (i !== pegIdx && isMoveLegal(pegIdx, i, player)) {
+          targets.push(i);
+        }
+      }
+      return targets;
+    }
+
+    function create3DLineMesh(idxA, idxB, player) {
+      const pA = points[idxA];
+      const pB = points[idxB];
+      const vA = new THREE.Vector3(pA.x, pA.y, 0.08);
+      const vB = new THREE.Vector3(pB.x, pB.y, 0.08);
+
+      const distance = vA.distanceTo(vB);
+      const cylinderGeom = new THREE.CylinderGeometry(0.065, 0.065, distance, 16);
+
+      const color = player === 1 ? p1Color : p2Color;
+      const lineMat = new THREE.MeshStandardMaterial({
+        color: color,
+        roughness: 0.25,
+        metalness: 0.4,
+        emissive: color,
+        emissiveIntensity: 0.18
+      });
+
+      const cylinder = new THREE.Mesh(cylinderGeom, lineMat);
+      cylinder.castShadow = true;
+
+      // Position at midpoint and orient along vector
+      const midpoint = new THREE.Vector3().addVectors(vA, vB).multiplyScalar(0.5);
+      cylinder.position.copy(midpoint);
+
+      const direction = new THREE.Vector3().subVectors(vB, vA).normalize();
+      const up = new THREE.Vector3(0, 1, 0);
+      cylinder.quaternion.setFromUnitVectors(up, direction);
+
+      // Entrance animation scale
+      cylinder.scale.set(0.01, 1, 0.01);
+      const startTime = performance.now();
+      const animateThick = () => {
+        const elapsed = (performance.now() - startTime) / 1000;
+        const progress = Math.min(elapsed / 0.18, 1);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        cylinder.scale.set(ease, 1, ease);
+        if (progress < 1) requestAnimationFrame(animateThick);
+      };
+      animateThick();
+
+      scene.add(cylinder);
+      return cylinder;
+    }
+
+    // Execute move
+    function executeMove(idxA, idxB, player) {
+      const lineMesh = create3DLineMesh(idxA, idxB, player);
+      const moveData = {
+        p1: idxA,
+        p2: idxB,
+        player: player,
+        mesh: lineMesh,
+        timestamp: Date.now()
+      };
+      lines.push(moveData);
+      moveHistory.push(moveData);
+
+      if (player === 1) p1MoveCount++;
+      else p2MoveCount++;
+
+      audio.playPluck(player);
+
+      // Update UI counts
+      updateScoreboard();
+
+      // Check if opponent has any legal moves left
+      const nextPlayer = player === 1 ? 2 : 1;
+      const opponentMoves = getAllLegalMoves(nextPlayer);
+
+      if (opponentMoves.length === 0) {
+        // Player wins! Next player has no moves left
+        endGame(player);
+      } else {
+        // Switch turn
+        activePlayer = nextPlayer;
+        selectedPegIndex = null;
+        validTargetsForSelected = [];
+        updatePegVisualHighlights();
+        updateHUD();
+
+        // If next is AI, trigger AI calculation
+        if (config.mode === 'ai' && activePlayer === 2 && !isGameOver) {
+          triggerAiTurn();
+        }
+      }
+    }
+
+    // Helper to evaluate board from Player 2 (AI)'s perspective
+    function evaluateBoardState(aiMoves, humanMoves) {
+      // Mobility differential is the king metric in graph connection games
+      const mobilityDiff = aiMoves.length - humanMoves.length;
+
+      // Calculate how many opponent moves are vulnerable to single-move locks
+      let opponentChokeBonus = 0;
+      if (humanMoves.length <= 2) {
+        opponentChokeBonus = (3 - humanMoves.length) * 45;
+      }
+
+      return mobilityDiff * 14 + opponentChokeBonus;
+    }
+
+    // Alpha-beta minimax solver for depth-bounded & endgame calculation
+    function alphaBetaSearch(depth, alpha, beta, isMaximizing, deadline) {
+      // Check time quota
+      if (performance.now() > deadline) {
+        return { score: 0, move: null };
+      }
+
+      const active = isMaximizing ? 2 : 1;
+      const validMoves = getAllLegalMoves(active);
+
+      // Terminal state: active player has no moves left and loses!
+      if (validMoves.length === 0) {
+        return {
+          score: isMaximizing ? -10000 - depth : 10000 + depth,
+          move: null
+        };
+      }
+
+      if (depth === 0) {
+        const p2Moves = isMaximizing ? validMoves : getAllLegalMoves(2);
+        const p1Moves = isMaximizing ? getAllLegalMoves(1) : validMoves;
+        return {
+          score: evaluateBoardState(p2Moves, p1Moves),
+          move: null
+        };
+      }
+
+      // Move Ordering heuristic: Sort moves by how severely they prune the adversary's response
+      const scoredMoves = validMoves.map(m => {
+        lines.push({ p1: m.from, p2: m.to, player: active, mesh: null });
+        const enemyOptions = getAllLegalMoves(isMaximizing ? 1 : 2).length;
+        lines.pop();
+        return { move: m, enemyRemaining: enemyOptions };
+      });
+      scoredMoves.sort((a, b) => a.enemyRemaining - b.enemyRemaining);
+
+      let bestMove = scoredMoves[0].move;
+
+      if (isMaximizing) {
+        let maxEval = -Infinity;
+        for (const item of scoredMoves) {
+          const m = item.move;
+          lines.push({ p1: m.from, p2: m.to, player: 2, mesh: null });
+          const result = alphaBetaSearch(depth - 1, alpha, beta, false, deadline);
+          lines.pop();
+
+          if (result.score > maxEval) {
+            maxEval = result.score;
+            bestMove = m;
+          }
+          alpha = Math.max(alpha, result.score);
+          if (beta <= alpha) break; // Beta cut-off
+        }
+        return { score: maxEval, move: bestMove };
+      } else {
+        let minEval = Infinity;
+        for (const item of scoredMoves) {
+          const m = item.move;
+          lines.push({ p1: m.from, p2: m.to, player: 1, mesh: null });
+          const result = alphaBetaSearch(depth - 1, alpha, beta, true, deadline);
+          lines.pop();
+
+          if (result.score < minEval) {
+            minEval = result.score;
+            bestMove = m;
+          }
+          beta = Math.min(beta, result.score);
+          if (beta <= alpha) break; // Alpha cut-off
+        }
+        return { score: minEval, move: bestMove };
+      }
+    }
+
+    function triggerAiTurn() {
+      if (isGameOver || isPaused) return;
+      isAiThinking = true;
+      document.getElementById('hintText').textContent = "AI is computing optimal line lock...";
+
+      const thinkDelay = config.aiDiff === 'casual' ? 450 : config.aiDiff === 'tactical' ? 700 : 900;
+
+      setTimeout(() => {
+        if (isGameOver || isPaused || activePlayer !== 2) {
+          isAiThinking = false;
+          return;
+        }
+
+        const validMoves = getAllLegalMoves(2);
+        if (validMoves.length === 0) {
+          endGame(1);
+          isAiThinking = false;
+          return;
+        }
+
+        let chosenMove = null;
+
+        if (config.aiDiff === 'casual') {
+          // Casual: Pick semi-random move with slight preference for not walking into instant loss
+          chosenMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+        } else if (config.aiDiff === 'tactical') {
+          // Tactical: 2-ply Minimax + mobility choke
+          const deadline = performance.now() + 600;
+          const result = alphaBetaSearch(2, -Infinity, Infinity, true, deadline);
+          chosenMove = result.move || validMoves[0];
+        } else {
+          // Master: Adaptive deep search. If move space is small, solve completely!
+          const searchDepth = validMoves.length <= 11 ? Math.min(8, validMoves.length) : 4;
+          const deadline = performance.now() + 1100;
+          const result = alphaBetaSearch(searchDepth, -Infinity, Infinity, true, deadline);
+          chosenMove = result.move || validMoves[0];
+        }
+
+        isAiThinking = false;
+        if (chosenMove) {
+          executeMove(chosenMove.from, chosenMove.to, 2);
+        }
+      }, thinkDelay);
+    }
+
+    function updatePegVisualHighlights() {
+      pegMeshes.forEach((item, index) => {
+        const isSelected = (index === selectedPegIndex);
+        const isValidTarget = validTargetsForSelected.includes(index);
+
+        if (isSelected) {
+          item.baseMat.color.setHex(selectedPegColor);
+          item.haloMat.color.setHex(selectedPegColor);
+          item.haloMat.opacity = 0.85;
+          item.group.scale.set(1.15, 1.15, 1.15);
+        } else if (isValidTarget) {
+          item.baseMat.color.setHex(validTargetPegColor);
+          item.haloMat.color.setHex(validTargetPegColor);
+          item.haloMat.opacity = 0.65;
+          item.group.scale.set(1.08, 1.08, 1.08);
+        } else {
+          item.baseMat.color.setHex(neutralPegColor);
+          item.haloMat.opacity = 0;
+          item.group.scale.set(1, 1, 1);
+        }
+      });
+    }
+
+    function handlePegClick(pegIndex) {
+      if (isGameOver || isPaused || isAiThinking) return;
+      if (config.mode === 'ai' && activePlayer === 2) return;
+
+      audio.init();
+
+      if (selectedPegIndex === null) {
+        // Select initial peg
+        const legalTargets = getValidTargetsFor(pegIndex, activePlayer);
+        if (legalTargets.length === 0) {
+          audio.playInvalid();
+          showNotification("No legal lines available from this peg.");
+          return;
+        }
+
+        selectedPegIndex = pegIndex;
+        validTargetsForSelected = legalTargets;
+        audio.playSelect();
+        updatePegVisualHighlights();
+        updateHUD();
+      } else if (selectedPegIndex === pegIndex) {
+        // Deselect
+        selectedPegIndex = null;
+        validTargetsForSelected = [];
+        audio.playSelect();
+        updatePegVisualHighlights();
+        updateHUD();
+      } else {
+        // Attempting to draw to target peg
+        if (validTargetsForSelected.includes(pegIndex)) {
+          const fromPeg = selectedPegIndex;
+          selectedPegIndex = null;
+          validTargetsForSelected = [];
+          updatePegVisualHighlights();
+          executeMove(fromPeg, pegIndex, activePlayer);
+        } else {
+          // If clicked another valid source peg, switch selection
+          const legalTargets = getValidTargetsFor(pegIndex, activePlayer);
+          if (legalTargets.length > 0) {
+            selectedPegIndex = pegIndex;
+            validTargetsForSelected = legalTargets;
+            audio.playSelect();
+            updatePegVisualHighlights();
+            updateHUD();
+          } else {
+            audio.playInvalid();
+            showNotification("Illegal move! Lines cannot cross or pass pegs.");
+          }
+        }
+      }
+    }
+
+    // Pointer events on canvas
+    function getPointerIntersection(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const clientX = event.clientX || (event.touches && event.touches[0] ? event.touches[0].clientX : 0);
+      const clientY = event.clientY || (event.touches && event.touches[0] ? event.touches[0].clientY : 0);
+
+      mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const hitObjects = pegMeshes.map(p => p.hitMesh);
+      const intersects = raycaster.intersectObjects(hitObjects);
+
+      if (intersects.length > 0) {
+        return intersects[0].object.userData.pegIndex;
+      }
+      return null;
+    }
+
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+      const hitPegIndex = getPointerIntersection(e);
+      if (hitPegIndex !== null) {
+        handlePegClick(hitPegIndex);
+      }
+    });
+
+    // Hover cursor styling
+    renderer.domElement.addEventListener('pointermove', (e) => {
+      const hitPegIndex = getPointerIntersection(e);
+      renderer.domElement.style.cursor = (hitPegIndex !== null) ? 'pointer' : 'default';
+    });
+
+    let notifTimeout = null;
+    function showNotification(msg) {
+      const hint = document.getElementById('hintText');
+      hint.textContent = msg;
+      hint.classList.add('text-rose-600');
+      clearTimeout(notifTimeout);
+      notifTimeout = setTimeout(() => {
+        hint.classList.remove('text-rose-600');
+        updateHUD();
+      }, 2000);
+    }
+
+    function updateScoreboard() {
+      document.getElementById('p1Score').textContent = p1MoveCount;
+      document.getElementById('p2Score').textContent = p2MoveCount;
+      document.getElementById('movesCount').textContent = `Lines Drawn: ${lines.length}`;
+
+      const remainingMoves = getAllLegalMoves(activePlayer).length;
+      document.getElementById('validMovesCount').textContent = `Valid Moves Left: ${remainingMoves}`;
+      
+      const badge = document.getElementById('layoutBadge');
+      if (badge) {
+        badge.textContent = currentLayoutName;
+      }
+    }
+
+    function updateHUD() {
+      const p1Ind = document.getElementById('p1Indicator');
+      const p2Ind = document.getElementById('p2Indicator');
+      const p1Lbl = document.getElementById('p1Label');
+      const p2Lbl = document.getElementById('p2Label');
+      const banner = document.getElementById('turnBanner');
+      const hint = document.getElementById('hintText');
+
+      if (activePlayer === 1) {
+        p1Ind.className = 'w-4 h-4 rounded-full bg-teal-600 scale-125';
+        p2Ind.className = 'w-4 h-4 rounded-full bg-rose-600/30 scale-100';
+        p1Lbl.className = 'text-xs font-bold text-teal-800';
+        p2Lbl.className = 'text-xs font-bold text-stone-400';
+        banner.className = 'glass-card px-6 py-2.5 rounded-2xl flex items-center space-x-4 transition-all duration-300 turn-glow-p1';
+
+        if (selectedPegIndex !== null) {
+          hint.textContent = `Peg #${selectedPegIndex + 1} chosen: tap an emerald peg to connect`;
+        } else {
+          hint.textContent = "Player 1: Select a peg to start a line";
+        }
+      } else {
+        p1Ind.className = 'w-4 h-4 rounded-full bg-teal-600/30 scale-100';
+        p2Ind.className = 'w-4 h-4 rounded-full bg-rose-600 scale-125';
+        p1Lbl.className = 'text-xs font-bold text-stone-400';
+        p2Lbl.className = 'text-xs font-bold text-rose-800';
+        banner.className = 'glass-card px-6 py-2.5 rounded-2xl flex items-center space-x-4 transition-all duration-300 turn-glow-p2';
+
+        if (config.mode === 'ai') {
+          hint.textContent = "AI Opponent is thinking...";
+        } else {
+          if (selectedPegIndex !== null) {
+            hint.textContent = `Peg #${selectedPegIndex + 1} chosen: tap an emerald peg to connect`;
+          } else {
+            hint.textContent = "Player 2: Select a peg to start a line";
+          }
+        }
+      }
+
+      document.getElementById('gameModeLabel').textContent = config.mode === 'ai'
+        ? `Player vs AI (${config.aiDiff.toUpperCase()})`
+        : 'Player 1 vs Player 2 (Local)';
+
+      updateScoreboard();
+    }
+
+    function endGame(winnerPlayer) {
+      isGameOver = true;
+      audio.playWin();
+
+      const modal = document.getElementById('modalGameOver');
+      const title = document.getElementById('winnerTitle');
+      const subtitle = document.getElementById('winnerSubtitle');
+      const crown = document.getElementById('winnerCrown');
+
+      if (config.mode === 'ai') {
+        if (winnerPlayer === 1) {
+          title.textContent = "Victory! You Won!";
+          title.className = "text-2xl sm:text-3xl font-extrabold text-teal-700";
+          subtitle.textContent = "You trapped the AI with no legal crossing-free lines left!";
+          crown.textContent = "🎉";
+        } else {
+          title.textContent = "AI Outmaneuvered You!";
+          title.className = "text-2xl sm:text-3xl font-extrabold text-rose-700";
+          subtitle.textContent = "No valid lines remain for you. Try another layout!";
+          crown.textContent = "🤖";
+        }
+      } else {
+        title.textContent = winnerPlayer === 1 ? "Player 1 Wins!" : "Player 2 Wins!";
+        title.className = winnerPlayer === 1 ? "text-2xl sm:text-3xl font-extrabold text-teal-700" : "text-2xl sm:text-3xl font-extrabold text-rose-700";
+        subtitle.textContent = "The opponent has no legal straight lines left to draw!";
+        crown.textContent = "🏆";
+      }
+
+      document.getElementById('statTotalLines').textContent = lines.length;
+      document.getElementById('statP1Lines').textContent = p1MoveCount;
+      document.getElementById('statP2Lines').textContent = p2MoveCount;
+
+      modal.classList.remove('hidden');
+    }
+
+    function restartLevel(preserveLayout = false) {
+      isGameOver = false;
+      isPaused = false;
+      isAiThinking = false;
+      activePlayer = 1;
+      selectedPegIndex = null;
+      validTargetsForSelected = [];
+      p1MoveCount = 0;
+      p2MoveCount = 0;
+      moveHistory = [];
+
+      document.getElementById('modalGameOver').classList.add('hidden');
+      document.getElementById('modalPause').classList.add('hidden');
+      document.getElementById('modalSettings').classList.add('hidden');
+      document.getElementById('modalRecap').classList.add('hidden');
+
+      if (!preserveLayout || points.length !== config.pegsCount) {
+        const newPts = generateValidBoardLayout(config.pegsCount);
+        initBoardVisuals(newPts);
+      } else {
+        // Keep same layout points, just clear lines
+        initBoardVisuals(points);
+      }
+
+      updatePegVisualHighlights();
+      updateHUD();
+      audio.startMusic();
+    }
+
+    function undoLastMove() {
+      if (lines.length === 0 || isGameOver || isAiThinking) return;
+
+      // In AI mode, undo both the AI move and the player's last move so it returns to player's turn
+      const movesToUndo = (config.mode === 'ai' && lines.length >= 2) ? 2 : 1;
+
+      for (let k = 0; k < movesToUndo; k++) {
+        if (lines.length === 0) break;
+        const lastLine = lines.pop();
+        moveHistory.pop();
+        if (lastLine.mesh) {
+          scene.remove(lastLine.mesh);
+        }
+        if (lastLine.player === 1) p1MoveCount = Math.max(0, p1MoveCount - 1);
+        else p2MoveCount = Math.max(0, p2MoveCount - 1);
+        activePlayer = lastLine.player;
+      }
+
+      selectedPegIndex = null;
+      validTargetsForSelected = [];
+      updatePegVisualHighlights();
+      updateHUD();
+      audio.playSelect();
+    }
+
+    let recapAnimationId = null;
+    let recapMediaRecorder = null;
+    let recapRecordedChunks = [];
+
+    function openSpeedRecap() {
+      document.getElementById('modalGameOver').classList.add('hidden');
+      const modal = document.getElementById('modalRecap');
+      modal.classList.remove('hidden');
+
+      playSpeedRecapAnimation();
+    }
+
+    function playSpeedRecapAnimation() {
+      const recapCanvas = document.getElementById('recapCanvas');
+      const ctx = recapCanvas.getContext('2d');
+      const badge = document.getElementById('recapBadge');
+
+      recapCanvas.width = 720;
+      recapCanvas.height = 480;
+
+      if (recapAnimationId) cancelAnimationFrame(recapAnimationId);
+
+      const totalMoves = moveHistory.length;
+      let currentStep = 0;
+      const historyCopy = [...moveHistory];
+
+      // Board coordinate mapping
+      const centerX = recapCanvas.width / 2;
+      const centerY = recapCanvas.height / 2;
+      const scale = 58;
+
+      function renderFrame(stepCount) {
+        // Draw wood / parchment backdrop
+        ctx.fillStyle = '#f5efe4';
+        ctx.fillRect(0, 0, recapCanvas.width, recapCanvas.height);
+
+        // Circular board base
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 230, 0, Math.PI * 2);
+        ctx.fillStyle = '#fffdf9';
+        ctx.shadowColor = 'rgba(70, 50, 20, 0.15)';
+        ctx.shadowBlur = 24;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        ctx.strokeStyle = '#e2d7c5';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // Draw drawn lines up to stepCount
+        for (let i = 0; i < stepCount; i++) {
+          const m = historyCopy[i];
+          const pA = points[m.p1];
+          const pB = points[m.p2];
+
+          ctx.beginPath();
+          ctx.moveTo(centerX + pA.x * scale, centerY - pA.y * scale);
+          ctx.lineTo(centerX + pB.x * scale, centerY - pB.y * scale);
+          ctx.strokeStyle = m.player === 1 ? '#0d9488' : '#e11d48';
+          ctx.lineWidth = 5;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        }
+
+        // Draw Pegs
+        points.forEach((pt, idx) => {
+          const px = centerX + pt.x * scale;
+          const py = centerY - pt.y * scale;
+
+          ctx.beginPath();
+          ctx.arc(px, py, 11, 0, Math.PI * 2);
+          ctx.fillStyle = '#64748b';
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        });
+
+        badge.textContent = `Move: ${stepCount} / ${totalMoves}`;
+      }
+
+      let lastTime = performance.now();
+      const stepInterval = 420; // Fast-paced recap avoiding dead thinking time
+
+      function loop(now) {
+        if (now - lastTime >= stepInterval) {
+          lastTime = now;
+          if (currentStep <= totalMoves) {
+            renderFrame(currentStep);
+            audio.playPluck(currentStep % 2 === 1 ? 1 : 2);
+            currentStep++;
+          }
+        }
+
+        if (currentStep <= totalMoves) {
+          recapAnimationId = requestAnimationFrame(loop);
+        } else {
+          renderFrame(totalMoves);
+        }
+      }
+
+      renderFrame(0);
+      recapAnimationId = requestAnimationFrame(loop);
+    }
+
+    // Export recap as WebM recording
+    async function downloadRecapVideo() {
+      const recapCanvas = document.getElementById('recapCanvas');
+      const dlBtnText = document.getElementById('btnDownloadRecapText');
+
+      if (!('MediaRecorder' in window)) {
+        showNotification("Video recording not supported on this browser.");
+        return;
+      }
+
+      dlBtnText.textContent = "Recording...";
+      const stream = recapCanvas.captureStream(30);
+      let recorder;
+      try {
+        recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      } catch (e) {
+        recorder = new MediaRecorder(stream);
+      }
+
+      const chunks = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `crossline-recap-${Date.now()}.webm`;
+        a.click();
+        URL.revokeObjectURL(url);
+        dlBtnText.textContent = "Download WebM";
+      };
+
+      recorder.start();
+      playSpeedRecapAnimation();
+
+      const durationMs = (moveHistory.length + 1) * 450 + 600;
+      setTimeout(() => {
+        if (recorder.state !== 'inactive') {
+          recorder.stop();
+        }
+      }, durationMs);
+    }
+
+    document.getElementById('btnUndo').addEventListener('click', undoLastMove);
+    document.getElementById('btnQuickRestart').addEventListener('click', () => restartLevel(true));
+
+    document.getElementById('btnAudioToggle').addEventListener('click', () => {
+      audio.enabled = !audio.enabled;
+      config.audioEnabled = audio.enabled;
+      Storage.save('audioEnabled', config.audioEnabled);
+
+      document.getElementById('iconAudioOn').classList.toggle('hidden', !audio.enabled);
+      document.getElementById('iconAudioOff').classList.toggle('hidden', audio.enabled);
+
+      if (audio.enabled) {
+        audio.startMusic();
+      } else {
+        audio.stopMusic();
+      }
+    });
+
+    document.getElementById('btnPause').addEventListener('click', () => {
+      isPaused = true;
+      document.getElementById('modalPause').classList.remove('hidden');
+    });
+
+    document.getElementById('btnResume').addEventListener('click', () => {
+      isPaused = false;
+      document.getElementById('modalPause').classList.add('hidden');
+    });
+
+    document.getElementById('btnRestartLevel').addEventListener('click', () => {
+      restartLevel(true);
+    });
+
+    document.getElementById('btnSettings').addEventListener('click', () => {
+      document.getElementById('modalSettings').classList.remove('hidden');
+    });
+
+    document.getElementById('btnCloseSettings').addEventListener('click', () => {
+      document.getElementById('modalSettings').classList.add('hidden');
+    });
+
+    // Settings Mode Toggle
+    const optAi = document.getElementById('optModeAi');
+    const optPvp = document.getElementById('optModePvp');
+    const aiRow = document.getElementById('aiDifficultyRow');
+
+    function syncModeButtons() {
+      if (config.mode === 'ai') {
+        optAi.className = 'py-2.5 px-3 rounded-xl font-bold text-sm text-center border-2 border-teal-600 bg-teal-50 text-teal-800';
+        optPvp.className = 'py-2.5 px-3 rounded-xl font-bold text-sm text-center border-2 border-transparent bg-stone-100 text-stone-600 hover:bg-stone-200';
+        aiRow.classList.remove('hidden');
+      } else {
+        optPvp.className = 'py-2.5 px-3 rounded-xl font-bold text-sm text-center border-2 border-teal-600 bg-teal-50 text-teal-800';
+        optAi.className = 'py-2.5 px-3 rounded-xl font-bold text-sm text-center border-2 border-transparent bg-stone-100 text-stone-600 hover:bg-stone-200';
+        aiRow.classList.add('hidden');
+      }
+    }
+    syncModeButtons();
+
+    optAi.addEventListener('click', () => {
+      config.mode = 'ai';
+      Storage.save('mode', 'ai');
+      syncModeButtons();
+    });
+
+    optPvp.addEventListener('click', () => {
+      config.mode = 'pvp';
+      Storage.save('mode', 'pvp');
+      syncModeButtons();
+    });
+
+    // AI Difficulty buttons
+    const diffButtons = document.querySelectorAll('.diff-btn');
+    function syncDiffButtons() {
+      diffButtons.forEach(btn => {
+        const d = btn.getAttribute('data-diff');
+        if (d === config.aiDiff) {
+          btn.className = 'diff-btn py-2 rounded-xl text-xs font-bold bg-teal-600 text-white';
+        } else {
+          btn.className = 'diff-btn py-2 rounded-xl text-xs font-bold bg-stone-100 text-stone-600';
+        }
+      });
+    }
+    syncDiffButtons();
+
+    diffButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        config.aiDiff = btn.getAttribute('data-diff');
+        Storage.save('aiDiff', config.aiDiff);
+        syncDiffButtons();
+      });
+    });
+
+    // Rule Buttons
+    const ruleOpp = document.getElementById('ruleOpponentOnly');
+    const ruleAll = document.getElementById('ruleAllPlanar');
+    function syncRuleButtons() {
+      if (config.rule === 'opponent_only') {
+        ruleOpp.className = 'py-2 px-3 rounded-xl font-bold text-xs border-2 border-teal-600 bg-teal-50 text-teal-800';
+        ruleAll.className = 'py-2 px-3 rounded-xl font-bold text-xs border-2 border-transparent bg-stone-100 text-stone-600 hover:bg-stone-200';
+      } else {
+        ruleAll.className = 'py-2 px-3 rounded-xl font-bold text-xs border-2 border-teal-600 bg-teal-50 text-teal-800';
+        ruleOpp.className = 'py-2 px-3 rounded-xl font-bold text-xs border-2 border-transparent bg-stone-100 text-stone-600 hover:bg-stone-200';
+      }
+    }
+    syncRuleButtons();
+
+    ruleOpp.addEventListener('click', () => {
+      config.rule = 'opponent_only';
+      Storage.save('rule', config.rule);
+      syncRuleButtons();
+    });
+
+    ruleAll.addEventListener('click', () => {
+      config.rule = 'all_planar';
+      Storage.save('rule', config.rule);
+      syncRuleButtons();
+    });
+
+    // Peg slider
+    const pegSlider = document.getElementById('pegCountSlider');
+    const pegVal = document.getElementById('pegCountVal');
+    pegSlider.value = config.pegsCount;
+    pegVal.textContent = `${config.pegsCount} Pegs`;
+    pegSlider.addEventListener('input', (e) => {
+      config.pegsCount = parseInt(e.target.value, 10);
+      pegVal.textContent = `${config.pegsCount} Pegs`;
+      Storage.save('pegsCount', config.pegsCount);
+    });
+
+    // Volume slider
+    const volSlider = document.getElementById('volumeSlider');
+    const volVal = document.getElementById('volumeVal');
+    volSlider.value = config.volume;
+    volVal.textContent = `${config.volume}%`;
+    volSlider.addEventListener('input', (e) => {
+      config.volume = parseInt(e.target.value, 10);
+      volVal.textContent = `${config.volume}%`;
+      audio.volume = config.volume / 100;
+      Storage.save('volume', config.volume);
+    });
+
+    document.getElementById('btnRestartFromSettings').addEventListener('click', () => {
+      restartLevel(false);
+    });
+
+    // Game Over Buttons
+    document.getElementById('btnNextLevel').addEventListener('click', () => restartLevel(false));
+    document.getElementById('btnPlayAgain').addEventListener('click', () => restartLevel(true));
+    document.getElementById('btnSpeedRecap').addEventListener('click', openSpeedRecap);
+    document.getElementById('btnCloseRecap').addEventListener('click', () => {
+      document.getElementById('modalRecap').classList.add('hidden');
+      document.getElementById('modalGameOver').classList.remove('hidden');
+      if (recapAnimationId) cancelAnimationFrame(recapAnimationId);
+    });
+    document.getElementById('btnReplayRecap').addEventListener('click', playSpeedRecapAnimation);
+    document.getElementById('btnDownloadRecap').addEventListener('click', downloadRecapVideo);
+
+    window.addEventListener('resize', updateCanvasSize);
+
+    // Gentle camera parallax on pointer hover over container
+    let targetCameraX = 0;
+    let targetCameraY = -0.6;
+    container.addEventListener('pointermove', (e) => {
+      const rect = container.getBoundingClientRect();
+      const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+      targetCameraX = nx * 0.35;
+      targetCameraY = -0.6 - ny * 0.35;
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Smooth camera interpolation
+      camera.position.x += (targetCameraX - camera.position.x) * 0.05;
+      camera.position.y += (targetCameraY - camera.position.y) * 0.05;
+      camera.lookAt(0, 0, 0);
+
+      // Subtle board idle motion
+      boardGroup.rotation.z = Math.sin(performance.now() * 0.0003) * 0.015;
+
+      renderer.render(scene, camera);
+    }
+
+    // Auto-start on load
+    window.onload = function () {
+      updateCanvasSize();
+      restartLevel(false);
+      animate();
+    };
+  </script>
+</body>
+</html>
