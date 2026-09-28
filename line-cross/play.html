@@ -118,6 +118,9 @@
 
     <!-- Controls Row (Undo, Restart, Audio, Pause, Settings) -->
     <div class="flex items-center space-x-1.5">
+      <button id="btnHint" title="Show Hints (all legal lines)" aria-pressed="false" class="btn-action w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-700">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      </button>
       <button id="btnUndo" title="Undo Last Move" class="btn-action w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-700">
         <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 10h10a5 5 0 015 5v2m0 0l-4-4m4 4l4-4M3 10l4-4m-4 4l4 4"/></svg>
       </button>
@@ -150,6 +153,15 @@
       </div>
     </div>
     <canvas id="webgl"></canvas>
+    <!-- Hint legend -->
+    <div id="hintLegend" class="absolute bottom-3 left-3 z-10 hidden pointer-events-none">
+      <div class="glass-card rounded-2xl px-3 py-2 space-y-1 text-[11px] font-semibold text-stone-700">
+        <div class="flex items-center space-x-2"><span class="inline-block w-5 border-t-2 border-dashed" style="border-color:#8b93a1"></span><span>Both can draw</span></div>
+        <div class="flex items-center space-x-2"><span class="inline-block w-5 border-t-2 border-dashed" style="border-color:#0d9488"></span><span>Only Green (P1)</span></div>
+        <div class="flex items-center space-x-2"><span class="inline-block w-5 border-t-2 border-dashed" style="border-color:#e11d48"></span><span>Only Red (P2)</span></div>
+        <div class="flex items-center space-x-2"><span class="inline-block w-3 h-3 rounded-full border-2" style="border-color:#f59e0b;background:rgba(245,158,11,.35)"></span><span>Contested crossing: <b id="hintCrossCount">0</b></span></div>
+      </div>
+    </div>
   </main>
 
   <!-- Bottom Dedicated Status Bar (Completely Outside the Board Area) -->
@@ -777,17 +789,106 @@
       }
     ];
 
-    function generateValidBoardLayout(count) {
-      const picker = LayoutGenerators[Math.floor(Math.random() * LayoutGenerators.length)];
-      currentLayoutName = picker.name;
-      let pts = picker.generate(count);
-      
-      // Enforce guaranteed pairwise minimum separation so pegs never overlap or clump
-      pts = enforcePegSeparation(pts, MIN_PEG_SPACING, MAX_BOARD_RADIUS);
+    let lastLayoutName = null;
 
-      // Ensure IDs match array indexes
-      pts.forEach((p, idx) => p.id = idx);
+    // Count pairs of potential lines (not passing through a peg) that cross each other.
+    // More crossings = more blocking interactions = more strategy.
+    function countLayoutCrossings(pts) {
+      const segs = [];
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          let ok = true;
+          for (let k = 0; k < pts.length; k++) {
+            if (k === i || k === j) continue;
+            if (distPointToSegment(pts[k], pts[i], pts[j]) < 0.32) { ok = false; break; }
+          }
+          if (ok) segs.push([i, j]);
+        }
+      }
+      let crossings = 0;
+      for (let x = 0; x < segs.length; x++) {
+        for (let y = x + 1; y < segs.length; y++) {
+          if (segmentsIntersect(pts[segs[x][0]], pts[segs[x][1]], pts[segs[y][0]], pts[segs[y][1]])) crossings++;
+        }
+      }
+      return crossings;
+    }
+
+    // Truly random layout: dart-throw pegs uniformly over the disc (min spacing enforced).
+    // Returns null if the pegs could not all be placed.
+    // Random boards use a looser spacing than the archetypes so pegs can form real clusters and gaps
+    const RANDOM_MIN_SPACING = 1.0;
+
+    function generateRandomLayout(count) {
+      const pts = [];
+      for (let i = 0; i < count; i++) {
+        let placed = false;
+        for (let t = 0; t < 200 && !placed; t++) {
+          const a = Math.random() * Math.PI * 2;
+          const r = Math.sqrt(Math.random()) * MAX_BOARD_RADIUS;
+          const cand = new Point2D(Math.cos(a) * r, Math.sin(a) * r, pts.length);
+          if (pts.every(p => p.dist(cand) >= RANDOM_MIN_SPACING)) {
+            pts.push(cand);
+            placed = true;
+          }
+        }
+        if (!placed) return null;
+      }
       return pts;
+    }
+
+    // The first layouts of a session are these archetypes; after that every layout is random
+    const INTRO_ARCHETYPES = ["Twin Clusters", "Orbital Rings", "Hourglass"];
+    let introLayoutsShown = 0;
+
+    function generateValidBoardLayout(count) {
+      // Require a healthy share of the maximum possible crossings, C(n,4)
+      const maxCross = (count * (count - 1) * (count - 2) * (count - 3)) / 24;
+      const needed = Math.max(4, Math.ceil(maxCross * 0.4));
+
+      let bestPts = null, bestScore = -1, bestName = 'Random';
+
+      if (introLayoutsShown < INTRO_ARCHETYPES.length) {
+        // First layouts: the three hand-made archetypes, in a fixed order
+        const picker = LayoutGenerators.find(g => g.name === INTRO_ARCHETYPES[introLayoutsShown]);
+        introLayoutsShown++;
+        for (let attempt = 0; attempt < 40; attempt++) {
+          let pts = picker.generate(count);
+          // Light variation only (rotation + small nudge) so the archetype stays recognizable
+          const rot = Math.random() * Math.PI * 2;
+          const cs = Math.cos(rot), sn = Math.sin(rot);
+          const jit = 0.08 + Math.random() * 0.12;
+          pts.forEach(p => {
+            const x = p.x, y = p.y;
+            p.x = x * cs - y * sn + (Math.random() - 0.5) * 2 * jit;
+            p.y = x * sn + y * cs + (Math.random() - 0.5) * 2 * jit;
+          });
+          pts = enforcePegSeparation(pts, MIN_PEG_SPACING, MAX_BOARD_RADIUS);
+          pts.forEach((p, idx) => p.id = idx);
+          const score = countLayoutCrossings(pts);
+          if (score > bestScore) { bestScore = score; bestPts = pts; bestName = picker.name; }
+          if (score >= needed) break;
+        }
+      } else {
+        // Truly random, with rejection until it has enough virtual line crossings
+        for (let attempt = 0; attempt < 1000; attempt++) {
+          const pts = generateRandomLayout(count);
+          if (!pts) continue;
+          const score = countLayoutCrossings(pts);
+          if (score > bestScore) { bestScore = score; bestPts = pts; }
+          if (score >= needed) break;
+        }
+      }
+
+      if (!bestPts) {
+        // Extremely unlikely fallback
+        bestPts = enforcePegSeparation(LayoutGenerators[0].generate(count), MIN_PEG_SPACING, MAX_BOARD_RADIUS);
+        bestPts.forEach((p, idx) => p.id = idx);
+        bestName = LayoutGenerators[0].name;
+      }
+
+      currentLayoutName = bestName;
+      return bestPts;
     }
 
     function clearSceneBoard() {
@@ -934,6 +1035,148 @@
         }
       }
       return targets;
+    }
+
+    // ===== Hint system: dashed preview of every currently legal line =====
+    let hintsOn = false;
+    let hintKey = '';
+    let hintMarkers = [];
+    let hintObjects = [];
+    const hintGroup = new THREE.Group();
+    scene.add(hintGroup);
+    const HINT_GRAY = 0x8b93a1;
+    const HINT_DASH = 0.16;
+    const HINT_GAP = 0.12;
+    const HINT_Z = 0.17;
+    const hintDashGeom = new THREE.BoxGeometry(1, 0.055, 0.03);
+    const hintRingGeom = new THREE.RingGeometry(0.085, 0.115, 32);
+    const hintCoreGeom = new THREE.CircleGeometry(0.055, 20);
+
+    function clearHints() {
+      hintObjects.forEach(o => {
+        hintGroup.remove(o);
+        if (o.material) o.material.dispose();
+        if (o.dispose) o.dispose();
+      });
+      hintObjects = [];
+      hintMarkers.forEach(m => hintGroup.remove(m));
+      hintMarkers = [];
+    }
+
+    function computeHints() {
+      const segs = [];
+      for (let i = 0; i < points.length; i++) {
+        for (let j = i + 1; j < points.length; j++) {
+          const a = isMoveLegal(i, j, 1);
+          const b = isMoveLegal(i, j, 2);
+          if (!a && !b) continue;
+          segs.push({ i, j, can1: a, can2: b, kind: (a && b) ? 'both' : (a ? 'p1' : 'p2') });
+        }
+      }
+      // A crossing matters when drawing one of the two lines can block the other:
+      // some player X can draw line A while a different player Y wants line B (or vice versa).
+      // Under the "no crossing any" rule every crossing blocks.
+      const blocks = (a, b) => config.rule === 'all_planar' ||
+        (a.can1 && b.can2) || (a.can2 && b.can1);
+      const crossings = [];
+      for (let x = 0; x < segs.length; x++) {
+        for (let y = x + 1; y < segs.length; y++) {
+          const sa = segs[x], sb = segs[y];
+          const A = points[sa.i], B = points[sa.j];
+          const C = points[sb.i], D = points[sb.j];
+          if (!segmentsIntersect(A, B, C, D)) continue;
+          if (!blocks(sa, sb)) continue;
+          const rX = B.x - A.x, rY = B.y - A.y;
+          const sX = D.x - C.x, sY = D.y - C.y;
+          const den = rX * sY - rY * sX;
+          if (Math.abs(den) < 1e-9) continue;
+          const t = ((C.x - A.x) * sY - (C.y - A.y) * sX) / den;
+          const cx = A.x + t * rX, cy = A.y + t * rY;
+          // merge markers that would sit on top of each other
+          if (crossings.some(c => Math.hypot(c.x - cx, c.y - cy) < 0.08)) continue;
+          crossings.push({ x: cx, y: cy });
+        }
+      }
+      return { segs, crossings };
+    }
+
+    function refreshHints(force = false) {
+      if (!hintsOn) return;
+      const key = config.rule + '|' +
+        points.map(p => p.x.toFixed(3) + ',' + p.y.toFixed(3)).join(';') + '|' +
+        lines.map(l => l.p1 + '-' + l.p2 + '-' + l.player).join(',');
+      if (!force && key === hintKey) return;
+      hintKey = key;
+
+      clearHints();
+      if (points.length === 0) return;
+      const { segs, crossings } = computeHints();
+
+      const buckets = { both: [], p1: [], p2: [] };
+      segs.forEach(sg => {
+        const A = points[sg.i], B = points[sg.j];
+        const dx = B.x - A.x, dy = B.y - A.y;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        const usable = len - 0.6; // keep clear of the pegs
+        if (usable <= HINT_DASH) return;
+        const n = Math.max(1, Math.floor((usable + HINT_GAP) / (HINT_DASH + HINT_GAP)));
+        const total = n * HINT_DASH + (n - 1) * HINT_GAP;
+        const ux = dx / len, uy = dy / len;
+        const ang = Math.atan2(dy, dx);
+        const start = (len - total) / 2;
+        for (let k = 0; k < n; k++) {
+          const c = start + k * (HINT_DASH + HINT_GAP) + HINT_DASH / 2;
+          buckets[sg.kind].push({ x: A.x + ux * c, y: A.y + uy * c, ang });
+        }
+      });
+
+      const colors = { both: HINT_GRAY, p1: p1Color, p2: p2Color };
+      const dummy = new THREE.Object3D();
+      Object.keys(buckets).forEach(kind => {
+        const arr = buckets[kind];
+        if (arr.length === 0) return;
+        const mat = new THREE.MeshBasicMaterial({ color: colors[kind] });
+        const inst = new THREE.InstancedMesh(hintDashGeom, mat, arr.length);
+        arr.forEach((d, idx) => {
+          dummy.position.set(d.x, d.y, HINT_Z);
+          dummy.rotation.set(0, 0, d.ang);
+          dummy.scale.set(HINT_DASH, 1, 1);
+          dummy.updateMatrix();
+          inst.setMatrixAt(idx, dummy.matrix);
+        });
+        inst.instanceMatrix.needsUpdate = true;
+        hintGroup.add(inst);
+        hintObjects.push(inst);
+      });
+
+      crossings.forEach(c => {
+        const g = new THREE.Group();
+        g.position.set(c.x, c.y, HINT_Z + 0.03);
+        const ring = new THREE.Mesh(hintRingGeom, new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide }));
+        const core = new THREE.Mesh(hintCoreGeom, new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide }));
+        g.add(ring);
+        g.add(core);
+        hintGroup.add(g);
+        hintMarkers.push(g);
+      });
+
+      const cc = document.getElementById('hintCrossCount');
+      if (cc) cc.textContent = crossings.length;
+    }
+
+    function setHintsOn(on) {
+      hintsOn = on;
+      const btn = document.getElementById('btnHint');
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      ['bg-amber-100', 'border-amber-400', 'text-amber-700'].forEach(c => btn.classList.toggle(c, on));
+      ['bg-white', 'border-stone-200', 'text-stone-700'].forEach(c => btn.classList.toggle(c, !on));
+      document.getElementById('hintLegend').classList.toggle('hidden', !on);
+      if (on) {
+        refreshHints(true);
+      } else {
+        hintKey = '';
+        clearHints();
+      }
     }
 
     function create3DLineMesh(idxA, idxB, player) {
@@ -1322,6 +1565,8 @@
       if (badge) {
         badge.textContent = currentLayoutName;
       }
+
+      refreshHints();
     }
 
     function updateHUD() {
@@ -1612,6 +1857,11 @@
       }, durationMs);
     }
 
+    document.getElementById('btnHint').addEventListener('click', () => {
+      audio.init();
+      audio.playSelect();
+      setHintsOn(!hintsOn);
+    });
     document.getElementById('btnUndo').addEventListener('click', undoLastMove);
     document.getElementById('btnQuickRestart').addEventListener('click', () => restartLevel(true));
 
@@ -1804,6 +2054,12 @@
       camera.position.x += (targetCameraX - camera.position.x) * 0.05;
       camera.position.y += (targetCameraY - camera.position.y) * 0.05;
       camera.lookAt(0, 0, 0);
+
+      // Pulse contested-crossing markers
+      if (hintsOn && hintMarkers.length) {
+        const s = 1 + 0.12 * Math.sin(performance.now() * 0.005);
+        hintMarkers.forEach(m => m.scale.set(s, s, 1));
+      }
 
       // Subtle board idle motion
       boardGroup.rotation.z = Math.sin(performance.now() * 0.0003) * 0.015;
