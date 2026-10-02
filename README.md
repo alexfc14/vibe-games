@@ -22,7 +22,7 @@ Live links to play:
 * [Bridge Assault 🔫](https://alexfc14.github.io/vibe-games/bridge-assault/play.html)
 * [Room Escape 🚪](https://alexfc14.github.io/vibe-games/room-escape/play-dev.html)
 * [Line Cross 🎌](https://alexfc14.github.io/vibe-games/line-cross/play.html)
-* [Rectangle Packer 🔲◼️](https://alexfc14.github.io/vibe-games/rectangle-packer/play.html)
+* [Rectangle Packer 🔲◼️](https://alexfc14.github.io/vibe-games/rectangle-packer/play.html) | [Polyominoes 🗝️](https://alexfc14.github.io/vibe-games/rectangle-packer/polyominoes.html)
 
 
 
