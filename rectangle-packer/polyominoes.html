@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Cutlist – rectangle packing</title>
+<title>Polyomino – packing puzzle</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;800&display=swap">
 <style>
 :root{--bg:#dfe6e3;--ink:#1c2b2d;--panel:#cbd6d2;--accent:#c2410c;
@@ -38,7 +38,7 @@ p.help{margin:0;font-size:.9rem;opacity:.75}
 <body>
 <main>
   <header>
-    <h1>Cutlist</h1>
+    <h1>Polyomino</h1>
     <div class="lvl"><button id="lp" aria-label="Previous level">‹</button><input id="lv" type="number" min="1" max="999" value="1" aria-label="Level"><button id="ln" aria-label="Next level">›</button></div>
     <div class="stats"><span id="cnt"></span><span id="time">0:00</span><span id="best"></span><span id="dif" title="Difficulty"></span></div>
     <button id="reset">Reset</button><button id="snd" aria-pressed="false">Sound on</button>
@@ -102,7 +102,7 @@ const thumb=new T.Mesh(quad,mk(null,.3));thumb.position.z=30;scene.add(thumb);
 let level=1,W=5,H=5,cell=48,ps=16,bx=0,by=0,wide=true,pool={x:0,y:0,w:1,h:1},pieces=[],drag=null,won=false,t0=0,tick=null;
 let scrollT=0,poolScroll=0,maxScroll=0;
 const ptr={x:0,y:0};
-let best={};try{best=JSON.parse(localStorage.getItem('cutlist-best')||'{}');}catch(e){}
+let best={};try{best=JSON.parse(localStorage.getItem('polyomino-best')||'{}');}catch(e){}
 
 
 /*GEN-START*/
@@ -189,9 +189,9 @@ function levelSpec(level){
   const n=Math.max(4,Math.round(W*H/(6+.55*(side-5)-Math.min(2,Math.max(0,(level-12)*.06)))));
   return{W,H,n};
 }
-/* Same level number always gives the same puzzle: cut 48 seeded candidates and keep the one whose forgiveness is
+/* The original levels, unchanged (they now sit later in the sequence). Cut 48 seeded candidates and keep the one whose forgiveness is
    closest to the level's target (about 0.85 at level 1, near 0 by level 5), avoiding more than two straight pieces. */
-function makeLevel(level){
+function oldLevel(level){
   const sp=levelSpec(level),ft=Math.max(.02,.85-.2*(level-1)),c=(v,a,b)=>Math.max(a,Math.min(b,v));
   let best=null;
   for(let t=0;t<48;t++){
@@ -203,6 +203,53 @@ function makeLevel(level){
   }
   const n=best.ps.length,D=c(.5*c((n-4)/18,0,1)+.5*(1-best.forg),0,1);
   return{W:sp.W,H:sp.H,pieces:best.ps,info:{n,forg:best.forg,D,stars:c(Math.ceil(D*5),1,5)}};
+}
+
+/* ---- gentle on-ramp: small boards, pieces that are visibly not rectangles ----
+   [W, H, pieces, forgiveness target, min share of non-rectangular pieces, max size spread] */
+const RAMP=[[4,4,4,.9,1,.5],[5,4,4,.9,1,.6],[5,4,5,.85,1,.6],[5,5,5,.85,.8,.6],[5,5,6,.8,.8,.7],
+            [6,5,6,.75,.7,.7],[6,5,7,.7,.7,.8],[6,6,7,.65,.6,.8],[6,6,6,.6,.6,.9],[7,6,7,.55,.6,.9]];
+const ftOld=k=>Math.max(.02,.85-.2*(k-1));
+function designLevel(sp,seed){
+  const c=(v,a,b)=>Math.max(a,Math.min(b,v));
+  let best=null;
+  for(let t=0;t<48;t++){
+    const R=rngf(seed*7919+13+(t+1)*104729);
+    const ps=tile(sp.W,sp.H,sp.n,R),forg=forgive(ps,sp.W,sp.H,R),sz=ps.map(p=>p.cells.length),avg=sp.W*sp.H/ps.length;
+    const rects=ps.filter(p=>p.cells.length===p.w*p.h).length,okRect=Math.floor((1-sp.nonrect)*ps.length+1e-9);
+    const line=ps.filter(p=>Math.min(p.w,p.h)===1).length,spread=(Math.max(...sz)-Math.min(...sz))/avg;
+    const cost=Math.abs(forg-sp.ft)+2*Math.max(0,rects-okRect)+1.5*Math.max(0,spread-sp.spread)+(line>1?line-1:0)+3*Math.abs(ps.length-sp.n);
+    if(!best||cost<best.cost)best={cost,ps,forg};
+  }
+  const n=best.ps.length,D=c(.5*c((n-4)/18,0,1)+.5*(1-best.forg),0,1);
+  return{W:sp.W,H:sp.H,pieces:best.ps,info:{n,forg:best.forg,D,stars:c(Math.ceil(D*5),1,5)}};
+}
+/* Level order: the on-ramp with the original levels 2 and 3 woven in at matching difficulty (original level 1,
+   all rectangles, is retired), then each original level 4+ preceded by 'bridge' levels wherever the original
+   piece count jumps by 2 or more, so the climb stays gradual. */
+const SEQ=[];let seqK=0;
+function bridges(k){
+  const a=levelSpec(k),b=levelSpec(k+1),jump=b.n-a.n,nb=jump>=3?2:jump>=2?1:0;
+  for(let j=1;j<=nb;j++){
+    const f=j/(nb+1),m=(x,y)=>Math.round(x+(y-x)*f);
+    SEQ.push({kind:'bridge',k,j,W:m(a.W,b.W),H:m(a.H,b.H),n:m(a.n,b.n),ft:ftOld(k)+(ftOld(k+1)-ftOld(k))*f});
+  }
+}
+function seqTo(N){
+  if(!SEQ.length){
+    const r=i=>({kind:'ramp',i}),o=k=>({kind:'old',k});
+    SEQ.push(r(0),r(1),r(2),r(3),r(4),o(2),r(5),r(6),r(7),o(3),r(8),r(9));
+    bridges(3);seqK=3;
+  }
+  while(SEQ.length<N){seqK++;SEQ.push({kind:'old',k:seqK});bridges(seqK);}
+}
+function makeLevel(N){
+  seqTo(N);const e=SEQ[N-1];let L;
+  if(e.kind==='old')L=oldLevel(e.k);
+  else if(e.kind==='ramp'){const[W,H,n,ft,nonrect,spread]=RAMP[e.i];L=designLevel({W,H,n,ft,nonrect,spread},3000+e.i);}
+  else L=designLevel({W:e.W,H:e.H,n:e.n,ft:e.ft,nonrect:.5,spread:1.2},5000+e.k*10+e.j);
+  L.info.stars=Math.max(1,Math.min(5,1+Math.floor((N-1)/8)));   // rating follows position in the sequence
+  return L;
 }
 /*GEN-END*/
 
@@ -380,7 +427,7 @@ function showBest(){$('#best').textContent=best[level]!=null?'Best '+fmt(best[le
 function win(){
   won=true;clearInterval(tick);
   const s=Math.floor((Date.now()-t0)/1000);
-  if(best[level]==null||s<best[level]){best[level]=s;try{localStorage.setItem('cutlist-best',JSON.stringify(best));}catch(e){}}
+  if(best[level]==null||s<best[level]){best[level]=s;try{localStorage.setItem('polyomino-best',JSON.stringify(best));}catch(e){}}
   showBest();sfx.win();
   pieces.forEach((p,i)=>setTimeout(()=>{p.L.v+=7;},i*45));
   setTimeout(()=>{$('#winmsg').textContent='Level '+level+' done in '+fmt(s)+'.';$('#win').classList.add('show');$('#next').focus();},900+pieces.length*20);
