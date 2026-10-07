@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>Butterflip</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=Plus+Jakarta+Sans:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFF8EC; --ink:#2A2233; --mute:#6B6275; --card:#fff; --line:#EADFCB;
+  --accent:#7B3FE4; --accent2:#5A2BB8; --cell:#F1F8E4; --cell2:#DCEBB4;
+  --btn:#FFE9A8; --btn-h:#FFD76A;
+  --f0:#FFE08A; --f1:#FFC4D6; --f2:#A9E8DB;
+  --h0:rgba(255,190,40,.6); --h1:rgba(255,110,160,.5); --h2:rgba(40,190,160,.5);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:#1D1A26;--ink:#F6EFE2;--mute:#A99FB8;--card:#2A2536;--line:#3D364D;--cell:#2F3B2A;--cell2:#46593A;--btn:#4A3F6B;--btn-h:#6A58A0;--accent:#A98BFF;--accent2:#C9B6FF;--f0:#6B5A2E;--f1:#6B3F52;--f2:#2F5E57;--h0:rgba(255,200,80,.5);--h1:rgba(255,120,170,.45);--h2:rgba(60,210,180,.4)}
+}
+:root[data-theme="dark"]{--f0:#6B5A2E;--f1:#6B3F52;--f2:#2F5E57;--h0:rgba(255,200,80,.5);--h1:rgba(255,120,170,.45);--h2:rgba(60,210,180,.4);--bg:#1D1A26;--ink:#F6EFE2;--mute:#A99FB8;--card:#2A2536;--line:#3D364D;--cell:#2F3B2A;--cell2:#46593A;--btn:#4A3F6B;--btn-h:#6A58A0;--accent:#A98BFF;--accent2:#C9B6FF}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:14px;overflow:hidden;user-select:none;-webkit-tap-highlight-color:transparent;
+ background-image:radial-gradient(circle at 15% 20%,rgba(123,63,228,.08) 0 40px,transparent 41px),radial-gradient(circle at 85% 75%,rgba(79,163,59,.1) 0 60px,transparent 61px)}
+header{width:100%;max-width:440px;display:flex;justify-content:space-between;align-items:center}
+h1{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:26px;margin:0;color:var(--accent);letter-spacing:-.5px;line-height:1}
+h1 span{font-weight:600;color:var(--ink)}
+.stats{display:flex;gap:12px;font-weight:800;font-size:14px;text-align:right}
+.stats small{display:block;font-size:10px;color:var(--mute);text-transform:uppercase;letter-spacing:.08em}
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;min-height:0}
+.goal{font-size:13px;font-weight:700;color:var(--mute);text-align:center}
+#board{position:relative;background:var(--card);border:2px solid var(--line);border-radius:28px;box-shadow:0 10px 30px rgba(60,30,100,.12)}
+.hex{position:absolute;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);display:flex;align-items:center;justify-content:center}
+.cell{background:var(--cell);transition:background .2s;perspective:300px}
+.cell.cat{background:var(--cell2)}
+.cell i{font-style:normal;display:block;line-height:1}
+.cell i{animation:hover 3s ease-in-out infinite}
+.cell.cat i{animation:wiggle 2.4s ease-in-out infinite}
+.cell.flip i,.cell.cat.flip i{animation:flip .38s ease-in-out}
+@keyframes flip{0%{transform:rotateY(0) scale(1)}50%{transform:rotateY(90deg) scale(1.15)}100%{transform:rotateY(0) scale(1)}}
+@keyframes wiggle{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+@keyframes hover{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.op{border:0;padding:0;background:var(--btn);color:var(--accent2);font-weight:900;cursor:pointer;transition:background .15s;font-family:inherit}
+.op span{display:block;line-height:1;transition:scale .1s}
+.op.f0{background:var(--f0)}.op.f1{background:var(--f1)}.op.f2{background:var(--f2)}
+.op:hover,.op:focus-visible{filter:brightness(1.12) saturate(1.2);outline:none}
+.cell.hl{background-image:linear-gradient(var(--hlc),var(--hlc))}
+.cell.hl i{transform:scale(1.12)}
+.op:active span{scale:.75}
+.op span{font-size:1.25em}
+#toolbar{display:flex;gap:10px;margin-bottom:6px}
+.tb{width:48px;height:48px;border-radius:50%;border:2px solid var(--line);background:var(--card);color:var(--accent);font-size:20px;cursor:pointer;font-weight:800;transition:transform .1s}
+.tb:focus-visible,.pill:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.tb:active{transform:scale(.9)}
+.tb:disabled{opacity:.35;pointer-events:none}
+.overlay{position:fixed;inset:0;background:rgba(30,15,50,.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+.overlay.on{display:flex}
+.modal{background:var(--card);border:2px solid var(--line);border-radius:28px;padding:26px;width:100%;max-width:340px;text-align:center}
+.modal h2{font-family:'Fraunces',serif;font-weight:900;color:var(--accent);margin:6px 0 4px;font-size:28px}
+.modal p{color:var(--mute);font-size:13px;font-weight:600;margin:4px 0 14px}
+.big{font-size:52px}
+.pill{width:100%;padding:13px;border-radius:999px;border:0;background:var(--accent);color:#fff;font-weight:800;font-family:inherit;font-size:14px;cursor:pointer;margin-top:8px;text-transform:uppercase;letter-spacing:.06em}
+.pill.alt{background:var(--btn);color:var(--accent2)}
+.sizes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.sizes button{padding:10px 0;border-radius:14px;border:2px solid var(--line);background:var(--card);color:var(--ink);font-weight:800;font-family:inherit;cursor:pointer;line-height:1.2}
+.sizes button small{display:block;font-size:10px;opacity:.7}
+.sizes button.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
+.vstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.vstats div{background:var(--cell);border-radius:14px;padding:8px;font-weight:900;font-size:18px}
+.vstats small{display:block;font-size:9px;color:var(--mute);letter-spacing:.08em;text-transform:uppercase}
+.fly{position:fixed;font-size:28px;pointer-events:none;z-index:20;animation:fly 2.2s ease-out forwards}
+@keyframes fly{to{transform:translate(var(--dx),-110vh) rotate(var(--r));opacity:0}}
+@media (prefers-reduced-motion:reduce){.cell i,.fly{animation:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🦋 Butter<span>flip</span></h1>
+  <div class="stats">
+    <div><small>Moves</small><span id="moves">0</span></div>
+    <div><small>Time</small><span id="time">00:00</span></div>
+  </div>
+</header>
+
+<main>
+  <div class="goal">Turn every 🐛 into a 🦋 · Size <b id="size"></b> · Par <b id="par">0</b></div>
+  <div id="board" aria-label="Game board"></div>
+  <div class="goal">Arrows point along the line they flip · hover or hold one to preview it</div>
+</main>
+
+<div id="toolbar">
+  <button class="tb" id="undo" title="Undo" aria-label="Undo" disabled>↩</button>
+  <button class="tb" id="pause" title="Pause" aria-label="Pause">⏸</button>
+  <button class="tb" id="shuffle" title="New puzzle" aria-label="New puzzle">🔀</button>
+  <button class="tb" id="snd" title="Sound" aria-label="Toggle sound">🔊</button>
+  <button class="tb" id="cfg" title="Settings" aria-label="Settings">⚙</button>
+</div>
+
+<div class="overlay" id="mPause"><div class="modal"><div class="big">🍃</div><h2>Paused</h2><p>The caterpillars are taking a nap.</p><button class="pill" id="resume">Resume</button></div></div>
+
+<div class="overlay" id="mCfg"><div class="modal"><h2>Settings</h2><p>Board size (hexagon side length)</p>
+  <div class="sizes" id="sizes"></div>
+  <p style="text-align:left">Cells form a hexagon, so every cell sits on three lines. Each arrow flips every cell along its line: 🐛 ↔ 🦋. Order doesn't matter, and pressing a button twice cancels out. Beat <b>par</b> for three stars!</p>
+  <button class="pill" id="cfgOk">Start</button></div></div>
+
+<div class="overlay" id="mWin"><div class="modal"><div class="big">🦋</div><h2>Metamorphosis!</h2><div id="stars" style="font-size:34px;letter-spacing:4px"></div><p id="winMsg"></p>
+  <div class="vstats"><div><small>Par</small><span id="wPar"></span></div><div><small>Moves</small><span id="wMoves"></span></div><div><small>Time</small><span id="wTime"></span></div></div>
+  <button class="pill alt" id="again">Play again</button><button class="pill" id="reshuffle">Shuffle board</button><button class="pill" id="bigger">Bigger board</button></div></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/*PURE*/
+const hexDist=(a,b)=>{const dq=a[0]-b[0],dr=a[1]-b[1];return Math.max(Math.abs(dq),Math.abs(dr),Math.abs(dq+dr))};
+
+// Hexagonal board of side n, axial coords (q,r). Lines run along rows (r const),
+// one diagonal (q const) and the other diagonal (q+r const).
+// Each line gets a button on the outer ring (rows->left, q-lines->bottom/lower-right,
+// the other diagonals->top/upper-right); the 3 full diameters also get one at the opposite
+// corner, which fills the ring completely (6n slots) with no two buttons sharing a slot.
+function geom(n){
+  const cells=[];
+  for(let q=-(n-1);q<=n-1;q++)for(let r=-(n-1);r<=n-1;r++)if(Math.abs(q+r)<=n-1)cells.push([q,r]);
+  const lines=[];
+  const add=(pred,slotFn,ang,fam)=>{
+    const ids=[];cells.forEach((c,i)=>{if(pred(c))ids.push(i)});
+    const slot=slotFn(ids.map(i=>cells[i]));
+    ids.sort((a,b)=>hexDist(cells[a],slot)-hexDist(cells[b],slot));
+    const ln={cells:ids,slot,ang,fam};
+    // the three full diameters get a second button at the opposite corner
+    if(ids.length===2*n-1){ln.slot2=[-slot[0],-slot[1]];ln.ang2=(ang+180)%360}
+    lines.push(ln);
+  };
+  for(let k=-(n-1);k<=n-1;k++){
+    add(c=>c[1]===k,cs=>{const q=Math.min(...cs.map(c=>c[0]));return [q-1,k]},0,0);
+    add(c=>c[0]===k,cs=>{const r=Math.max(...cs.map(c=>c[1]));return [k,r+1]},240,1);
+    add(c=>c[0]+c[1]===k,cs=>{const m=cs.reduce((a,c)=>c[0]>a[0]?c:a);return [m[0]+1,m[1]-1]},120,2);
+  }
+  return {cells,lines,kernel:kernelBasis(cells.length,lines)};
+}
+
+// Line-press sets that change nothing, so every board has several equivalent solutions.
+function kernelBasis(nc,lines){
+  const m=lines.length;
+  const A=lines.map((l,i)=>{const v=new Uint8Array(nc),t=new Uint8Array(m);l.cells.forEach(x=>v[x]=1);t[i]=1;return [v,t]});
+  let rank=0;
+  for(let c=0;c<nc&&rank<m;c++){
+    let p=-1;for(let i=rank;i<m;i++)if(A[i][0][c]){p=i;break}
+    if(p<0)continue;
+    [A[rank],A[p]]=[A[p],A[rank]];
+    for(let i=0;i<m;i++)if(i!==rank&&A[i][0][c]){for(let j=0;j<nc;j++)A[i][0][j]^=A[rank][0][j];for(let j=0;j<m;j++)A[i][1][j]^=A[rank][1][j]}
+    rank++;
+  }
+  return A.slice(rank).map(r=>r[1]);
+}
+
+// Cheapest press set that clears a board made by pressing x0 (parity per line).
+function minPar(x0,kernel){
+  let best=Infinity;
+  for(let mask=0;mask<(1<<kernel.length);mask++){
+    let w=0;
+    for(let i=0;i<x0.length;i++){
+      let b=x0[i];
+      for(let k=0;k<kernel.length;k++)if(mask>>k&1)b^=kernel[k][i];
+      w+=b;
+    }
+    best=Math.min(best,w);
+  }
+  return best;
+}
+/*ENDPURE*/
+
+let N=Math.min(8,Math.max(3,store.get('bf_hex',3))), soundOn=true;
+let G=null, state=[], startState=null, hist=[], moves=0, par=0, secs=0, timer=null, paused=false, won=false, busy=false;
+
+/* ---------- sound ---------- */
+let actx=null;
+function tone(f,d=.12,type='sine',v=.08,delay=0){
+  if(!soundOn)return;
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state==='suspended')actx.resume();
+    const t=actx.currentTime+delay,o=actx.createOscillator(),g=actx.createGain();
+    o.type=type;o.frequency.setValueAtTime(f,t);
+    g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
+    o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+d);
+  }catch(e){}
+}
+const popSound=()=>tone(380+Math.random()*80,.1,'triangle');
+const winSound=()=>[523,659,784,1047,1319].forEach((f,i)=>tone(f,.4,'triangle',.08,i*.1));
+
+/* ---------- game logic ---------- */
+const cats=()=>state.reduce((a,b)=>a+b,0);
+const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+function resetState(){won=false;hist=[];moves=0;secs=0;paused=false;busy=false;clearInterval(timer);timer=null}
+
+function newPuzzle(){
+  resetState();
+  G=geom(N);
+  const L=G.lines.length,floor=Math.ceil(L*.4);
+  let x0;
+  do{
+    state=Array(G.cells.length).fill(0);x0=Array(L).fill(0);
+    const ops=L*5+Math.floor(Math.random()*L*3);
+    for(let t=0;t<ops;t++){
+      const li=Math.floor(Math.random()*L);
+      x0[li]^=1;G.lines[li].cells.forEach(c=>state[c]^=1);
+    }
+    par=minPar(x0,G.kernel);
+  }while(cats()===0||par<floor);
+  startState=state.slice();
+  render();updateHud();
+}
+function replay(){resetState();state=startState.slice();render();updateHud()}
+
+function toggle(li){
+  G.lines[li].cells.forEach((c,j)=>{
+    state[c]^=1;
+    const el=$('c'+c);
+    el.classList.remove('flip');void el.offsetWidth;el.classList.add('flip');
+    setTimeout(()=>paint(c),j*45+140);
+  });
+}
+function press(li){
+  if(paused||won||busy)return;
+  if(!timer)timer=setInterval(()=>{if(!paused){secs++;$('time').textContent=fmt(secs)}},1000);
+  toggle(li);hist.push(li);moves++;popSound();updateHud();
+  if(cats()===0){won=true;busy=true;setTimeout(()=>{busy=false;victory()},G.lines[li].cells.length*45+450)}
+}
+function undo(){
+  if(!hist.length||paused||won)return;
+  toggle(hist.pop());moves=Math.max(0,moves-1);tone(300,.1,'triangle');updateHud();
+}
+
+/* ---------- rendering ---------- */
+function paint(i){
+  const el=$('c'+i);if(!el)return;
+  el.classList.toggle('cat',!!state[i]);
+  el.firstChild.textContent=state[i]?'🐛':'🦋';
+}
+function render(){
+  const b=$('board');b.innerHTML='';
+  const n=N,pad=12;
+  const aw=Math.min(window.innerWidth-40,600)-2*pad, ah=window.innerHeight*.56-2*pad;
+  const w=Math.max(14,Math.min(64,aw/(2*n+1),ah/(1.7321*n+1.1547)));
+  const hw=w*.94,hh=hw*1.1547;
+  const W=(2*n+1)*w+2*pad,H=(1.7321*n+1.1547)*w+2*pad;
+  b.style.width=W+'px';b.style.height=H+'px';
+  const place=(el,[q,r],s=1)=>{
+    const x=W/2+w*(q+r/2),y=H/2+.866*w*r,ww=hw*s,h2=hh*s;
+    el.style.width=ww+'px';el.style.height=h2+'px';el.style.left=(x-ww/2)+'px';el.style.top=(y-h2/2)+'px';
+  };
+  G.cells.forEach((c,i)=>{
+    const d=document.createElement('div');d.className='hex cell';d.id='c'+i;d.style.fontSize=(w*.5)+'px';
+    d.appendChild(document.createElement('i'));place(d,c);b.appendChild(d);paint(i);
+  });
+  const hl=(li,on)=>G.lines[li].cells.forEach(c=>{
+    const el=$('c'+c);if(!el)return;
+    el.classList.toggle('hl',on);
+    if(on)el.style.setProperty('--hlc','var(--h'+G.lines[li].fam+')');
+  });
+  G.lines.forEach((l,li)=>{
+    [[l.slot,l.ang],l.slot2&&[l.slot2,l.ang2]].filter(Boolean).forEach(([slot,ang])=>{
+      const btn=document.createElement('button');btn.className='hex op f'+l.fam;
+      btn.style.fontSize=(w*.4)+'px';
+      btn.setAttribute('aria-label','Flip line '+(li+1));
+      const sp=document.createElement('span');sp.textContent='▶';sp.style.rotate=ang+'deg';btn.appendChild(sp);
+      btn.onclick=()=>press(li);
+      // preview which cells this arrow will flip
+      btn.onpointerenter=btn.onpointerdown=btn.onfocus=()=>hl(li,true);
+      btn.onpointerleave=btn.onblur=()=>hl(li,false);
+      btn.onpointerup=btn.onpointercancel=e=>{if(e.pointerType!=='mouse')setTimeout(()=>hl(li,false),300)};
+      place(btn,slot,.88);b.appendChild(btn);
+    });
+  });
+}
+function updateHud(){
+  $('moves').textContent=moves;$('time').textContent=fmt(secs);
+  $('size').textContent=N;$('par').textContent=par;$('undo').disabled=!hist.length;
+}
+
+/* ---------- victory ---------- */
+function victory(){
+  clearInterval(timer);timer=null;winSound();
+  $('wPar').textContent=par;$('wMoves').textContent=moves;$('wTime').textContent=fmt(secs);
+  const st=moves<=par?3:moves<=Math.ceil(par*1.5)?2:1;
+  $('stars').textContent='★'.repeat(st)+'☆'.repeat(3-st);
+  $('winMsg').textContent=st===3?'Perfect! You matched par.':'Par is '+par+'. Three stars means matching it.';
+  $('again').style.display=st<3?'':'none';
+  $('bigger').style.display=N<8?'':'none';
+  $('mWin').classList.add('on');
+  for(let i=0;i<24;i++){
+    const f=document.createElement('div');f.className='fly';f.textContent='🦋';
+    f.style.left=Math.random()*100+'vw';f.style.top='100vh';
+    f.style.setProperty('--dx',(Math.random()*160-80)+'px');f.style.setProperty('--r',(Math.random()*60-30)+'deg');
+    f.style.animationDelay=Math.random()*.8+'s';document.body.appendChild(f);setTimeout(()=>f.remove(),3200);
+  }
+}
+
+/* ---------- UI wiring ---------- */
+function buildSizes(){
+  const w=$('sizes');w.innerHTML='';
+  [3,4,5,6,7,8].forEach(n=>{
+    const b=document.createElement('button');b.innerHTML=n+'<small>'+(3*n*n-3*n+1)+' cells</small>';b.className=n===N?'sel':'';
+    b.onclick=()=>{N=n;buildSizes()};w.appendChild(b);
+  });
+}
+function setPaused(p){paused=p;$('mPause').classList.toggle('on',p)}
+
+$('undo').onclick=undo;
+$('pause').onclick=()=>setPaused(true);
+$('resume').onclick=()=>setPaused(false);
+$('shuffle').onclick=newPuzzle;
+$('snd').onclick=e=>{soundOn=!soundOn;e.currentTarget.textContent=soundOn?'🔊':'🔇'};
+$('cfg').onclick=()=>{buildSizes();setPaused(true);$('mPause').classList.remove('on');$('mCfg').classList.add('on')};
+$('cfgOk').onclick=()=>{store.set('bf_hex',N);$('mCfg').classList.remove('on');newPuzzle()};
+$('again').onclick=()=>{$('mWin').classList.remove('on');replay()};
+$('reshuffle').onclick=()=>{$('mWin').classList.remove('on');newPuzzle()};
+$('bigger').onclick=()=>{N=Math.min(8,N+1);store.set('bf_hex',N);$('mWin').classList.remove('on');newPuzzle()};
+addEventListener('resize',()=>{if(G)render()});
+addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='z')undo()});
+
+newPuzzle();
+</script>
+</body>
+</html>
