@@ -30,25 +30,24 @@ h1 span{font-weight:600;color:var(--ink)}
 .stats small{display:block;font-size:10px;color:var(--mute);text-transform:uppercase;letter-spacing:.08em}
 main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;min-height:0}
 .goal{font-size:13px;font-weight:700;color:var(--mute);text-align:center}
-#board{position:relative;background:var(--card);border:2px solid var(--line);border-radius:28px;box-shadow:0 10px 30px rgba(60,30,100,.12)}
+#board{touch-action:none;position:relative;background:var(--card);border:2px solid var(--line);border-radius:28px;box-shadow:0 10px 30px rgba(60,30,100,.12)}
 .hex{position:absolute;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);display:flex;align-items:center;justify-content:center}
 .cell{background:var(--cell);transition:background .2s;perspective:300px}
 .cell.cat{background:var(--cell2)}
-.cell i{font-style:normal;display:block;line-height:1}
+.cell{cursor:pointer}
+.cell i{font-style:normal;display:block;line-height:1;transition:scale .12s}
+.cell.hl{background-image:linear-gradient(var(--hlc),var(--hlc))}
+.cell.hl i{scale:1.1}
+.cell.hot{background-image:linear-gradient(var(--hlc),var(--hlc)),linear-gradient(var(--hlc),var(--hlc))}
+.cell.hot i{scale:1.22}
+.cell.origin{background-image:linear-gradient(var(--accent),var(--accent))}
+.cell.origin i{scale:1.25}
 .cell i{animation:hover 3s ease-in-out infinite}
 .cell.cat i{animation:wiggle 2.4s ease-in-out infinite}
 .cell.flip i,.cell.cat.flip i{animation:flip .38s ease-in-out}
 @keyframes flip{0%{transform:rotateY(0) scale(1)}50%{transform:rotateY(90deg) scale(1.15)}100%{transform:rotateY(0) scale(1)}}
 @keyframes wiggle{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
 @keyframes hover{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-.op{border:0;padding:0;background:var(--btn);color:var(--accent2);font-weight:900;cursor:pointer;transition:background .15s;font-family:inherit}
-.op span{display:block;line-height:1;transition:scale .1s}
-.op.f0{background:var(--f0)}.op.f1{background:var(--f1)}.op.f2{background:var(--f2)}
-.op:hover,.op:focus-visible{filter:brightness(1.12) saturate(1.2);outline:none}
-.cell.hl{background-image:linear-gradient(var(--hlc),var(--hlc))}
-.cell.hl i{transform:scale(1.12)}
-.op:active span{scale:.75}
-.op span{font-size:1.25em}
 #toolbar{display:flex;gap:10px;margin-bottom:6px}
 .tb{width:48px;height:48px;border-radius:50%;border:2px solid var(--line);background:var(--card);color:var(--accent);font-size:20px;cursor:pointer;font-weight:800;transition:transform .1s}
 .tb:focus-visible,.pill:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
@@ -86,7 +85,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 <main>
   <div class="goal">Turn every 🐛 into a 🦋 · Size <b id="size"></b> · Par <b id="par">0</b></div>
   <div id="board" aria-label="Game board"></div>
-  <div class="goal">Arrows point along the line they flip · hover or hold one to preview it</div>
+  <div class="goal" id="hint"></div>
 </main>
 
 <div id="toolbar">
@@ -101,7 +100,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 
 <div class="overlay" id="mCfg"><div class="modal"><h2>Settings</h2><p>Board size (hexagon side length)</p>
   <div class="sizes" id="sizes"></div>
-  <p style="text-align:left">Cells form a hexagon, so every cell sits on three lines. Each arrow flips every cell along its line: 🐛 ↔ 🦋. Order doesn't matter, and pressing a button twice cancels out. Beat <b>par</b> for three stars!</p>
+  <p style="text-align:left">Tap a cell to light up its three lines, then tap any cell on one of them to flip that whole line (🐛 ↔ 🦋). You can also drag from a cell along a line and release. Order doesn't matter, and flipping a line twice cancels out. Beat <b>par</b> for three stars!</p>
   <button class="pill" id="cfgOk">Start</button></div></div>
 
 <div class="overlay" id="mWin"><div class="modal"><div class="big">🦋</div><h2>Metamorphosis!</h2><div id="stars" style="font-size:34px;letter-spacing:4px"></div><p id="winMsg"></p>
@@ -115,11 +114,9 @@ const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON
 /*PURE*/
 const hexDist=(a,b)=>{const dq=a[0]-b[0],dr=a[1]-b[1];return Math.max(Math.abs(dq),Math.abs(dr),Math.abs(dq+dr))};
 
-// Hexagonal board of side n, axial coords (q,r). Lines run along rows (r const),
-// one diagonal (q const) and the other diagonal (q+r const).
-// Each line gets a button on the outer ring (rows->left, q-lines->bottom/lower-right,
-// the other diagonals->top/upper-right); the 3 full diameters also get one at the opposite
-// corner, which fills the ring completely (6n slots) with no two buttons sharing a slot.
+// Hexagonal board of side n, axial coords (q,r). Lines run along rows (r const, family 0),
+// one diagonal (q const, family 1) and the other diagonal (q+r const, family 2).
+// cellLines[c][f] is the line of family f through cell c.
 function geom(n){
   const cells=[];
   for(let q=-(n-1);q<=n-1;q++)for(let r=-(n-1);r<=n-1;r++)if(Math.abs(q+r)<=n-1)cells.push([q,r]);
@@ -138,7 +135,9 @@ function geom(n){
     add(c=>c[0]===k,cs=>{const r=Math.max(...cs.map(c=>c[1]));return [k,r+1]},240,1);
     add(c=>c[0]+c[1]===k,cs=>{const m=cs.reduce((a,c)=>c[0]>a[0]?c:a);return [m[0]+1,m[1]-1]},120,2);
   }
-  return {cells,lines,kernel:kernelBasis(cells.length,lines)};
+  const cellLines=cells.map(()=>[0,0,0]);
+  lines.forEach((l,li)=>l.cells.forEach(c=>{cellLines[c][l.fam]=li}));
+  return {cells,lines,kernel:kernelBasis(cells.length,lines),cellLines};
 }
 
 // Line-press sets that change nothing, so every board has several equivalent solutions.
@@ -215,23 +214,24 @@ function newPuzzle(){
 }
 function replay(){resetState();state=startState.slice();render();updateHud()}
 
-function toggle(li){
+function toggle(li,from=null){
   G.lines[li].cells.forEach((c,j)=>{
     state[c]^=1;
     const el=$('c'+c);
     el.classList.remove('flip');void el.offsetWidth;el.classList.add('flip');
-    setTimeout(()=>paint(c),j*45+140);
+    const dist=from===null?j:hexDist(G.cells[c],G.cells[from]);
+    setTimeout(()=>paint(c),dist*45+140);
   });
 }
-function press(li){
+function press(li,from=null){
   if(paused||won||busy)return;
   if(!timer)timer=setInterval(()=>{if(!paused){secs++;$('time').textContent=fmt(secs)}},1000);
-  toggle(li);hist.push(li);moves++;popSound();updateHud();
+  toggle(li,from);hist.push(li);moves++;popSound();updateHud();
   if(cats()===0){won=true;busy=true;setTimeout(()=>{busy=false;victory()},G.lines[li].cells.length*45+450)}
 }
 function undo(){
   if(!hist.length||paused||won)return;
-  toggle(hist.pop());moves=Math.max(0,moves-1);tone(300,.1,'triangle');updateHud();
+  clearSel();toggle(hist.pop());moves=Math.max(0,moves-1);tone(300,.1,'triangle');updateHud();
 }
 
 /* ---------- rendering ---------- */
@@ -240,41 +240,24 @@ function paint(i){
   el.classList.toggle('cat',!!state[i]);
   el.firstChild.textContent=state[i]?'🐛':'🦋';
 }
+let curW=40;
 function render(){
+  sel=null;drag=null;
   const b=$('board');b.innerHTML='';
   const n=N,pad=12;
-  const aw=Math.min(window.innerWidth-40,600)-2*pad, ah=window.innerHeight*.56-2*pad;
-  const w=Math.max(14,Math.min(64,aw/(2*n+1),ah/(1.7321*n+1.1547)));
-  const hw=w*.94,hh=hw*1.1547;
-  const W=(2*n+1)*w+2*pad,H=(1.7321*n+1.1547)*w+2*pad;
+  const aw=Math.min(window.innerWidth-40,640)-2*pad, ah=window.innerHeight*.58-2*pad;
+  const w=curW=Math.max(18,Math.min(78,aw/(2*n-1),ah/(1.7321*(n-1)+1.1547)));
+  const hw=w*.95,hh=hw*1.1547;
+  const W=(2*n-1)*w+2*pad,H=(1.7321*(n-1)+1.1547)*w+2*pad;
   b.style.width=W+'px';b.style.height=H+'px';
-  const place=(el,[q,r],s=1)=>{
-    const x=W/2+w*(q+r/2),y=H/2+.866*w*r,ww=hw*s,h2=hh*s;
-    el.style.width=ww+'px';el.style.height=h2+'px';el.style.left=(x-ww/2)+'px';el.style.top=(y-h2/2)+'px';
-  };
-  G.cells.forEach((c,i)=>{
-    const d=document.createElement('div');d.className='hex cell';d.id='c'+i;d.style.fontSize=(w*.5)+'px';
-    d.appendChild(document.createElement('i'));place(d,c);b.appendChild(d);paint(i);
+  G.cells.forEach(([q,r],i)=>{
+    const d=document.createElement('div');d.className='hex cell';d.id='c'+i;d.style.fontSize=(w*.52)+'px';
+    d.appendChild(document.createElement('i'));
+    d.style.width=hw+'px';d.style.height=hh+'px';
+    d.style.left=(W/2+w*(q+r/2)-hw/2)+'px';d.style.top=(H/2+.866*w*r-hh/2)+'px';
+    b.appendChild(d);paint(i);
   });
-  const hl=(li,on)=>G.lines[li].cells.forEach(c=>{
-    const el=$('c'+c);if(!el)return;
-    el.classList.toggle('hl',on);
-    if(on)el.style.setProperty('--hlc','var(--h'+G.lines[li].fam+')');
-  });
-  G.lines.forEach((l,li)=>{
-    [[l.slot,l.ang],l.slot2&&[l.slot2,l.ang2]].filter(Boolean).forEach(([slot,ang])=>{
-      const btn=document.createElement('button');btn.className='hex op f'+l.fam;
-      btn.style.fontSize=(w*.4)+'px';
-      btn.setAttribute('aria-label','Flip line '+(li+1));
-      const sp=document.createElement('span');sp.textContent='▶';sp.style.rotate=ang+'deg';btn.appendChild(sp);
-      btn.onclick=()=>press(li);
-      // preview which cells this arrow will flip
-      btn.onpointerenter=btn.onpointerdown=btn.onfocus=()=>hl(li,true);
-      btn.onpointerleave=btn.onblur=()=>hl(li,false);
-      btn.onpointerup=btn.onpointercancel=e=>{if(e.pointerType!=='mouse')setTimeout(()=>hl(li,false),300)};
-      place(btn,slot,.88);b.appendChild(btn);
-    });
-  });
+  setHint(HINT_IDLE);
 }
 function updateHud(){
   $('moves').textContent=moves;$('time').textContent=fmt(secs);
@@ -298,6 +281,72 @@ function victory(){
     f.style.animationDelay=Math.random()*.8+'s';document.body.appendChild(f);setTimeout(()=>f.remove(),3200);
   }
 }
+
+/* ---------- interaction: tap-a-cell-then-a-line, or drag along a line ---------- */
+let sel=null, drag=null, hoverFam=null;
+const HINT_IDLE='Tap a cell, then tap a highlighted line · or drag from a cell along a line';
+const setHint=t=>{$('hint').textContent=t};
+const famBetween=(a,b)=>{if(a===b)return null;for(let f=0;f<3;f++)if(G.cellLines[a][f]===G.cellLines[b][f])return f;return null};
+function clearHl(){document.querySelectorAll('#board .hl,#board .origin,#board .hot').forEach(e=>e.classList.remove('hl','origin','hot'))}
+// Light up the lines through cell c. only: show just that family. hot: emphasise one family.
+function showLines(c,{only=null,hot=null}={}){
+  clearHl();$('c'+c).classList.add('origin');
+  for(let f=0;f<3;f++){
+    if(only!==null&&f!==only)continue;
+    G.lines[G.cellLines[c][f]].cells.forEach(x=>{
+      if(x===c)return;
+      const e=$('c'+x);e.classList.add('hl');
+      if(f===hot||only!==null)e.classList.add('hot');
+      e.style.setProperty('--hlc','var(--h'+f+')');
+    });
+  }
+}
+function clearSel(){sel=null;drag=null;hoverFam=null;clearHl();setHint(HINT_IDLE)}
+function tap(c){
+  if(sel===null){sel=c;hoverFam=null;showLines(c);setHint('Tap any cell on a highlighted line to flip it · tap the purple cell to cancel');return}
+  if(c===sel){clearSel();return}
+  const f=famBetween(sel,c);
+  if(f===null){sel=c;hoverFam=null;showLines(c);return}   // off the lines: pick a new cell
+  const li=G.cellLines[sel][f];
+  clearSel();press(li,c);
+}
+const board=$('board');
+const cellOf=e=>{const t=e.target.closest&&e.target.closest('.cell');return t?+t.id.slice(1):null};
+board.addEventListener('pointerdown',e=>{
+  if(paused||won||busy)return;
+  const c=cellOf(e);if(c===null)return;
+  e.preventDefault();
+  try{board.setPointerCapture(e.pointerId)}catch(_){}
+  drag={c,x:e.clientX,y:e.clientY,fam:null,moved:false};
+});
+board.addEventListener('pointermove',e=>{
+  if(!drag){
+    // desktop hover: emphasise the line a click would flip
+    if(sel!==null&&e.pointerType==='mouse'){
+      const c=cellOf(e),f=c===null?null:famBetween(sel,c);
+      if(f!==hoverFam){hoverFam=f;showLines(sel,{hot:f})}
+    }
+    return;
+  }
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y,d=Math.hypot(dx,dy),thr=Math.max(12,curW*.4);
+  if(d<thr*(drag.moved?.6:1)){
+    if(drag.moved&&drag.fam!==null){drag.fam=null;clearHl();$('c'+drag.c).classList.add('origin');setHint('Drag along a line · release to flip it')}
+    return;
+  }
+  if(!drag.moved){drag.moved=true;sel=null;hoverFam=null}
+  let a=Math.atan2(dy,dx)*180/Math.PI;a=((a%180)+180)%180;
+  // row axis = 0°, the two diagonals = 60° and 120°
+  const f=(a<30||a>=150)?0:a<90?1:2;
+  if(f!==drag.fam){drag.fam=f;showLines(drag.c,{only:f});setHint('Release to flip this line · drag back to cancel')}
+});
+board.addEventListener('pointerup',e=>{
+  if(!drag)return;
+  const d=drag;drag=null;
+  if(d.moved){clearSel();if(d.fam!==null)press(G.cellLines[d.c][d.fam],d.c);return}
+  tap(d.c);
+});
+board.addEventListener('pointercancel',()=>{if(drag)clearSel()});
+board.addEventListener('pointerleave',e=>{if(!drag&&sel!==null&&hoverFam!==null){hoverFam=null;showLines(sel)}});
 
 /* ---------- UI wiring ---------- */
 function buildSizes(){
