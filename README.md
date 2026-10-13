@@ -24,6 +24,8 @@ Live links to play:
 * [Line Cross 🎌](https://alexfc14.github.io/vibe-games/line-cross/play.html)
 * [Rectangle Packer 🔲◼️](https://alexfc14.github.io/vibe-games/rectangle-packer/play.html) | [Polyominoes 🗝️](https://alexfc14.github.io/vibe-games/rectangle-packer/polyominoes.html)
 * [Butterflip Hex  🐛🦋](https://alexfc14.github.io/vibe-games/butterflip/hex.html)
+* [Structo 🏗️](https://alexfc14.github.io/vibe-games/structo/play.html)
+
 
 
 
