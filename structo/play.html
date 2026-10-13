@@ -1,1 +1,928 @@
-placeholder
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Topology Carver</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Layout: a side panel for levels, brush and views, and a full-bleed stage with the HUD floating over it.
+     On phones the panel drops below the stage. */
+  :root {
+    --ink: #0b1219;
+    --panel: #101a23;
+    --panel-2: #172430;
+    --line: #26353f;
+    --fg: #dbe6ee;
+    --muted: #8196a6;
+    --accent: #f2c14e;
+    --accent-fg: #1a1405;
+    --good: #5fd0a0;
+    --warn: #f0a23c;
+    --bad: #ee5d4c;
+    --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+    --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body {
+    background: var(--ink);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 14px;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  [hidden] { display: none !important; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  #app { height: 100%; display: grid; grid-template-columns: 276px minmax(0, 1fr); }
+
+  /* Panel */
+  #panel {
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    padding: 18px 16px;
+    display: flex; flex-direction: column; gap: 20px;
+    overflow-y: auto; min-width: 0;
+  }
+  #panel h1 {
+    margin: 0; font-family: var(--font-display); font-weight: 700;
+    font-size: 30px; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1;
+  }
+  #panel .tag { margin: 6px 0 0; color: var(--muted); line-height: 1.4; }
+  .sec { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .sec h2 {
+    margin: 0; font-family: var(--font-mono); font-weight: 500; font-size: 11px;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+  }
+
+  #levels { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .lvl {
+    width: 100%; display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center;
+    text-align: left; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 7px 8px;
+  }
+  .lvl:hover { background: var(--panel-2); }
+  .lvl[aria-current="true"] { background: var(--panel-2); border-color: var(--line); }
+  .lvl .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+  .lvl[aria-current="true"] .n { color: var(--accent); }
+  .lvl b { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lvl small { display: block; color: var(--muted); font-size: 12px; line-height: 1.3; }
+  .lvl .s { text-align: right; font-family: var(--font-mono); font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .lvl .s em { font-style: normal; display: block; }
+  .lvl .s em.done { color: var(--good); }
+
+  .brush { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+  .brush output { font-family: var(--font-mono); font-size: 13px; color: var(--accent); min-width: 3.6em; text-align: right; }
+  input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
+
+
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px;
+    display: inline-flex; align-items: center; gap: 6px; font-weight: 500;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--muted); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
+  .btn.primary:hover:not(:disabled) { filter: brightness(1.07); border-color: var(--accent); }
+  #submit { width: 100%; justify-content: center; padding: 11px 12px; }
+  .hint { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+  .grow { flex: 1; }
+
+  /* Stage */
+  #stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+  #stage canvas { position: absolute; inset: 0; touch-action: none; cursor: crosshair; display: block; }
+
+  #hud { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; pointer-events: none; }
+  .hud-block { background: rgba(16, 26, 35, 0.88); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 0; }
+  .hud-block .label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .hud-block .sub { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+  .hud-block .sub b { color: var(--fg); font-weight: 500; }
+  #lvlname { font-family: var(--font-display); font-weight: 600; font-size: 22px; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.1; }
+  .spacer { flex: 1 1 0; }
+  .big { font-family: var(--font-mono); font-weight: 600; font-size: 26px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .big small { font-size: 14px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+  #statCarved[data-s="settling"] { color: var(--muted); }
+  #statCarved[data-s="holding"] { color: var(--fg); }
+  #statCarved[data-s="passed"] { color: var(--good); }
+  #statCarved[data-s="failed"] { color: var(--bad); }
+  .bar { width: 120px; height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin: 7px 0 5px; }
+  .bar i { display: block; height: 100%; width: 0; border-radius: 4px; }
+  .badge { align-self: center; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: rgba(16, 26, 35, 0.88); }
+  .badge[data-s="passed"] { color: var(--good); border-color: var(--good); }
+  .badge[data-s="failed"] { color: var(--bad); border-color: var(--bad); }
+  .badge[data-s="settling"] { color: var(--warn); }
+
+  #legend { position: absolute; left: 12px; bottom: 12px; background: rgba(16, 26, 35, 0.88); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; pointer-events: none; width: 210px; max-width: calc(100% - 24px); }
+  #legend .ramp { height: 8px; border-radius: 4px; margin-bottom: 5px; background: linear-gradient(90deg,#2b5f7a,#33908f 30%,#e6c24c 55%,#f08540 80%,#e84a3b); }
+  #legend .ends { display: flex; justify-content: space-between; gap: 8px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+
+  #toast { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 12px; align-items: center; background: var(--panel); border: 1px solid var(--bad); border-radius: 8px; padding: 8px 8px 8px 14px; max-width: calc(100% - 24px); }
+  #toast span { color: var(--fg); }
+  #firsthint { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); color: var(--muted); font-size: 13px; pointer-events: none; text-align: center; width: max-content; max-width: calc(100% - 24px); }
+
+  #result { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(8, 13, 18, 0.55); padding: 16px; }
+  #result .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 24px 28px; text-align: center; max-width: 360px; width: 100%; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+  #result .eyebrow { margin: 0; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--good); }
+  #result .score { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 64px; line-height: 1; }
+  #result .score small { font-size: 20px; color: var(--muted); font-weight: 500; margin-left: 4px; }
+  #result .best { margin: 0 0 12px; color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+
+  @media (max-width: 760px) {
+    #app { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+    #panel { order: 2; border-right: 0; border-top: 1px solid var(--line); max-height: 46%; padding: 12px 16px; gap: 14px; }
+    #panel .tag, .lvl small { display: none; }
+    #panel h1 { font-size: 22px; }
+    #levels { flex-direction: row; overflow-x: auto; padding-bottom: 4px; }
+    .lvl { width: auto; flex: 0 0 auto; grid-template-columns: auto auto; gap: 8px; }
+    .lvl .s { display: none; }
+    .big { font-size: 20px; }
+    #lvlname { font-size: 18px; }
+    .bar { width: 80px; }
+    #legend { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div id="app">
+  <aside id="panel">
+    <div>
+      <h1>Topology Carver</h1>
+      <p class="tag">Drag through the material to carve it away. Keep the weight standing.</p>
+    </div>
+
+    <div class="sec">
+      <h2>Levels</h2>
+      <ol id="levels"></ol>
+    </div>
+
+    <div class="sec">
+      <h2>Brush</h2>
+      <div class="brush">
+        <input type="range" id="radius" min="0.4" max="3.8" step="0.1" value="1.8" aria-label="Brush radius">
+        <output id="radiusOut" for="radius">1.8 m</output>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="row">
+        <button type="button" class="btn" id="undo" title="Undo last stroke (Ctrl+Z)">Undo</button>
+        <button type="button" class="btn" id="reset" title="Reset level (R)">Reset</button>
+        <button type="button" class="btn" id="sound" aria-pressed="true" title="Toggle sound">Sound on</button>
+      </div>
+    </div>
+
+    <div class="sec" style="margin-top:auto">
+      <button type="button" class="btn primary" id="submit" disabled>Submit score</button>
+      <p class="hint" id="submitHint">Reach the target and let the structure settle to submit.</p>
+    </div>
+  </aside>
+
+  <main id="stage">
+    <div id="hud">
+      <div class="hud-block">
+        <div class="label">Level <span id="lvlnum">1</span></div>
+        <div id="lvlname">Bedrock</div>
+        <div class="sub">load <b id="lvlload">92</b> kN</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="hud-block">
+        <div class="label">Removed</div>
+        <div class="big"><span id="statCarved" data-s="settling">0.0</span><small>%</small></div>
+        <div class="sub">target <b id="statTarget">45</b>%</div>
+      </div>
+      <div class="hud-block">
+        <div class="label">Peak stress</div>
+        <div class="bar"><i id="stressFill"></i></div>
+        <div class="sub"><b id="statStress">0</b>% of capacity</div>
+      </div>
+      <div class="badge" id="badge" data-s="settling">Settling</div>
+    </div>
+
+    <div id="legend">
+      <div class="ramp" id="ramp"></div>
+      <div class="ends"><span id="legLo">Unloaded</span><span id="legHi">Link breaks</span></div>
+    </div>
+
+    <div id="firsthint">Press and drag across the material.</div>
+
+    <div id="toast" hidden>
+      <span>The structure collapsed.</span>
+      <button type="button" class="btn" id="toastUndo">Undo last stroke</button>
+    </div>
+
+    <div id="result" hidden>
+      <div class="card" role="dialog" aria-labelledby="resLevel">
+        <p class="eyebrow" id="resLevel">Level cleared</p>
+        <p class="score"><span id="resScore">0.0</span><small>% removed</small></p>
+        <p class="best" id="resBest"></p>
+        <div class="row">
+          <button type="button" class="btn primary" id="resNext">Next level</button>
+          <button type="button" class="btn" id="resKeep">Keep carving</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+'use strict';
+
+/* ---------- Constants ---------- */
+const COLS = 36, ROWS = 22, SP = 1.0;
+const HALF_W = (COLS - 1) * SP * 0.5, HALF_H = (ROWS - 1) * SP * 0.5;
+const EXT = 4;                       // bedrock cells drawn beyond the board edge
+const WORLD_W = 48, WORLD_H = 33;    // world area kept in view
+
+const SUBSTEPS = 6, DT = 0.016 / SUBSTEPS, DAMPING = 1.0;
+const K_AXIAL = 340, K_SHEAR = 190;
+const MAX_COMPRESSION = 26, MAX_TENSION = 48, MAX_SHEAR = 20;
+const NODE_MASS = 0.25, LOAD_MASS = 2.0, GRAVITY = 0.3;
+const MAX_DROP = 1.6;
+const STABLE_STEPS = 24, PEAK_EPS = 2e-5, SOLVES_PER_FRAME = 14;
+const CELL_HALF = 0.47;
+
+const LEVELS = [
+  { name: 'Bedrock', desc: 'A slab on solid ground. The weight sits on top.', target: 45, loadCols: [16,17,18,19], loadRow: ROWS - 1, force: -68,
+    fixed: (c, r) => r === 0 },
+  { name: 'River Gorge', desc: 'Cross the gap between two cliffs.', target: 40, loadCols: [16,17,18,19], loadRow: ROWS - 1, force: -72, water: true,
+    fixed: (c, r) => r <= 3 && (c <= 7 || c >= 28) },
+  { name: 'Cantilever', desc: 'A shelf reaching out from a cliff face.', target: 35, loadCols: [18,19,20,21], loadRow: ROWS - 3, force: -22,
+    fixed: (c, r) => c <= 8 },
+  { name: 'Valley Island', desc: 'Two gaps with a rock pier between them.', target: 42, loadCols: [20,21,22,23], loadRow: ROWS - 1, force: -69, water: true,
+    fixed: (c, r) => r <= 3 && (c <= 6 || (c >= 13 && c <= 17) || c >= 29) },
+  { name: 'Canopy Tower', desc: 'One pier carries a load far off to the side.', target: 35, loadCols: [21,22,23,24], loadRow: ROWS - 2, force: -31,
+    fixed: (c, r) => c >= 12 && c <= 19 && r <= 7 },
+  { name: 'Skyline Gantry', desc: 'Hang the weight from two ceiling anchors.', target: 40, loadCols: [16,17,18,19], loadRow: 4, force: -112, water: true,
+    fixed: (c, r) => r >= ROWS - 3 && (c <= 8 || c >= 27) },
+  { name: 'Hanging Chandelier', desc: 'Everything hangs from a single ceiling beam.', target: 42, loadCols: [16,17,18,19], loadRow: 3, force: -116,
+    fixed: (c, r) => r === ROWS - 1 && c >= 9 && c <= 26 },
+  { name: 'Gorge Cradle', desc: 'Suspended between two high cliffs.', target: 40, loadCols: [16,17,18,19], loadRow: 6, force: -118, water: true,
+    fixed: (c, r) => r >= 10 && (c <= 6 || c >= 29) }
+];
+
+/* ---------- Audio ---------- */
+let audioCtx = null, soundOn = true, lastCarveSound = 0;
+function initAudio() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch (e) {}
+}
+function tone(type, f0, f1, dur, vol, delay = 0) {
+  if (!soundOn || !audioCtx) return;
+  try {
+    const t = audioCtx.currentTime + delay;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t); o.stop(t + dur);
+  } catch (e) {}
+}
+function soundCarve() {
+  const now = performance.now();
+  if (now - lastCarveSound < 70) return;
+  lastCarveSound = now;
+  tone('triangle', 320 + Math.random() * 80, 120, 0.08, 0.07);
+}
+const soundSnap = () => tone('sawtooth', 140, 35, 0.25, 0.2);
+const soundWin = () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone('sine', f, f, 0.35, 0.1, i * 0.1));
+
+/* ---------- Scene ---------- */
+const stage = document.getElementById('stage');
+const scene = new THREE.Scene();
+const BG = [0.043, 0.071, 0.098];
+scene.background = new THREE.Color(0x0b1219);
+
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -50, 50);
+camera.position.z = 20;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+stage.insertBefore(renderer.domElement, stage.firstChild);
+const cv = renderer.domElement;
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+sun.position.set(10, 20, 25);
+scene.add(sun);
+
+function fit() {
+  const w = stage.clientWidth || 1, h = stage.clientHeight || 1;
+  renderer.setSize(w, h);
+  const a = w / h;
+  let vw = WORLD_W, vh = WORLD_H;
+  if (a > vw / vh) vw = vh * a; else vh = vw / a;
+  camera.left = -vw / 2; camera.right = vw / 2; camera.top = vh / 2; camera.bottom = -vh / 2;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(fit).observe(stage);
+
+// Drafting grid
+const grid = new THREE.GridHelper(80, 40, 0x172430, 0x121c26);
+grid.rotation.x = Math.PI / 2;
+grid.position.z = -5;
+scene.add(grid);
+
+// Water behind the bedrock (only shown on levels with gaps)
+const water = new THREE.Mesh(
+  new THREE.PlaneGeometry(WORLD_W + 20, 5),
+  new THREE.MeshBasicMaterial({ color: 0x1b5f7c, transparent: true, opacity: 0.55 })
+);
+water.position.set(0, -HALF_H - 0.5 - 2.5, -1);
+scene.add(water);
+const waterLine = new THREE.Mesh(
+  new THREE.PlaneGeometry(WORLD_W + 20, 0.12),
+  new THREE.MeshBasicMaterial({ color: 0x5fb6d6, transparent: true, opacity: 0.8 })
+);
+waterLine.position.set(0, -HALF_H - 0.5, -0.9);
+scene.add(waterLine);
+
+/* ---------- Quad meshes (one square per grid node) ---------- */
+function makeQuadGeo(n) {
+  const pos = new Float32Array(n * 12), col = new Float32Array(n * 12), idx = new Uint16Array(n * 6);
+  for (let i = 0; i < n; i++) {
+    const b = i * 4;
+    idx.set([b, b + 1, b + 2, b, b + 2, b + 3], i * 6);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3).setUsage(THREE.DynamicDrawUsage));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  return g;
+}
+function setQuad(P, i, x, y, h) {
+  const o = i * 12;
+  P[o] = x - h;     P[o + 1] = y - h;     P[o + 2] = 0;
+  P[o + 3] = x + h; P[o + 4] = y - h;     P[o + 5] = 0;
+  P[o + 6] = x + h; P[o + 7] = y + h;     P[o + 8] = 0;
+  P[o + 9] = x - h; P[o + 10] = y + h;    P[o + 11] = 0;
+}
+function setQuadColor(C, i, r, g, b) {
+  const o = i * 12;
+  for (let v = 0; v < 4; v++) { C[o + v * 3] = r; C[o + v * 3 + 1] = g; C[o + v * 3 + 2] = b; }
+}
+
+
+let rockMesh = null;
+function buildRock() {
+  if (rockMesh) { scene.remove(rockMesh); rockMesh.geometry.dispose(); rockMesh = null; }
+  const cells = new Map();
+  const span = (c, max) => c === 0 ? [-EXT, 0] : c === max ? [max, max + EXT] : [c, c];
+  for (const n of nodes) {
+    if (!n.fixed) continue;
+    const [x0, x1] = span(n.c, COLS - 1), [y0, y1] = span(n.r, ROWS - 1);
+    for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++) cells.set(cx + ',' + cy, [cx, cy]);
+  }
+  const list = [...cells.values()];
+  const g = makeQuadGeo(list.length);
+  const P = g.attributes.position.array, C = g.attributes.color.array;
+  const isFreeNode = (c, r) => c >= 0 && c < COLS && r >= 0 && r < ROWS && !nodes[r * COLS + c].fixed;
+  list.forEach(([c, r], i) => {
+    setQuad(P, i, c * SP - HALF_W, r * SP - HALF_H, 0.5);
+    const h = (((c * 73856093) ^ (r * 19349663)) >>> 0) % 100 / 100;
+    const v = 0.88 + h * 0.2;
+    const edge = isFreeNode(c + 1, r) || isFreeNode(c - 1, r) || isFreeNode(c, r + 1) || isFreeNode(c, r - 1);
+    if (edge) setQuadColor(C, i, 0.2 * v, 0.27 * v, 0.33 * v);
+    else setQuadColor(C, i, 0.115 * v, 0.165 * v, 0.21 * v);
+  });
+  rockMesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true }));
+  rockMesh.frustumCulled = false;
+  rockMesh.position.z = -0.2;
+  scene.add(rockMesh);
+}
+
+/* ---------- Lattice lines ---------- */
+const MAX_SPRINGS = COLS * ROWS * 4;
+const lineGeo = new THREE.BufferGeometry();
+const linePos = new Float32Array(MAX_SPRINGS * 6), lineCol = new Float32Array(MAX_SPRINGS * 6);
+lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3).setUsage(THREE.DynamicDrawUsage));
+lineGeo.setAttribute('color', new THREE.BufferAttribute(lineCol, 3).setUsage(THREE.DynamicDrawUsage));
+const lines = new THREE.LineSegments(lineGeo, new THREE.LineBasicMaterial({ vertexColors: true }));
+lines.frustumCulled = false;
+lines.position.z = 0.1;
+scene.add(lines);
+
+/* ---------- Cargo ---------- */
+const cargo = new THREE.Group();
+cargo.position.z = 1;
+scene.add(cargo);
+const crate = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.4, 1.4),
+  new THREE.MeshStandardMaterial({ color: 0xf2c14e, roughness: 0.4, metalness: 0.5 }));
+const deck = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.25, 1.6),
+  new THREE.MeshStandardMaterial({ color: 0x56697a, roughness: 0.5, metalness: 0.7 }));
+cargo.add(crate, deck);
+const cableGeo = new THREE.BufferGeometry();
+cableGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(24), 3));
+const cables = new THREE.LineSegments(cableGeo, new THREE.LineBasicMaterial({ color: 0xcbd5e1 }));
+cables.frustumCulled = false;
+cargo.add(cables);
+
+/* ---------- Brush ---------- */
+let brushR = 1.8;
+const brush = new THREE.Group();
+brush.position.z = 2;
+brush.visible = false;
+const disc = new THREE.Mesh(new THREE.CircleGeometry(brushR, 48),
+  new THREE.MeshBasicMaterial({ color: 0xf2c14e, transparent: true, opacity: 0.18, depthWrite: false }));
+const ring = new THREE.Mesh(new THREE.RingGeometry(brushR - 0.06, brushR, 48),
+  new THREE.MeshBasicMaterial({ color: 0xf2c14e, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }));
+brush.add(disc, ring);
+scene.add(brush);
+function setBrushRadius(r) {
+  brushR = r;
+  disc.geometry.dispose(); ring.geometry.dispose();
+  disc.geometry = new THREE.CircleGeometry(r, 48);
+  ring.geometry = new THREE.RingGeometry(Math.max(0.01, r - 0.06), r, 48);
+}
+
+/* ---------- Game state ---------- */
+let cur = 0;
+let nodes = [], springs = [];
+let totalCarvable = 0, removedCount = 0;
+let prevKE = 0, peak = 0, lastPeak = 0, stableTimer = 0, ramp = 0;
+let state = 'SETTLING';       // SETTLING | STABILIZING | STABLE | PASSED | FAILED
+let topoDirty = true, connected = true;
+let undoStack = [], stroke = [];
+let best = {};
+try { best = JSON.parse(localStorage.getItem('topology-carver-best-v1') || '{}') || {}; } catch (e) { best = {}; }
+function saveBest() { try { localStorage.setItem('topology-carver-best-v1', JSON.stringify(best)); } catch (e) {} }
+
+function addSpring(n1, n2, type, k, maxComp, maxTens) {
+  const sp = { n1, n2, type, k, maxComp, maxTens, rest: Math.hypot(n2.x - n1.x, n2.y - n1.y), broken: false, ratio: 0, sg: 0 };
+  springs.push(sp); n1.adj.push(sp); n2.adj.push(sp);
+}
+
+function initLevel(idx) {
+  cur = idx;
+  const lvl = LEVELS[idx];
+  state = 'SETTLING'; stableTimer = 0; removedCount = 0; peak = 0; ramp = 1;
+  undoStack = []; stroke = [];
+  nodes = []; springs = [];
+
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const x = c * SP - HALF_W, y = r * SP - HALF_H;
+    const isWeight = r === lvl.loadRow && lvl.loadCols.includes(c);
+    nodes.push({
+      i: r * COLS + c, c, r, x, y, ox: x, oy: y, vx: 0, vy: 0,
+      mass: isWeight ? LOAD_MASS : NODE_MASS, fixed: lvl.fixed(c, r), isWeight,
+      removed: false, debris: false, cx: 0, cy: 0, cvx: (Math.random() - 0.5) * 1.4, cvy: 0,
+      mag: 0, sig: 0, dm: 0, ds: 0, adj: []
+    });
+  }
+  totalCarvable = nodes.filter(n => !n.fixed && !n.isWeight).length;
+
+  const at = (c, r) => nodes[r * COLS + c];
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const n = at(c, r);
+    if (c + 1 < COLS) addSpring(n, at(c + 1, r), 'axial', K_AXIAL, MAX_COMPRESSION, MAX_TENSION);
+    if (r + 1 < ROWS) addSpring(n, at(c, r + 1), 'axial', K_AXIAL, MAX_COMPRESSION, MAX_TENSION);
+    if (c + 1 < COLS && r + 1 < ROWS) addSpring(n, at(c + 1, r + 1), 'shear', K_SHEAR, MAX_SHEAR, MAX_SHEAR);
+    if (c - 1 >= 0 && r + 1 < ROWS) addSpring(n, at(c - 1, r + 1), 'shear', K_SHEAR, MAX_SHEAR, MAX_SHEAR);
+  }
+
+  buildRock();
+  water.visible = waterLine.visible = !!lvl.water;
+  topoDirty = true;
+  settle();
+  document.getElementById('firsthint').hidden = false;
+  document.getElementById('result').hidden = true;
+  renderLevels();
+  updateHud(true);
+}
+
+// Run the solver quietly so the level starts at rest under its load.
+function settle() {
+  ramp = 1; stableTimer = 0; lastPeak = 0; state = 'SETTLING';
+  for (let i = 0; i < 800; i++) {
+    solve(true);
+    if (state === 'STABLE' || state === 'PASSED' || state === 'FAILED') break;
+  }
+}
+
+/* ---------- Solver (mass-spring lattice, unchanged physics) ---------- */
+function checkConnected(loads) {
+  const seen = new Uint8Array(nodes.length), q = [];
+  for (const n of nodes) if (n.fixed && !n.removed) { seen[n.i] = 1; q.push(n); }
+  for (let h = 0; h < q.length; h++) {
+    const n = q[h];
+    for (const sp of n.adj) {
+      if (sp.broken) continue;
+      const o = sp.n1 === n ? sp.n2 : sp.n1;
+      if (o.removed || seen[o.i]) continue;
+      seen[o.i] = 1; q.push(o);
+    }
+  }
+  return loads.every(n => seen[n.i]);
+}
+
+function setFailed(quiet) {
+  if (state !== 'FAILED' && !quiet) soundSnap();
+  state = 'FAILED'; stableTimer = 0;
+}
+
+function solve(prewarm) {
+  const lvl = LEVELS[cur];
+  if (!prewarm) ramp = Math.min(1, ramp + (1 / 60) / 0.2);
+  const k = Math.sin(ramp * Math.PI * 0.5);
+
+  const loads = [];
+  for (const c of lvl.loadCols) loads.push(nodes[lvl.loadRow * COLS + c]);
+
+  if (topoDirty) { connected = checkConnected(loads); topoDirty = false; }
+  if (!connected) { setFailed(prewarm); return; }
+
+  const perNode = (lvl.force * k) / loads.length;
+  let maxRatio = 0, snapped = false;
+
+  for (let s = 0; s < SUBSTEPS; s++) {
+    for (const n of loads) n.vy += (perNode / n.mass) * DT;
+    for (const n of nodes) if (!n.fixed && !n.isWeight && !n.removed) n.vy -= GRAVITY * DT;
+
+    for (const sp of springs) {
+      if (sp.broken) continue;
+      const n1 = sp.n1, n2 = sp.n2;
+      if (n1.removed || n2.removed) continue;
+      const dx = n2.x - n1.x, dy = n2.y - n1.y;
+      const len = Math.hypot(dx, dy) || 1e-4;
+      const force = sp.k * (len - sp.rest);
+      let ratio;
+      if (sp.type === 'shear') ratio = Math.abs(force) / MAX_SHEAR;
+      else ratio = force < 0 ? -force / sp.maxComp : force / sp.maxTens;
+
+      sp.ratio = Math.min(1, ratio);
+      sp.sg = sp.type === 'shear' ? 0 : (force >= 0 ? sp.ratio : -sp.ratio);
+      if (ratio > maxRatio) maxRatio = ratio;
+
+      if (ratio >= 1) {
+        sp.broken = true; snapped = true; topoDirty = true;
+        if (!prewarm) soundSnap();
+        continue;
+      }
+      const fx = (dx / len) * force, fy = (dy / len) * force;
+      if (!n1.fixed) { n1.vx += (fx / n1.mass) * DT; n1.vy += (fy / n1.mass) * DT; }
+      if (!n2.fixed) { n2.vx -= (fx / n2.mass) * DT; n2.vy -= (fy / n2.mass) * DT; }
+    }
+
+    for (const n of nodes) {
+      if (n.removed) continue;
+      if (n.fixed) { n.x = n.ox; n.y = n.oy; n.vx = n.vy = 0; continue; }
+      n.x += n.vx * DT; n.y += n.vy * DT;
+      n.vx *= DAMPING; n.vy *= DAMPING;
+    }
+
+    // Kinetic damping: when the kinetic energy passes its peak the lattice has crossed
+    // equilibrium, so drop all velocities. This makes the structure settle much faster.
+    let ke = 0;
+    for (const n of nodes) if (!n.fixed && !n.removed) ke += n.mass * (n.vx * n.vx + n.vy * n.vy);
+    if (ke < prevKE) { for (const n of nodes) { n.vx = 0; n.vy = 0; } prevKE = 0; } else prevKE = ke;
+  }
+  peak = maxRatio;
+
+  // Per-node stress for the heatmap
+  for (const n of nodes) { n.mag = 0; n.sig = 0; }
+  for (const sp of springs) {
+    if (sp.broken || sp.n1.removed || sp.n2.removed) continue;
+    for (const n of [sp.n1, sp.n2]) {
+      if (sp.ratio > n.mag) n.mag = sp.ratio;
+      if (Math.abs(sp.sg) > Math.abs(n.sig)) n.sig = sp.sg;
+    }
+  }
+
+  let maxDrop = 0, maxFall = 0;
+  for (const n of loads) {
+    maxDrop = Math.max(maxDrop, n.oy - n.y);
+    maxFall = Math.min(maxFall, n.vy);
+  }
+  let maxV2 = 0;
+  for (const n of nodes) if (!n.removed && !n.fixed) maxV2 = Math.max(maxV2, n.vx * n.vx + n.vy * n.vy);
+  const settled = maxV2 < 0.01;
+
+  if (maxDrop > MAX_DROP || maxFall < -3.5) { setFailed(prewarm); return; }
+
+  const dPeak = Math.abs(peak - lastPeak); lastPeak = peak;
+  if (snapped || !settled || dPeak > PEAK_EPS) stableTimer = 0; else stableTimer++;
+  const pct = totalCarvable ? removedCount / totalCarvable * 100 : 0;
+  const stable = stableTimer >= STABLE_STEPS;
+  const prev = state;
+  if (stable && pct >= lvl.target) state = 'PASSED';
+  else if (stable) state = 'STABLE';
+  else if (stableTimer > 6) state = 'STABILIZING';
+  else state = 'SETTLING';
+  if (state === 'PASSED' && prev !== 'PASSED' && !prewarm) soundWin();
+}
+
+// Falling debris and collapse animation (visual only)
+function animateFalling() {
+  const collapsing = state === 'FAILED';
+  for (const n of nodes) {
+    if ((n.removed && n.debris) || (collapsing && !n.fixed && !n.removed)) {
+      n.cvy -= 32 / 60;
+      n.cy += n.cvy / 60;
+      n.cx += n.cvx / 60;
+    }
+  }
+}
+
+/* ---------- Carving ---------- */
+function carveAt(cx, cy) {
+  let changed = false;
+  const r2 = brushR * brushR;
+  for (const n of nodes) {
+    if (n.removed || n.fixed || n.isWeight) continue;
+    const dx = n.x - cx, dy = n.y - cy;
+    if (dx * dx + dy * dy <= r2) {
+      n.removed = true; removedCount++; stroke.push(n.i); changed = true;
+    }
+  }
+  return changed;
+}
+
+// Material cut off from every support (and from the weight) falls away and counts as removed.
+function pruneOrphans() {
+  const seen = new Uint8Array(nodes.length), q = [];
+  for (const n of nodes) if (!n.removed && (n.fixed || n.isWeight)) { seen[n.i] = 1; q.push(n); }
+  for (let h = 0; h < q.length; h++) {
+    const n = q[h];
+    for (const sp of n.adj) {
+      if (sp.broken) continue;
+      const o = sp.n1 === n ? sp.n2 : sp.n1;
+      if (o.removed || seen[o.i]) continue;
+      seen[o.i] = 1; q.push(o);
+    }
+  }
+  for (const n of nodes) {
+    if (!n.removed && !seen[n.i]) {
+      n.removed = true; n.debris = true; n.cy = 0; n.cvy = 0;
+      removedCount++; stroke.push(n.i);
+    }
+  }
+}
+
+let lastP = null;
+function strokeTo(x, y) {
+  let changed = false;
+  if (!lastP) changed = carveAt(x, y);
+  else {
+    const dx = x - lastP.x, dy = y - lastP.y, d = Math.hypot(dx, dy);
+    const steps = Math.max(1, Math.ceil(d / Math.max(0.25, brushR * 0.4)));
+    for (let i = 1; i <= steps; i++) changed = carveAt(lastP.x + dx * i / steps, lastP.y + dy * i / steps) || changed;
+  }
+  lastP = { x, y };
+  if (changed) {
+    pruneOrphans();
+    topoDirty = true; stableTimer = 0;
+    if (state === 'PASSED' || state === 'STABLE') state = 'SETTLING';
+    soundCarve();
+  }
+}
+
+function undo() {
+  if (!undoStack.length) return;
+  const ids = undoStack.pop();
+  for (const i of ids) {
+    const n = nodes[i];
+    if (n.removed) { n.removed = false; n.debris = false; removedCount--; }
+  }
+  for (const n of nodes) {
+    n.x = n.ox; n.y = n.oy; n.vx = n.vy = 0; n.cx = n.cy = n.cvy = 0;
+  }
+  for (const sp of springs) { sp.broken = false; sp.ratio = 0; sp.sg = 0; }
+  state = 'SETTLING'; topoDirty = true;
+  settle();
+  document.getElementById('result').hidden = true;
+  updateHud(true);
+}
+
+/* ---------- Colours ---------- */
+const HEAT = [[0, .17, .37, .48], [.3, .20, .56, .56], [.55, .90, .76, .30], [.8, .94, .52, .24], [1, .91, .28, .23]];
+const tmp = [0, 0, 0];
+function heat(t) {
+  t = Math.max(0, Math.min(1, t));
+  for (let i = 1; i < HEAT.length; i++) {
+    if (t <= HEAT[i][0]) {
+      const a = HEAT[i - 1], b = HEAT[i], u = (t - a[0]) / (b[0] - a[0]);
+      tmp[0] = a[1] + (b[1] - a[1]) * u; tmp[1] = a[2] + (b[2] - a[2]) * u; tmp[2] = a[3] + (b[3] - a[3]) * u;
+      return tmp;
+    }
+  }
+  tmp[0] = HEAT[4][1]; tmp[1] = HEAT[4][2]; tmp[2] = HEAT[4][3];
+  return tmp;
+}
+const NEUTRAL = [0.17, 0.22, 0.27], TENS = [0.29, 0.64, 1.0], COMP = [1.0, 0.62, 0.26];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ---------- Per-frame visuals ---------- */
+function nodeAlpha(n) {
+  if (!n.removed) return 1;
+  return n.debris ? clamp(1 + n.cy / 9, 0, 1) : 0;
+}
+function updateVisuals() {
+  let li = 0;
+  for (const sp of springs) {
+    if (sp.broken) continue;
+    const a = Math.min(nodeAlpha(sp.n1), nodeAlpha(sp.n2));
+    if (a < 0.03) continue;
+    const o = li * 6, c = heat(Math.pow(sp.ratio, 0.8));
+    linePos[o] = sp.n1.x + sp.n1.cx; linePos[o + 1] = sp.n1.y + sp.n1.cy; linePos[o + 2] = 0;
+    linePos[o + 3] = sp.n2.x + sp.n2.cx; linePos[o + 4] = sp.n2.y + sp.n2.cy; linePos[o + 5] = 0;
+    const r = BG[0] + (c[0] - BG[0]) * a, g = BG[1] + (c[1] - BG[1]) * a, b = BG[2] + (c[2] - BG[2]) * a;
+    lineCol[o] = lineCol[o + 3] = r; lineCol[o + 1] = lineCol[o + 4] = g; lineCol[o + 2] = lineCol[o + 5] = b;
+    li++;
+  }
+  lineGeo.attributes.position.needsUpdate = true;
+  lineGeo.attributes.color.needsUpdate = true;
+  lineGeo.setDrawRange(0, li * 2);
+
+  // Cargo follows the weight nodes
+  const lvl = LEVELS[cur], cp = cableGeo.attributes.position.array;
+  let ax = 0, ay = 0;
+  lvl.loadCols.forEach((c, i) => {
+    const n = nodes[lvl.loadRow * COLS + c];
+    const x = n.x + n.cx, y = n.y + n.cy;
+    ax += x; ay += y;
+    cp[i * 6] = x; cp[i * 6 + 1] = y; cp[i * 6 + 2] = 0;
+  });
+  ax /= lvl.loadCols.length; ay /= lvl.loadCols.length;
+  crate.position.set(ax, ay + 1.25, 0);
+  deck.position.set(ax, ay + 0.15, 0);
+  lvl.loadCols.forEach((c, i) => {
+    const f = (i / (lvl.loadCols.length - 1)) * 2 - 1;
+    cp[i * 6 + 3] = ax + f * 1.4; cp[i * 6 + 4] = ay + 0.65; cp[i * 6 + 5] = 0;
+  });
+  cableGeo.attributes.position.needsUpdate = true;
+}
+
+/* ---------- UI ---------- */
+const $ = id => document.getElementById(id);
+const cache = {};
+function setText(id, v) { if (cache[id] !== v) { cache[id] = v; $(id).textContent = v; } }
+function setAttr(id, a, v) { const k = id + a; if (cache[k] !== v) { cache[k] = v; $(id).setAttribute(a, v); } }
+
+function updateHud(force) {
+  if (force) for (const k in cache) delete cache[k];
+  const lvl = LEVELS[cur];
+  const pct = totalCarvable ? removedCount / totalCarvable * 100 : 0;
+  setText('lvlnum', String(cur + 1));
+  setText('lvlname', lvl.name);
+  setText('lvlload', String(Math.abs(lvl.force)));
+  const counted = state === 'STABLE' || state === 'PASSED';
+  setText('statCarved', counted ? pct.toFixed(1) : '—');
+  setText('statTarget', String(lvl.target));
+  const sp = Math.min(100, peak * 100);
+  setText('statStress', sp.toFixed(2));
+  const fill = $('stressFill');
+  const c = heat(Math.pow(peak, 0.7));
+  fill.style.width = sp + '%';
+  fill.style.background = `rgb(${c[0] * 255 | 0},${c[1] * 255 | 0},${c[2] * 255 | 0})`;
+
+  const map = {
+    SETTLING: ['settling', 'Settling'], STABILIZING: ['settling', 'Settling'],
+    STABLE: ['holding', 'Holding'], PASSED: ['passed', 'Target reached'], FAILED: ['failed', 'Collapsed']
+  };
+  const [s, label] = map[state];
+  setAttr('statCarved', 'data-s', s);
+  setAttr('badge', 'data-s', s);
+  setText('badge', label);
+
+  $('toast').hidden = state !== 'FAILED';
+  const ok = state === 'PASSED';
+  $('submit').disabled = !ok;
+  setText('submit', ok ? `Submit ${pct.toFixed(1)}%` : 'Submit score');
+  setText('submitHint',
+    state === 'FAILED' ? 'The structure collapsed. Undo the last stroke or reset.' :
+    ok ? 'You can keep carving for a higher score before submitting.' :
+    `Remove at least ${lvl.target}% and let the structure settle to submit.`);
+  $('undo').disabled = undoStack.length === 0;
+}
+
+function renderLevels() {
+  const ol = $('levels');
+  ol.innerHTML = '';
+  LEVELS.forEach((l, i) => {
+    const li = document.createElement('li');
+    const b = best[i];
+    li.innerHTML = `<button type="button" class="lvl" ${i === cur ? 'aria-current="true"' : ''}>
+      <span class="n">${i + 1}</span>
+      <span class="t"><b>${l.name}</b><small>${l.desc}</small></span>
+      <span class="s"><em>target ${l.target}%</em><em class="${b >= l.target ? 'done' : ''}">${b ? 'best ' + b.toFixed(1) + '%' : '&nbsp;'}</em></span>
+    </button>`;
+    li.firstElementChild.addEventListener('click', () => { initAudio(); initLevel(i); });
+    ol.appendChild(li);
+  });
+}
+
+function submit() {
+  if (state !== 'PASSED') return;
+  const pct = Math.round(removedCount / totalCarvable * 1000) / 10;
+  const prev = best[cur] || 0;
+  const isBest = pct > prev;
+  if (isBest) { best[cur] = pct; saveBest(); renderLevels(); }
+  setText('resLevel', `${LEVELS[cur].name} cleared`);
+  setText('resScore', pct.toFixed(1));
+  setText('resBest', isBest ? (prev ? `New best. Previous ${prev.toFixed(1)}%` : 'First clear') : `Best ${prev.toFixed(1)}%`);
+  $('resNext').hidden = cur >= LEVELS.length - 1;
+  $('result').hidden = false;
+}
+
+$('submit').addEventListener('click', submit);
+$('resKeep').addEventListener('click', () => { $('result').hidden = true; });
+$('resNext').addEventListener('click', () => { initLevel(cur + 1); });
+$('undo').addEventListener('click', () => { initAudio(); undo(); });
+$('toastUndo').addEventListener('click', () => { initAudio(); undo(); });
+$('reset').addEventListener('click', () => { initAudio(); initLevel(cur); });
+$('sound').addEventListener('click', e => {
+  soundOn = !soundOn; initAudio();
+  e.currentTarget.setAttribute('aria-pressed', String(soundOn));
+  e.currentTarget.textContent = soundOn ? 'Sound on' : 'Sound off';
+});
+$('radius').addEventListener('input', e => {
+  const v = parseFloat(e.target.value);
+  $('radiusOut').textContent = v.toFixed(1) + ' m';
+  setBrushRadius(v);
+});
+window.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
+  else if (e.key === 'r' || e.key === 'R') initLevel(cur);
+  else if (e.key === '[' || e.key === ']') {
+    const s = $('radius'); s.value = clamp(parseFloat(s.value) + (e.key === ']' ? 0.2 : -0.2), 0.4, 3.8);
+    s.dispatchEvent(new Event('input'));
+  }
+});
+
+/* ---------- Pointer input ---------- */
+let carving = false;
+function toWorld(e) {
+  const rect = cv.getBoundingClientRect();
+  return {
+    x: camera.left + ((e.clientX - rect.left) / rect.width) * (camera.right - camera.left),
+    y: camera.top - ((e.clientY - rect.top) / rect.height) * (camera.top - camera.bottom)
+  };
+}
+function onMove(e) {
+  const p = toWorld(e);
+  brush.position.x = p.x; brush.position.y = p.y; brush.visible = true;
+  if (carving && state !== 'FAILED') strokeTo(p.x, p.y);
+}
+function endStroke(e) {
+  if (!carving) return;
+  carving = false; lastP = null;
+  if (stroke.length) { undoStack.push(stroke); if (undoStack.length > 200) undoStack.shift(); }
+  stroke = [];
+  if (e && e.pointerType === 'touch') brush.visible = false;
+}
+cv.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  initAudio();
+  try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+  carving = true; stroke = []; lastP = null;
+  $('firsthint').hidden = true;
+  onMove(e);
+});
+cv.addEventListener('pointermove', onMove);
+cv.addEventListener('pointerup', endStroke);
+cv.addEventListener('pointercancel', endStroke);
+cv.addEventListener('pointerleave', () => { if (!carving) brush.visible = false; });
+
+/* ---------- Main loop (fixed 60 Hz physics) ---------- */
+let last = performance.now(), acc = 0;
+function frame(t) {
+  requestAnimationFrame(frame);
+  acc += Math.min(0.1, (t - last) / 1000); last = t;
+  let guard = 0;
+  while (acc >= 1 / 60 && guard++ < 5) {
+    if (state !== 'FAILED') {
+      // Run the solver several times per frame until the structure has converged.
+      const n = (state === 'STABLE' || state === 'PASSED') ? 1 : SOLVES_PER_FRAME;
+      for (let i = 0; i < n && state !== 'FAILED'; i++) solve(false);
+    }
+    animateFalling();
+    acc -= 1 / 60;
+  }
+  updateVisuals();
+  updateHud(false);
+  renderer.render(scene, camera);
+}
+
+fit();
+initLevel(0);
+requestAnimationFrame(frame);
+
+window.__topologyCarver = {
+  LEVELS,
+  initLevel, solve, animateFalling, carveAt, pruneOrphans, setBrushRadius,
+  info: () => ({ state, peak, removed: removedCount, total: totalCarvable, connected }),
+  stepN: n => { for (let i = 0; i < n; i++) { if (state !== 'FAILED') solve(false); } }
+};
+})();
+</script>
+
+</body></html>
