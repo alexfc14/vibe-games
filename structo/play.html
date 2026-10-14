@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Topology Carver</title>
+<title>Structo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap">
@@ -42,8 +42,8 @@
   #lvlbtn:hover { background: #eaf4fa; }
   #lvlnum { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(#ffc84a, #ffa800); color: var(--accent-fg); font-weight: 700; font-size: 15px; box-shadow: 0 2px 0 var(--accent-d); }
   #lvlname { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.05; min-width: 0; overflow-wrap: anywhere; }
-  #menu { position: absolute; top: calc(100% + 10px); left: 0; display: grid; grid-template-columns: repeat(3, 62px); gap: 8px; padding: 10px; }
-  .chip { height: 56px; border-radius: 14px; border: 2px solid var(--line); background: #fff; box-shadow: 0 3px 0 var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; font-weight: 700; font-size: 16px; }
+  #menu { position: absolute; top: calc(100% + 10px); left: 0; display: grid; grid-template-columns: repeat(5, 56px); gap: 7px; padding: 10px; max-height: min(62vh, 420px); overflow-y: auto; }
+  .chip { height: 52px; border-radius: 14px; border: 2px solid var(--line); background: #fff; box-shadow: 0 3px 0 var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; font-weight: 700; font-size: 16px; }
   .chip:hover { border-color: var(--muted); }
   .chip[aria-current="true"] { border-color: var(--accent); background: #fff6df; box-shadow: 0 3px 0 var(--accent-d); }
   .pips { display: flex; gap: 3px; }
@@ -60,6 +60,7 @@
   #statCarved[data-s="settling"] { color: var(--muted); }
   #statCarved[data-s="passed"] { color: var(--good); }
   #statCarved[data-s="failed"] { color: var(--bad); }
+  #zoomReset { position: absolute; right: 14px; bottom: 92px; }
   #starpop { position: absolute; left: 50%; top: 24%; transform: translateX(-50%); pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 5; }
   #starpop .row3 { display: flex; gap: 6px; }
   #starpop svg { width: 54px; height: 54px; fill: #e3eef4; stroke: #b4cbd8; stroke-width: 1.6; stroke-linejoin: round; filter: drop-shadow(0 3px 0 rgba(23,56,77,.15)); }
@@ -146,12 +147,13 @@
   </div>
 
   <div id="starpop" hidden></div>
+  <button type="button" id="zoomReset" class="glass icon" hidden aria-label="Reset zoom"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
 
   <div id="dock" class="glass">
     <button type="button" class="icon" id="undo" aria-label="Undo last stroke" title="Undo (Ctrl+Z)" disabled><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h10a5 5 0 015 5v2M3 10l6-6M3 10l6 6"/></svg></button>
     <span class="sep"></span>
     <span class="dotwrap"><i id="brushDot"></i></span>
-    <input type="range" id="radius" min="0.4" max="3.8" step="0.1" value="1.8" aria-label="Brush size">
+    <input type="range" id="radius" min="0" max="100" step="1" value="68" aria-label="Brush size">
     <span class="sep"></span>
     <button type="button" class="icon" id="reset" aria-label="Reset level" title="Reset level (R)"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v5h5M20 20v-5h-5"/><path d="M5.6 15a8 8 0 0013.3 2.6M18.4 9A8 8 0 005.1 6.4"/></svg></button>
     <span id="resetHint" hidden>Tap again to reset</span>
@@ -194,9 +196,76 @@ const LEVELS = [
     fixed: (c, r) => r >= ROWS - 3 && (c <= 8 || c >= 27) },
   { id: 'chandelier', name: 'Hanging Chandelier', loadCols: [16,17,18,19], loadRow: 3, force: -116,
     fixed: (c, r) => r === ROWS - 1 && c >= 9 && c <= 26 },
-  { id: 'cradle', name: 'Gorge Cradle', loadCols: [16,17,18,19], loadRow: 6, force: -118, water: true,
-    fixed: (c, r) => r >= 10 && (c <= 6 || c >= 29) }
+  { id: 'mobile', name: 'Mobile', loadCols: [16,17,18,19], loadRow: 4, force: -16,
+    void: (c, r) => Math.abs(c - 17.5) > 15 - Math.abs(r - 10) * 1.3,
+    fixed: (c, r) => r === ROWS - 1 && c >= 17 && c <= 18 },
+  { id: 'bracket', name: 'Corner Bracket', loadCols: [24,25,26,27], loadRow: 9, force: -81,
+    void: (c, r) => (c - 3) + (r - 3) > 32,
+    fixed: (c, r) => c <= 2 || r <= 2 },
+  { id: 'donut', name: 'Donut', loadCols: [16,17,18,19], loadRow: ROWS - 1, force: -68,
+    void: (c, r) => Math.hypot(c - 17.5, r - 9) < 5.2,
+    fixed: (c, r) => r === 0 },
+  { id: 'pyramid', name: 'Pyramid', loadCols: [16,17,18,19], loadRow: ROWS - 1, force: -67,
+    void: (c, r) => Math.abs(c - 17.5) > (ROWS - 1 - r) * 0.8 + 2,
+    fixed: (c, r) => r <= 1 },
+  { id: 'hillside', name: 'Hillside', loadCols: [28,29,30,31], loadRow: ROWS - 1, force: -65,
+    fixed: (c, r) => r <= 20 - Math.floor(c / 1.6) },
+  { id: 'switchback', name: 'Switchback', loadCols: [16,17,18,19], loadRow: 10, force: -57,
+    fixed: (c, r) => (r <= 3 && c <= 5) || (r >= 18 && c >= 30) },
+  { id: 'cathedral', name: 'Cathedral', loadCols: [16,17,18,19], loadRow: ROWS - 1, force: -67,
+    void: (c, r) => Math.hypot((c - 8.5) / 2.1, (r - 10) / 6.5) < 1 || Math.hypot((c - 26.5) / 2.1, (r - 10) / 6.5) < 1,
+    fixed: (c, r) => r === 0 },
+  { id: 'tbar', name: 'T-Bar', loadCols: [3,4,5,6], loadRow: 17, force: -3,
+    void: (c, r) => r <= 8 && (c < 15 || c > 20),
+    fixed: (c, r) => c >= 15 && c <= 20 && r <= 8 },
+  { id: 'serpentine', name: 'Serpentine', loadCols: [16,17,18,19], loadRow: ROWS - 1, force: -13,
+    void: (c, r) => ((r === 6 || r === 7) && c < 14) || ((r === 13 || r === 14) && c > 21),
+    fixed: (c, r) => r === 0 },
+  { id: 'twins', name: 'Twin Loads', loads: [{ cols: [5,6,7,8], row: ROWS - 1, f: 1 }, { cols: [27,28,29,30], row: ROWS - 1, f: 1 }], force: -66,
+    fixed: (c, r) => r === 0 },
+  { id: 'balance', name: 'Balance', loads: [{ cols: [2,3,4,5], row: 17, f: 1.4 }, { cols: [30,31,32,33], row: 17, f: 0.8 }], force: -9,
+    void: (c, r) => r <= 8 && (c < 12 || c > 23),
+    fixed: (c, r) => c >= 12 && c <= 23 && r <= 3 },
+  { id: 'traffic', name: 'Rush Hour', water: true, loads: [{ cols: [10,11,12,13], row: ROWS - 1, f: 1 }, { cols: [22,23,24,25], row: ROWS - 1, f: 1 }], force: -53,
+    fixed: (c, r) => r <= 3 && (c <= 6 || c >= 29) },
+  { id: 'trihang', name: 'Triple Hang', loads: [{ cols: [6,7,8,9], row: 10, f: 1 }, { cols: [16,17,18,19], row: 5, f: 1.3 }, { cols: [26,27,28,29], row: 10, f: 1 }], force: -30.9,
+    void: (c, r) => r < 3,
+    fixed: (c, r) => r === ROWS - 1 && ((c >= 6 && c <= 11) || (c >= 24 && c <= 29)) },
+  { id: 'ziggurat', name: 'Ziggurat', loads: [{ cols: [3,4,5,6], row: 6, f: 0.8 }, { cols: [29,30,31,32], row: 6, f: 0.8 }, { cols: [9,10,11,12], row: 12, f: 0.8 }, { cols: [23,24,25,26], row: 12, f: 0.8 }, { cols: [16,17,18,19], row: 18, f: 1 }], force: -79,
+    void: (c, r) => (r > 6 && (c < 2 || c > 33)) || (r > 12 && (c < 8 || c > 27)) || (r > 18 && (c < 13 || c > 22)),
+    fixed: (c, r) => r === 0 },
+  { id: 'totem', name: 'Totem', loads: [{ cols: [4,5,6,7], row: 7, f: 1 }, { cols: [27,28,29,30], row: 14, f: 1 }, { cols: [4,5,6,7], row: 19, f: 1 }], force: -12.5,
+    void: (c, r) => c < 3 || c > 32,
+    fixed: (c, r) => r === 0 && c >= 10 && c <= 25 },
+  { id: 'convoy', name: 'Convoy', loads: [{ cols: [6,7,8,9], row: 11, f: 0.8 },{ cols: [10,11,12,13], row: 11, f: 0.8 },{ cols: [14,15,16,17], row: 11, f: 0.8 },{ cols: [18,19,20,21], row: 11, f: 0.8 },{ cols: [22,23,24,25], row: 11, f: 0.8 },{ cols: [26,27,28,29], row: 11, f: 0.8 }], force: -73,
+    void: (c, r) => r > 11,
+    fixed: (c, r) => r === 0 },
+  { id: 'ferryline', name: 'Ferry Line', water: true, loads: [{ cols: [6,7,8,9], row: 13, f: 0.8 },{ cols: [10,11,12,13], row: 13, f: 0.8 },{ cols: [14,15,16,17], row: 13, f: 0.8 },{ cols: [18,19,20,21], row: 13, f: 0.8 },{ cols: [22,23,24,25], row: 13, f: 0.8 },{ cols: [26,27,28,29], row: 13, f: 0.8 }], force: -14,
+    void: (c, r) => r > 13,
+    fixed: (c, r) => r <= 3 && (c <= 4 || c >= 31) },
+  { id: 'freightarm', name: 'Freight Arm', loads: [{ cols: [9,10,11,12], row: 17, f: 0.8 }, { cols: [15,16,17,18], row: 17, f: 0.8 }, { cols: [21,22,23,24], row: 17, f: 0.8 }], force: -13,
+    void: (c, r) => c >= 28 || r > 17,
+    fixed: (c, r) => c <= 6 },
+  { id: 'chain', name: 'Chain', loads: [{ cols: [16,17,18,19], row: 3, f: 1 }, { cols: [16,17,18,19], row: 9, f: 1 }, { cols: [16,17,18,19], row: 15, f: 1 }], force: -24.2,
+    void: (c, r) => c < 9 || c > 26 || (c >= 14 && c <= 21 && ((r >= 4 && r <= 6) || (r >= 10 && r <= 12) || (r >= 16 && r <= 18))),
+    fixed: (c, r) => r === ROWS - 1 && c >= 9 && c <= 26 },
+  { id: 'pockets', name: 'Pockets', loads: [{ cols: [16,17,18,19], row: 4, f: 1 }, { cols: [16,17,18,19], row: 11, f: 1 }, { cols: [16,17,18,19], row: 18, f: 1 }], force: -26,
+    void: (c, r) => c < 10 || c > 25 || (c >= 14 && c <= 21 && ((r >= 5 && r <= 7) || (r >= 12 && r <= 14) || r >= 19)),
+    fixed: (c, r) => r === 0 },
+  { id: 'staircase', name: 'Staircase', loads: [{ cols: [3,4,5,6], row: 5, f: 0.8 }, { cols: [12,13,14,15], row: 10, f: 0.9 }, { cols: [21,22,23,24], row: 15, f: 1 }, { cols: [30,31,32,33], row: 20, f: 1.1 }], force: -56,
+    void: (c, r) => r > [5, 10, 15, 20][Math.floor(c / 9)],
+    fixed: (c, r) => r === 0 },
+  { id: 'archipelago', name: 'Archipelago', water: true, loads: [{ cols: [6,7,8,9], row: ROWS - 1, f: 1 }, { cols: [26,27,28,29], row: ROWS - 1, f: 1 }], force: -50,
+    void: (c, r) => r <= 3 && c > 4 && c < 31 && !(c >= 16 && c <= 19),
+    fixed: (c, r) => r <= 3 && (c <= 4 || (c >= 16 && c <= 19) || c >= 31) },
+  { id: 'pendulums', name: 'Twin Pendulums', loads: [{ cols: [7,8,9,10], row: 6, f: 1 }, { cols: [25,26,27,28], row: 6, f: 1 }], force: -24.7,
+    void: (c, r) => r < 3,
+    fixed: (c, r) => r >= 20 && c >= 15 && c <= 20 },
+  { id: 'citylights', name: 'City Lights', loads: [{ cols: [2,3,4,5], row: 12, f: 1 }, { cols: [14,15,16,17], row: 19, f: 1 }, { cols: [26,27,28,29], row: 15, f: 1 }], force: -30,
+    void: (c, r) => r > [12, 12, 7, 7, 19, 19, 8, 8, 15, 15, 6, 6][Math.floor(c / 3)],
+    fixed: (c, r) => r === 0 }
 ];
+for (const l of LEVELS) if (!l.loads) l.loads = [{ cols: l.loadCols, row: l.loadRow, f: 1 }];
 const OLD_IDS = ['bedrock', 'gorge', 'cantilever', 'island', 'tower', 'gantry', 'chandelier', 'cradle']; // v3 saves were keyed by position
 
 const $ = id => document.getElementById(id);
@@ -266,9 +335,28 @@ function fit() {
   const R = co && !co.hidden && co.offsetHeight ? Math.min(h * 0.55, co.offsetHeight + 84 + 10) : 0;
   const top = cam.cy + vh / 2;
   if (R) { const k = h / (h - R); vh *= k; vw *= k; }
-  camera.left = -vw / 2; camera.right = vw / 2;
-  camera.top = R ? top : cam.cy + vh / 2; camera.bottom = camera.top - vh;
+  baseVw = vw; baseVh = vh; baseCy = (R ? top : cam.cy + vh / 2) - vh / 2;
+  applyView();
+}
+let zoom = 1, viewCx = 0, viewCy = 0, baseVw = 1, baseVh = 1, baseCy = 0;
+function applyView() {
+  const W = baseVw / zoom, H = baseVh / zoom;
+  const mx = (baseVw - W) / 2, my = (baseVh - H) / 2;
+  viewCx = clamp(viewCx, -mx, mx); viewCy = clamp(viewCy, baseCy - my, baseCy + my);
+  if (zoom <= 1.001) { viewCx = 0; viewCy = baseCy; }
+  camera.left = viewCx - W / 2; camera.right = viewCx + W / 2;
+  camera.top = viewCy + H / 2; camera.bottom = viewCy - H / 2;
   camera.updateProjectionMatrix();
+  const zr = document.getElementById('zoomReset');
+  if (zr) zr.hidden = zoom <= 1.02;
+}
+function resetView() { zoom = 1; viewCx = 0; viewCy = baseCy; applyView(); }
+// keep the world point `a` under screen fraction (sx, sy) at the given zoom
+function zoomAt(z, a, sx, sy) {
+  zoom = clamp(z, 1, 4.5);
+  const W = baseVw / zoom, H = baseVh / zoom;
+  viewCx = a.x - sx * W + W / 2; viewCy = a.y + sy * H - H / 2;
+  applyView();
 }
 new ResizeObserver(fit).observe(stage);
 
@@ -346,7 +434,7 @@ function buildRock() {
 const cargo = new THREE.Group();
 cargo.position.z = 1;
 scene.add(cargo);
-const box = new THREE.Group();
+let box = new THREE.Group();
 cargo.add(box);
 function part(w, h, d, x, y, color, z) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.1 }));
@@ -361,10 +449,12 @@ part(0.95, 1.15, 1.0, -0.15, 2.35, 0x45c27a);
 part(1.1, 0.65, 1.0, 1.1, 2.1, 0x4a8dff);
 part(0.6, 0.5, 0.9, 1.25, 2.67, 0xff8fb1);
 const cableGeo = new THREE.BufferGeometry();
-cableGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(24), 3));
+cableGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(24 * 6), 3));
 const cables = new THREE.LineSegments(cableGeo, new THREE.LineBasicMaterial({ color: 0x3b4a57 }));
 cables.frustumCulled = false; cables.renderOrder = 4;
 cargo.add(cables);
+const boxes = [box];
+for (let i = 1; i < 6; i++) { const b = box.clone(true); b.visible = false; cargo.add(b); boxes.push(b); }
 
 /* ---------- Brush and tutorial ghost ---------- */
 let brushR = 1.8;
@@ -397,6 +487,46 @@ for (let i = 0; i < 18; i++) {
 }
 ghost.add(trail);
 scene.add(ghost);
+
+/* ---------- Break markers: a small spark burst where a stick snaps ---------- */
+const fxPool = [], SPARKS = 8;
+const sparkGeo = new THREE.CircleGeometry(0.2, 10), flashGeo = new THREE.CircleGeometry(0.5, 18);
+for (let i = 0; i < 28; i++) {
+  const g = new THREE.Group(); g.visible = false; g.position.z = 5;
+  const d = new THREE.Mesh(flashGeo, flat(0xfff3c4, { transparent: true, opacity: 0 })); d.renderOrder = 8; g.add(d);
+  const sp = [];
+  for (let k = 0; k < SPARKS; k++) {
+    const m = new THREE.Mesh(sparkGeo, flat(k % 3 === 0 ? 0xff3b2e : k % 3 === 1 ? 0xffd23f : 0xffffff, { transparent: true, opacity: 0 })); m.renderOrder = 8;
+    g.add(m); sp.push({ m, a: (k / SPARKS) * Math.PI * 2 + (i % 3) * 0.3, v: 0.8 + (k % 3) * 0.35 });
+  }
+  scene.add(g); fxPool.push({ g, d, sp, t0: 0, life: 1, size: 1, on: false });
+}
+let fxNext = 0, lastSnapFx = -1e9;
+function snapFx(sp) {
+  const now = performance.now(), big = now - lastSnapFx > 700;     // first break of a failure is a bit bigger
+  lastSnapFx = now;
+  const f = fxPool[fxNext++ % fxPool.length];
+  f.on = true; f.t0 = now; f.life = big ? 850 : 600; f.size = big ? 1.4 : 1;
+  f.g.position.set((sp.n1.x + sp.n2.x) / 2, (sp.n1.y + sp.n2.y) / 2, 5);
+  f.g.visible = true;
+}
+function updateFx(now) {
+  for (const f of fxPool) {
+    if (!f.on) continue;
+    const a = (now - f.t0) / f.life;
+    if (a >= 1) { f.on = false; f.g.visible = false; continue; }
+    const e = 1 - Math.pow(1 - a, 2.5);
+    f.d.scale.setScalar((0.6 + e * 1.6) * f.size);
+    f.d.material.opacity = Math.max(0, 1 - a * 2.2);
+    for (const s of f.sp) {
+      const r = e * s.v * 2.2 * f.size;
+      s.m.position.set(Math.cos(s.a) * r, Math.sin(s.a) * r, 0);
+      s.m.scale.setScalar(1 - a * 0.6);
+      s.m.material.opacity = Math.min(1, (1 - a) * 1.6);
+    }
+  }
+}
+
 let ghostPath = null, ghostLen = [], ghostTotal = 0;
 function pointOn(u) {
   const d = u * ghostTotal;
@@ -512,13 +642,14 @@ function addSpring(n1, n2, type, k, maxComp, maxTens) {
 function initLevel(idx, fresh) {
   cur = idx;
   const lvl = LEVELS[idx];
+  zoom = 1;
   starsSeen = -1; state = 'SETTLING'; stableTimer = 0; removedCount = 0; peak = 0; ramp = 1; prevKE = 0;
   undoStack = []; stroke = []; lastGood = null; strokeEntry = null;
   nodes = []; springs = [];
 
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
     const x = c * SP - HALF_W, y = r * SP - HALF_H;
-    const isWeight = r === lvl.loadRow && lvl.loadCols.includes(c);
+    const isWeight = lvl.loads.some(L => r === L.row && L.cols.includes(c));
     nodes.push({
       i: r * COLS + c, c, r, x, y, ox: x, oy: y, vx: 0, vy: 0,
       mass: isWeight ? LOAD_MASS : NODE_MASS, fixed: lvl.fixed(c, r), isWeight,
@@ -540,7 +671,7 @@ function initLevel(idx, fresh) {
   }
 
   stickTotal = 0;
-  for (const sp of springs) if (sp.type === 'axial' && cuttable(sp)) { sp.score = true; stickTotal++; }
+  for (const sp of springs) if (cuttable(sp)) { sp.score = true; stickTotal++; }
   stickTotal = Math.max(1, stickTotal);
 
   // Come back to a level exactly as it was left
@@ -604,17 +735,16 @@ function solve(prewarm) {
   if (!prewarm) ramp = Math.min(1, ramp + (1 / 60) / 0.2);
   const k = Math.sin(ramp * Math.PI * 0.5);
 
-  const loads = [];
-  for (const c of lvl.loadCols) loads.push(nodes[lvl.loadRow * COLS + c]);
+  const loads = [], perOf = new Map();
+  for (const L of lvl.loads) for (const c of L.cols) { const n = nodes[L.row * COLS + c]; loads.push(n); perOf.set(n, lvl.force * (L.f || 1) / L.cols.length); }
 
   if (topoDirty) { connected = checkConnected(loads); topoDirty = false; }
   if (!connected) { setFailed(prewarm); return; }
 
-  const perNode = (lvl.force * k) / loads.length;
   let maxRatio = 0, snapped = false;
 
   for (let s = 0; s < SUBSTEPS; s++) {
-    for (const n of loads) n.vy += (perNode / n.mass) * DT;
+    for (const n of loads) n.vy += (perOf.get(n) * k / n.mass) * DT;
     for (const n of nodes) if (!n.fixed && !n.isWeight && !n.removed) n.vy -= GRAVITY * DT;
 
     for (const sp of springs) {
@@ -634,7 +764,7 @@ function solve(prewarm) {
 
       if (ratio >= 1) {
         sp.broken = true; snapped = true; topoDirty = true;
-        if (!prewarm) soundSnap();
+        if (!prewarm) { soundSnap(); snapFx(sp); }
         continue;
       }
       const fx = (dx / len) * force, fy = (dy / len) * force;
@@ -698,11 +828,11 @@ function animateFalling() {
 
 /* ---------- Carving ---------- */
 const cuttable = sp => !(sp.n1.fixed && sp.n2.fixed) && !sp.n1.isWeight && !sp.n2.isWeight && !sp.n1.void && !sp.n2.void;
-// Score = share of main sticks gone (cut, or lost with a joint)
+// Score = share of sticks (thick and thin) gone (cut, or lost with a joint)
 let stickTotal = 1;
 function stickPct() {
   let gone = 0;
-  for (const sp of springs) if (sp.type === 'axial' && sp.score && (sp.cut || sp.n1.removed || sp.n2.removed)) gone++;
+  for (const sp of springs) if (sp.score && (sp.cut || sp.n1.removed || sp.n2.removed)) gone++;
   return gone / stickTotal * 100;
 }
 const cutCount = () => springs.reduce((a, sp) => a + (sp.cut ? 1 : 0), 0);
@@ -723,7 +853,8 @@ function carveAt(cx, cy) {
     const ex = b.x - a.x, ey = b.y - a.y, l2 = ex * ex + ey * ey || 1;
     const t = clamp(((cx - a.x) * ex + (cy - a.y) * ey) / l2, 0, 1);
     const qx = a.x + ex * t - cx, qy = a.y + ey * t - cy;
-    if (qx * qx + qy * qy <= r2) { sp.broken = sp.cut = true; changed = true; }
+    const rr = brushR + (sp.type === 'shear' ? 0.1 : 0.2);     // touching a drawn stick cuts it
+    if (qx * qx + qy * qy <= rr * rr) { sp.broken = sp.cut = true; changed = true; }
   }
   return changed;
 }
@@ -888,21 +1019,28 @@ function updateVisuals() {
   strutGeo.attributes.color.needsUpdate = true;
   strutGeo.setDrawRange(0, q * 6);
 
-  // Cargo follows the weight nodes
+  // Cargo follows the weight nodes (one container per load group)
   const lvl = LEVELS[cur], cp = cableGeo.attributes.position.array;
-  let ax = 0, ay = 0;
-  lvl.loadCols.forEach((c, i) => {
-    const n = nodes[lvl.loadRow * COLS + c];
-    const x = n.x + n.cx, y = n.y + n.cy;
-    ax += x; ay += y;
-    cp[i * 6] = x; cp[i * 6 + 1] = y; cp[i * 6 + 2] = 0;
+  lvl.loads.forEach((L, j) => {
+    let ax = 0, ay = 0;
+    L.cols.forEach((c, i) => {
+      const n = nodes[L.row * COLS + c];
+      const x = n.x + n.cx, y = n.y + n.cy;
+      ax += x; ay += y;
+      const o = (j * 4 + i) * 6;
+      cp[o] = x; cp[o + 1] = y; cp[o + 2] = 0;
+    });
+    ax /= L.cols.length; ay /= L.cols.length;
+    const sc = 0.78 + 0.22 * (L.f || 1);
+    boxes[j].visible = true; boxes[j].scale.setScalar(sc);
+    boxes[j].position.set(ax, ay + 0.45, 0);
+    L.cols.forEach((c, i) => {
+      const f = (i / (L.cols.length - 1)) * 2 - 1, o = (j * 4 + i) * 6;
+      cp[o + 3] = ax + f * 1.4 * sc; cp[o + 4] = ay + 0.7 * sc; cp[o + 5] = 0;
+    });
   });
-  ax /= lvl.loadCols.length; ay /= lvl.loadCols.length;
-  box.position.set(ax, ay + 0.45, 0);
-  lvl.loadCols.forEach((c, i) => {
-    const f = (i / (lvl.loadCols.length - 1)) * 2 - 1;
-    cp[i * 6 + 3] = ax + f * 1.4; cp[i * 6 + 4] = ay + 0.7; cp[i * 6 + 5] = 0;
-  });
+  for (let j = lvl.loads.length; j < boxes.length; j++) boxes[j].visible = false;
+  cableGeo.setDrawRange(0, lvl.loads.length * 8);
   cableGeo.attributes.position.needsUpdate = true;
 }
 
@@ -925,7 +1063,7 @@ let tutStep = -1, tutMode = '', tutPhase = 'do', tutTimer = 0, tutR0 = 1.8, tutB
 function tutStart() {
   clearTimeout(tutTimer); tutPhase = 'do'; tutBand = null;
   tutStep = LEVELS[cur].tut ? 0 : -1; tutMode = '';
-  if (tutStep === 0) { $('radius').value = 1.8; setRadiusUi(1.8); setBrushRadius(1.8); }
+  if (tutStep === 0) { $('radius').value = 68; setRadiusUi(radiusFrom(68)); setBrushRadius(radiusFrom(68)); }
   tutR0 = brushR; renderCoach();
 }
 function tutDone() {                      // step completed: show the result, then move on
@@ -1104,9 +1242,10 @@ $('reset').addEventListener('click', () => { initAudio(); resetLevel(); });
 $('coachNext').addEventListener('click', () => { if (tutStep === TUT.length - 1) tutFinish(true); else tutDone(); });
 $('coachSkip').addEventListener('click', () => tutFinish(true));
 
+const radiusFrom = v => 0.08 + 3.72 * (v / 100) * (v / 100);   // fine control at the small end
 function setRadiusUi(v) { $('brushDot').style.width = $('brushDot').style.height = (5 + v * 5) + 'px'; }
 $('radius').addEventListener('input', e => {
-  const v = parseFloat(e.target.value);
+  const v = radiusFrom(parseFloat(e.target.value));
   setRadiusUi(v);
   setBrushRadius(v);
 });
@@ -1116,7 +1255,7 @@ window.addEventListener('keydown', e => {
   else if (e.key === 'Escape') closeMenu();
   else if (e.key === 'r' || e.key === 'R') resetLevel();
   else if (e.key === '[' || e.key === ']') {
-    const r = $('radius'); r.value = clamp(parseFloat(r.value) + (e.key === ']' ? 0.2 : -0.2), 0.4, 3.8);
+    const r = $('radius'); r.value = clamp(parseFloat(r.value) + (e.key === ']' ? 4 : -4), 0, 100);
     r.dispatchEvent(new Event('input'));
   }
 });
@@ -1140,17 +1279,64 @@ function endStroke(e) {
   stroke = [];
   if (e && e.pointerType === 'touch') brush.visible = false;
 }
+const ptrs = new Map();
+let gesture = null, ignoreUp = false, strokeT0 = 0, panning = null;
+const frac = (x, y) => { const r = cv.getBoundingClientRect(); return [(x - r.left) / r.width, (y - r.top) / r.height]; };
+const wAt = (x, y) => { const [sx, sy] = frac(x, y); return { x: camera.left + sx * (camera.right - camera.left), y: camera.top - sy * (camera.top - camera.bottom) }; };
+function startGesture() {
+  const [a, b] = [...ptrs.values()];
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  gesture = { d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, z0: zoom, anchor: wAt(mx, my) };
+}
+function doGesture() {
+  const [a, b] = [...ptrs.values()];
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, [sx, sy] = frac(mx, my);
+  zoomAt(gesture.z0 * Math.hypot(a.x - b.x, a.y - b.y) / gesture.d0, gesture.anchor, sx, sy);
+}
 cv.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse' && e.button === 2) { panning = { x: e.clientX, y: e.clientY }; try { cv.setPointerCapture(e.pointerId); } catch (err) {} return; }
   if (e.pointerType === 'mouse' && e.button !== 0) return;
   initAudio();
   try { cv.setPointerCapture(e.pointerId); } catch (err) {}
-  carving = true; stroke = []; strokeEntry = null; lastP = null; strokeSnap = takeSnapshot();
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size >= 2) {
+    // a second finger means zoom/pan: drop the tiny cut the first finger may have started
+    if (carving && strokeEntry && performance.now() - strokeT0 < 500) undo();
+    endStroke(); strokeEntry = null; brush.visible = false;
+    if (ptrs.size === 2) startGesture();
+    return;
+  }
+  ignoreUp = false;
+  carving = true; stroke = []; strokeEntry = null; lastP = null; strokeSnap = takeSnapshot(); strokeT0 = performance.now();
   onMove(e);
 });
-cv.addEventListener('pointermove', onMove);
-cv.addEventListener('pointerup', endStroke);
-cv.addEventListener('pointercancel', endStroke);
-cv.addEventListener('lostpointercapture', endStroke);
+cv.addEventListener('pointermove', e => {
+  if (panning) {
+    const r = cv.getBoundingClientRect(), k = (camera.right - camera.left) / r.width;
+    viewCx -= (e.clientX - panning.x) * k; viewCy += (e.clientY - panning.y) * k;
+    panning = { x: e.clientX, y: e.clientY }; applyView(); return;
+  }
+  if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (gesture && ptrs.size >= 2) { doGesture(); return; }
+  if (ignoreUp) return;
+  onMove(e);
+});
+const upPtr = e => {
+  panning = null;
+  if (!ptrs.delete(e.pointerId)) return;
+  if (gesture && ptrs.size < 2) { gesture = null; ignoreUp = ptrs.size > 0; }
+  if (!ignoreUp) endStroke(e);
+};
+cv.addEventListener('pointerup', upPtr);
+cv.addEventListener('pointercancel', upPtr);
+cv.addEventListener('lostpointercapture', e => { if (ptrs.has(e.pointerId)) upPtr(e); else if (!gesture && !ignoreUp) endStroke(e); });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  const [sx, sy] = frac(e.clientX, e.clientY);
+  zoomAt(zoom * Math.exp(-e.deltaY * 0.0015), wAt(e.clientX, e.clientY), sx, sy);
+}, { passive: false });
+$('zoomReset').addEventListener('click', resetView);
 window.addEventListener('blur', () => endStroke());
 cv.addEventListener('pointerleave', () => { if (!carving) brush.visible = false; });
 
@@ -1171,6 +1357,7 @@ function frame(t) {
   }
   updateVisuals();
   updateGhost(t);
+  updateFx(performance.now());
   updateHud(false);
   renderer.render(scene, camera);
 }
@@ -1186,7 +1373,7 @@ fit();
 requestAnimationFrame(frame);
 initStore();
 
-window.__topologyCarver = { popStars,
+window.__topologyCarver = { popStars, snapFx,
   w2s: (x, y) => { const r = cv.getBoundingClientRect(); return [r.left + (x - camera.left) / (camera.right - camera.left) * r.width, r.top + (camera.top - y) / (camera.top - camera.bottom) * r.height]; }, LEVELS, initLevel, solve, carveAt, pruneOrphans, setBrushRadius, progress: () => progress, tut: () => tutStep,
   info: () => ({ state, peak, removed: removedCount, total: totalCarvable, connected, level: cur }),
   stepN: n => { for (let i = 0; i < n; i++) { if (state !== 'FAILED') solve(false); } }
