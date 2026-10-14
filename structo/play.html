@@ -2,122 +2,159 @@
 <title>Topology Carver</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap">
 <style>
-  /* Layout: the board fills the screen. Level selector top left, readout top right, brush and undo in a dock at the bottom. */
+  /* Layout: the board fills the screen. Level selector top left, readout top right, brush, undo and reset in a dock at the bottom.
+     Look: bright sky, chunky white panels with a bottom ledge, glossy gold buttons, rounded type. */
   :root {
-    --ink: #0b1219;
-    --glass: rgba(14, 22, 30, 0.84);
-    --track: #1b2733;
-    --line: #26353f;
-    --fg: #dbe6ee;
-    --muted: #7f93a3;
-    --accent: #f2c14e;
-    --good: #5fd0a0;
-    --warn: #f0a23c;
-    --bad: #ee5d4c;
-    --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-    --font-body: 'IBM Plex Sans', system-ui, sans-serif;
-    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
-    color-scheme: dark;
+    --panel: #ffffff; --ledge: #a6c9dd; --line: #c3dbe8; --track: #d6e8f1;
+    --fg: #17384d; --muted: #5c8099;
+    --accent: #ffb21f; --accent-d: #d98400; --accent-fg: #4a2b00;
+    --good: #14a96b; --bad: #ee4b3a; --bad-d: #b92f21;
+    --font-display: 'Fredoka', 'Trebuchet MS', system-ui, sans-serif;
+    --font-body: 'Fredoka', system-ui, sans-serif;
+    --font-mono: 'Fredoka', system-ui, sans-serif;
+    color-scheme: light;
   }
   html, body { height: 100%; }
-  body { background: var(--ink); color: var(--fg); font-family: var(--font-body); font-size: 13px; overflow: hidden; -webkit-user-select: none; user-select: none; }
+  body { background: linear-gradient(#86d0f3, #e4f7ff); color: var(--fg); font-family: var(--font-body); font-size: 15px; font-weight: 500; overflow: hidden; -webkit-user-select: none; user-select: none; }
   [hidden] { display: none !important; }
   button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; }
-  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
   #stage { position: absolute; inset: 0; overflow: hidden; }
   #stage canvas { position: absolute; inset: 0; touch-action: none; cursor: crosshair; display: block; }
 
-  .glass { background: var(--glass); border: 1px solid var(--line); border-radius: 10px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-  .icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; color: var(--muted); }
-  .icon:hover:not(:disabled) { color: var(--fg); background: rgba(255, 255, 255, 0.06); }
-  .icon:disabled { opacity: 0.35; cursor: not-allowed; }
+  .glass { background: var(--panel); border: 2px solid var(--line); border-radius: 18px; box-shadow: 0 4px 0 var(--ledge), 0 10px 20px rgba(23, 56, 77, 0.14); }
+  .icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 14px; color: var(--fg); }
+  .icon svg { width: 22px; height: 22px; stroke-width: 2.8; }
+  .icon:hover:not(:disabled) { background: #eaf4fa; }
+  .icon:active:not(:disabled) { transform: translateY(2px); }
+  .icon:disabled { opacity: 0.3; cursor: not-allowed; }
 
   #top { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; pointer-events: none; }
   #top > * { pointer-events: auto; }
 
-  /* Level selector */
-  #lvl { position: relative; display: flex; align-items: center; padding: 3px; }
-  #lvlbtn { display: flex; align-items: baseline; gap: 8px; padding: 4px 6px; border-radius: 8px; min-width: 0; }
-  #lvlbtn:hover { background: rgba(255, 255, 255, 0.06); }
-  #lvlnum { font-family: var(--font-mono); font-size: 13px; color: var(--accent); }
-  #lvlname { font-family: var(--font-display); font-weight: 600; font-size: 20px; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; }
-  #menu { position: absolute; top: calc(100% + 8px); left: 0; display: grid; grid-template-columns: repeat(4, 54px); gap: 6px; padding: 8px; }
-  .chip { height: 50px; border-radius: 8px; border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; font-family: var(--font-mono); font-size: 13px; }
+  #lvl { position: relative; display: flex; align-items: center; padding: 3px; min-width: 0; flex: 0 1 auto; }
+  #lvl .icon { flex: none; }
+  #lvlbtn { display: flex; align-items: center; gap: 9px; padding: 4px 8px; border-radius: 12px; min-width: 0; text-align: left; }
+  #lvlnum { flex: none; }
+  #lvlbtn:hover { background: #eaf4fa; }
+  #lvlnum { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(#ffc84a, #ffa800); color: var(--accent-fg); font-weight: 700; font-size: 15px; box-shadow: 0 2px 0 var(--accent-d); }
+  #lvlname { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.05; min-width: 0; overflow-wrap: anywhere; }
+  #menu { position: absolute; top: calc(100% + 10px); left: 0; display: grid; grid-template-columns: repeat(3, 62px); gap: 8px; padding: 10px; }
+  .chip { height: 56px; border-radius: 14px; border: 2px solid var(--line); background: #fff; box-shadow: 0 3px 0 var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; font-weight: 700; font-size: 16px; }
   .chip:hover { border-color: var(--muted); }
-  .chip[aria-current="true"] { border-color: var(--accent); }
+  .chip[aria-current="true"] { border-color: var(--accent); background: #fff6df; box-shadow: 0 3px 0 var(--accent-d); }
   .pips { display: flex; gap: 3px; }
-  .pips i { width: 6px; height: 6px; border-radius: 50%; background: var(--track); display: block; }
+  .pips i { width: 8px; height: 8px; border-radius: 50%; background: var(--track); display: block; }
   .chip[data-n="1"] .pips i:nth-child(-n+1), .chip[data-n="2"] .pips i:nth-child(-n+2), .chip[data-n="3"] .pips i { background: var(--accent); }
 
-  /* Readout */
-  #stats { display: flex; gap: 18px; padding: 8px 14px; }
-  .stat { min-width: 0; }
-  .k { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  #stats { display: flex; gap: 18px; padding: 8px 16px; margin-left: auto; flex: none; }
+  .stat { min-width: 0; border-radius: 10px; }
+  .k { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
   .row { display: flex; align-items: baseline; gap: 2px; }
-  .v { font-family: var(--font-mono); font-weight: 600; font-size: 24px; line-height: 1.2; font-variant-numeric: tabular-nums; }
-  .row small { font-size: 12px; color: var(--muted); }
+  .v { font-weight: 700; font-size: 29px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .row small { font-size: 13px; font-weight: 600; color: var(--muted); }
+  #statBest { color: var(--muted); }
   #statCarved[data-s="settling"] { color: var(--muted); }
   #statCarved[data-s="passed"] { color: var(--good); }
   #statCarved[data-s="failed"] { color: var(--bad); }
-  #stars { display: flex; gap: 3px; height: 16px; }
-  .star { width: 16px; height: 16px; fill: none; stroke: var(--line); stroke-width: 1.6; stroke-linejoin: round; }
-  #stars[data-n="1"] .star:nth-child(-n+1), #stars[data-n="2"] .star:nth-child(-n+2), #stars[data-n="3"] .star { fill: var(--accent); stroke: var(--accent); }
-  .bar { position: relative; width: 104px; height: 6px; margin-top: 8px; border-radius: 3px; overflow: hidden; background: linear-gradient(90deg, #2b5f7a, #33908f 30%, #e6c24c 55%, #f08540 80%, #e84a3b); }
-  .bar i { position: absolute; top: 0; bottom: 0; right: 0; width: 100%; background: var(--track); }
+  #starpop { position: absolute; left: 50%; top: 24%; transform: translateX(-50%); pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 5; }
+  #starpop .row3 { display: flex; gap: 6px; }
+  #starpop svg { width: 54px; height: 54px; fill: #e3eef4; stroke: #b4cbd8; stroke-width: 1.6; stroke-linejoin: round; filter: drop-shadow(0 3px 0 rgba(23,56,77,.15)); }
+  #starpop svg.on { fill: var(--accent); stroke: var(--accent-d); }
+  #starpop svg.new { animation: starpop .7s cubic-bezier(.2,1.6,.4,1) both; }
+  #starpop b { font-family: var(--font-display); font-size: 26px; letter-spacing: .04em; text-transform: uppercase; color: var(--accent-d); text-shadow: 0 2px 0 #fff, 0 0 12px #fff; animation: starpop .5s .1s cubic-bezier(.2,1.6,.4,1) both; }
+  #starpop.out { animation: starout .5s ease-in forwards; }
+  @keyframes starpop { 0% { transform: scale(0) rotate(-40deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+  @keyframes starout { to { opacity: 0; transform: translateX(-50%) translateY(-24px); } }
 
-  /* Dock */
-  #dock { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 4px 14px 4px 4px; }
-  #undo[data-alert="1"] { color: var(--bad); background: rgba(238, 93, 76, 0.14); }
-  .sep { width: 1px; height: 20px; background: var(--line); }
-  .dotwrap { width: 28px; height: 28px; display: grid; place-items: center; }
-  #brushDot { display: block; border-radius: 50%; border: 1.5px solid var(--accent); background: rgba(242, 193, 78, 0.18); }
-  input[type=range] { width: 150px; accent-color: var(--accent); margin: 0; }
+  #dock { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 6px 8px; }
+  #undo[data-alert="1"], #reset[data-armed="1"] { color: #fff; background: var(--bad); box-shadow: 0 3px 0 var(--bad-d); }
+  .sep { width: 2px; height: 26px; border-radius: 1px; background: var(--line); }
+  .dotwrap { width: 34px; height: 34px; display: grid; place-items: center; }
+  #brushDot { display: block; border-radius: 50%; border: 3px solid var(--fg); background: rgba(23, 56, 77, 0.12); }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 140px; height: 14px; border-radius: 7px; background: var(--track); margin: 0; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(#ffc84a, #ffa800); border: 3px solid #fff; box-shadow: 0 3px 0 var(--accent-d); }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: #ffb21f; border: 3px solid #fff; box-shadow: 0 3px 0 var(--accent-d); }
+  #resetHint { position: absolute; right: 0; bottom: calc(100% + 10px); background: var(--fg); color: #fff; font-size: 13px; font-weight: 600; padding: 6px 11px; border-radius: 10px; white-space: nowrap; pointer-events: none; }
+
+  #coach { position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%); width: min(450px, calc(100% - 24px)); padding: 14px 18px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .coachtop { display: flex; justify-content: space-between; align-items: center; }
+  #coachStep { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  #coachSkip { font-size: 13px; font-weight: 600; color: var(--muted); padding: 3px 8px; border-radius: 8px; }
+  #coachSkip:hover { background: #eaf4fa; color: var(--fg); }
+  #coach h2 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 28px; letter-spacing: 0.01em; line-height: 1.05; }
+  #coach p { margin: 0; font-size: 16px; line-height: 1.4; }
+  #coachProg { display: flex; align-items: center; gap: 10px; }
+  #coachProg div { flex: 1; height: 12px; border-radius: 6px; background: var(--track); overflow: hidden; }
+  #coachProg i { display: block; height: 100%; width: 0; background: linear-gradient(#ffc84a, #ffa800); border-radius: 6px; }
+  #coachProg span { font-weight: 600; font-size: 13px; color: var(--muted); min-width: 5.5em; text-align: right; }
+  .primary { background: linear-gradient(#ffc84a, #ffa800); color: var(--accent-fg); font-weight: 700; font-size: 16px; border-radius: 14px; padding: 10px 22px; align-self: flex-start; box-shadow: 0 4px 0 var(--accent-d); }
+  .primary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--accent-d); }
+
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 178, 31, 0.8); } 70% { box-shadow: 0 0 0 14px rgba(255, 178, 31, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 178, 31, 0); } }
+  #coach.ok { border-color: var(--good); box-shadow: 0 4px 0 #0e7f50, 0 10px 20px rgba(20, 169, 107, 0.25); }
+  #coach.ok h2 { color: var(--good); }
+  @keyframes nudge { 0%, 100% { transform: translateX(-14px); } 50% { transform: translateX(14px); } }
+  #radius.nudge { animation: nudge 1.2s ease-in-out infinite; }
+  .pulse { outline: 3px solid var(--accent); outline-offset: 4px; animation: pulse 1.5s ease-out infinite; }
 
   @media (max-width: 560px) {
     #lvlname { display: none; }
-    #stats { gap: 12px; padding: 6px 10px; }
-    .v { font-size: 19px; }
-    .bar { width: 76px; }
-    input[type=range] { width: 120px; }
+    #stats { gap: 12px; padding: 6px 12px; }
+    .v { font-size: 22px; }
+    input[type=range] { width: 100px; }
+    #coach h2 { font-size: 24px; }
+    #coach p { font-size: 15px; }
   }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } .pulse { animation: none; } }
 </style>
 
 <main id="stage">
   <div id="top">
     <div id="lvl" class="glass">
       <button type="button" class="icon" id="prev" aria-label="Previous level"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <button type="button" id="lvlbtn" aria-haspopup="true" aria-expanded="false" aria-label="Choose level"><span id="lvlnum">1</span><span id="lvlname">Bedrock</span></button>
+      <button type="button" id="lvlbtn" aria-haspopup="true" aria-expanded="false" aria-label="Choose level"><span id="lvlnum">T</span><span id="lvlname">Tutorial</span></button>
       <button type="button" class="icon" id="next" aria-label="Next level"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
       <div id="menu" class="glass" hidden></div>
     </div>
 
     <div id="stats" class="glass">
-      <div class="stat">
+      <div class="stat" id="stRemoved">
         <div class="k">Removed</div>
         <div class="row"><span class="v" id="statCarved" data-s="settling">&mdash;</span><small>%</small></div>
-        <div id="stars" data-n="0" title="Stars at 70%, 75% and 80% removed">
-          <svg class="star" viewBox="0 0 24 24"><path d="M12 2.5l3 6.2 6.8.9-5 4.8 1.3 6.7-6.1-3.3-6.1 3.3 1.3-6.7-5-4.8 6.8-.9z"/></svg>
-          <svg class="star" viewBox="0 0 24 24"><path d="M12 2.5l3 6.2 6.8.9-5 4.8 1.3 6.7-6.1-3.3-6.1 3.3 1.3-6.7-5-4.8 6.8-.9z"/></svg>
-          <svg class="star" viewBox="0 0 24 24"><path d="M12 2.5l3 6.2 6.8.9-5 4.8 1.3 6.7-6.1-3.3-6.1 3.3 1.3-6.7-5-4.8 6.8-.9z"/></svg>
-        </div>
       </div>
-      <div class="stat">
+      <div class="stat" id="stBest" hidden>
+        <div class="k">Best</div>
+        <div class="row"><span class="v" id="statBest"></span><small>%</small></div>
+      </div>
+      <div class="stat" id="stStress">
         <div class="k">Stress</div>
         <div class="row"><span class="v" id="statStress">0.00</span><small>%</small></div>
-        <div class="bar"><i id="stressMask"></i></div>
       </div>
     </div>
   </div>
 
+  <div id="coach" class="glass" hidden>
+    <div class="coachtop"><span id="coachStep"></span><button type="button" id="coachSkip">Skip tutorial</button></div>
+    <h2 id="coachTitle"></h2>
+    <p id="coachText"></p>
+    <div id="coachProg" hidden><div><i id="coachFill"></i></div><span id="coachPct"></span></div>
+    <button type="button" class="primary" id="coachNext" hidden>Next</button>
+  </div>
+
+  <div id="starpop" hidden></div>
+
   <div id="dock" class="glass">
-    <button type="button" class="icon" id="undo" aria-label="Undo last stroke" title="Undo (Ctrl+Z)" disabled><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h10a5 5 0 015 5v2M3 10l6-6M3 10l6 6"/></svg></button>
+    <button type="button" class="icon" id="undo" aria-label="Undo last stroke" title="Undo (Ctrl+Z)" disabled><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h10a5 5 0 015 5v2M3 10l6-6M3 10l6 6"/></svg></button>
     <span class="sep"></span>
     <span class="dotwrap"><i id="brushDot"></i></span>
     <input type="range" id="radius" min="0.4" max="3.8" step="0.1" value="1.8" aria-label="Brush size">
+    <span class="sep"></span>
+    <button type="button" class="icon" id="reset" aria-label="Reset level" title="Reset level (R)"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v5h5M20 20v-5h-5"/><path d="M5.6 15a8 8 0 0013.3 2.6M18.4 9A8 8 0 005.1 6.4"/></svg></button>
+    <span id="resetHint" hidden>Tap again to reset</span>
   </div>
 </main>
 
@@ -129,36 +166,41 @@
 /* ---------- Constants ---------- */
 const COLS = 36, ROWS = 22, SP = 1.0;
 const HALF_W = (COLS - 1) * SP * 0.5, HALF_H = (ROWS - 1) * SP * 0.5;
-const EXT = 4;                       // bedrock cells drawn beyond the board edge
-const WORLD_W = 48, WORLD_H = 33;    // world area kept in view
+const EXT = 4;                                  // concrete cells drawn beyond the board edge
+const DEFAULT_CAM = { w: 48, h: 33, cy: 0 };    // world area kept in view
 
-const SUBSTEPS = 6, DT = 0.016 / SUBSTEPS, DAMPING = 1.0;
+const SUBSTEPS = 6, DT = 0.016 / SUBSTEPS;
 const K_AXIAL = 340, K_SHEAR = 190;
 const MAX_COMPRESSION = 26, MAX_TENSION = 48, MAX_SHEAR = 20;
 const NODE_MASS = 0.25, LOAD_MASS = 2.0, GRAVITY = 0.3;
 const MAX_DROP = 1.6;
-const STARS = [70, 75, 80];   // % removed for 1, 2 and 3 stars
+const STARS = [70, 75, 80];                     // % removed for 1, 2 and 3 stars
 const STABLE_STEPS = 24, PEAK_EPS = 2e-5, SOLVES_PER_FRAME = 14;
-const CELL_HALF = 0.47;
 
 const LEVELS = [
-  { name: 'Bedrock', loadCols: [16,17,18,19], loadRow: ROWS - 1, force: -68,
+  { id: 'tutorial', name: 'Tutorial', tut: true, loadCols: [16,17,18,19], loadRow: 14, force: -42, cam: { w: 32, h: 25, cy: -3.5 },
+    fixed: (c, r) => r === 0, void: (c, r) => c < 10 || c > 25 || r > 14 },
+  { id: 'bedrock', name: 'Bedrock', loadCols: [16,17,18,19], loadRow: ROWS - 1, force: -68,
     fixed: (c, r) => r === 0 },
-  { name: 'River Gorge', loadCols: [16,17,18,19], loadRow: ROWS - 1, force: -72, water: true,
+  { id: 'gorge', name: 'River Gorge', loadCols: [16,17,18,19], loadRow: ROWS - 1, force: -72, water: true,
     fixed: (c, r) => r <= 3 && (c <= 7 || c >= 28) },
-  { name: 'Cantilever', void: (c, r) => c >= 27, loadCols: [18,19,20,21], loadRow: ROWS - 3, force: -51,
+  { id: 'cantilever', name: 'Cantilever', void: (c, r) => c >= 27, loadCols: [18,19,20,21], loadRow: ROWS - 3, force: -51,
     fixed: (c, r) => c <= 8 },
-  { name: 'Valley Island', loadCols: [20,21,22,23], loadRow: ROWS - 1, force: -69, water: true,
+  { id: 'island', name: 'Valley Island', loadCols: [20,21,22,23], loadRow: ROWS - 1, force: -69, water: true,
     fixed: (c, r) => r <= 3 && (c <= 6 || (c >= 13 && c <= 17) || c >= 29) },
-  { name: 'Canopy Tower', loadCols: [21,22,23,24], loadRow: ROWS - 2, force: -31,
+  { id: 'tower', name: 'Canopy Tower', loadCols: [21,22,23,24], loadRow: ROWS - 2, force: -31,
     fixed: (c, r) => c >= 12 && c <= 19 && r <= 7 },
-  { name: 'Skyline Gantry', loadCols: [16,17,18,19], loadRow: 4, force: -112, water: true,
+  { id: 'gantry', name: 'Skyline Gantry', loadCols: [16,17,18,19], loadRow: 4, force: -112, water: true,
     fixed: (c, r) => r >= ROWS - 3 && (c <= 8 || c >= 27) },
-  { name: 'Hanging Chandelier', loadCols: [16,17,18,19], loadRow: 3, force: -116,
+  { id: 'chandelier', name: 'Hanging Chandelier', loadCols: [16,17,18,19], loadRow: 3, force: -116,
     fixed: (c, r) => r === ROWS - 1 && c >= 9 && c <= 26 },
-  { name: 'Gorge Cradle', loadCols: [16,17,18,19], loadRow: 6, force: -118, water: true,
+  { id: 'cradle', name: 'Gorge Cradle', loadCols: [16,17,18,19], loadRow: 6, force: -118, water: true,
     fixed: (c, r) => r >= 10 && (c <= 6 || c >= 29) }
 ];
+const OLD_IDS = ['bedrock', 'gorge', 'cantilever', 'island', 'tower', 'gantry', 'chandelier', 'cradle']; // v3 saves were keyed by position
+
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 /* ---------- Audio ---------- */
 let audioCtx = null, soundOn = true, lastCarveSound = 0;
@@ -192,62 +234,56 @@ const soundSnap = () => tone('sawtooth', 140, 35, 0.25, 0.2);
 const soundWin = () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone('sine', f, f, 0.35, 0.1, i * 0.1));
 
 /* ---------- Scene ---------- */
-const stage = document.getElementById('stage');
+const stage = $('stage');
 const scene = new THREE.Scene();
-const BG = [0.043, 0.071, 0.098];
-scene.background = new THREE.Color(0x0b1219);
+const BG = [0.78, 0.92, 0.98];
 
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -50, 50);
 camera.position.z = 20;
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 stage.insertBefore(renderer.domElement, stage.firstChild);
 const cv = renderer.domElement;
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.75));
-const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+const sun = new THREE.DirectionalLight(0xffffff, 0.6);
 sun.position.set(10, 20, 25);
 scene.add(sun);
 
+const flat = (color, extra) => new THREE.MeshBasicMaterial(Object.assign({ color, depthTest: false, depthWrite: false }, extra || {}));
+
+let cur = 0;
 function fit() {
+  const cam = LEVELS[cur].cam || DEFAULT_CAM;
   const w = stage.clientWidth || 1, h = stage.clientHeight || 1;
   renderer.setSize(w, h);
   const a = w / h;
-  let vw = WORLD_W, vh = WORLD_H;
+  let vw = cam.w, vh = cam.h;
   if (a > vw / vh) vw = vh * a; else vh = vw / a;
-  camera.left = -vw / 2; camera.right = vw / 2; camera.top = vh / 2; camera.bottom = -vh / 2;
+  // Keep the tutorial card off the board: zoom out so the board fits above it
+  const co = document.getElementById('coach');
+  const R = co && !co.hidden && co.offsetHeight ? Math.min(h * 0.55, co.offsetHeight + 84 + 10) : 0;
+  const top = cam.cy + vh / 2;
+  if (R) { const k = h / (h - R); vh *= k; vw *= k; }
+  camera.left = -vw / 2; camera.right = vw / 2;
+  camera.top = R ? top : cam.cy + vh / 2; camera.bottom = camera.top - vh;
   camera.updateProjectionMatrix();
 }
 new ResizeObserver(fit).observe(stage);
 
-// Drafting grid
-const grid = new THREE.GridHelper(80, 40, 0x172430, 0x121c26);
-grid.rotation.x = Math.PI / 2;
-grid.position.z = -5;
-scene.add(grid);
 
-// Water behind the bedrock (only shown on levels with gaps)
-const water = new THREE.Mesh(
-  new THREE.PlaneGeometry(WORLD_W + 20, 5),
-  new THREE.MeshBasicMaterial({ color: 0x1b5f7c, transparent: true, opacity: 0.55 })
-);
-water.position.set(0, -HALF_H - 0.5 - 2.5, -1);
-scene.add(water);
-const waterLine = new THREE.Mesh(
-  new THREE.PlaneGeometry(WORLD_W + 20, 0.12),
-  new THREE.MeshBasicMaterial({ color: 0x5fb6d6, transparent: true, opacity: 0.8 })
-);
-waterLine.position.set(0, -HALF_H - 0.5, -0.9);
-scene.add(waterLine);
+// Water sits behind the concrete and shows only where the board has gaps
+const water = new THREE.Mesh(new THREE.PlaneGeometry(160, 8), flat(0x3fc1e8));
+water.position.set(0, -HALF_H - 0.5 - 4, 0); water.renderOrder = 0;
+const waterLine = new THREE.Mesh(new THREE.PlaneGeometry(160, 0.16), flat(0xc9f4ff));
+waterLine.position.set(0, -HALF_H - 0.5, 0); waterLine.renderOrder = 0;
+scene.add(water, waterLine);
 
-/* ---------- Quad meshes (one square per grid node) ---------- */
+/* ---------- Quad meshes ---------- */
 function makeQuadGeo(n) {
   const pos = new Float32Array(n * 12), col = new Float32Array(n * 12), idx = new Uint16Array(n * 6);
-  for (let i = 0; i < n; i++) {
-    const b = i * 4;
-    idx.set([b, b + 1, b + 2, b, b + 2, b + 3], i * 6);
-  }
+  for (let i = 0; i < n; i++) { const b = i * 4; idx.set([b, b + 1, b + 2, b, b + 2, b + 3], i * 6); }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
   g.setAttribute('color', new THREE.BufferAttribute(col, 3).setUsage(THREE.DynamicDrawUsage));
@@ -256,16 +292,28 @@ function makeQuadGeo(n) {
 }
 function setQuad(P, i, x, y, h) {
   const o = i * 12;
-  P[o] = x - h;     P[o + 1] = y - h;     P[o + 2] = 0;
-  P[o + 3] = x + h; P[o + 4] = y - h;     P[o + 5] = 0;
-  P[o + 6] = x + h; P[o + 7] = y + h;     P[o + 8] = 0;
-  P[o + 9] = x - h; P[o + 10] = y + h;    P[o + 11] = 0;
+  P[o] = x - h; P[o + 1] = y - h; P[o + 2] = 0;
+  P[o + 3] = x + h; P[o + 4] = y - h; P[o + 5] = 0;
+  P[o + 6] = x + h; P[o + 7] = y + h; P[o + 8] = 0;
+  P[o + 9] = x - h; P[o + 10] = y + h; P[o + 11] = 0;
 }
 function setQuadColor(C, i, r, g, b) {
   const o = i * 12;
   for (let v = 0; v < 4; v++) { C[o + v * 3] = r; C[o + v * 3 + 1] = g; C[o + v * 3 + 2] = b; }
 }
 
+// Soft fill behind the struts so the material reads as a solid body
+const cellGeo = makeQuadGeo(COLS * ROWS);
+const cellMesh = new THREE.Mesh(cellGeo, flat(0xffffff, { vertexColors: true }));
+cellMesh.frustumCulled = false; cellMesh.renderOrder = 2;
+scene.add(cellMesh);
+
+// Thick struts, one quad each, coloured by strain
+const MAX_SPRINGS = COLS * ROWS * 4;
+const strutGeo = makeQuadGeo(MAX_SPRINGS);
+const strutMesh = new THREE.Mesh(strutGeo, flat(0xffffff, { vertexColors: true }));
+strutMesh.frustumCulled = false; strutMesh.renderOrder = 3;
+scene.add(strutMesh);
 
 let rockMesh = null;
 function buildRock() {
@@ -280,87 +328,192 @@ function buildRock() {
   const list = [...cells.values()];
   const g = makeQuadGeo(list.length);
   const P = g.attributes.position.array, C = g.attributes.color.array;
-  const isFreeNode = (c, r) => c >= 0 && c < COLS && r >= 0 && r < ROWS && !nodes[r * COLS + c].fixed;
+  const isFree = (c, r) => c >= 0 && c < COLS && r >= 0 && r < ROWS && !nodes[r * COLS + c].fixed;
   list.forEach(([c, r], i) => {
     setQuad(P, i, c * SP - HALF_W, r * SP - HALF_H, 0.5);
     const h = (((c * 73856093) ^ (r * 19349663)) >>> 0) % 100 / 100;
-    const v = 0.88 + h * 0.2;
-    const edge = isFreeNode(c + 1, r) || isFreeNode(c - 1, r) || isFreeNode(c, r + 1) || isFreeNode(c, r - 1);
-    if (edge) setQuadColor(C, i, 0.2 * v, 0.27 * v, 0.33 * v);
-    else setQuadColor(C, i, 0.115 * v, 0.165 * v, 0.21 * v);
+    const v = 0.95 + h * 0.1;
+    const edge = isFree(c + 1, r) || isFree(c - 1, r) || isFree(c, r + 1) || isFree(c, r - 1);
+    if (edge) setQuadColor(C, i, 0.82 * v, 0.72 * v, 0.56 * v);
+    else setQuadColor(C, i, 0.95 * v, 0.89 * v, 0.76 * v);
   });
-  rockMesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true }));
-  rockMesh.frustumCulled = false;
-  rockMesh.position.z = -0.2;
+  rockMesh = new THREE.Mesh(g, flat(0xffffff, { vertexColors: true }));
+  rockMesh.frustumCulled = false; rockMesh.renderOrder = 1;
   scene.add(rockMesh);
 }
-
-/* ---------- Lattice lines ---------- */
-const MAX_SPRINGS = COLS * ROWS * 4;
-const lineGeo = new THREE.BufferGeometry();
-const linePos = new Float32Array(MAX_SPRINGS * 6), lineCol = new Float32Array(MAX_SPRINGS * 6);
-lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3).setUsage(THREE.DynamicDrawUsage));
-lineGeo.setAttribute('color', new THREE.BufferAttribute(lineCol, 3).setUsage(THREE.DynamicDrawUsage));
-const lines = new THREE.LineSegments(lineGeo, new THREE.LineBasicMaterial({ vertexColors: true }));
-lines.frustumCulled = false;
-lines.position.z = 0.1;
-scene.add(lines);
 
 /* ---------- Cargo ---------- */
 const cargo = new THREE.Group();
 cargo.position.z = 1;
 scene.add(cargo);
-const crate = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.4, 1.4),
-  new THREE.MeshStandardMaterial({ color: 0xf2c14e, roughness: 0.4, metalness: 0.5 }));
-const deck = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.25, 1.6),
-  new THREE.MeshStandardMaterial({ color: 0x56697a, roughness: 0.5, metalness: 0.7 }));
-cargo.add(crate, deck);
+const box = new THREE.Group();
+cargo.add(box);
+function part(w, h, d, x, y, color, z) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.1 }));
+  m.position.set(x, y, z || 0); m.renderOrder = 4; box.add(m);
+}
+part(4.5, 0.26, 1.6, 0, 0.13, 0x3b4a57);                          // chassis
+part(4.3, 1.5, 1.5, 0, 1.01, 0xef5a3c);                           // container body
+for (let i = 0; i < 11; i++) part(0.1, 1.3, 0.1, -1.95 + i * 0.39, 1.01, 0xc4402a, 0.78); // corrugation
+part(4.3, 0.12, 0.12, 0, 1.78, 0xffffff, 0.78);                   // rim
+part(1.05, 0.8, 1.0, -1.3, 2.17, 0xffd23f);                       // goods
+part(0.95, 1.15, 1.0, -0.15, 2.35, 0x45c27a);
+part(1.1, 0.65, 1.0, 1.1, 2.1, 0x4a8dff);
+part(0.6, 0.5, 0.9, 1.25, 2.67, 0xff8fb1);
 const cableGeo = new THREE.BufferGeometry();
 cableGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(24), 3));
-const cables = new THREE.LineSegments(cableGeo, new THREE.LineBasicMaterial({ color: 0xcbd5e1 }));
-cables.frustumCulled = false;
+const cables = new THREE.LineSegments(cableGeo, new THREE.LineBasicMaterial({ color: 0x3b4a57 }));
+cables.frustumCulled = false; cables.renderOrder = 4;
 cargo.add(cables);
 
-/* ---------- Brush ---------- */
+/* ---------- Brush and tutorial ghost ---------- */
 let brushR = 1.8;
 const brush = new THREE.Group();
-brush.position.z = 2;
-brush.visible = false;
-const disc = new THREE.Mesh(new THREE.CircleGeometry(brushR, 48),
-  new THREE.MeshBasicMaterial({ color: 0xf2c14e, transparent: true, opacity: 0.18, depthWrite: false }));
-const ring = new THREE.Mesh(new THREE.RingGeometry(brushR - 0.06, brushR, 48),
-  new THREE.MeshBasicMaterial({ color: 0xf2c14e, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }));
+brush.position.z = 2; brush.visible = false;
+const disc = new THREE.Mesh(new THREE.CircleGeometry(brushR, 48), flat(0x1d2c36, { transparent: true, opacity: 0.1 }));
+const ring = new THREE.Mesh(new THREE.RingGeometry(brushR - 0.08, brushR, 48), flat(0x1d2c36, { transparent: true, opacity: 0.85, side: THREE.DoubleSide }));
+disc.renderOrder = ring.renderOrder = 6;
 brush.add(disc, ring);
 scene.add(brush);
 function setBrushRadius(r) {
   brushR = r;
   disc.geometry.dispose(); ring.geometry.dispose();
   disc.geometry = new THREE.CircleGeometry(r, 48);
-  ring.geometry = new THREE.RingGeometry(Math.max(0.01, r - 0.06), r, 48);
+  ring.geometry = new THREE.RingGeometry(Math.max(0.01, r - 0.08), r, 48);
+}
+
+const ghost = new THREE.Group();
+ghost.position.z = 3; ghost.visible = false;
+const ghostMain = new THREE.Group();
+const gDisc = new THREE.Mesh(new THREE.CircleGeometry(1, 48), flat(0xe0951a, { transparent: true, opacity: 0.22 }));
+const gRing = new THREE.Mesh(new THREE.RingGeometry(0.93, 1, 48), flat(0xe0951a, { transparent: true, opacity: 1, side: THREE.DoubleSide }));
+gDisc.renderOrder = gRing.renderOrder = 7;
+ghostMain.add(gDisc, gRing);
+ghost.add(ghostMain);
+const trail = new THREE.Group();
+for (let i = 0; i < 18; i++) {
+  const d = new THREE.Mesh(new THREE.CircleGeometry(0.2, 16), flat(0xe0951a, { transparent: true, opacity: 0.85 }));
+  d.renderOrder = 7; trail.add(d);
+}
+ghost.add(trail);
+scene.add(ghost);
+let ghostPath = null, ghostLen = [], ghostTotal = 0;
+function pointOn(u) {
+  const d = u * ghostTotal;
+  for (let i = 1; i < ghostPath.length; i++) {
+    if (d <= ghostLen[i] || i === ghostPath.length - 1) {
+      const a = ghostPath[i - 1], b = ghostPath[i], t = clamp((d - ghostLen[i - 1]) / ((ghostLen[i] - ghostLen[i - 1]) || 1), 0, 1);
+      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+    }
+  }
+  return ghostPath[0];
+}
+function setGhost(path) {
+  ghostPath = path;
+  if (!path) { ghost.visible = false; return; }
+  ghostLen = [0]; ghostTotal = 0;
+  for (let i = 1; i < path.length; i++) { ghostTotal += Math.hypot(path[i].x - path[i - 1].x, path[i].y - path[i - 1].y); ghostLen.push(ghostTotal); }
+  trail.children.forEach((d, i) => { const p = pointOn(i / (trail.children.length - 1)); d.position.set(p.x, p.y, 0); });
+}
+function updateGhost(ms) {
+  ghost.visible = !!ghostPath && !carving;
+  if (!ghost.visible) return;
+  const u = clamp(((ms / 2800) % 1.35) / 1.0, 0, 1);
+  const p = pointOn(u);
+  ghostMain.position.set(p.x, p.y, 0);
+  ghostMain.scale.setScalar(brushR);
 }
 
 /* ---------- Game state ---------- */
-let cur = 0;
 let nodes = [], springs = [];
 let totalCarvable = 0, removedCount = 0;
 let prevKE = 0, peak = 0, lastPeak = 0, stableTimer = 0, ramp = 0;
 let state = 'SETTLING';       // SETTLING | STABILIZING | STABLE | PASSED | FAILED
 let topoDirty = true, connected = true;
-let undoStack = [], stroke = [];
-let best = {};
-try { best = JSON.parse(localStorage.getItem('topology-carver-best-v2') || '{}') || {}; } catch (e) { best = {}; }
-function saveBest() { try { localStorage.setItem('topology-carver-best-v2', JSON.stringify(best)); } catch (e) {} }
+let undoStack = [], stroke = [], lastGood = null;
+let carving = false, strokeSnap = null, strokeEntry = null, lastP = null;
 
+/* ---------- Saved progress: best scores, layouts, tutorial ---------- */
+let progress = { best: {}, layouts: {}, tutorial: false, last: null };
+const LS_KEY = 'topology-carver-progress-v4';
+function mergeProgress(o) {
+  if (!o || typeof o !== 'object') return;
+  if (o.best) for (const k in o.best) if (typeof o.best[k] === 'number' && o.best[k] > (progress.best[k] || 0)) progress.best[k] = o.best[k];
+  if (o.layouts) for (const k in o.layouts) {
+    const l = o.layouts[k];
+    if (l && typeof l.s === 'string' && l.s.length === COLS * ROWS && (!progress.layouts[k] || l.t > progress.layouts[k].t)) progress.layouts[k] = l;
+  }
+  if (o.tutorial) progress.tutorial = true;
+  if (o.last && !progress.last) progress.last = o.last;
+}
+function mergeLegacyBest(map) {   // earlier saves: { "0": 83.4 } keyed by level position
+  if (!map || typeof map !== 'object') return;
+  const best = {};
+  for (const k in map) if (OLD_IDS[+k] && typeof map[k] === 'number') best[OLD_IDS[+k]] = map[k];
+  mergeProgress({ best });
+}
+(function loadLocal() {
+  try { localStorage.removeItem('topology-carver-best-v1'); localStorage.removeItem('topology-carver-best-v2'); } catch (e) {}
+  try { mergeProgress(JSON.parse(localStorage.getItem(LS_KEY) || 'null')); } catch (e) {}
+  try { mergeLegacyBest(JSON.parse(localStorage.getItem('topology-carver-best-v3') || 'null')); } catch (e) {}
+})();
+let store = null, saveTimer = 0, saving = false, dirtyRemote = false;
+function saveProgress() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(progress)); } catch (e) {}
+  clearTimeout(saveTimer); saveTimer = setTimeout(pushRemote, 800);
+}
+async function pushRemote() {
+  if (!store) return;
+  if (saving) { dirtyRemote = true; return; }
+  saving = true;
+  try { do { dirtyRemote = false; await store.set(JSON.parse(JSON.stringify(progress))); } while (dirtyRemote); }
+  catch (e) { store = null; }
+  saving = false;
+}
+// Progress is also kept by the viewer's account, so it follows them across browsers and devices.
+async function initStore() {
+  try {
+    if (!window.claude || !window.claude.use) return;
+    const db = await window.claude.use('db'), user = await window.claude.use('user');
+    if (!db || !user) return;
+    const uid = await user.id();
+    if (!uid) return;
+    const ref = db.doc('data/users/' + uid + '/progress_v4');
+    const [snap, old] = await Promise.all([ref.get(), db.doc('data/users/' + uid + '/progress_v3').get()]);
+    const had = JSON.stringify(progress.best);
+    if (snap.exists) mergeProgress(snap.data());
+    if (old.exists && old.data()) mergeLegacyBest(old.data().best);
+    store = ref;
+    refreshMenu();
+    const pristine = undoStack.length === 0 && removedCount === 0;
+    if (pristine && !LEVELS[cur].tut && progress.layouts[LEVELS[cur].id]) initLevel(cur);
+    updateHud(true);
+    if (progress.tutorial && tutStep >= 0 && cur !== 0) { tutStep = -1; renderCoach(); }
+    saveProgress();
+  } catch (e) {}
+}
+const bestOf = i => progress.best[LEVELS[i].id] || 0;
+const starsFor = pct => STARS.filter(t => pct >= t).length;
+function cutString() { let s = ''; for (const sp of springs) s += sp.cut ? '1' : '0'; return s; }
+function layoutString() { let s = ''; for (const n of nodes) s += (n.removed && !n.void) ? '1' : '0'; return s; }
+function persistLayout() {
+  const id = LEVELS[cur].id, s = layoutString(), c = cutString(), prev = progress.layouts[id];
+  if (prev ? (prev.s === s && (prev.c || '') === c) : !(s + c).includes('1')) return;
+  progress.layouts[id] = { s, c, t: Date.now() };
+  saveProgress();
+}
+
+/* ---------- Level setup ---------- */
 function addSpring(n1, n2, type, k, maxComp, maxTens) {
-  const sp = { n1, n2, type, k, maxComp, maxTens, rest: Math.hypot(n2.x - n1.x, n2.y - n1.y), broken: false, ratio: 0, sg: 0 };
+  const sp = { n1, n2, type, k, maxComp, maxTens, rest: Math.hypot(n2.x - n1.x, n2.y - n1.y), broken: false, cut: false, ratio: 0, sg: 0 };
   springs.push(sp); n1.adj.push(sp); n2.adj.push(sp);
 }
 
-function initLevel(idx) {
+function initLevel(idx, fresh) {
   cur = idx;
   const lvl = LEVELS[idx];
-  state = 'SETTLING'; stableTimer = 0; removedCount = 0; peak = 0; ramp = 1;
-  undoStack = []; stroke = [];
+  starsSeen = -1; state = 'SETTLING'; stableTimer = 0; removedCount = 0; peak = 0; ramp = 1; prevKE = 0;
+  undoStack = []; stroke = []; lastGood = null; strokeEntry = null;
   nodes = []; springs = [];
 
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
@@ -369,11 +522,11 @@ function initLevel(idx) {
     nodes.push({
       i: r * COLS + c, c, r, x, y, ox: x, oy: y, vx: 0, vy: 0,
       mass: isWeight ? LOAD_MASS : NODE_MASS, fixed: lvl.fixed(c, r), isWeight,
-      removed: false, debris: false, cx: 0, cy: 0, cvx: (Math.random() - 0.5) * 1.4, cvy: 0,
+      removed: false, debris: false, void: false, cx: 0, cy: 0, cvx: (Math.random() - 0.5) * 1.4, cvy: 0,
       mag: 0, sig: 0, dm: 0, ds: 0, adj: []
     });
   }
-  // Material outside the playable area (trimmed from the start, not scored)
+  // Material outside the playable area is not part of the level and not scored
   if (lvl.void) for (const n of nodes) if (!n.fixed && !n.isWeight && lvl.void(n.c, n.r)) { n.removed = true; n.void = true; }
   totalCarvable = nodes.filter(n => !n.fixed && !n.isWeight && !n.void).length;
 
@@ -386,24 +539,46 @@ function initLevel(idx) {
     if (c - 1 >= 0 && r + 1 < ROWS) addSpring(n, at(c - 1, r + 1), 'shear', K_SHEAR, MAX_SHEAR, MAX_SHEAR);
   }
 
+  stickTotal = 0;
+  for (const sp of springs) if (sp.type === 'axial' && cuttable(sp)) { sp.score = true; stickTotal++; }
+  stickTotal = Math.max(1, stickTotal);
+
+  // Come back to a level exactly as it was left
+  const saved = !fresh && !lvl.tut && progress.layouts[lvl.id];
+  if (saved) {
+    for (const n of nodes) if (saved.s[n.i] === '1' && !n.fixed && !n.isWeight && !n.void) { n.removed = true; removedCount++; }
+    if (typeof saved.c === 'string') springs.forEach((sp, i) => { if (saved.c[i] === '1' && cuttable(sp)) sp.broken = sp.cut = true; });
+  } else if (fresh && progress.layouts[lvl.id]) {
+    delete progress.layouts[lvl.id];
+  }
+
   buildRock();
   water.visible = waterLine.visible = !!lvl.water;
+  fit();
   topoDirty = true;
-  settle();
+  settle(true);
+  if (saved && state === 'FAILED') { delete progress.layouts[lvl.id]; saveProgress(); initLevel(idx, true); return; }
+
+  if (progress.last !== lvl.id) progress.last = lvl.id;
+  saveProgress();
+  tutStart();
   refreshMenu();
   updateHud(true);
 }
 
-// Run the solver quietly so the level starts at rest under its load.
-function settle() {
-  ramp = 1; stableTimer = 0; lastPeak = 0; state = 'SETTLING';
-  for (let i = 0; i < 800; i++) {
+// Run the solver quietly until the level is at rest. Ramping the load keeps a restored layout from overshooting.
+function settle(ramped) {
+  stableTimer = 0; lastPeak = 0; state = 'SETTLING'; prevKE = 0;
+  if (!ramped) ramp = 1;
+  for (let i = 0; i < 900; i++) {
+    if (ramped) ramp = Math.min(1, (i + 1) / 80);
     solve(true);
-    if (state === 'STABLE' || state === 'PASSED' || state === 'FAILED') break;
+    if (ramp >= 1 && (state === 'STABLE' || state === 'PASSED' || state === 'FAILED')) break;
   }
+  ramp = 1;
 }
 
-/* ---------- Solver (mass-spring lattice, unchanged physics) ---------- */
+/* ---------- Solver (mass-spring lattice) ---------- */
 function checkConnected(loads) {
   const seen = new Uint8Array(nodes.length), q = [];
   for (const n of nodes) if (n.fixed && !n.removed) { seen[n.i] = 1; q.push(n); }
@@ -471,7 +646,6 @@ function solve(prewarm) {
       if (n.removed) continue;
       if (n.fixed) { n.x = n.ox; n.y = n.oy; n.vx = n.vy = 0; continue; }
       n.x += n.vx * DT; n.y += n.vy * DT;
-      n.vx *= DAMPING; n.vy *= DAMPING;
     }
 
     // Kinetic damping: when the kinetic energy passes its peak the lattice has crossed
@@ -482,7 +656,7 @@ function solve(prewarm) {
   }
   peak = maxRatio;
 
-  // Per-node stress for the heatmap
+  // Per-node stress for the soft fill
   for (const n of nodes) { n.mag = 0; n.sig = 0; }
   for (const sp of springs) {
     if (sp.broken || sp.n1.removed || sp.n2.removed) continue;
@@ -493,10 +667,7 @@ function solve(prewarm) {
   }
 
   let maxDrop = 0, maxFall = 0;
-  for (const n of loads) {
-    maxDrop = Math.max(maxDrop, n.oy - n.y);
-    maxFall = Math.min(maxFall, n.vy);
-  }
+  for (const n of loads) { maxDrop = Math.max(maxDrop, n.oy - n.y); maxFall = Math.min(maxFall, n.vy); }
   let maxV2 = 0;
   for (const n of nodes) if (!n.removed && !n.fixed) maxV2 = Math.max(maxV2, n.vx * n.vx + n.vy * n.vy);
   const settled = maxV2 < 0.01;
@@ -505,7 +676,7 @@ function solve(prewarm) {
 
   const dPeak = Math.abs(peak - lastPeak); lastPeak = peak;
   if (snapped || !settled || dPeak > PEAK_EPS) stableTimer = 0; else stableTimer++;
-  const pct = totalCarvable ? removedCount / totalCarvable * 100 : 0;
+  const pct = stickPct();
   const stable = stableTimer >= STABLE_STEPS;
   const prev = state;
   if (stable && pct >= STARS[0]) state = 'PASSED';
@@ -520,23 +691,39 @@ function animateFalling() {
   const collapsing = state === 'FAILED';
   for (const n of nodes) {
     if ((n.removed && n.debris) || (collapsing && !n.fixed && !n.removed)) {
-      n.cvy -= 32 / 60;
-      n.cy += n.cvy / 60;
-      n.cx += n.cvx / 60;
+      n.cvy -= 32 / 60; n.cy += n.cvy / 60; n.cx += n.cvx / 60;
     }
   }
 }
 
 /* ---------- Carving ---------- */
+const cuttable = sp => !(sp.n1.fixed && sp.n2.fixed) && !sp.n1.isWeight && !sp.n2.isWeight && !sp.n1.void && !sp.n2.void;
+// Score = share of main sticks gone (cut, or lost with a joint)
+let stickTotal = 1;
+function stickPct() {
+  let gone = 0;
+  for (const sp of springs) if (sp.type === 'axial' && sp.score && (sp.cut || sp.n1.removed || sp.n2.removed)) gone++;
+  return gone / stickTotal * 100;
+}
+const cutCount = () => springs.reduce((a, sp) => a + (sp.cut ? 1 : 0), 0);
 function carveAt(cx, cy) {
   let changed = false;
   const r2 = brushR * brushR;
+  const kill = n => { if (n.removed || n.fixed || n.isWeight) return false; n.removed = true; removedCount++; stroke.push(n.i); changed = true; return true; };
   for (const n of nodes) {
     if (n.removed || n.fixed || n.isWeight) continue;
     const dx = n.x - cx, dy = n.y - cy;
-    if (dx * dx + dy * dy <= r2) {
-      n.removed = true; removedCount++; stroke.push(n.i); changed = true;
-    }
+    if (dx * dx + dy * dy <= r2) kill(n);
+  }
+  // A stick touched by the brush is cut on its own; its joints stay.
+  for (const sp of springs) {
+    if (sp.broken || !cuttable(sp)) continue;
+    const a = sp.n1, b = sp.n2;
+    if (a.removed || b.removed) continue;
+    const ex = b.x - a.x, ey = b.y - a.y, l2 = ex * ex + ey * ey || 1;
+    const t = clamp(((cx - a.x) * ex + (cy - a.y) * ey) / l2, 0, 1);
+    const qx = a.x + ex * t - cx, qy = a.y + ey * t - cy;
+    if (qx * qx + qy * qy <= r2) { sp.broken = sp.cut = true; changed = true; }
   }
   return changed;
 }
@@ -562,7 +749,6 @@ function pruneOrphans() {
   }
 }
 
-let lastP = null;
 function strokeTo(x, y) {
   let changed = false;
   if (!lastP) changed = carveAt(x, y);
@@ -573,6 +759,11 @@ function strokeTo(x, y) {
   }
   lastP = { x, y };
   if (changed) {
+    if (!strokeEntry) {
+      strokeEntry = { ids: stroke, snap: strokeSnap };
+      undoStack.push(strokeEntry);
+      if (undoStack.length > 60) undoStack.shift();
+    }
     pruneOrphans();
     topoDirty = true; stableTimer = 0;
     if (state === 'PASSED' || state === 'STABLE') state = 'SETTLING';
@@ -580,27 +771,62 @@ function strokeTo(x, y) {
   }
 }
 
+function takeSnapshot() {
+  const pos = new Float32Array(nodes.length * 2), br = new Uint8Array(springs.length);
+  for (let i = 0; i < nodes.length; i++) { pos[i * 2] = nodes[i].x; pos[i * 2 + 1] = nodes[i].y; }
+  for (let i = 0; i < springs.length; i++) br[i] = springs[i].broken ? (springs[i].cut ? 2 : 1) : 0;
+  return { pos, br };
+}
+function captureGood() {
+  const g = takeSnapshot();
+  g.removed = new Uint8Array(nodes.length); g.debris = new Uint8Array(nodes.length);
+  nodes.forEach((n, i) => { g.removed[i] = n.removed ? 1 : 0; g.debris[i] = n.debris ? 1 : 0; });
+  g.removedCount = removedCount + cutCount();
+  lastGood = g;
+}
+// Fallback when a collapse happens with no stroke to undo: go back to the last settled layout.
+function restoreGood() {
+  if (!lastGood) { initLevel(cur, true); return; }
+  const g = lastGood;
+  removedCount = g.removedCount - g.br.reduce((a, v) => a + (v === 2 ? 1 : 0), 0);
+  nodes.forEach((n, i) => {
+    n.removed = g.removed[i] === 1; n.debris = g.debris[i] === 1;
+    n.x = g.pos[i * 2]; n.y = g.pos[i * 2 + 1]; n.vx = n.vy = 0;
+    if (!n.removed) { n.cx = n.cy = n.cvy = 0; } else if (n.debris) n.cy = -30;
+  });
+  springs.forEach((sp, i) => { sp.broken = g.br[i] > 0; sp.cut = g.br[i] === 2; sp.ratio = 0; sp.sg = 0; });
+  undoStack = []; stroke = []; strokeEntry = null; prevKE = 0;
+  topoDirty = true;
+  settle(false);
+  updateHud(true);
+}
 function undo() {
-  if (!undoStack.length) return;
-  const ids = undoStack.pop();
-  for (const i of ids) {
+  if (!undoStack.length) { if (state === 'FAILED') restoreGood(); return; }
+  const entry = undoStack.pop();
+  if (entry === strokeEntry) strokeEntry = null;
+  for (const i of entry.ids) {
     const n = nodes[i];
     if (n.removed) { n.removed = false; n.debris = false; removedCount--; }
   }
-  for (const n of nodes) {
-    n.x = n.ox; n.y = n.oy; n.vx = n.vy = 0; n.cx = n.cy = n.cvy = 0;
+  // Put every node and every broken link back exactly as they were before the stroke.
+  const snap = entry.snap;
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i];
+    n.x = snap.pos[i * 2]; n.y = snap.pos[i * 2 + 1];
+    n.vx = n.vy = 0;
+    if (!n.removed) { n.cx = n.cy = n.cvy = 0; }
   }
-  for (const sp of springs) { sp.broken = false; sp.ratio = 0; sp.sg = 0; }
-  state = 'SETTLING'; topoDirty = true;
-  settle();
+  for (let i = 0; i < springs.length; i++) { const sp = springs[i]; sp.broken = snap.br[i] > 0; sp.cut = snap.br[i] === 2; sp.ratio = 0; sp.sg = 0; }
+  prevKE = 0; topoDirty = true;
+  settle(false);
   updateHud(true);
 }
 
 /* ---------- Colours ---------- */
-const HEAT = [[0, .17, .37, .48], [.3, .20, .56, .56], [.55, .90, .76, .30], [.8, .94, .52, .24], [1, .91, .28, .23]];
+const HEAT = [[0, .18, .50, .88], [.3, .10, .76, .54], [.55, 1, .80, .16], [.8, 1, .50, .12], [1, .93, .20, .20]];
 const tmp = [0, 0, 0];
 function heat(t) {
-  t = Math.max(0, Math.min(1, t));
+  t = clamp(t, 0, 1);
   for (let i = 1; i < HEAT.length; i++) {
     if (t <= HEAT[i][0]) {
       const a = HEAT[i - 1], b = HEAT[i], u = (t - a[0]) / (b[0] - a[0]);
@@ -611,30 +837,56 @@ function heat(t) {
   tmp[0] = HEAT[4][1]; tmp[1] = HEAT[4][2]; tmp[2] = HEAT[4][3];
   return tmp;
 }
-const NEUTRAL = [0.17, 0.22, 0.27], TENS = [0.29, 0.64, 1.0], COMP = [1.0, 0.62, 0.26];
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-
-/* ---------- Per-frame visuals ---------- */
 function nodeAlpha(n) {
   if (!n.removed) return 1;
   return n.debris ? clamp(1 + n.cy / 9, 0, 1) : 0;
 }
+
+/* ---------- Per-frame visuals ---------- */
 function updateVisuals() {
-  let li = 0;
-  for (const sp of springs) {
-    if (sp.broken) continue;
-    const a = Math.min(nodeAlpha(sp.n1), nodeAlpha(sp.n2));
-    if (a < 0.03) continue;
-    const o = li * 6, c = heat(Math.pow(sp.ratio, 0.8));
-    linePos[o] = sp.n1.x + sp.n1.cx; linePos[o + 1] = sp.n1.y + sp.n1.cy; linePos[o + 2] = 0;
-    linePos[o + 3] = sp.n2.x + sp.n2.cx; linePos[o + 4] = sp.n2.y + sp.n2.cy; linePos[o + 5] = 0;
-    const r = BG[0] + (c[0] - BG[0]) * a, g = BG[1] + (c[1] - BG[1]) * a, b = BG[2] + (c[2] - BG[2]) * a;
-    lineCol[o] = lineCol[o + 3] = r; lineCol[o + 1] = lineCol[o + 4] = g; lineCol[o + 2] = lineCol[o + 5] = b;
-    li++;
+  // Soft fill
+  const P = cellGeo.attributes.position.array, C = cellGeo.attributes.color.array;
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i], a = nodeAlpha(n);
+    if (n.fixed || a < 0.03) { const o = i * 12; for (let k = 0; k < 12; k++) P[o + k] = 0; continue; }
+    n.dm += (n.mag - n.dm) * 0.3;
+    setQuad(P, i, n.x + n.cx, n.y + n.cy, 0.5);
+    let r, g, b, f;
+    if (n.isWeight) { r = 0.93; g = 0.66; b = 0.2; f = 0.85; }
+    else { r = g = b = 0; f = 0; }  // no soft halo: only crisp sticks
+    f *= a;
+    setQuadColor(C, i, BG[0] + (r - BG[0]) * f, BG[1] + (g - BG[1]) * f, BG[2] + (b - BG[2]) * f);
   }
-  lineGeo.attributes.position.needsUpdate = true;
-  lineGeo.attributes.color.needsUpdate = true;
-  lineGeo.setDrawRange(0, li * 2);
+  cellGeo.attributes.position.needsUpdate = true;
+  cellGeo.attributes.color.needsUpdate = true;
+
+  // Struts: thin diagonals first, then the main links on top
+  const SP_ = strutGeo.attributes.position.array, SC = strutGeo.attributes.color.array;
+  let q = 0;
+  for (let pass = 0; pass < 2; pass++) {
+    const shear = pass === 0, hw = shear ? 0.07 : 0.2;
+    for (const sp of springs) {
+      if (sp.broken || (sp.type === 'shear') !== shear) continue;
+      const n1 = sp.n1, n2 = sp.n2;
+      if (n1.fixed && n2.fixed) continue;               // nothing to see inside the concrete
+      const a = Math.min(nodeAlpha(n1), nodeAlpha(n2));
+      if (a < 0.03) continue;
+      const x1 = n1.x + n1.cx, y1 = n1.y + n1.cy, x2 = n2.x + n2.cx, y2 = n2.y + n2.cy;
+      const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+      const px = -dy / len * hw, py = dx / len * hw, o = q * 12;
+      SP_[o] = x1 + px; SP_[o + 1] = y1 + py; SP_[o + 2] = 0;
+      SP_[o + 3] = x1 - px; SP_[o + 4] = y1 - py; SP_[o + 5] = 0;
+      SP_[o + 6] = x2 - px; SP_[o + 7] = y2 - py; SP_[o + 8] = 0;
+      SP_[o + 9] = x2 + px; SP_[o + 10] = y2 + py; SP_[o + 11] = 0;
+      const c = heat(Math.pow(sp.ratio, 0.8));
+      const sc = shear ? 0.55 : 1;                        // diagonals a touch lighter
+      setQuadColor(SC, q, BG[0] + (c[0] - BG[0]) * a * sc, BG[1] + (c[1] - BG[1]) * a * sc, BG[2] + (c[2] - BG[2]) * a * sc);
+      q++;
+    }
+  }
+  strutGeo.attributes.position.needsUpdate = true;
+  strutGeo.attributes.color.needsUpdate = true;
+  strutGeo.setDrawRange(0, q * 6);
 
   // Cargo follows the weight nodes
   const lvl = LEVELS[cur], cp = cableGeo.attributes.position.array;
@@ -646,59 +898,181 @@ function updateVisuals() {
     cp[i * 6] = x; cp[i * 6 + 1] = y; cp[i * 6 + 2] = 0;
   });
   ax /= lvl.loadCols.length; ay /= lvl.loadCols.length;
-  crate.position.set(ax, ay + 1.25, 0);
-  deck.position.set(ax, ay + 0.15, 0);
+  box.position.set(ax, ay + 0.45, 0);
   lvl.loadCols.forEach((c, i) => {
     const f = (i / (lvl.loadCols.length - 1)) * 2 - 1;
-    cp[i * 6 + 3] = ax + f * 1.4; cp[i * 6 + 4] = ay + 0.65; cp[i * 6 + 5] = 0;
+    cp[i * 6 + 3] = ax + f * 1.4; cp[i * 6 + 4] = ay + 0.7; cp[i * 6 + 5] = 0;
   });
   cableGeo.attributes.position.needsUpdate = true;
 }
 
+/* ---------- Tutorial ---------- */
+const GHOSTS = {
+  diag: [{ x: 8.2, y: 0 }, { x: 3.6, y: -4 }, { x: 8.2, y: -8 }],
+  sweep: [{ x: 5.8, y: 2.6 }, { x: 5.8, y: -8.4 }, { x: 3.6, y: -8.4 }, { x: 3.6, y: 2.6 }],
+  cut: [{ x: -9.5, y: -8.2 }, { x: 9.5, y: -8.2 }]
+};
+const TUT = [
+  { key: 'size', title: 'Brush size', text: 'Drag the slider.', pulse: 'radius', ok: ['Nice!', 'Big brush: fast. Small brush: precise.'] },
+  { key: 'carve', title: 'Cut a V', text: 'Drag along the golden ring.', ghost: 'diag', bar: 1, ok: ['Clean cut!', 'The wedge fell away. The block still stands.'] },
+  { key: 'colors', title: 'Read the colours', text: 'Blue is relaxed. Red is about to break.', pulse: 'stStress', button: 'Got it', ok: ['Good eye!', 'Stress rises as you carve. At 100% it breaks.'] },
+  { key: 'goal', title: 'Remove 25%', text: 'Clear one side. Keep the middle.', ghost: 'sweep', bar: 1, ok: ['Score!', 'That is the game: remove all you can.'] },
+  { key: 'break', title: 'Break it', text: 'Cut along the golden line.', ghost: 'cut', ok: ['It fell!', 'Too much removed means collapse.'] },
+  { key: 'undo', title: 'Undo', text: 'Tap Undo.', pulse: 'undo', ok: ['Restored!', 'Undo rolls back your last stroke.'] },
+  { key: 'stars', title: 'Earn stars', text: '70% = 1 star, 75% = 2, 80% = 3.', pulse: 'stRemoved', button: 'Play level 1' }
+];
+let tutStep = -1, tutMode = '', tutPhase = 'do', tutTimer = 0, tutR0 = 1.8, tutBand = null;
+function tutStart() {
+  clearTimeout(tutTimer); tutPhase = 'do'; tutBand = null;
+  tutStep = LEVELS[cur].tut ? 0 : -1; tutMode = '';
+  if (tutStep === 0) { $('radius').value = 1.8; setRadiusUi(1.8); setBrushRadius(1.8); }
+  tutR0 = brushR; renderCoach();
+}
+function tutDone() {                      // step completed: show the result, then move on
+  if (tutStep < 0 || tutPhase === 'ok') return;
+  if (!TUT[tutStep].ok) { tutNext(); return; }
+  tutPhase = 'ok'; renderCoach();
+  tutTimer = setTimeout(tutNext, 2200);
+}
+function tutNext() {
+  clearTimeout(tutTimer); tutPhase = 'do'; tutStep++; tutBand = null; tutR0 = brushR;
+  if (tutStep >= TUT.length) tutFinish(true); else renderCoach();
+}
+function tutFinish(go) {
+  clearTimeout(tutTimer); tutPhase = 'do';
+  tutStep = -1; progress.tutorial = true; saveProgress(); renderCoach();
+  if (go) initLevel(1);
+}
+let coachH = -1;
+function refitCoach() { const co = $('coach'), H = co.hidden ? 0 : co.offsetHeight; if (H !== coachH) { coachH = H; fit(); } }
+function renderCoach() {
+  document.querySelectorAll('.pulse').forEach(e => e.classList.remove('pulse'));
+  $('radius').classList.remove('nudge');
+  if (tutStep < 0) { $('coach').hidden = true; setGhost(null); tutMode = ''; refitCoach(); return; }
+  const st = TUT[tutStep], ok = tutPhase === 'ok';
+  const failed = !ok && state === 'FAILED' && ['carve', 'colors', 'goal'].includes(st.key);
+  $('coach').classList.toggle('ok', ok);
+  $('coachStep').textContent = `Tutorial · ${tutStep + 1} of ${TUT.length}`;
+  $('coachTitle').textContent = ok ? '✓ ' + st.ok[0] : failed ? 'It collapsed' : st.title;
+  $('coachText').textContent = ok ? st.ok[1] : failed ? 'Too much. Tap Undo.' : st.text;
+  $('coachNext').hidden = ok || failed || !st.button;
+  $('coachNext').textContent = st.button || '';
+  $('coachProg').hidden = ok || failed || !st.bar;
+  const target = ok ? null : failed ? 'undo' : st.pulse;
+  if (target && $(target)) $(target).classList.add('pulse');
+  if (!ok && !failed && st.key === 'size') $('radius').classList.add('nudge');
+  setGhost(ok || failed ? null : (st.ghost ? GHOSTS[st.ghost] : null));
+  $('coach').hidden = false;
+  tutMode = st.key + (failed ? '!' : '') + (ok ? '+' : '');
+  refitCoach();
+}
+function pathBand(path, d) {
+  const out = [];
+  for (const n of nodes) {
+    if (n.fixed || n.isWeight || n.void) continue;
+    let m = 1e9;
+    for (let i = 1; i < path.length; i++) {
+      const a = path[i - 1], b = path[i], ex = b.x - a.x, ey = b.y - a.y, l2 = ex * ex + ey * ey || 1;
+      const t = clamp(((n.ox - a.x) * ex + (n.oy - a.y) * ey) / l2, 0, 1);
+      m = Math.min(m, Math.hypot(n.ox - a.x - ex * t, n.oy - a.y - ey * t));
+    }
+    if (m <= d) out.push(n);
+  }
+  return out;
+}
+function updateTutorial(pct, counted) {
+  if (tutStep < 0 || tutPhase === 'ok') return;
+  const k = TUT[tutStep].key;
+  if (k === 'size' && Math.abs(brushR - tutR0) >= 0.3) { tutDone(); return; }
+  if (k === 'carve') {
+    if (!tutBand) tutBand = pathBand(GHOSTS.diag, clamp(brushR * 0.9, 0.6, 1.6));
+    const f = tutBand.length ? tutBand.filter(n => n.removed).length / tutBand.length : 1;
+    const prog = clamp(f / 0.6, 0, 1);
+    $('coachFill').style.width = (prog * 100) + '%';
+    $('coachPct').textContent = Math.round(prog * 100) + '%';
+    if (prog >= 1 && state !== 'FAILED') { tutDone(); return; }
+  }
+  if (k === 'goal') {
+    const f = clamp(pct / 25, 0, 1);
+    $('coachFill').style.width = (f * 100) + '%';
+    $('coachPct').textContent = pct.toFixed(0) + '% / 25%';
+    if (counted && pct >= 25) { tutDone(); return; }
+  }
+  if (k === 'break' && state === 'FAILED') { tutDone(); return; }
+  if (k === 'undo' && state !== 'FAILED') { tutDone(); return; }
+  const failed = state === 'FAILED' && ['carve', 'colors', 'goal'].includes(k);
+  if (tutMode !== k + (failed ? '!' : '')) renderCoach();
+}
+
 /* ---------- UI ---------- */
-const $ = id => document.getElementById(id);
+let starsSeen = -1, popTimer = 0;
+const STAR_PATH = 'M12 2.5l3 6.2 6.8.9-5 4.8 1.3 6.7-6.1-3.3-6.1 3.3 1.3-6.7-5-4.8 6.8-.9z';
+function popStars(n) {
+  const el = $('starpop');
+  el.className = '';
+  el.innerHTML = '<div class="row3">' + [1, 2, 3].map(i => `<svg viewBox="0 0 24 24" class="${i <= n ? 'on' : ''}${i === n ? ' new' : ''}"><path d="${STAR_PATH}"/></svg>`).join('') + '</div><b>' + n + (n === 1 ? ' star' : ' stars') + '!</b>';
+  el.hidden = false;
+  clearTimeout(popTimer);
+  popTimer = setTimeout(() => { el.classList.add('out'); popTimer = setTimeout(() => { el.hidden = true; }, 500); }, 1700);
+  if (typeof soundWin === 'function') soundWin();
+}
 const cache = {};
 function setText(id, v) { if (cache[id] !== v) { cache[id] = v; $(id).textContent = v; } }
 function setAttr(id, a, v) { const k = id + a; if (cache[k] !== v) { cache[k] = v; $(id).setAttribute(a, v); } }
-const starsFor = pct => STARS.filter(t => pct >= t).length;
 
 function updateHud(force) {
   if (force) for (const k in cache) delete cache[k];
   const lvl = LEVELS[cur];
-  const pct = totalCarvable ? removedCount / totalCarvable * 100 : 0;
+  const pct = stickPct();
   const counted = state === 'STABLE' || state === 'PASSED';
-  setText('lvlnum', String(cur + 1));
+  setText('lvlnum', lvl.tut ? 'T' : String(cur));
   setText('lvlname', lvl.name);
-  setText('statCarved', counted ? pct.toFixed(1) : '—');
+  setText('statCarved', counted ? pct.toFixed(2) : '—');
   const sv = Math.min(100, peak * 100);
   setText('statStress', sv.toFixed(2));
-  $('stressMask').style.width = (100 - sv) + '%';
+  const hc = heat(Math.pow(sv / 100, 0.8)).map(v => Math.round(v * 200));
+  const col = `rgb(${hc[0]},${hc[1]},${hc[2]})`;
+  if (cache.stCol !== col) { cache.stCol = col; $('statStress').style.color = col; }
   setAttr('statCarved', 'data-s', state === 'FAILED' ? 'failed' : counted ? (pct >= STARS[0] ? 'passed' : 'holding') : 'settling');
-  setAttr('stars', 'data-n', String(counted ? starsFor(pct) : 0));
   setAttr('undo', 'data-alert', state === 'FAILED' ? '1' : '0');
-  $('undo').disabled = undoStack.length === 0;
+  $('undo').disabled = undoStack.length === 0 && state !== 'FAILED';
+
   if (counted) {
-    const r = Math.round(pct * 10) / 10;
-    if (r > (best[cur] || 0)) { best[cur] = r; saveBest(); refreshMenu(); }
+    if (!lastGood || lastGood.removedCount !== removedCount + cutCount()) {
+      captureGood();
+      if (!lvl.tut) persistLayout();
+    }
+    const r = Math.round(pct * 100) / 100;
+    if (r > bestOf(cur)) { progress.best[lvl.id] = r; saveProgress(); refreshMenu(); }
   }
+  const b = bestOf(cur);
+  setText('statBest', b ? b.toFixed(2) : '');
+  $('stBest').hidden = !b;
+  if (counted) {
+    const n = starsFor(pct);
+    if (starsSeen >= 0 && n > starsSeen) popStars(n);
+    starsSeen = n;
+  }
+  updateTutorial(pct, counted);
 }
 
 function buildMenu() {
   const m = $('menu');
   m.innerHTML = '';
   LEVELS.forEach((l, i) => {
-    const b = document.createElement('button');
-    b.type = 'button'; b.className = 'chip'; b.title = l.name;
-    b.innerHTML = `<span>${i + 1}</span><span class="pips"><i></i><i></i><i></i></span>`;
-    b.addEventListener('click', () => { initAudio(); initLevel(i); closeMenu(); });
-    m.appendChild(b);
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'chip';
+    btn.innerHTML = `<span>${l.tut ? 'T' : i}</span><span class="pips"><i></i><i></i><i></i></span>`;
+    btn.addEventListener('click', () => { initAudio(); closeMenu(); if (i !== cur) initLevel(i); });
+    m.appendChild(btn);
   });
   refreshMenu();
 }
 function refreshMenu() {
-  [...$('menu').children].forEach((b, i) => {
-    b.setAttribute('aria-current', String(i === cur));
-    b.dataset.n = String(starsFor(best[i] || 0));
+  [...$('menu').children].forEach((btn, i) => {
+    btn.setAttribute('aria-current', String(i === cur));
+    btn.dataset.n = String(starsFor(bestOf(i)));
+    btn.title = LEVELS[i].name + (bestOf(i) ? ' · best ' + bestOf(i).toFixed(2) + '%' : '');
   });
 }
 function closeMenu() { $('menu').hidden = true; $('lvlbtn').setAttribute('aria-expanded', 'false'); }
@@ -713,6 +1087,23 @@ $('prev').addEventListener('click', () => { initAudio(); initLevel((cur + LEVELS
 $('next').addEventListener('click', () => { initAudio(); initLevel((cur + 1) % LEVELS.length); });
 $('undo').addEventListener('click', () => { initAudio(); undo(); });
 
+// Reset asks for a second tap when there is carved work to lose
+let resetArmed = false, resetTimer = 0;
+function disarmReset() { resetArmed = false; clearTimeout(resetTimer); $('reset').dataset.armed = '0'; $('resetHint').hidden = true; }
+function resetLevel() {
+  if ((removedCount > 0 || cutCount() > 0) && state !== 'FAILED' && !resetArmed) {
+    resetArmed = true; $('reset').dataset.armed = '1'; $('resetHint').hidden = false;
+    clearTimeout(resetTimer); resetTimer = setTimeout(disarmReset, 2500);
+    return;
+  }
+  disarmReset();
+  initLevel(cur, true);
+}
+$('reset').addEventListener('click', () => { initAudio(); resetLevel(); });
+
+$('coachNext').addEventListener('click', () => { if (tutStep === TUT.length - 1) tutFinish(true); else tutDone(); });
+$('coachSkip').addEventListener('click', () => tutFinish(true));
+
 function setRadiusUi(v) { $('brushDot').style.width = $('brushDot').style.height = (5 + v * 5) + 'px'; }
 $('radius').addEventListener('input', e => {
   const v = parseFloat(e.target.value);
@@ -723,7 +1114,7 @@ setRadiusUi(1.8);
 window.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
   else if (e.key === 'Escape') closeMenu();
-  else if (e.key === 'r' || e.key === 'R') initLevel(cur);
+  else if (e.key === 'r' || e.key === 'R') resetLevel();
   else if (e.key === '[' || e.key === ']') {
     const r = $('radius'); r.value = clamp(parseFloat(r.value) + (e.key === ']' ? 0.2 : -0.2), 0.4, 3.8);
     r.dispatchEvent(new Event('input'));
@@ -731,7 +1122,6 @@ window.addEventListener('keydown', e => {
 });
 
 /* ---------- Pointer input ---------- */
-let carving = false;
 function toWorld(e) {
   const rect = cv.getBoundingClientRect();
   return {
@@ -746,8 +1136,7 @@ function onMove(e) {
 }
 function endStroke(e) {
   if (!carving) return;
-  carving = false; lastP = null;
-  if (stroke.length) { undoStack.push(stroke); if (undoStack.length > 200) undoStack.shift(); }
+  carving = false; lastP = null; strokeEntry = null;
   stroke = [];
   if (e && e.pointerType === 'touch') brush.visible = false;
 }
@@ -755,12 +1144,14 @@ cv.addEventListener('pointerdown', e => {
   if (e.pointerType === 'mouse' && e.button !== 0) return;
   initAudio();
   try { cv.setPointerCapture(e.pointerId); } catch (err) {}
-  carving = true; stroke = []; lastP = null;
+  carving = true; stroke = []; strokeEntry = null; lastP = null; strokeSnap = takeSnapshot();
   onMove(e);
 });
 cv.addEventListener('pointermove', onMove);
 cv.addEventListener('pointerup', endStroke);
 cv.addEventListener('pointercancel', endStroke);
+cv.addEventListener('lostpointercapture', endStroke);
+window.addEventListener('blur', () => endStroke());
 cv.addEventListener('pointerleave', () => { if (!carving) brush.visible = false; });
 
 /* ---------- Main loop (fixed 60 Hz physics) ---------- */
@@ -779,19 +1170,25 @@ function frame(t) {
     acc -= 1 / 60;
   }
   updateVisuals();
+  updateGhost(t);
   updateHud(false);
   renderer.render(scene, camera);
 }
 
-fit();
 buildMenu();
-initLevel(0);
+{
+  let start = LEVELS.findIndex(l => l.id === progress.last);
+  if (start < 0) start = Object.keys(progress.best).length ? 1 : 0;
+  if (start === 0 && progress.tutorial) start = 1;
+  initLevel(start);
+}
+fit();
 requestAnimationFrame(frame);
+initStore();
 
-window.__topologyCarver = {
-  LEVELS,
-  initLevel, solve, animateFalling, carveAt, pruneOrphans, setBrushRadius,
-  info: () => ({ state, peak, removed: removedCount, total: totalCarvable, connected }),
+window.__topologyCarver = { popStars,
+  w2s: (x, y) => { const r = cv.getBoundingClientRect(); return [r.left + (x - camera.left) / (camera.right - camera.left) * r.width, r.top + (camera.top - y) / (camera.top - camera.bottom) * r.height]; }, LEVELS, initLevel, solve, carveAt, pruneOrphans, setBrushRadius, progress: () => progress, tut: () => tutStep,
+  info: () => ({ state, peak, removed: removedCount, total: totalCarvable, connected, level: cur }),
   stepN: n => { for (let i = 0; i < n; i++) { if (state !== 'FAILED') solve(false); } }
 };
 })();
