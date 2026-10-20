@@ -8,8 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         body {
@@ -34,17 +32,23 @@
             overflow: visible;
         }
 
-        /* Clean Cell Background Tints */
-        .cell-R-bg { background-color: rgba(239, 68, 68, 0.06); }
-        .cell-Y-bg { background-color: rgba(234, 179, 8, 0.06); }
-        .cell-B-bg { background-color: rgba(59, 130, 246, 0.06); }
-        .cell-G-bg { background-color: rgba(34, 197, 94, 0.06); }
-        .cell-P-bg { background-color: rgba(168, 85, 247, 0.06); }
+        /* Cell Background Tints */
+        .cell-R-bg { background-color: rgba(239, 68, 68, 0.08); }
+        .cell-Y-bg { background-color: rgba(234, 179, 8, 0.08); }
+        .cell-O-bg { background-color: rgba(249, 115, 22, 0.08); }
+        .cell-B-bg { background-color: rgba(59, 130, 246, 0.08); }
+        .cell-G-bg { background-color: rgba(34, 197, 94, 0.08); }
+        .cell-P-bg { background-color: rgba(168, 85, 247, 0.08); }
 
-        .cell-rb-bg { background-color: rgba(168, 85, 247, 0.1); }
-        .cell-yb-bg { background-color: rgba(20, 184, 166, 0.1); }
-        .cell-gb-bg { background-color: rgba(16, 185, 129, 0.1); }
-        .cell-pb-bg { background-color: rgba(217, 70, 239, 0.1); }
+        /* Shared / Intersection cells */
+        .cell-rg-bg { background-color: rgba(234, 179, 8, 0.12); }
+        .cell-go-bg { background-color: rgba(132, 204, 22, 0.12); }
+        .cell-rb-bg { background-color: rgba(168, 85, 247, 0.12); }
+        .cell-bo-bg { background-color: rgba(14, 165, 233, 0.12); }
+        .cell-yb-bg { background-color: rgba(20, 184, 166, 0.12); }
+        .cell-gb-bg { background-color: rgba(16, 185, 129, 0.12); }
+        .cell-pb-bg { background-color: rgba(217, 70, 239, 0.12); }
+        .cell-empty-bg { background-color: transparent; }
 
         /* Square Piece - Centered & Smaller than cell */
         .square-piece {
@@ -54,22 +58,32 @@
             left: 0;
             right: 0;
             margin: auto;
-            width: 68%;
-            height: 68%;
-            border-radius: 0.65rem;
+            width: 72%;
+            height: 72%;
+            border-radius: 0.75rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.75), inset 0 1px 2px rgba(255, 255, 255, 0.4);
             transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
             z-index: 10;
             will-change: transform;
             backface-visibility: hidden;
         }
 
+        .piece-Green {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            border: 2px solid #bbf7d0;
+        }
+
         .piece-Red {
             background: linear-gradient(135deg, #ef4444, #dc2626);
             border: 2px solid #fca5a5;
+        }
+
+        .piece-Orange {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            border: 2px solid #fed7aa;
         }
 
         .piece-Yellow {
@@ -80,11 +94,6 @@
         .piece-Blue {
             background: linear-gradient(135deg, #3b82f6, #2563eb);
             border: 2px solid #bfdbfe;
-        }
-
-        .piece-Green {
-            background: linear-gradient(135deg, #22c55e, #16a34a);
-            border: 2px solid #bbf7d0;
         }
 
         .piece-Purple {
@@ -109,17 +118,7 @@
 
         <div class="flex items-center gap-3">
             <!-- Level Tabs -->
-            <div class="bg-slate-900/90 border border-slate-800 p-1 rounded-2xl flex items-center text-xs font-semibold">
-                <button id="tab-lvl-0" onclick="switchLevel(0)" class="px-3 py-1.5 rounded-xl transition-all text-slate-400 hover:text-white">
-                    4x4
-                </button>
-                <button id="tab-lvl-1" onclick="switchLevel(1)" class="px-3 py-1.5 rounded-xl transition-all text-slate-400 hover:text-white">
-                    6x5
-                </button>
-                <button id="tab-lvl-2" onclick="switchLevel(2)" class="px-3 py-1.5 rounded-xl transition-all text-slate-400 hover:text-white">
-                    6x6
-                </button>
-            </div>
+            <div id="level-tabs" class="bg-slate-900/90 border border-slate-800 p-1 rounded-2xl flex flex-wrap items-center justify-center text-xs font-semibold max-w-[24rem]"></div>
 
             <!-- Move Counter -->
             <div class="flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-4 py-2 rounded-2xl shadow-lg">
@@ -145,26 +144,29 @@
             <!-- Utility Icon Buttons Below Capsule -->
             <div class="flex flex-col gap-2 w-full">
                 <button onclick="scrambleBoardAnimated()" title="Mezclar fichas" class="w-full bg-purple-900/30 hover:bg-purple-800/40 text-purple-200 border border-purple-500/30 font-semibold py-2.5 px-3 rounded-xl active:scale-95 flex items-center justify-center transition-all text-sm">
-                    <i class="fa-solid fa-shuffle text-purple-400"></i>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-purple-400" aria-hidden="true"><path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/></svg>
                 </button>
                 <button id="btn-undo" onclick="undoMove()" title="Deshacer último movimiento" class="w-full bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700 font-semibold py-2.5 px-3 rounded-xl active:scale-95 flex items-center justify-center transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed">
-                    <i class="fa-solid fa-rotate-left text-slate-400"></i>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-slate-300" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
                 </button>
             </div>
 
         </div>
 
         <!-- Right Side: The Grid Board -->
-        <div class="flex-1 min-w-0 max-w-[580px] flex justify-center">
-            <div class="bg-slate-900/90 p-4 sm:p-5 rounded-[2rem] border border-slate-800 shadow-2xl relative w-full">
+        <div class="flex-1 min-w-0 max-w-[560px] flex justify-center">
+            <div id="board-card" class="bg-slate-900/90 p-4 sm:p-5 rounded-[2rem] border border-slate-800 shadow-2xl relative w-full">
                 
                 <!-- Win Overlay -->
                 <div id="win-overlay" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md rounded-[2rem] z-30 flex flex-col items-center justify-center p-6 text-center">
-                    <i class="fa-solid fa-trophy text-6xl text-amber-400 mb-4 animate-bounce"></i>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-16 h-16 text-amber-400 mb-4 animate-bounce" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
                     <h2 class="text-3xl font-black text-white title-font mb-2">¡Completado!</h2>
                     <p class="text-xs sm:text-sm text-slate-300 max-w-xs mb-6">Todas las congas han vuelto a su circuito correspondiente.</p>
-                    <button onclick="scrambleBoardAnimated()" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-3 px-8 rounded-xl shadow-xl active:scale-95 transition-all text-sm">
-                        Jugar de Nuevo
+                    <button id="btn-next-level" onclick="nextLevel()" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-3 px-8 rounded-xl shadow-xl active:scale-95 transition-all text-sm">
+                        Siguiente nivel <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 ml-1.5 inline-block align-[-2px]" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </button>
+                    <button id="btn-replay" onclick="scrambleBoardAnimated()" class="mt-3 text-slate-400 hover:text-white font-semibold py-1.5 px-4 text-xs transition-all">
+                        Jugar de nuevo
                     </button>
                 </div>
 
@@ -183,22 +185,96 @@
         Congas &bull; Juegos de Circuitos Continuos
     </footer>
 
-    <!-- JavaScript Game Logic -->
     <script>
-        // Track Color Map
+        // Inline SVG icons (no external icon font needed)
+        const SVG_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6" aria-hidden="true">';
+        const ICON_ROTATE_CCW = SVG_OPEN + '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>';
+        const ICON_ROTATE_CW = SVG_OPEN + '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>';
+
+        // Track Color Palette
         const TRACK_COLORS = {
+            'G': '#22c55e',
             'R': '#ef4444',
+            'O': '#f97316',
             'B': '#3b82f6',
             'Y': '#eab308',
-            'G': '#22c55e',
             'P': '#a855f7'
         };
 
         // LEVEL CONFIGURATIONS
         const LEVELS = [
-            // LEVEL 0: 4x4 (Micro)
+            // LEVEL 0: Cruz - Rotated 90° CCW (Counter-Clockwise)
+            // (x, y) -> (y, 3 - x)
+            // Loops move in Counter-Clockwise (↺) direction
             {
                 id: 0,
+                name: 'Cruz',
+                cols: 4,
+                rows: 4,
+                scrambleMoves: 16,
+                cellTypes: [
+                    ['.',   'R',   'R',   '.'],
+                    ['G',   'rg',  'rb',  'B'],
+                    ['G',   'go',  'bo',  'B'],
+                    ['.',   'O',   'O',   '.']
+                ],
+                loops: [
+                    { 
+                        key: 'GREEN', 
+                        color: 'G', 
+                        pieceColor: 'Green', 
+                        name: 'Verde (Izquierda)', 
+                        dirSymbol: '↺', 
+                        defaultDir: 1, 
+                        // CCW path: (0, 2) -> (1, 2) -> (1, 1) -> (0, 1)
+                        path: [[0, 2], [1, 2], [1, 1], [0, 1]] 
+                    },
+                    { 
+                        key: 'RED', 
+                        color: 'R', 
+                        pieceColor: 'Red', 
+                        name: 'Roja (Arriba)', 
+                        dirSymbol: '↺', 
+                        defaultDir: 1, 
+                        // CCW path: (1, 1) -> (2, 1) -> (2, 0) -> (1, 0)
+                        path: [[1, 1], [2, 1], [2, 0], [1, 0]] 
+                    },
+                    { 
+                        key: 'BLUE', 
+                        color: 'B', 
+                        pieceColor: 'Blue', 
+                        name: 'Azul (Derecha)', 
+                        dirSymbol: '↺', 
+                        defaultDir: 1, 
+                        // Strictly CCW path: (2, 1) -> (2, 2) -> (3, 2) -> (3, 1)
+                        path: [[2, 1], [2, 2], [3, 2], [3, 1]] 
+                    },
+                    { 
+                        key: 'ORANGE', 
+                        color: 'O', 
+                        pieceColor: 'Orange', 
+                        name: 'Naranja (Abajo)', 
+                        dirSymbol: '↺', 
+                        defaultDir: 1, 
+                        // Strictly CCW path: (1, 2) -> (1, 3) -> (2, 3) -> (2, 2)
+                        path: [[1, 2], [1, 3], [2, 3], [2, 2]] 
+                    }
+                ],
+                initialPieces: {
+                    Green: [[0, 1], [0, 2]],
+                    Red: [[1, 0], [2, 0]],
+                    Blue: [[3, 1], [3, 2]],
+                    Orange: [[1, 3], [2, 3]],
+                    // Each loop initially owns its base intersection
+                    GreenShared: [[1, 1]],
+                    RedShared: [[2, 1]],
+                    BlueShared: [[2, 2]],
+                    OrangeShared: [[1, 2]]
+                }
+            },
+            // LEVEL 1: 4x4 (Micro)
+            {
+                id: 1,
                 name: '4x4',
                 cols: 4,
                 rows: 4,
@@ -224,9 +300,9 @@
                     Blue: [[1,1], [2,1], [2,2], [1,2]]
                 }
             },
-            // LEVEL 1: 6x5 (Clásico)
+            // LEVEL 2: 6x5 (Clásico)
             {
-                id: 1,
+                id: 2,
                 name: '6x5',
                 cols: 6,
                 rows: 5,
@@ -249,9 +325,9 @@
                     Blue: [[1,1],[1,2],[1,3],[4,1],[4,2],[4,3]]
                 }
             },
-            // LEVEL 2: 6x6 (Gran Plaza)
+            // LEVEL 3: 6x6 (Gran Plaza)
             {
-                id: 2,
+                id: 3,
                 name: '6x6',
                 cols: 6,
                 rows: 6,
@@ -281,6 +357,123 @@
             }
         ];
 
+        // ===== NEW LEVELS (strict goal grids: each cell has exactly one target colour) =====
+        const COLOR_META = {
+            R: ['RED', 'Red', 'Roja'], G: ['GREEN', 'Green', 'Verde'], B: ['BLUE', 'Blue', 'Azul'],
+            Y: ['YELLOW', 'Yellow', 'Amarilla'], P: ['PURPLE', 'Purple', 'Púrpura'], O: ['ORANGE', 'Orange', 'Naranja']
+        };
+
+        // Closed rectangular ring (perimeter of a w×h block at x,y). Default = counter-clockwise ↺.
+        function ring(x, y, w, h) {
+            const p = [];
+            for (let i = 0; i < w; i++) p.push([x + i, y + h - 1]);
+            for (let j = h - 2; j >= 0; j--) p.push([x + w - 1, y + j]);
+            for (let i = w - 2; i >= 0; i--) p.push([x + i, y]);
+            for (let j = 1; j < h - 1; j++) p.push([x, y + j]);
+            return p;
+        }
+
+
+        // Closed loop along the outline of any rectilinear polygon (vertices at cell centres).
+        // Lets loops be L-shaped, hook-shaped, etc. Normalised to counter-clockwise ↺.
+        function poly(pts) {
+            const p = [], n = pts.length;
+            for (let i = 0; i < n; i++) {
+                const [x0, y0] = pts[i], [x1, y1] = pts[(i + 1) % n];
+                const dx = Math.sign(x1 - x0), dy = Math.sign(y1 - y0);
+                const steps = Math.abs(x1 - x0) + Math.abs(y1 - y0);
+                for (let k = 0; k < steps; k++) p.push([x0 + dx * k, y0 + dy * k]);
+            }
+            let area = 0;
+            p.forEach(([x, y], i) => { const [x2, y2] = p[(i + 1) % p.length]; area += x * y2 - x2 * y; });
+            return area > 0 ? p.reverse() : p;
+        }
+
+        function mkLoop(c, path, cw = false) {
+            const [key, pieceColor, name] = COLOR_META[c];
+            return { key, color: c, pieceColor, name, dirSymbol: cw ? '↻' : '↺', defaultDir: 1,
+                     path: cw ? path.slice().reverse() : path };
+        }
+
+        function strictLevel(name, goal, loops, scrambleMoves) {
+            const initialPieces = {};
+            goal.forEach((row, y) => [...row].forEach((ch, x) => {
+                if (ch === '.') return;
+                const n = COLOR_META[ch][1];
+                (initialPieces[n] = initialPieces[n] || []).push([x, y]);
+            }));
+            return { id: LEVELS.length, name, cols: goal[0].length, rows: goal.length, scrambleMoves,
+                     strict: true, cellTypes: goal.map(r => [...r]), loops, initialPieces };
+        }
+
+        LEVELS.push(
+            // Easy ─────────────────────────────────────────
+            strictLevel('Dúo',
+                ['RRB',
+                 'RBB'],
+                [mkLoop('R', ring(0, 0, 2, 2)), mkLoop('B', ring(1, 0, 2, 2))], 14),
+
+            strictLevel('Cadena',
+                ['RBBY',
+                 'RBBY'],
+                [mkLoop('R', ring(0, 0, 2, 2)), mkLoop('B', ring(1, 0, 2, 2)), mkLoop('Y', ring(2, 0, 2, 2))], 24),
+
+            // Medium ───────────────────────────────────────
+            // Asymmetric ───────────────────────────────────
+            strictLevel('Ancla',
+                ['RRRR',
+                 'RRRR',
+                 'YYBB',
+                 'YYBB'],
+                [mkLoop('R', ring(0, 0, 4, 2)), mkLoop('B', ring(2, 1, 2, 3)), mkLoop('Y', ring(0, 2, 3, 2))], 32),
+
+            strictLevel('Bota',
+                ['RRYYY',
+                 'RRYBB',
+                 'RBBBB',
+                 'RBBBB'],
+                [mkLoop('R', poly([[0, 0], [2, 0], [2, 1], [1, 1], [1, 3], [0, 3]])),
+                 mkLoop('B', poly([[1, 2], [3, 2], [3, 1], [4, 1], [4, 3], [1, 3]])),
+                 mkLoop('Y', ring(2, 0, 3, 2))], 40),
+
+            // Interlocked rectangles (from sketch): tall bar × square ring × wide bar, corners empty
+            strictLevel('Telar',
+                ['..PP..',
+                 '.OOOO.',
+                 'GGPPGG',
+                 'GGPPGG',
+                 '.OOOO.',
+                 '..PP..'],
+                [mkLoop('P', ring(2, 0, 2, 6)), mkLoop('O', ring(1, 1, 4, 4)), mkLoop('G', ring(0, 2, 6, 2))], 60),
+
+            // Hard ─────────────────────────────────────────
+            strictLevel('Cuadrantes',
+                ['RRGG',
+                 'RRGG',
+                 'YYBB',
+                 'YYBB'],
+                [mkLoop('R', ring(0, 0, 3, 3)), mkLoop('G', ring(1, 0, 3, 3)),
+                 mkLoop('Y', ring(0, 1, 3, 3)), mkLoop('B', ring(1, 1, 3, 3))], 60),
+
+            strictLevel('Rosetón',
+                ['RRGGG',
+                 'ROGOG',
+                 'RROBB',
+                 'YOYOB',
+                 'YYYBB'],
+                [mkLoop('R', ring(0, 0, 3, 3)), mkLoop('G', ring(2, 0, 3, 3)),
+                 mkLoop('B', ring(2, 2, 3, 3)), mkLoop('Y', ring(0, 2, 3, 3)),
+                 mkLoop('O', ring(1, 1, 3, 3))], 90)
+        );
+
+        // Rename numeric levels and sort everything by difficulty
+        const RENAMES = { '4x4': 'Flor', '6x5': 'Clásico', '6x6': 'Gran Plaza' };
+        LEVELS.forEach(l => { if (RENAMES[l.name]) l.name = RENAMES[l.name]; });
+        const DIFFICULTY_ORDER = ['Dúo', 'Cadena', 'Cruz', 'Ancla', 'Bota', 'Flor', 'Clásico', 'Telar', 'Gran Plaza', 'Cuadrantes', 'Rosetón'];
+        LEVELS.sort((a, b) => DIFFICULTY_ORDER.indexOf(a.name) - DIFFICULTY_ORDER.indexOf(b.name));
+        LEVELS.forEach((l, i) => { l.id = i; });
+        // ===== END NEW LEVELS =====
+
         // Active Game State
         let currentLevelIdx = 0;
         let boardState = [];
@@ -293,7 +486,6 @@
             return LEVELS[currentLevelIdx];
         }
 
-        // Generate smooth 3-line vector tracks with corner curves
         function createMovementTracksSVG(r, c) {
             const level = getActiveLevel();
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -366,10 +558,11 @@
             capsuleEl.innerHTML = '';
 
             const btnStyles = {
+                'G': 'from-green-500 to-emerald-600 text-white shadow-green-950/80 border-green-300/40',
                 'R': 'from-red-500 to-red-600 text-white shadow-red-950/80 border-red-300/40',
+                'O': 'from-orange-500 to-amber-600 text-white shadow-orange-950/80 border-orange-300/40',
                 'B': 'from-blue-500 to-blue-600 text-white shadow-blue-950/80 border-blue-300/40',
                 'Y': 'from-amber-400 to-yellow-500 text-slate-950 shadow-amber-950/80 border-yellow-200/50',
-                'G': 'from-green-500 to-emerald-600 text-white shadow-green-950/80 border-green-300/40',
                 'P': 'from-purple-500 to-purple-600 text-white shadow-purple-950/80 border-purple-300/40'
             };
 
@@ -380,13 +573,22 @@
                 btn.title = `Conga ${loop.name} (${loop.dirSymbol})`;
                 btn.className = `w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br ${btnStyles[loop.color]} shadow-lg hover:scale-105 active:scale-95 transition-all duration-150 flex items-center justify-center border-2 text-xl sm:text-2xl`;
                 
-                const icon = document.createElement('i');
-                icon.className = loop.dirSymbol === '↻' ? 'fa-solid fa-rotate-right' : 'fa-solid fa-rotate-left';
-                btn.appendChild(icon);
+                btn.innerHTML = loop.dirSymbol === '↻' ? ICON_ROTATE_CW : ICON_ROTATE_CCW;
 
                 capsuleEl.appendChild(btn);
             });
         }
+
+        // Keep the board inside the viewport: cap its width so that its height fits on screen
+        function fitBoard() {
+            const level = getActiveLevel();
+            const card = document.getElementById('board-card');
+            if (!card || !level) return;
+            const availH = Math.max(220, window.innerHeight - 250);
+            const gridW = Math.min(520, availH * level.cols / level.rows);
+            card.style.maxWidth = Math.round(gridW + 44) + 'px';
+        }
+        window.addEventListener('resize', fitBoard);
 
         function createGridDOM() {
             const level = getActiveLevel();
@@ -394,16 +596,24 @@
             
             gridEl.className = `grid grid-cols-${level.cols} gap-0 w-full relative rounded-2xl overflow-hidden border border-slate-800/80`;
             gridEl.innerHTML = '';
+            fitBoard();
 
             for (let r = 0; r < level.rows; r++) {
                 for (let c = 0; c < level.cols; c++) {
                     const type = level.cellTypes[r][c];
                     const cellEl = document.createElement('div');
-                    cellEl.className = `grid-cell flex items-center justify-center cell-${type}-bg`;
+
+                    if (type === '.') {
+                        cellEl.className = 'grid-cell flex items-center justify-center cell-empty-bg opacity-15 pointer-events-none';
+                    } else {
+                        cellEl.className = `grid-cell flex items-center justify-center cell-${type}-bg`;
+                    }
                     cellEl.id = `cell-${c}-${r}`;
 
-                    const tracksSVG = createMovementTracksSVG(r, c);
-                    cellEl.appendChild(tracksSVG);
+                    if (type !== '.') {
+                        const tracksSVG = createMovementTracksSVG(r, c);
+                        cellEl.appendChild(tracksSVG);
+                    }
 
                     gridEl.appendChild(cellEl);
                 }
@@ -416,9 +626,10 @@
             historyStack = [];
 
             let pieceCounter = 1;
-            Object.entries(level.initialPieces).forEach(([colorName, coords]) => {
+            Object.entries(level.initialPieces).forEach(([colorKey, coords]) => {
+                const cleanColor = colorKey.replace('Shared', '');
                 coords.forEach(([x, y]) => {
-                    boardState[y][x] = { id: `${colorName[0]}${pieceCounter++}`, color: colorName };
+                    boardState[y][x] = { id: `${cleanColor[0]}${pieceCounter++}`, color: cleanColor };
                 });
             });
 
@@ -535,6 +746,23 @@
             checkWinState();
         }
 
+        function buildTabs() {
+            const el = document.getElementById('level-tabs');
+            el.innerHTML = '';
+            LEVELS.forEach((lv, idx) => {
+                const b = document.createElement('button');
+                b.id = `tab-lvl-${idx}`;
+                b.textContent = lv.name;
+                b.onclick = () => switchLevel(idx);
+                b.className = 'px-3 py-1.5 rounded-xl transition-all text-slate-400 hover:text-white';
+                el.appendChild(b);
+            });
+        }
+
+        function nextLevel() {
+            if (currentLevelIdx < LEVELS.length - 1) switchLevel(currentLevelIdx + 1);
+        }
+
         function switchLevel(lvlIdx) {
             if (isAnimating || isScrambling) return;
             currentLevelIdx = lvlIdx;
@@ -599,6 +827,17 @@
             document.getElementById('move-counter').innerText = moveCount;
         }
 
+        // Colours of every loop passing through each cell, e.g. {"2,1": Set(Purple, Orange)}
+        function getCellLoopColors(level) {
+            if (level._cellLoopColors) return level._cellLoopColors;
+            const map = {};
+            level.loops.forEach(lp => lp.path.forEach(([x, y]) => {
+                (map[`${x},${y}`] = map[`${x},${y}`] || new Set()).add(lp.pieceColor);
+            }));
+            level._cellLoopColors = map;
+            return map;
+        }
+
         function checkWinState() {
             if (isScrambling) return;
 
@@ -613,15 +852,23 @@
                     if (!piece) continue;
 
                     const validColorsMap = {
-                        'Red': ['R', 'rb'],
+                        'Green': ['G', 'rg', 'go', 'gb'],
+                        'Red': ['R', 'rg', 'rb'],
+                        'Orange': ['O', 'go', 'bo'],
+                        'Blue': ['B', 'rb', 'bo', 'gb', 'pb', 'yb'],
                         'Yellow': ['Y', 'yb'],
-                        'Blue': ['B', 'rb', 'yb', 'gb', 'pb'],
-                        'Green': ['G', 'gb'],
                         'Purple': ['P', 'pb']
                     };
 
-                    const allowed = validColorsMap[piece.color] || [];
-                    if (!allowed.includes(cellType)) {
+                    // A piece is valid on any cell crossed by a loop of its own colour
+                    // (where two loops cross, either colour is accepted).
+                    const crossing = getCellLoopColors(level)[`${c},${r}`];
+                    let valid = !!(crossing && crossing.has(piece.color));
+                    // The designed solution always counts (e.g. the hollow centre of a ring has no track of its own colour)
+                    if (!valid && level.strict) valid = (cellType === piece.color[0]);
+                    // Older levels also keep their hand-written cell types
+                    if (!valid && !level.strict) valid = (validColorsMap[piece.color] || []).includes(cellType);
+                    if (!valid) {
                         isWin = false;
                         break;
                     }
@@ -630,6 +877,14 @@
             }
 
             if (isWin && moveCount > 0 && historyStack.length > 0) {
+                const isLast = currentLevelIdx >= LEVELS.length - 1;
+                const nextBtn = document.getElementById('btn-next-level');
+                const replayBtn = document.getElementById('btn-replay');
+                nextBtn.classList.toggle('hidden', isLast);
+                // On the last level, replay becomes the main button
+                replayBtn.className = isLast
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-3 px-8 rounded-xl shadow-xl active:scale-95 transition-all text-sm'
+                    : 'mt-3 text-slate-400 hover:text-white font-semibold py-1.5 px-4 text-xs transition-all';
                 document.getElementById('win-overlay').classList.remove('hidden');
             }
         }
@@ -649,7 +904,8 @@
 
         // Initialize on load
         window.onload = function() {
-            switchLevel(0); // Default to 4x4
+            buildTabs();
+            switchLevel(0); // Starts on Cruz level
         };
     </script>
 </body>
